@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 2.8)
+project(resonant)
+set(CMAKE_CXX_COMPILER "clang++")
+include_directories(${PROJECT_SOURCE_DIR}
+					${PROJECT_SOURCE_DIR}/spinner
+					${PROJECT_SOURCE_DIR}/boomstick)
+include_directories(/usr/local/include/c++/4.8.1
+					/usr/local/include/c++/4.8.1/i686-pc-linux-gnu)
+link_directories("/usr/local/lib/gcc/i686-pc-linux-gnu/4.8.1")
+set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -std=c++11 -ggdb3 -O0 -msse2")
+set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -O2 -msse2")
+set(CMAKE_BUILD_TYPE "Debug")
+link_directories(/tmp/spinner_build)
+link_directories(/tmp/boomstick_build)
+add_executable(rse_test main.cpp)
+target_link_libraries(rse_test spinner boomstick boost_system)
+
+install(TARGETS rse_test RUNTIME DESTINATION bin)

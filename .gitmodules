@@ -1,0 +1,6 @@
+[submodule "spinner"]
+	path = spinner
+	url = ../spinner
+[submodule "boomstick"]
+	path = boomstick
+	url = ../boomstick
