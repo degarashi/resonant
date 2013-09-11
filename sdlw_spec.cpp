@@ -44,4 +44,36 @@ namespace sdlw {
 	bool Spec::hasFuture(uint32_t flag) const {
 		return _feature & flag;
 	}
+	Spec::PStat Spec::powerStatus() const {
+		PStat ps;
+		switch(SDL_GetPowerInfo(&ps.seconds, &ps.percentage)) {
+			case SDL_POWERSTATE_ON_BATTERY:
+				ps.state = PStatN::OnBattery; break;
+			case SDL_POWERSTATE_NO_BATTERY:
+				ps.state = PStatN::NoBattery; break;
+			case SDL_POWERSTATE_CHARGING:
+				ps.state = PStatN::Charging; break;
+			case SDL_POWERSTATE_CHARGED:
+				ps.state = PStatN::Charged; break;
+			default:
+				ps.state = PStatN::Unknown;
+		}
+		return ps;
+	}
+	void Spec::PStat::output(std::ostream& os) const {
+		if(state == PStatN::Unknown)
+			os << "Unknown state";
+		else if(state == PStatN::NoBattery)
+			os << "No battery";
+		else {
+			os << "Battery state:" << std::endl;
+			if(seconds == -1) os << "unknown time left";
+			else os << seconds << " seconds left";
+			os << std::endl;
+
+			if(percentage == -1) os << "unknown percentage left";
+			else os << percentage << " percent left";
+		}
+		os << std::endl;
+	}
 }
