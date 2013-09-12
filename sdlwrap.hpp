@@ -1,8 +1,25 @@
 #include <SDL2/SDL.h>
 #include <string>
 #include "spinner/misc.hpp"
+#include <exception>
+#include <stdexcept>
+
+#define Assert(expr) AssertMsg(expr, "Assertion failed")
+#define AssertMsg(expr, msg) { if(!(expr)) throw std::runtime_error(msg); }
+#define SDLW_Check sdlw::CheckSDLError(__LINE__);
+#ifdef DEBUG
+	#define AAssert(expr) AAssertMsg(expr, "Assertion failed")
+	#define AAssertMsg(expr, msg) AssertMsg(expr, msg)
+	#define SDLW_ACheck sdlw::CheckSDLError(__LINE__);
+#else
+	#define AAssert(expr)
+	#define AAssertMsg(expr,msg)
+	#define SDLW_ACheck
+#endif
 
 namespace sdlw {
+	extern SDL_threadID thread_local tls_threadID;
+	void CheckSDLError(int line=-1);
 	//! 実行環境に関する情報を取得
 	class Spec : public spn::Singleton<Spec> {
 		public:
@@ -44,5 +61,20 @@ namespace sdlw {
 			int cpuCount() const;
 			bool hasFuture(uint32_t flag) const;
 			PStat powerStatus() const;
+	};
+	//! SDLのMutexラッパ
+	class Mutex {
+		SDL_mutex*	_mutex;
+
+		public:
+			Mutex();
+			Mutex(const Mutex& m) = delete;
+			Mutex& operator = (const Mutex& m) = delete;
+			~Mutex();
+
+			bool lock();
+			bool try_lock();
+			void unlock();
+			SDL_mutex* getMutex();
 	};
 }
