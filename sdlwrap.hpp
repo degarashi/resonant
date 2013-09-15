@@ -264,4 +264,68 @@ namespace sdlw {
 				return _retVal;
 			}
 	};
+
+	class Window;
+	using SPWindow = std::shared_ptr<Window>;
+	class GLContext;
+	using SPGLContext = std::shared_ptr<GLContext>;
+
+	class Window {
+		public:
+			enum class Stat {
+				Minimized,
+				Maximized,
+				Hidden,
+				Fullscreen,
+				Shown
+			};
+		private:
+			SDL_Window*	_window;
+			Stat		_stat;
+			Window(SDL_Window* w);
+
+			void _checkState();
+		public:
+			static SPWindow CreateWindow(const std::string& title, int w, int h, uint32_t flag=0);
+			static SPWindow CreateWindow(const std::string& title, int x, int y, int w, int h, uint32_t flag=0);
+			~Window();
+
+			void setFullscreen(bool bFull);
+			void setGrab(bool bGrab);
+			void setMaximumSize(int w, int h);
+			void setMinimumSize(int w, int h);
+			void setSize(int w, int h);
+			void setTitle(const std::string& title);
+			void show(bool bShow);
+			void maximize();
+			void minimize();
+			void restore();
+			void setPosition(int x, int y);
+			void raise();
+			// for logging
+			uint32_t getID() const;
+
+			Stat getState() const;
+			bool isGrabbed() const;
+			bool isResizable() const;
+			bool hasInputFocus() const;
+			bool hasMouseFocus() const;
+			uint32_t getSDLFlag() const;
+			SDL_Window* getWindow() const;
+
+			static void EnableScreenSaver(bool bEnable);
+	};
+	class GLContext {
+		SPWindow		_spWindow;
+		SDL_GLContext	_ctx;
+
+		GLContext(const SPWindow& w);
+		public:
+			static SPGLContext CreateContext(const SPWindow& w);
+			~GLContext();
+			void makeCurrent(const SPWindow& w);
+			void makeCurrent();
+			void swapWindow();
+			static int SetSwapInterval(int n);
+	};
 }
