@@ -3,6 +3,7 @@
 #include "spinner/misc.hpp"
 #include <exception>
 #include <stdexcept>
+#include <boost/optional.hpp>
 
 #define Assert(expr) AssertMsg(expr, "Assertion failed")
 #define AssertMsg(expr, msg) { if(!(expr)) throw std::runtime_error(msg); }
@@ -184,15 +185,14 @@ namespace sdlw {
 	};
 
 	// SIG = スレッドに関するシグニチャ
-	template <class SIG>
-	class Thread;
-	template <class RET, class... Args>
-	class Thread<RET (Args...)> {
-		using This = Thread<RET (Args...)>;
-		RET					_retVal;
+	template <class DER, class RET, class... Args>
+	class _Thread {
+		using This = _Thread<DER, RET, Args...>;
 		SDL_atomic_t		_atmInt;
 		SDL_Thread*			_thread;
-		std::exception_ptr	_eptr;
+
+		using Holder = spn::ArgHolder<Args...>;
+		boost::optional<Holder> _holder;
 
 		enum Stat {
 			Idle,			//!< スレッド開始前
@@ -209,7 +209,7 @@ namespace sdlw {
 		_mtxP;
 
 		static int ThreadFunc(void* p) {
-			This* ths = reinterpret_cast<This*>(p);
+			DER* ths = reinterpret_cast<DER*>(p);
 			ths->_mtxC.lock();
 			ths->_mtxP.lock();
 			SDL_CondBroadcast(ths->_condC);
@@ -222,29 +222,31 @@ namespace sdlw {
 			tls_threadID = SDL_GetThreadID(ths->_thread);
 			Stat stat;
 			try {
-				ths->_retVal = ths->run();
+				ths->_holder->inorder([ths](Args... args){ ths->runIt(args...); });
 				stat = (ths->isInterrupted()) ? Interrupted_End : Finished;
 			} catch(...) {
 				ths->_eptr = std::current_exception();
 				stat = Error_End;
 			}
 			SDL_AtomicSet(&ths->_atmStat, stat);
+			SDL_CondBroadcast(ths->_condP);
 			// SDLの戻り値は使わない
 			return 0;
 		}
 		protected:
+			std::exception_ptr	_eptr;
 			virtual RET run(Args...) = 0;
 		public:
-			Thread(const Thread& t) = delete;
-			Thread& operator = (const Thread& t) = delete;
-			Thread(): _thread(nullptr), _eptr(nullptr) {
+			_Thread(const _Thread& t) = delete;
+			_Thread& operator = (const _Thread& t) = delete;
+			_Thread(): _thread(nullptr), _eptr(nullptr) {
 				_condC = SDL_CreateCond();
 				_condP = SDL_CreateCond();
 				// 中断フラグに0をセット
 				SDL_AtomicSet(&_atmInt, 0);
 				SDL_AtomicSet(&_atmStat, Idle);
 			}
-			~Thread() {
+			~_Thread() {
 				// スレッド実行中だったらエラーを出す
 				Assert(!isRunning())
 				SDL_DestroyCond(_condC);
@@ -252,6 +254,7 @@ namespace sdlw {
 			}
 			template <class... Args0>
 			void start(Args0&&... args0) {
+				_holder = boost::in_place(std::forward<Args0>(args0)...);
 				// 2回以上呼ぶとエラー
 				Assert(SDL_AtomicGet(&_atmStat) == Idle)
 				SDL_AtomicSet(&_atmStat, Running);
@@ -287,25 +290,73 @@ namespace sdlw {
 				return SDL_AtomicGet(&_atmInt) == 1;
 			}
 			void join() {
+				Assert(getStatus() != Stat::Idle)
 				_mtxP.lock();
 				if(_thread) {
-					int ret;
-					SDL_WaitThread(_thread, &ret);
+					_mtxP.unlock();
+					SDL_WaitThread(_thread, nullptr);
 					_thread = nullptr;
-				}
-				_mtxP.unlock();
+				} else
+					_mtxP.unlock();
 			}
 			bool try_join(uint32_t ms) {
+				Assert(getStatus() != Stat::Idle)
 				_mtxP.lock();
-				int res = SDL_CondWaitTimeout(_condP, _mtxP.getMutex(), ms);
+				if(_thread) {
+					int res = SDL_CondWaitTimeout(_condP, _mtxP.getMutex(), ms);
+					_mtxP.unlock();
+					SDLW_Check
+					if(res == 0 || !isRunning()) {
+						SDL_WaitThread(_thread, nullptr);
+						_thread = nullptr;
+						return true;
+					}
+					return false;
+				}
 				_mtxP.unlock();
-				SDLW_Check
-				return res == 0;
+				return true;
 			}
-			const RET& getResult() {
+			void getResult() {
 				// まだスレッドが終了して無い時の為にjoinを呼ぶ
 				join();
-				return _retVal;
+				if(_eptr)
+					std::rethrow_exception(_eptr);
+			}
+	};
+	template <class SIG>
+	class Thread;
+	template <class RET, class... Args>
+	class Thread<RET (Args...)> : public _Thread<Thread<RET (Args...)>, RET, Args...> {
+		using base_type = _Thread<Thread<RET (Args...)>, RET, Args...>;
+		boost::optional<RET> 	_retVal;
+		protected:
+			virtual RET run(Args...) = 0;
+		public:
+			void runIt(Args... args) {
+				_retVal = run(std::forward<Args>(args)...);
+			}
+			RET&& getResult() {
+				// まだスレッドが終了して無い時の為にjoinを呼ぶ
+				base_type::join();
+				if(base_type::_eptr)
+					std::rethrow_exception(base_type::_eptr);
+				return std::move(*_retVal);
+			}
+	};
+	template <class... Args>
+	class Thread<void (Args...)> : public _Thread<Thread<void (Args...)>, void, Args...> {
+		using base_type = _Thread<Thread<void (Args...)>, void, Args...>;
+		protected:
+			virtual void run(Args...) = 0;
+		public:
+			void runIt(Args... args) {
+				run(std::forward<Args>(args)...);
+			}
+			void getResult() {
+				// まだスレッドが終了して無い時の為にjoinを呼ぶ
+				base_type::join();
+				if(base_type::_eptr)
+					std::rethrow_exception(base_type::_eptr);
 			}
 	};
 
