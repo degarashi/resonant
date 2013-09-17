@@ -86,10 +86,12 @@ namespace sdlw {
 
 			Inner(const Inner&) = delete;
 			Inner& operator = (const Inner&) = delete;
-			Inner(SpinLock& src, T* data): _src(src), _data(data) { _src._lock(); }
+			Inner(Inner&& n): _src(n._src), _data(n._data) {}
+			Inner(SpinLock& src, T* data): _src(src), _data(data) {}
 			~Inner() {
 				unlock();
 			}
+			T& operator * () { return *_data; }
 			T* operator -> () { return _data; }
 			bool valid() const { return _data != nullptr; }
 			void unlock() {
@@ -110,7 +112,7 @@ namespace sdlw {
 		Inner _lock(bool bBlock) {
 			do {
 				bool bSuccess = false;
-				if(SDL_AtomicCAS(&_atmLock, 0, tls_threadID) == 0)
+				if(SDL_AtomicCAS(&_atmLock, 0, tls_threadID) == SDL_TRUE)
 					bSuccess = true;
 				else if(SDL_AtomicGet(&_atmLock) == tls_threadID) {
 					// 同じスレッドからのロック
@@ -119,7 +121,7 @@ namespace sdlw {
 
 				if(bSuccess) {
 					// ロック成功
-					SDL_AtomicAddRef(&_atmCount);
+					SDL_AtomicAdd(&_atmCount, 1);
 					return Inner(*this, &_data);
 				}
 			} while(bBlock);
