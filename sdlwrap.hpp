@@ -78,6 +78,56 @@ namespace sdlw {
 			void unlock();
 			SDL_mutex* getMutex();
 	};
+	class UniLock {
+		Mutex* _mutex;
+		public:
+			UniLock() = delete;
+			UniLock(const UniLock&) = delete;
+			void operator = (const UniLock& u) = delete;
+			UniLock(Mutex& m): _mutex(&m) { m.lock(); }
+			~UniLock() {
+				unlock();
+			}
+			UniLock(UniLock&& u): _mutex(u._mutex) {
+				u._mutex = nullptr;
+			}
+			void unlock() {
+				if(_mutex) {
+					_mutex->unlock();
+					_mutex = nullptr;
+				}
+			}
+			SDL_mutex* getMutex() {
+				if(_mutex)
+					return _mutex->getMutex();
+				return nullptr;
+			}
+	};
+	class CondV {
+		SDL_cond*	_cond;
+		public:
+			CondV(): _cond(SDL_CreateCond()) {}
+			~CondV() {
+				SDL_DestroyCond(_cond);
+			}
+			void wait(UniLock& u) {
+				SDL_CondWait(_cond, u.getMutex());
+				SDLW_ACheck
+			}
+			bool wait_for(UniLock& u, uint32_t msec) {
+				int ret = SDL_CondWaitTimeout(_cond, u.getMutex(), msec);
+				SDLW_ACheck
+				return ret == 0;
+			}
+			void signal() {
+				SDL_CondSignal(_cond);
+				SDLW_ACheck
+			}
+			void signal_all() {
+				SDL_CondBroadcast(_cond);
+				SDLW_ACheck
+			}
+	};
 	//! 再帰対応のスピンロック
 	template <class T>
 	class SpinLock {
