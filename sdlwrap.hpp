@@ -254,9 +254,9 @@ namespace sdlw {
 		};
 		SDL_atomic_t		_atmStat;
 		SDL_cond			*_condC,		//!< 子スレッドが開始された事を示す
-		*_condP;		//!< 親スレッドがクラス変数にスレッドポインタを格納した事を示す
+							*_condP;		//!< 親スレッドがクラス変数にスレッドポインタを格納した事を示す
 		Mutex				_mtxC,
-		_mtxP;
+							_mtxP;
 
 		static int ThreadFunc(void* p) {
 			DER* ths = reinterpret_cast<DER*>(p);
