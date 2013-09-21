@@ -81,6 +81,8 @@ class IInput {
 		// ---- absolute input querying ----
 		virtual void addListener(IRecvPointer* r) {}
 		virtual void remListener(IRecvPointer* r) {}
+		// 1つ以上の座標が検出されたら何れかを返す
+		virtual WPtr getPointer() const { return WPtr(); }
 };
 using UPInput = std::unique_ptr<IInput>;
 
