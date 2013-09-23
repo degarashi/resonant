@@ -137,3 +137,33 @@ class Handler {
 			post(Message(std::chrono::seconds(0), std::forward<Args>(args)...));
 		}
 };
+namespace sdlw {
+	//! Looper付きスレッド
+	template <class T>
+	class ThreadL;
+	template <class RET, class... Args>
+	class ThreadL<RET (Args...)> : public Thread<RET (Args...)> {
+		private:
+			using base = Thread<RET (Args...)>;
+			Looper*	_pLooper = nullptr;
+		protected:
+			using base::base;
+			RET run(Args&&... args) override final {
+				Looper::Prepare();
+				_pLooper = &Looper::GetLooper();
+				return runL(std::forward<Args>(args)...);
+			}
+			virtual RET runL(Args&&... args) = 0;
+		public:
+			bool interrupt() override {
+				if(base::interrupt()) {
+					_pLooper->setState(false);
+					return true;
+				}
+				return false;
+			}
+			Looper* getLooper() {
+				return _pLooper;
+			}
+	};
+}
