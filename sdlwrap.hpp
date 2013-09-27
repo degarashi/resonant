@@ -473,4 +473,50 @@ namespace sdlw {
 			void swapWindow();
 			static int SetSwapInterval(int n);
 	};
+	class RWops {
+		SDL_RWops*	_ops;
+		int			_access;
+		enum Access : int {
+			Read = 0x01,
+			Write = 0x02,
+			Binary = 0x04
+		};
+		enum Hence : int {
+			Begin = RW_SEEK_SET,
+			Current = RW_SEEK_CUR,
+			End = RW_SEEK_END
+		};
+
+		static int _ReadMode(const char* mode);
+		void _clear();
+		RWops(SDL_RWops* ops, int access);
+		public:
+			static RWops FromConstMem(const void* mem, int size);
+			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
+			static RWops FromMem(void* mem, int size);
+			static RWops FromFile(const std::string& path, const char* mode);
+
+			RWops(RWops&& ops);
+			RWops& operator = (RWops&& ops);
+			~RWops();
+
+			void close();
+			int getAccessFlag() const;
+			size_t read(void* dst, size_t blockSize, size_t nblock);
+			size_t write(const void* src, size_t blockSize, size_t nblock);
+			int64_t seek(int64_t offset, Hence hence);
+			int64_t tell();
+			uint16_t readBE16();
+			uint32_t readBE32();
+			uint64_t readBE64();
+			uint16_t readLE16();
+			uint32_t readLE32();
+			uint64_t readLE64();
+			bool writeBE(uint16_t value);
+			bool writeBE(uint32_t value);
+			bool writeBE(uint64_t value);
+			bool writeLE(uint16_t value);
+			bool writeLE(uint32_t value);
+			bool writeLE(uint64_t value);
+	};
 }
