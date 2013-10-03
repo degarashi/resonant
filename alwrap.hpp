@@ -201,8 +201,8 @@ class ALOggBatch : public ALStaticBuffer {
 };
 // Oggストリーミング再生
 class ALOggStream : public ALBuffer {
-	constexpr static int BLOCKNUM = 3,
-						BLOCKSIZE = 4096;
+	constexpr static int BLOCKNUM = 4,
+						BLOCKSIZE = 8192;
 	VorbisFile	_vfile;
 	ALuint		_abuff[BLOCKNUM];
 	int			_readCur, _writeCur;
@@ -217,58 +217,50 @@ class ALOggStream : public ALBuffer {
 		void atState(ALuint srcId, AState state) override;
 		void update(ALuint srcId) override;
 };
-#define mgr_abuff ALBufMgr::_ref()
 using UPABuff = std::unique_ptr<ALBuffer>;
 class ALBufMgr : public spn::ResMgrA<UPABuff, ALBufMgr> {};
 DEF_HANDLE(ALBufMgr, Ab, UPABuff)
 
 class ALSource {
 	struct IState {
-		ALSource& self;
-		IState(ALSource& s): self(s) {}
-
-		virtual void play();
-		virtual void pause();
-		virtual void rewind();
-		virtual void stop();
-		virtual void update() {}
-		virtual void setBuffer(HAb hAb);
+		virtual void play(ALSource& self);
+		virtual void pause(ALSource& self);
+		virtual void rewind(ALSource& self);
+		virtual void stop(ALSource& self);
+		virtual void update(ALSource& self) {}
+		virtual void setBuffer(ALSource& self, HAb hAb);
 		virtual AState getState() const = 0;
 	};
 	struct S_Empty : IState {
-		using IState::IState;
-		void play() override {}
-		void pause() override {}
-		void rewind() override {}
-		void stop() override {}
+		void play(ALSource& self) override {}
+		void pause(ALSource& self) override {}
+		void rewind(ALSource& self) override {}
+		void stop(ALSource& self) override {}
 		AState getState() const override { return AState::Empty; }
 	};
 	struct S_Playing : IState {
-		using IState::IState;
-		void play() override {}
-		void update() override {
+		void play(ALSource& self) override {}
+		void update(ALSource& self) override {
 			self._hlAb.ref()->update(self.getID()); }
 		AState getState() const override { return AState::Playing; }
 	};
 	struct S_Stopped : IState {
-		using IState::IState;
-		void pause() override {}
-		void stop() override {}
-		void play() override;
+		void pause(ALSource& self) override {}
+		void stop(ALSource& self) override {}
+		void play(ALSource& self) override;
 		AState getState() const override { return AState::Stopped; }
 	};
 	struct S_Initial : IState {
-		S_Initial(ALSource& src): IState(src) {}
-		S_Initial(ALSource& src, HAb hAb): IState(src) {
+		S_Initial() {}
+		S_Initial(ALSource& self, HAb hAb) {
 			self._hlAb = hAb; }
-		void pause() override {}
-		void rewind() override {}
-		void stop() override {}
+		void pause(ALSource& self) override {}
+		void rewind(ALSource& self) override {}
+		void stop(ALSource& self) override {}
 		AState getState() const override { return AState::Initial; }
 	};
 	struct S_Paused : IState {
-		using IState::IState;
-		void pause() override {}
+		void pause(ALSource& self) override {}
 		AState getState() const override { return AState::Paused; }
 	};
 
@@ -279,19 +271,20 @@ class ALSource {
 
 	template <class S, class... Ts>
 	void _setState(Ts&&... ts) {
-		_state.reset(new S(*this, std::forward<Ts>(ts)...));
+		_state.reset(new S(std::forward<Ts>(ts)...));
 		if(_hlAb.valid())
 			_hlAb.ref()->atState(getID(), _state->getState());
 	}
 	public:
 		ALSource();
+		ALSource(ALSource&& s);
 		~ALSource();
 
-		void play() const;
-		void pause() const;
-		void rewind() const;
-		void stop() const;
-		void update() const;
+		void play();
+		void pause();
+		void rewind();
+		void stop();
+		void update();
 		AState getState() const;
 
 		void setBuffer(HAb hAb);
@@ -313,13 +306,45 @@ class ALSource {
 		void pcmSeek(int64_t p) const;
 		ALuint getID() const;
 };
+class SSrcMgr : public spn::ResMgrA<ALSource, SSrcMgr> {};
+DEF_HANDLE(SSrcMgr, Ss, ALSource)
 
 //! ALSourceをひとまとめにして管理
 class ALGroup {
-	using SourceL = std::vector<ALSource>;
+	using SourceL = std::vector<HLSs>;
 	SourceL	_source;
+	int		_nActive;
+	bool	_bPaused;
 	public:
+		ALGroup(int n);
+		ALGroup(ALGroup&& a);
+		void update();
+
+		void pause();
+		void resume();
+		void clear();
+		HSs play(HAb hAb);
+		int getChannels() const;
+		int getIdleChannels() const;
+		int getPlayingChannels() const;
 };
+class SGroupMgr : public spn::ResMgrA<ALGroup, SGroupMgr> {};
+DEF_HANDLE(SGroupMgr, Sg, ALGroup)
+
+using sdlw::HRW;
 #define mgr_sound SoundMgr::_ref()
-class SoundMgr : public spn::ResMgrA<ALGroup, SoundMgr> {};
+class SoundMgr : public spn::Singleton<SoundMgr> {
+	ALBufMgr	_abMgr;
+	SSrcMgr		_srcMgr;
+	SGroupMgr	_sgMgr;
+
+	public:
+		HLAb loadWaveBatch(HRW hRw);
+		HLAb loadOggBatch(HRW hRw);
+		HLAb loadOggStream(HRW hRw);
+
+		HLSg createSourceGroup(int n);
+		HLSs createSource();
+		void update();
+};
 
