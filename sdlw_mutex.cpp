@@ -5,18 +5,13 @@ namespace sdlw {
 	Mutex::~Mutex() { SDL_DestroyMutex(_mutex); }
 
 	bool Mutex::lock() {
-		int res = SDL_LockMutex(_mutex);
-		SDLW_ACheck
-		return res == 0;
+		return SDLECA(SDL_LockMutex, _mutex) == 0;
 	}
 	bool Mutex::try_lock() {
-		int res = SDL_TryLockMutex(_mutex);
-		SDLW_ACheck
-		return res == 0;
+		return SDLECA(SDL_TryLockMutex, _mutex) == 0;
 	}
 	void Mutex::unlock() {
-		SDL_UnlockMutex(_mutex);
-		SDLW_ACheck
+		SDLECA(SDL_UnlockMutex, _mutex);
 	}
 	SDL_mutex* Mutex::getMutex() {
 		return _mutex;

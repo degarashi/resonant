@@ -29,7 +29,10 @@ namespace sdlw {
 		return ret;
 	}
 
-	RWops::RWops(SDL_RWops* ops, int access): _ops(ops), _access(access) {}
+	RWops::RWops(SDL_RWops* ops, int access): _ops(ops), _access(access) {
+		if(!ops)
+			throw std::runtime_error("invalid file");
+	}
 	RWops::~RWops() {
 		close();
 	}
@@ -62,6 +65,13 @@ namespace sdlw {
 	}
 	size_t RWops::write(const void* src, size_t blockSize, size_t nblock) {
 		return SDL_RWwrite(_ops, src, blockSize, nblock);
+	}
+	int64_t RWops::size() {
+		auto pos = tell();
+		seek(0, Hence::End);
+		int64_t ret = tell();
+		seek(pos, Hence::Begin);
+		return ret;
 	}
 	int64_t RWops::seek(int64_t offset, Hence hence) {
 		return SDL_RWseek(_ops, offset, hence);
@@ -104,5 +114,24 @@ namespace sdlw {
 	}
 	bool RWops::writeLE(uint64_t value) {
 		return SDL_WriteLE64(_ops, value) == 1;
+	}
+	SDL_RWops* RWops::getOps() {
+		return _ops;
+	}
+
+	HLRW RWMgr::fromFile(const std::string& path, const char* mode, bool bNotKey) {
+		auto rw = sdlw::RWops::FromFile(path, mode);
+		if(bNotKey)
+			return base_type::acquire(std::move(rw));
+		return base_type::acquire(path, std::move(rw)).first;
+	}
+	HLRW RWMgr::fromConstMem(const void* p, int size) {
+		return base_type::acquire(sdlw::RWops::FromConstMem(p,size));
+	}
+	HLRW RWMgr::fromMem(void* p, int size) {
+		return base_type::acquire(sdlw::RWops::FromMem(p,size));
+	}
+	HLRW RWMgr::fromFP(FILE* fp, bool bAutoClose, const char* mode) {
+		return base_type::acquire(sdlw::RWops::FromFilePointer(fp, bAutoClose, mode));
 	}
 }

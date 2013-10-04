@@ -1,22 +1,31 @@
 #include <SDL2/SDL.h>
 #include <string>
 #include "spinner/misc.hpp"
+#include "spinner/resmgr.hpp"
 #include <exception>
 #include <stdexcept>
 #include <boost/optional.hpp>
+#include "error.hpp"
 
 #define Assert(expr) AssertMsg(expr, "Assertion failed")
 #define AssertMsg(expr, msg) { if(!(expr)) throw std::runtime_error(msg); }
-#define SDLW_Check sdlw::CheckSDLError(__LINE__);
+#define SDLEC(...) EChk_base<true, SDLError>(__PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Check EChk_base<true, SDLError>(__PRETTY_FUNCTION__, __LINE__);
 #ifdef DEBUG
 	#define AAssert(expr) AAssertMsg(expr, "Assertion failed")
 	#define AAssertMsg(expr, msg) AssertMsg(expr, msg)
-	#define SDLW_ACheck sdlw::CheckSDLError(__LINE__);
+	#define SDLECA(...) SDLEC(__VA_ARGS__)
 #else
 	#define AAssert(expr)
 	#define AAssertMsg(expr,msg)
-	#define SDLW_ACheck
+	#define SDLECA(...) EChk_pass(__VA_ARGS__)
 #endif
+
+struct SDLError {
+	static std::string	s_errString;
+	static const char* ErrorDesc();
+	static const char* GetAPIName();
+};
 
 namespace sdlw {
 	extern SDL_threadID thread_local tls_threadID;
@@ -111,21 +120,16 @@ namespace sdlw {
 				SDL_DestroyCond(_cond);
 			}
 			void wait(UniLock& u) {
-				SDL_CondWait(_cond, u.getMutex());
-				SDLW_ACheck
+				SDLECA(SDL_CondWait, _cond, u.getMutex());
 			}
 			bool wait_for(UniLock& u, uint32_t msec) {
-				int ret = SDL_CondWaitTimeout(_cond, u.getMutex(), msec);
-				SDLW_ACheck
-				return ret == 0;
+				return SDLECA(SDL_CondWaitTimeout, _cond, u.getMutex(), msec) == 0;
 			}
 			void signal() {
-				SDL_CondSignal(_cond);
-				SDLW_ACheck
+				SDLECA(SDL_CondSignal, _cond);
 			}
 			void signal_all() {
-				SDL_CondBroadcast(_cond);
-				SDLW_ACheck
+				SDLECA(SDL_CondBroadcast, _cond);
 			}
 	};
 	//! 再帰対応のスピンロック
@@ -206,10 +210,12 @@ namespace sdlw {
 		}
 
 		public:
+			TLS() {
+				_tlsID = SDLECA(SDL_TLSCreate);
+			}
 			template <class... Args>
-			TLS(Args&&... args) {
-				_tlsID = SDL_TLSCreate();
-				SDLW_ACheck
+			TLS(Args&&... args): TLS() {
+				*this = T(std::forward<Args>(args)...);
 			}
 			template <class TA>
 			TLS& operator = (TA&& t) {
@@ -256,7 +262,7 @@ namespace sdlw {
 		SDL_cond			*_condC,		//!< 子スレッドが開始された事を示す
 							*_condP;		//!< 親スレッドがクラス変数にスレッドポインタを格納した事を示す
 		Mutex				_mtxC,
-							_mtxP;
+		_mtxP;
 
 		static int ThreadFunc(void* p) {
 			DER* ths = reinterpret_cast<DER*>(p);
@@ -329,10 +335,9 @@ namespace sdlw {
 				return stat==Running || stat==Interrupted;
 			}
 			//! 中断を指示する
-			bool interrupt() {
+			virtual bool interrupt() {
 				auto ret = SDL_AtomicCAS(&_atmStat, Running, Interrupted);
 				SDL_AtomicSet(&_atmInt, 1);
-				SDLW_ACheck
 				return ret == SDL_TRUE;
 			}
 			//! スレッド内部で中断指示がされているかを確認
@@ -355,7 +360,7 @@ namespace sdlw {
 				if(_thread) {
 					int res = SDL_CondWaitTimeout(_condP, _mtxP.getMutex(), ms);
 					_mtxP.unlock();
-					SDLW_Check
+					SDLEC_Check
 					if(res == 0 || !isRunning()) {
 						SDL_WaitThread(_thread, nullptr);
 						_thread = nullptr;
@@ -474,22 +479,24 @@ namespace sdlw {
 			static int SetSwapInterval(int n);
 	};
 	class RWops {
-		SDL_RWops*	_ops;
-		int			_access;
-		enum Access : int {
-			Read = 0x01,
-			Write = 0x02,
-			Binary = 0x04
-		};
-		enum Hence : int {
-			Begin = RW_SEEK_SET,
-			Current = RW_SEEK_CUR,
-			End = RW_SEEK_END
-		};
+		public:
+			enum Hence : int {
+				Begin = RW_SEEK_SET,
+				Current = RW_SEEK_CUR,
+				End = RW_SEEK_END
+			};
+		private:
+			SDL_RWops*	_ops;
+			int			_access;
+			enum Access : int {
+				Read = 0x01,
+				Write = 0x02,
+				Binary = 0x04
+			};
 
-		static int _ReadMode(const char* mode);
-		void _clear();
-		RWops(SDL_RWops* ops, int access);
+			static int _ReadMode(const char* mode);
+			void _clear();
+			RWops(SDL_RWops* ops, int access);
 		public:
 			static RWops FromConstMem(const void* mem, int size);
 			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
@@ -504,6 +511,7 @@ namespace sdlw {
 			int getAccessFlag() const;
 			size_t read(void* dst, size_t blockSize, size_t nblock);
 			size_t write(const void* src, size_t blockSize, size_t nblock);
+			int64_t size();
 			int64_t seek(int64_t offset, Hence hence);
 			int64_t tell();
 			uint16_t readBE16();
@@ -518,5 +526,17 @@ namespace sdlw {
 			bool writeLE(uint16_t value);
 			bool writeLE(uint32_t value);
 			bool writeLE(uint64_t value);
+			SDL_RWops* getOps();
 	};
+	#define mgr_rw sdlw::RWMgr::_ref()
+	class RWMgr : public spn::ResMgrN<sdlw::RWops, RWMgr> {
+		public:
+			using base_type = spn::ResMgrN<sdlw::RWops, RWMgr>;
+			using LHdl = AnotherLHandle<sdlw::RWops>;
+			LHdl fromFile(const std::string& path, const char* mode, bool bNotKey=false);
+			LHdl fromConstMem(const void* p, int size);
+			LHdl fromMem(void* p, int size);
+			LHdl fromFP(FILE* fp, bool bAutoClose, const char* mode);
+	};
+	DEF_HANDLE(RWMgr, RW, RWops)
 }
