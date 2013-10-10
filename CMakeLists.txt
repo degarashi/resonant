@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -O2 -msse2")
 set(CMAKE_BUILD_TYPE "Debug")
 link_directories(/tmp/spinner_build
 				/tmp/boomstick_build)
-add_executable(rse_test sdlw_rwops.cpp vorbisfile.cpp alwrap.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp main.cpp)
+add_executable(rse_test sound.cpp sound_depAL.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp main.cpp)
 target_link_libraries(rse_test spinner boomstick boost_system SDL2 openal vorbisfile)
 
 install(TARGETS rse_test RUNTIME DESTINATION bin)

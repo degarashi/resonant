@@ -1,4 +1,4 @@
-#include "alwrap.hpp"
+#include "sound_common.hpp"
 
 size_t VorbisFile::ReadOGC(void* ptr, size_t blocksize, size_t nmblock, void* datasource) {
 	auto* ops = reinterpret_cast<SDL_RWops*>(datasource);
@@ -59,14 +59,14 @@ VorbisFile::VorbisFile(sdlw::HRW hRW) {
 	OVECA(ov_open_callbacks, hRW.ref().getOps(), &_ovf, nullptr, 0, OVCallbacksNF);
 	vorbis_info* info = ov_info(&_ovf, -1);
 	// Oggのフォーマットは全てsigned int 16bitとみなす
-	_format = ALFormatF(ALFormat(true, info->channels > 1), info->rate);
+	_format = AFormatF(AFormat(true, info->channels > 1), info->rate);
 	_dTotal = OVECA(ov_time_total, &_ovf, -1);
 	_iTotal = OVECA(ov_pcm_total, &_ovf, -1);
 }
 VorbisFile::~VorbisFile() {
 	OVECA(ov_clear, &_ovf);
 }
-const ALFormatF& VorbisFile::getFormat() const {
+const AFormatF& VorbisFile::getFormat() const {
 	return _format;
 }
 
