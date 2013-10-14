@@ -120,16 +120,18 @@ void ABuffer_depSL::writeBuffer(const AFormatF& af, const void* src, size_t len)
 	SDL_AudioCVT cvt;
 	SDLAFormatCF sfmt(af, 2);
 	const SDLAFormatCF& outfmt = SoundMgr_depSL::_ref().getOutMixFormat();
-	if(SDL_buildAudioCVT(&cvt, sfmt.format, sfmt.channels, sfmt.freq,
+	if(SDL_BuildAudioCVT(&cvt, sfmt.format, sfmt.channels, sfmt.freq,
 							outfmt.format, outfmt.channels, outfmt.freq) != 0)
 	{
-		// 周波数変換してから書き込み
-		cvt.buf = reinterpret_cast<const Uint8*>(src);
 		cvt.len = len;
+		// 周波数変換してから書き込み
+		_buff.resize(std::max(cvt.len_cvt, cvt.len));
 		if(cvt.len_ratio > 1.0)
-			_buff.resize(0);
+			_buff.resize(len * cvt.len_mult);
+		cvt.buf = &_buff[0];
+		std::memcpy(&_buff[0], src, len);
 		SDLEC(SDL_ConvertAudio, &cvt);
-		std::memcpy(&_buff[0], cvt.buf, cvt.len_cvt);
+		_buff.resize(cvt.len_cvt);
 	} else {
 		// そのまま書き込み
 		_buff.resize(len);
@@ -141,23 +143,22 @@ void ABuffer_depSL::writeBuffer(const AFormatF& af, const void* src, size_t len)
 ASource_depSL::ASource_depSL() {
 	auto& s = SoundMgr_depSL::_ref();
 
-	SLDataLocator_SimpleBufferQueue loc_bufq = {
-		SL_DATALOCATOR_SIMPLEBUFFERQUEUE, MAX_AUDIO_BLOCKNUM
+	SLDataLocator_BufferQueue loc_bufq = {
+		SL_DATALOCATOR_BUFFERQUEUE, MAX_AUDIO_BLOCKNUM
 	};
 	const SDLAFormatCF& outFmt = SoundMgr_depSL::_ref().getOutMixFormat();
-	// とりあえず16bit, 2chで初期化
+	// OutputMixと同じフォーマットで初期化
 	SLDataFormat_PCM format_pcm = {
 		SL_DATAFORMAT_PCM,
-		outFmt.channels,
-		outFmt.freq * 1000,
+		static_cast<SLuint32>(outFmt.channels),
+		static_cast<SLuint32>(outFmt.freq * 1000),
 		SL_PCMSAMPLEFORMAT_FIXED_16,
 		16,
 		SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT, SL_BYTEORDER_LITTLEENDIAN
 	};
 	SLDataSource audioSrc = {&loc_bufq, &format_pcm};
-	auto& s = SoundMgr_depSL::_ref();
 	auto eItf = s.getEngineItf();
-	SLDataLocator_OutputMix om = {SL_DATALOCATOR_OUTPUTMIX, s.getOutMix()};
+	SLDataLocator_OutputMix om = {SL_DATALOCATOR_OUTPUTMIX, s.getOutMix().refObj()};
 	SLDataSink audioSink = {&om, nullptr};
 
 	const SLInterfaceID ids[] = {SL_IID_BUFFERQUEUE, SL_IID_PLAYBACKRATE, SL_IID_PLAY, SL_IID_VOLUME};
@@ -167,12 +168,20 @@ ASource_depSL::ASource_depSL() {
 
 	_volItf = _aplayer.getInterface<SLVolumeItf>(SL_IID_VOLUME);
 	_playItf = _aplayer.getInterface<SLPlayItf>(SL_IID_PLAY);
-	_bqItf = _aplayer.getInterface<SLBufferQueue>(SL_IID_BUFFERQUEUE);
+	_bqItf = _aplayer.getInterface<SLBufferQueueItf>(SL_IID_BUFFERQUEUE);
 	_rateItf = _aplayer.getInterface<SLPlaybackRateItf>(SL_IID_PLAYBACKRATE);
 	SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_STOPPED);
 	SLuint32 cap;
-	SLEC_M(_rateItf, GetRateRange, &_rateMin, &_rateMax, &_rateStep, &cap);
+	SLEC_M(_rateItf, GetRateRange, 0, &_rateMin, &_rateMax, &_rateStep, &cap);
 }
+ASource_depSL::ASource_depSL(ASource_depSL&& s):
+	_aplayer(std::move(s._aplayer)),
+	_playItf(s._playItf),
+	_volItf(s._volItf),
+	_bqItf(s._bqItf),
+	_rateItf(s._rateItf),
+	_rateMin(s._rateMin), _rateMax(s._rateMax), _rateStep(s._rateStep), _blockCount(s._blockCount)
+{}
 void ASource_depSL::play() {
 	SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_PLAYING);
 }
@@ -183,13 +192,17 @@ void ASource_depSL::pause() {
 	SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_PAUSED);
 }
 bool ASource_depSL::update() {
+	// 終了判定
+	SLuint32 state;
+	SLEC_M(_playItf, GetPlayState, &state);
+	return state == SL_PLAYSTATE_STOPPED;
 }
 void ASource_depSL::setGain(float vol) {
 	SLEC_M(_volItf, SetVolumeLevel, VolToMillibel(vol));
 }
 void ASource_depSL::setPitch(float pitch) {
 	SLpermille p = static_cast<SLpermille>(pitch*1000);
-	p = std::min(std::max(p, _ptcMin), _ptcMax);
+	p = std::min(std::max(p, _rateMin), _rateMax);
 	SLEC_M(_rateItf, SetRate, p);
 }
 float ASource_depSL::timeTell(float def) {
@@ -214,7 +227,7 @@ int ASource_depSL::getUsedBlock() {
 	return ret;
 }
 void ASource_depSL::clearBlock() {
-	SLEC_M(_bqItf, Clear);
+	SLEC_M0(_bqItf, Clear);
 }
 
 // --------------------- SoundMgr_depSL ---------------------
@@ -224,9 +237,8 @@ SoundMgr_depSL::SoundMgr_depSL(int rate): _outFormat(SDLAFormat(1,0,0,16), 2, ra
 	_engine.realize(false);
 
 	// OutputMixの初期化
-	SLEC_M(_engine, GetInterface, SL_IID_ENGINE, &_engineItf);
-	SLEC_M(_engineItf, CreateOutputMix, &_outmix, 0, nullptr, nullptr);
-	_outmix = _engine.getInterface<SLOutputMix>(SL_IID_OUTPUTMIX);
+	_engineItf = _engine.getInterface<SLEngineItf>(SL_IID_ENGINE);
+	SLEC_M(_engineItf, CreateOutputMix, &_outmix.refObj(), 0, nullptr, nullptr);
 	_outmix.realize(false);
 }
 void SoundMgr_depSL::printVersions(std::ostream& os) {
@@ -257,9 +269,10 @@ void SoundMgr_depSL::printVersions(std::ostream& os) {
 SLEngineItf SoundMgr_depSL::getEngineItf() const {
 	return _engineItf;
 }
-SLOutputMix SoundMgr_depSL::getOutMix() const {
+SLObj& SoundMgr_depSL::getOutMix() {
 	return _outmix;
 }
 const SDLAFormatCF& SoundMgr_depSL::getOutMixFormat() const {
 	return _outFormat;
 }
+

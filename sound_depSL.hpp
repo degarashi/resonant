@@ -3,8 +3,9 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
-#define SLEC(func, ...)	EChk_baseA1<true, SLError>(__PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#define SLEC(func, ...)	EChk_baseA2<true, SLError>(__PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
 #define SLEC_M(obj, method, ...)	EChk_baseA2<true, SLError>(__PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj, __VA_ARGS__))
+#define SLEC_M0(obj, method)	EChk_baseA2<true, SLError>(__PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj))
 #ifdef DEBUG
 	#define SLECA(...) SLEC(__VA_ARGS__)
 #else
@@ -17,21 +18,22 @@ struct SLError {
 std::string GetIIDString(const SLInterfaceID& iid);
 
 class SLObj {
+	SLObjectItf	_obj;
 	public:
-		SLObjectItf	_obj;
-	protected:
-		SLObjectItf& refObj() {
-			return _obj;
+		SLObj(SLObj&& s): _obj(s._obj) {
+			s._obj = nullptr;
 		}
-	public:
 		SLObj(const SLObj&) = delete;
 		SLObj(SLObjectItf itf=nullptr): _obj(itf) {}
-		virtual ~Obj() {
+		virtual ~SLObj() {
 			if(_obj)
 				(*_obj)->Destroy(_obj);
 		}
+		SLObjectItf& refObj() {
+			return _obj;
+		}
 		void realize(bool async) {
-			SLEC_M(_obj, Realize, async);
+			SLEC_M(_obj, Realize, SLboolean(async));
 		}
 		void resume(bool async) {
 			SLEC_M(_obj, Resume, async);
@@ -43,7 +45,7 @@ class SLObj {
 		}
 		template <class ITF>
 		ITF getInterface(const SLInterfaceID& id) {
-			IIF itf;
+			ITF itf;
 			SLEC_M(_obj, GetInterface, id, &itf);
 			return itf;
 		}
@@ -78,8 +80,7 @@ class ASource_depSL {
 	public:
 		ASource_depSL();
 		ASource_depSL(ASource_depSL&& s);
-		ASource_depSL(const ASource_depAL&) = delete;
-		~ASource_depSL();
+		ASource_depSL(const ASource_depSL&) = delete;
 
 		void play();
 		void reset();
@@ -92,9 +93,18 @@ class ASource_depSL {
 		void timeSeek(float t);
 		void pcmSeek(int64_t p);
 
-		void enqueue(ABuffer_depAL& buff);
+		void enqueue(ABuffer_depSL& buff);
 		int getUsedBlock();
 		void clearBlock();
+
+		// ---- 未対応 ----
+		void setRelativeMode(bool bRel) {}
+		void setPosition(const Vec3& pos) {}
+		void setDirection(const Vec3& dir) {}
+		void setVelocity(const Vec3& vel) {}
+		void setGainRange(float gmin, float gmax) {}
+		void setAngleGain(float inner, float outer) {}
+		void setAngleOuterGain(float gain) {}
 };
 using ASourceDep = ASource_depSL;
 
@@ -106,17 +116,16 @@ class SoundMgr_depSL : public spn::Singleton<SoundMgr_depSL> {
 	// Androidでは何もしなくてもスレッドセーフなのでコンテキスト管理は必要ない
 	SLObj			_engine;
 	SLEngineItf 	_engineItf;
-	SLOutputMix		_outmix;
+	SLObj			_outmix;
 	SDLAFormatCF	_outFormat;
 
 	public:
 		SoundMgr_depSL(int rate);
 		SoundMgr_depSL(const SoundMgr_depSL&) = delete;
-		~SoundMgr_depSL();
 
 		void printVersions(std::ostream& os);
 		SLEngineItf	getEngineItf() const;
-		SLOutputMix	getOutMix() const;
+		SLObj& getOutMix();
 		const SDLAFormatCF& getOutMixFormat() const;
 
 		// OpenSLはスレッドセーフなのでこれらのメソッドはダミー
@@ -126,3 +135,4 @@ class SoundMgr_depSL : public spn::Singleton<SoundMgr_depSL> {
 		void process() {}
 };
 using SoundMgrDep = SoundMgr_depSL;
+

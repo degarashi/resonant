@@ -134,6 +134,7 @@ class ASource {
 	}
 	public:
 		ASource();
+		ASource(const ASource&) = delete;
 		ASource(ASource&& s);
 		~ASource();
 
@@ -165,7 +166,7 @@ class ASource {
 class SSrcMgr : public spn::ResMgrA<ASource, SSrcMgr> {};
 DEF_HANDLE(SSrcMgr, Ss, ASource)
 
-//! ALSourceをひとまとめにして管理
+//! ASourceをひとまとめにして管理
 class AGroup {
 	using SourceL = std::vector<HLSs>;
 	SourceL	_source;
