@@ -70,7 +70,7 @@ const AFormatF& VorbisFile::getFormat() const {
 	return _format;
 }
 
-bool VorbisFile::isEOF() {
+bool VorbisFile::isEOF() const {
 	return pcmTell() == _iTotal;
 }
 bool VorbisFile::timeSeek(double s) {
@@ -123,9 +123,10 @@ double VorbisFile::timeLength() const {
 int64_t VorbisFile::pcmLength() const {
 	return _iTotal;
 }
-double VorbisFile::timeTell() {
-	return OVECA(ov_time_tell, &_ovf);
+double VorbisFile::timeTell() const {
+	return OVECA(ov_time_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 }
-int64_t VorbisFile::pcmTell() {
-	return OVECA(ov_pcm_tell, &_ovf);
+int64_t VorbisFile::pcmTell() const {
+	auto* self = const_cast<VorbisFile*>(this);
+	return OVECA(ov_pcm_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 }

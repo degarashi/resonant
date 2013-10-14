@@ -103,7 +103,7 @@ class VorbisFile {
 		static RawData ReadAll(sdlw::HRW hRW);
 		//! 指定サイズのデータを読み出し
 		size_t read(void* dst, size_t toRead);
-		bool isEOF();
+		bool isEOF() const;
 
 		bool timeSeek(double s);
 		void timeSeekPage(double s);
@@ -116,6 +116,6 @@ class VorbisFile {
 		double timeLength() const;
 		int64_t pcmLength() const;
 
-		double timeTell();
-		int64_t pcmTell();
+		double timeTell() const;
+		int64_t pcmTell() const;
 };
