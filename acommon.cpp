@@ -78,5 +78,5 @@ size_t SDLAFormat::getBitSize() const {
 	return SDL_AUDIO_BITSIZE(format);
 }
 // --------------------- SDLAFormatCF ---------------------
-SDLAFormatCF::SDLAFormatCF(SDLAFormat fmt, int ch, int fr): SDLAFormat(fmt), channels(ch), freq(fr) {}
-SDLAFormatCF::SDLAFormatCF(const AFormatF& af, int ch): SDLAFormat(static_cast<AFormat>(af)), channels(ch), freq(af.freq) {}
+SDLAFormatCF::SDLAFormatCF(SDLAFormat fmt, int fr): SDLAFormat(fmt), channels(fmt.getBitSize()==8 ? 1 : 2), freq(fr) {}
+SDLAFormatCF::SDLAFormatCF(const AFormatF& af): SDLAFormat(static_cast<AFormat>(af)), channels(af.getChannels()), freq(af.freq) {}

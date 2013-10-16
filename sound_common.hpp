@@ -4,9 +4,9 @@
 #include "sdlwrap.hpp"
 #include "spinner/vector.hpp"
 #include "spinner/misc.hpp"
-#include <chrono>
+#include "clock.hpp"
 
-#define OVEC(...) EChk_baseA1<true, OVError>(__PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
+#define OVEC(...) EChk_baseA1<true, OVError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
 #ifdef DEBUG
 	#define OVECA(...) OVEC(__VA_ARGS__)
 #else
@@ -42,8 +42,8 @@ struct SDLAFormatCF : SDLAFormat {
 	int channels,
 		freq;
 	SDLAFormatCF() = default;
-	SDLAFormatCF(SDLAFormat fmt, int ch, int fr);
-	SDLAFormatCF(const AFormatF& af, int ch);
+	SDLAFormatCF(SDLAFormat fmt, int fr);
+	SDLAFormatCF(const AFormatF& af);
 };
 
 struct AFormat {

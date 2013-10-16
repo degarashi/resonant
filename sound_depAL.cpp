@@ -40,8 +40,12 @@ const char* ALError::ErrorDesc() {
 ABuffer_depAL::ABuffer_depAL() {
 	ALEC(alGenBuffers, 1, &_id);
 }
+ABuffer_depAL::ABuffer_depAL(ABuffer_depAL&& a): _id(a._id) {
+	a._id = 0;
+}
 ABuffer_depAL::~ABuffer_depAL() {
-	ALEC(alDeleteBuffers, 1, &_id);
+	if(_id != 0)
+		ALEC(alDeleteBuffers, 1, &_id);
 }
 ALuint ABuffer_depAL::getID() const {
 	return _id;
@@ -65,6 +69,7 @@ ASource_depAL::ASource_depAL(ASource_depAL&& a): _id(a._id) {
 ASource_depAL::~ASource_depAL() {
 	if(_id != 0) {
 		ALECA(alSourceStop, _id);
+		ALECA(alSourcei, _id, AL_BUFFER, 0);
 		ALECA(alDeleteSources, 1, &_id);
 	}
 }
@@ -74,13 +79,14 @@ void ASource_depAL::reset() {
 	ALECA(alSourceRewind, _id);
 }
 void ASource_depAL::pause() { ALECA(alSourcePause, _id); }
-bool ASource_depAL::update() {
-	// 終了判定
-	ALint state;
-	ALECA(alGetSourcei, _id, AL_SOURCE_STATE, &state);
-	if(state == AL_STOPPED)
-		return true;
-	return false;
+void ASource_depAL::update(bool bPlaying) {
+	// もし再生中なのにバッファの途切れなどでSTOPPEDになっていたらPLAYINGにセット
+	if(bPlaying) {
+		ALint state;
+		ALECA(alGetSourcei, _id, AL_SOURCE_STATE, &state);
+		if(state == AL_STOPPED)
+			ALECA(alSourcePlay, _id);
+	}
 }
 void ASource_depAL::setGain(float vol) {
 	ALECA(alSourcef, _id, AL_GAIN, vol);
@@ -88,10 +94,10 @@ void ASource_depAL::setGain(float vol) {
 void ASource_depAL::setPitch(float pitch) {
 	ALECA(alSourcef, _id, AL_PITCH, pitch);
 }
-float ASource_depAL::timeTell(float def) {
+Duration ASource_depAL::timeTell(Duration def) {
 	float ret;
 	ALECA(alGetSourcef, _id, AL_SEC_OFFSET, &ret);
-	return ret;
+	return std::chrono::milliseconds(static_cast<uint32_t>(ret * 1000.f));
 }
 int64_t ASource_depAL::pcmTell(int64_t def) {
 	float ret;

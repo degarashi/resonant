@@ -3,9 +3,9 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC(...) EChk_base<true, ALError>(__PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALCEC(...) EChk_base<true, SoundMgr_depAL>(__PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALEC_Check EChk_base<true, ALError>(__PRETTY_FUNCTION__, __LINE__);
+#define ALEC(...) EChk_base<true, ALError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALCEC(...) EChk_base<true, SoundMgr_depAL>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC_Check EChk_base<true, ALError>(__FILE__, __PRETTY_FUNCTION__, __LINE__);
 #ifdef DEBUG
 	#define ALECA(...) ALEC(__VA_ARGS__)
 	#define ALCECA(...) ALCEC(__VA_ARGS__)
@@ -29,6 +29,8 @@ class ABuffer_depAL {
 	ALuint	_id;
 	public:
 		ABuffer_depAL();
+		ABuffer_depAL(ABuffer_depAL&& a);
+		ABuffer_depAL(const ABuffer_depAL&) = delete;
 		~ABuffer_depAL();
 		void writeBuffer(const AFormatF& af, const void* src, size_t len);
 		ALuint getID() const;
@@ -55,10 +57,10 @@ class ASource_depAL {
 		void play();
 		void reset();
 		void pause();
-		bool update();
+		void update(bool bPlaying);
 		void setGain(float vol);
 		void setPitch(float pitch);
-		float timeTell(float def);
+		Duration timeTell(Duration def);
 		int64_t pcmTell(int64_t def);
 		ALuint getID() const;
 		void timeSeek(float t);
