@@ -118,16 +118,21 @@ const ByteBuff& ABuffer_depSL::getBuff() const {
 }
 void ABuffer_depSL::writeBuffer(const AFormatF& af, const void* src, size_t len) {
 	SDL_AudioCVT cvt;
-	SDLAFormatCF sfmt(af, 2);
+	SDLAFormatCF sfmt(af);
 	const SDLAFormatCF& outfmt = SoundMgr_depSL::_ref().getOutMixFormat();
-	if(SDL_BuildAudioCVT(&cvt, sfmt.format, sfmt.channels, sfmt.freq,
+	// なぜか37800Hz付近で砂嵐になるので小細工
+	int srcfreq = sfmt.freq;
+	if(outfmt.freq > srcfreq && srcfreq >= 37700 && srcfreq <= 37900)
+		srcfreq = 37600;
+	if(SDL_BuildAudioCVT(&cvt, sfmt.format, sfmt.channels, srcfreq,
 							outfmt.format, outfmt.channels, outfmt.freq) != 0)
 	{
 		cvt.len = len;
 		// 周波数変換してから書き込み
-		_buff.resize(std::max(cvt.len_cvt, cvt.len));
-		if(cvt.len_ratio > 1.0)
+		if(cvt.len_mult > 1)
 			_buff.resize(len * cvt.len_mult);
+		else
+			_buff.resize(cvt.len);
 		cvt.buf = &_buff[0];
 		std::memcpy(&_buff[0], src, len);
 		SDLEC(SDL_ConvertAudio, &cvt);
@@ -187,15 +192,18 @@ void ASource_depSL::play() {
 }
 void ASource_depSL::reset() {
 	SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_STOPPED);
+	_blockCount = 0;
 }
 void ASource_depSL::pause() {
 	SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_PAUSED);
 }
-bool ASource_depSL::update() {
-	// 終了判定
-	SLuint32 state;
-	SLEC_M(_playItf, GetPlayState, &state);
-	return state == SL_PLAYSTATE_STOPPED;
+void ASource_depSL::update(bool bPlaying) {
+	// OpenSLでは終端まで行っても自動でStoppedにならない = なにも処理しない
+}
+bool ASource_depSL::isEnded() {
+	SLBufferQueueState bqs;
+	SLEC_M(_bqItf, GetState, &bqs);
+	return bqs.count==0;
 }
 void ASource_depSL::setGain(float vol) {
 	SLEC_M(_volItf, SetVolumeLevel, VolToMillibel(vol));
@@ -222,16 +230,18 @@ void ASource_depSL::enqueue(ABuffer_depSL& buff) {
 int ASource_depSL::getUsedBlock() {
 	SLBufferQueueState state;
 	SLEC_M(_bqItf, GetState, &state);
-	int ret = state.count - _blockCount;
-	_blockCount = state.count;
-	return ret;
+	LOGI("index=%d", state.playIndex);
+	int ret = state.playIndex - _blockCount;
+	_blockCount = state.playIndex;
+	return std::max(0,ret);
 }
 void ASource_depSL::clearBlock() {
 	SLEC_M0(_bqItf, Clear);
+	_blockCount = 0;
 }
 
 // --------------------- SoundMgr_depSL ---------------------
-SoundMgr_depSL::SoundMgr_depSL(int rate): _outFormat(SDLAFormat(1,0,0,16), 2, rate) {
+SoundMgr_depSL::SoundMgr_depSL(int rate): _outFormat(SDLAFormat(1,0,0,16), rate) {
 	// サウンドエンジンの作成
 	SLEC(slCreateEngine, &_engine.refObj(), 0, nullptr, 0, nullptr, nullptr);
 	_engine.realize(false);

@@ -85,7 +85,7 @@ class ASource_depSL {
 		void play();
 		void reset();
 		void pause();
-		bool update();
+		void update(bool bPlaying);
 		void setGain(float vol);
 		void setPitch(float pitch);
 		float timeTell(float def);
@@ -96,6 +96,7 @@ class ASource_depSL {
 		void enqueue(ABuffer_depSL& buff);
 		int getUsedBlock();
 		void clearBlock();
+		bool isEnded();
 
 		// ---- 未対応 ----
 		void setRelativeMode(bool bRel) {}
