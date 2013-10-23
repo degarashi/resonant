@@ -1,23 +1,20 @@
-#include <SDL2/SDL.h>
-#include <string>
+#pragma once
 #include "spinner/misc.hpp"
 #include "spinner/resmgr.hpp"
+#include <SDL.h>
+#include <SDL_atomic.h>
+#include <SDL_thread.h>
+#include <SDL_events.h>
 #include <exception>
 #include <stdexcept>
 #include <boost/optional.hpp>
 #include "error.hpp"
 
-#define Assert(expr) AssertMsg(expr, "Assertion failed")
-#define AssertMsg(expr, msg) { if(!(expr)) throw std::runtime_error(msg); }
-#define SDLEC(...) EChk_base<true, SDLError>(__PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Check EChk_base<true, SDLError>(__PRETTY_FUNCTION__, __LINE__);
+#define SDLEC(...) EChk_base<true, SDLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Check EChk_base<true, SDLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__);
 #ifdef DEBUG
-	#define AAssert(expr) AAssertMsg(expr, "Assertion failed")
-	#define AAssertMsg(expr, msg) AssertMsg(expr, msg)
 	#define SDLECA(...) SDLEC(__VA_ARGS__)
 #else
-	#define AAssert(expr)
-	#define AAssertMsg(expr,msg)
 	#define SDLECA(...) EChk_pass(__VA_ARGS__)
 #endif
 
@@ -29,7 +26,6 @@ struct SDLError {
 
 namespace sdlw {
 	extern SDL_threadID thread_local tls_threadID;
-	void CheckSDLError(int line=-1);
 	//! 実行環境に関する情報を取得
 	class Spec : public spn::Singleton<Spec> {
 		public:
@@ -54,7 +50,7 @@ namespace sdlw {
 			struct PStat {
 				PStatN	state;
 				int		seconds,
-				percentage;
+						percentage;
 
 				void output(std::ostream& os) const;
 			};
@@ -62,7 +58,7 @@ namespace sdlw {
 			uint32_t		_feature;
 			std::string		_platform;
 			int				_nCacheLine,
-			_nCpu;
+							_nCpu;
 		public:
 			Spec();
 			const std::string& getPlatform() const;
@@ -157,7 +153,7 @@ namespace sdlw {
 			}
 		};
 		SDL_atomic_t	_atmLock,
-		_atmCount;
+						_atmCount;
 		void _unlock() {
 			if(SDL_AtomicDecRef(&_atmCount) == SDL_TRUE)
 				SDL_AtomicSet(&_atmLock, 0);
@@ -262,7 +258,7 @@ namespace sdlw {
 		SDL_cond			*_condC,		//!< 子スレッドが開始された事を示す
 							*_condP;		//!< 親スレッドがクラス変数にスレッドポインタを格納した事を示す
 		Mutex				_mtxC,
-		_mtxP;
+							_mtxP;
 
 		static int ThreadFunc(void* p) {
 			DER* ths = reinterpret_cast<DER*>(p);
@@ -436,8 +432,16 @@ namespace sdlw {
 
 			void _checkState();
 		public:
-			static SPWindow CreateWindow(const std::string& title, int w, int h, uint32_t flag=0);
-			static SPWindow CreateWindow(const std::string& title, int x, int y, int w, int h, uint32_t flag=0);
+			template <class... Ts>
+			static void SetGLAttributes(Ts... ts) {}
+			template <class... Ts>
+			static void SetGLAttributes(SDL_GLattr attr, int value, Ts... ts) {
+				SDL_GL_SetAttribute(attr, value);
+				SetGLAttributes(ts...);
+			}
+			static void SetStdGLAttributes(int major, int minor, int depth);
+			static SPWindow Create(const std::string& title, int w, int h, uint32_t flag=0, bool bShare=false);
+			static SPWindow Create(const std::string& title, int x, int y, int w, int h, uint32_t flag=0, bool bShare=false);
 			~Window();
 
 			void setFullscreen(bool bFull);
@@ -478,6 +482,7 @@ namespace sdlw {
 			void swapWindow();
 			static int SetSwapInterval(int n);
 	};
+
 	class RWops {
 		public:
 			enum Hence : int {

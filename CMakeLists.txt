@@ -4,9 +4,10 @@ set(CMAKE_CXX_COMPILER "clang++")
 set(SSE_LEVEL 2)
 include_directories(${PROJECT_SOURCE_DIR}
 					${PROJECT_SOURCE_DIR}/spinner
-					${PROJECT_SOURCE_DIR}/boomstick)
-include_directories(/usr/local/include/c++/4.8.1
-					/usr/local/include/c++/4.8.1/i686-pc-linux-gnu)
+					${PROJECT_SOURCE_DIR}/boomstick
+					/usr/local/include/c++/4.8.1
+					/usr/local/include/c++/4.8.1/i686-pc-linux-gnu
+					/usr/local/include/SDL2)
 link_directories("/usr/local/lib/gcc/i686-pc-linux-gnu/4.8.1")
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -std=c++11 -ggdb3 -O0 -msse2")
 set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -O2 -msse2")
