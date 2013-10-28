@@ -3,9 +3,9 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
-#define SLEC(func, ...)	EChk_baseA2<true, SLError>(__PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
-#define SLEC_M(obj, method, ...)	EChk_baseA2<true, SLError>(__PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj, __VA_ARGS__))
-#define SLEC_M0(obj, method)	EChk_baseA2<true, SLError>(__PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj))
+#define SLEC(func, ...)	EChk_baseA2<true, SLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#define SLEC_M(obj, method, ...)	EChk_baseA2<true, SLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj, __VA_ARGS__))
+#define SLEC_M0(obj, method)	EChk_baseA2<true, SLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj))
 #ifdef DEBUG
 	#define SLECA(...) SLEC(__VA_ARGS__)
 #else

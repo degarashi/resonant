@@ -43,7 +43,7 @@ Duration ABufSub::getDuration() const {
 void ABufSub::_fillBuffer() {
 	auto& ab = _hlAb.ref();
 	if(_hlAb.cref()->isStreaming()) {
-		constexpr int BUFFERSIZE = 8192;
+		constexpr int BUFFERSIZE = 8192*4;
 		uint8_t buff[BUFFERSIZE];
 		while(_writeCur < _playedCur + _nBuffer) {
 			auto nread = ab->getData(buff, _offset, sizeof(buff));

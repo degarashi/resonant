@@ -230,7 +230,7 @@ void ASource_depSL::enqueue(ABuffer_depSL& buff) {
 int ASource_depSL::getUsedBlock() {
 	SLBufferQueueState state;
 	SLEC_M(_bqItf, GetState, &state);
-	LOGI("index=%d", state.playIndex);
+	LOGI("index=%u", (uint32_t)state.playIndex);
 	int ret = state.playIndex - _blockCount;
 	_blockCount = state.playIndex;
 	return std::max(0,ret);
