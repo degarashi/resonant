@@ -20,7 +20,7 @@ include_directories(${PROJECT_SOURCE_DIR}/spinner
 include(spinner/CMake0.txt require)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
-set(LIBSRC_FILE ${LIBSRC_FILE} pathblock.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
+set(LIBSRC_FILE ${LIBSRC_FILE} sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
 
 set(SRC_FILE ${SRC_FILE} main.cpp)
