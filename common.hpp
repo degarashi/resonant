@@ -86,6 +86,7 @@ class IInput {
 };
 using UPInput = std::unique_ptr<IInput>;
 
-#define mgr_input InputMgrBase::_ref()
+#define mgr_inputb InputMgrBase::_ref()
+#define mgr_input reinterpret_cast<InputMgr&>(InputMgrBase::_ref())
 class InputMgrBase : public spn::ResMgrA<UPInput, InputMgrBase> {};
 DEF_HANDLE(InputMgrBase, Input, UPInput)

@@ -3,14 +3,11 @@
 #include "spinner/misc.hpp"
 #include "sdlwrap.hpp"
 #include <functional>
-#include <chrono>
 #include <deque>
 #include "spinner/optional.hpp"
 #include "spinner/pqueue.hpp"
+#include "clock.hpp"
 
-using Clock = std::chrono::steady_clock;
-using Timepoint = typename Clock::time_point;
-using Duration = typename Clock::duration;
 namespace sdlw {
 	extern SDL_threadID thread_local tls_threadID;
 }

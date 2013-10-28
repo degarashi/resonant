@@ -20,7 +20,7 @@ class SDLKeyboard {
 		template <class T>
 		static HLInput OpenKeyboard() {
 			if(!s_hlInput.valid())
-				s_hlInput = mgr_input.acquire(std::unique_ptr<T>(new T()));
+				s_hlInput = mgr_inputb.acquire(std::unique_ptr<T>(new T()));
 			return s_hlInput;
 		}
 	public:
@@ -40,7 +40,7 @@ class SDLMouse {
 		template <class T>
 		static HLInput OpenMouse(int num) {
 			if(!s_hlInput.valid())
-				s_hlInput = mgr_input.acquire(std::unique_ptr<T>(new T()));
+				s_hlInput = mgr_inputb.acquire(std::unique_ptr<T>(new T()));
 			return s_hlInput;
 		}
 		int dep_numButtons() const;
@@ -75,7 +75,7 @@ class SDLJoypad {
 		bool dep_scan();
 		template <class T>
 		static HLInput OpenJoypad(int num) {
-			return mgr_input.acquire(std::unique_ptr<T>(new T(SDL_JoystickOpen(num))));
+			return mgr_inputb.acquire(std::unique_ptr<T>(new T(SDL_JoystickOpen(num))));
 		}
 	public:
 		SDLJoypad(SDL_Joystick* jp);
@@ -105,7 +105,7 @@ class SDLTouchpad {
 		template <class T>
 		static HLInput OpenTouchpad(int num) {
 			if(!s_hlInput.valid()) {
-				s_hlInput = mgr_input.acquire(std::unique_ptr<T>(new T(num)));
+				s_hlInput = mgr_inputb.acquire(std::unique_ptr<T>(new T(num)));
 				_Initialize();
 			}
 			return s_hlInput;
