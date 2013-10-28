@@ -490,6 +490,7 @@ namespace sdlw {
 				Current = RW_SEEK_CUR,
 				End = RW_SEEK_END
 			};
+			using EndCB = std::function<void (RWops&)>;
 		private:
 			SDL_RWops*	_ops;
 			int			_access;
@@ -498,14 +499,16 @@ namespace sdlw {
 				Write = 0x02,
 				Binary = 0x04
 			};
+			//! RWopsが解放される直前に呼ばれる関数
+			EndCB		_endCB;
 
 			static int _ReadMode(const char* mode);
 			void _clear();
-			RWops(SDL_RWops* ops, int access);
+			RWops(SDL_RWops* ops, int access, EndCB cb);
 		public:
-			static RWops FromConstMem(const void* mem, int size);
+			static RWops FromConstMem(const void* mem, int size, EndCB cb=nullptr);
 			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
-			static RWops FromMem(void* mem, int size);
+			static RWops FromMem(void* mem, int size, EndCB cb=nullptr);
 			static RWops FromFile(const std::string& path, const char* mode);
 
 			RWops(RWops&& ops);
@@ -539,8 +542,8 @@ namespace sdlw {
 			using base_type = spn::ResMgrN<sdlw::RWops, RWMgr>;
 			using LHdl = AnotherLHandle<sdlw::RWops>;
 			LHdl fromFile(const std::string& path, const char* mode, bool bNotKey=false);
-			LHdl fromConstMem(const void* p, int size);
-			LHdl fromMem(void* p, int size);
+			LHdl fromConstMem(const void* p, int size, typename RWops::EndCB cb=nullptr);
+			LHdl fromMem(void* p, int size, typename RWops::EndCB cb=nullptr);
 			LHdl fromFP(FILE* fp, bool bAutoClose, const char* mode);
 	};
 	DEF_HANDLE(RWMgr, RW, RWops)

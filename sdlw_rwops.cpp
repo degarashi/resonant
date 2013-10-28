@@ -1,19 +1,19 @@
 #include "sdlwrap.hpp"
 
 namespace sdlw {
-	RWops RWops::FromConstMem(const void* mem, int size) {
-		return RWops(SDL_RWFromConstMem(mem,size), Read);
+	RWops RWops::FromConstMem(const void* mem, int size, EndCB cb) {
+		return RWops(SDL_RWFromConstMem(mem,size), Read, cb);
 	}
-	RWops RWops::FromMem(void* mem, int size) {
-		return RWops(SDL_RWFromMem(mem,size), Read|Write);
+	RWops RWops::FromMem(void* mem, int size, EndCB cb) {
+		return RWops(SDL_RWFromMem(mem,size), Read|Write, cb);
 	}
 	RWops RWops::FromFilePointer(FILE* fp, bool autoClose, const char* mode) {
 		return RWops(SDL_RWFromFP(fp, autoClose ? SDL_TRUE : SDL_FALSE),
-					 _ReadMode(mode));
+					 _ReadMode(mode), nullptr);
 	}
 	RWops RWops::FromFile(const std::string& path, const char* mode) {
 		return RWops(SDL_RWFromFile(path.c_str(), mode),
-					_ReadMode(mode));
+					_ReadMode(mode), nullptr);
 	}
 	int RWops::_ReadMode(const char* mode) {
 		int ret = 0;
@@ -29,7 +29,7 @@ namespace sdlw {
 		return ret;
 	}
 
-	RWops::RWops(SDL_RWops* ops, int access): _ops(ops), _access(access) {
+	RWops::RWops(SDL_RWops* ops, int access, EndCB cb): _ops(ops), _access(access), _endCB(cb) {
 		if(!ops)
 			throw std::runtime_error("invalid file");
 	}
@@ -38,6 +38,8 @@ namespace sdlw {
 	}
 	void RWops::close() {
 		if(_ops) {
+			if(_endCB)
+				_endCB(*this);
 			SDL_RWclose(_ops);
 			_clear();
 		}
@@ -45,8 +47,9 @@ namespace sdlw {
 	void RWops::_clear() {
 		_ops = nullptr;
 		_access = 0;
+		_endCB = nullptr;
 	}
-	RWops::RWops(RWops&& ops): _ops(ops._ops), _access(ops._access) {
+	RWops::RWops(RWops&& ops): _ops(ops._ops), _access(ops._access), _endCB(std::move(ops._endCB)) {
 		ops._clear();
 	}
 	RWops& RWops::operator = (RWops&& ops) {
@@ -119,17 +122,18 @@ namespace sdlw {
 		return _ops;
 	}
 
+	// ---------------------------- RWMgr ----------------------------
 	HLRW RWMgr::fromFile(const std::string& path, const char* mode, bool bNotKey) {
 		auto rw = sdlw::RWops::FromFile(path, mode);
 		if(bNotKey)
 			return base_type::acquire(std::move(rw));
-		return base_type::acquire(path, std::move(rw)).first;
+		return base_type::acquire(path, sdlw::RWops::FromFile(path, mode)).first;
 	}
-	HLRW RWMgr::fromConstMem(const void* p, int size) {
-		return base_type::acquire(sdlw::RWops::FromConstMem(p,size));
+	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::EndCB cb) {
+		return base_type::acquire(sdlw::RWops::FromConstMem(p,size,cb));
 	}
-	HLRW RWMgr::fromMem(void* p, int size) {
-		return base_type::acquire(sdlw::RWops::FromMem(p,size));
+	HLRW RWMgr::fromMem(void* p, int size, typename RWops::EndCB cb) {
+		return base_type::acquire(sdlw::RWops::FromMem(p,size, cb));
 	}
 	HLRW RWMgr::fromFP(FILE* fp, bool bAutoClose, const char* mode) {
 		return base_type::acquire(sdlw::RWops::FromFilePointer(fp, bAutoClose, mode));

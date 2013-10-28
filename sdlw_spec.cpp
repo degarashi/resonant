@@ -60,6 +60,7 @@ namespace sdlw {
 		}
 		return ps;
 	}
+
 	void Spec::PStat::output(std::ostream& os) const {
 		if(state == PStatN::Unknown)
 			os << "Unknown state";
