@@ -1,20 +1,33 @@
 cmake_minimum_required(VERSION 2.8)
 project(resonant)
-set(CMAKE_CXX_COMPILER "clang++")
-set(SSE_LEVEL 2)
-include_directories(${PROJECT_SOURCE_DIR}
-					${PROJECT_SOURCE_DIR}/spinner
-					${PROJECT_SOURCE_DIR}/boomstick
-					/usr/local/include/c++/4.8.1
-					/usr/local/include/c++/4.8.1/i686-pc-linux-gnu
-					/usr/local/include/SDL2)
-link_directories("/usr/local/lib/gcc/i686-pc-linux-gnu/4.8.1")
-set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -std=c++11 -ggdb3 -O0 -msse2")
-set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -O2 -msse2")
-set(CMAKE_BUILD_TYPE "Debug")
-link_directories(/tmp/spinner_build
-				/tmp/boomstick_build)
-add_executable(rse_test pathblock.cpp sound.cpp sound_depAL.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp main.cpp)
-target_link_libraries(rse_test spinner boomstick boost_system SDL2 openal vorbisfile)
 
-install(TARGETS rse_test RUNTIME DESTINATION bin)
+set(SSE_LEVEL 2)
+set(SOUND_API openal)
+
+if(SOUND_API STREQUAL "openal")
+	message(STATUS "using OpenAL...")
+	set(LIBSRC_FILE ${LIBSRC_FILE} sound_depAL.cpp)
+elseif(SOUND_API STREQUAL "opensl")
+	message(STATUS "using OpenSL ES...")
+	set(LIBSRC_FILE ${LIBSRC_FILE} sound_depSL.cpp)
+else()
+	message(FATAL_ERROR, "unknown sound API")
+endif()
+
+include_directories(${PROJECT_SOURCE_DIR}/spinner
+					${PROJECT_SOURCE_DIR}/boomstick
+					/usr/local/include/SDL2)
+include(spinner/CMake0.txt require)
+link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+
+set(LIBSRC_FILE ${LIBSRC_FILE} pathblock.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
+add_library(resonant STATIC ${LIBSRC_FILE})
+
+set(SRC_FILE ${SRC_FILE} main.cpp)
+add_executable(rse_test ${SRC_FILE})
+target_link_libraries(rse_test boomstick spinner SDL2 openal vorbisfile boost_system)
+
+install(TARGETS resonant rse_test
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin)
+
