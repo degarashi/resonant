@@ -4,7 +4,7 @@
 DZone::DZone(int dz): deadzone(dz) {}
 int DZone::filter(int val) const {
 	float v = static_cast<float>(val);
-	float range = spn::_sseRcp22Bit(InputRange - static_cast<float>(deadzone));
+	float range = spn::Rcp22Bit(InputRange - static_cast<float>(deadzone));
 
 	if(val > 0)
 		return std::max(0, val-deadzone);

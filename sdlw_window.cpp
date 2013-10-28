@@ -1,10 +1,17 @@
 #include "sdlwrap.hpp"
 
 namespace sdlw {
-	SPWindow Window::CreateWindow(const std::string& title, int w, int h, uint32_t flag) {
-		return CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag);
+	void Window::SetStdGLAttributes(int major, int minor, int depth) {
+		SetGLAttributes(SDL_GL_CONTEXT_MAJOR_VERSION, major,
+						SDL_GL_CONTEXT_MINOR_VERSION, minor,
+						SDL_GL_DOUBLEBUFFER, 1,
+						SDL_GL_DEPTH_SIZE, depth);
 	}
-	SPWindow Window::CreateWindow(const std::string& title, int x, int y, int w, int h, uint32_t flag) {
+	SPWindow Window::Create(const std::string& title, int w, int h, uint32_t flag, bool bShare) {
+		return Create(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag, bShare);
+	}
+	SPWindow Window::Create(const std::string& title, int x, int y, int w, int h, uint32_t flag, bool bShare) {
+		SetGLAttributes(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, bShare ? 1 : 0);
 		return SPWindow(new Window(SDL_CreateWindow(title.c_str(), x, y, w, h, flag|SDL_WINDOW_OPENGL)));
 	}
 	Window::Window(SDL_Window* w): _window(w) {
