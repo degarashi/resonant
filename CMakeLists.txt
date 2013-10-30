@@ -3,7 +3,10 @@ project(resonant)
 
 set(SSE_LEVEL 2)
 set(SOUND_API openal)
-include(spinner/CMakePC.txt require)
+# set(ARCHITECTURE x86)
+# set(SOUND_API opensl)
+
+include(spinner/CMakeCommon.txt require)
 include(spinner/CMakeCompiler.txt require)
 if(SOUND_API STREQUAL "openal")
 	message(STATUS "using OpenAL...")
@@ -19,18 +22,24 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/spinner
 					${PROJECT_SOURCE_DIR}/boomstick
-					/usr/local/include/SDL2)
+					${CMAKE_INSTALL_PREFIX}/include)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib_${TOOL_PREFIX})
-
+if(DEFINED ARCHITECTURE)
+	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
+						${CMAKE_INSTALL_PREFIX}/include/SDL2)
+else()
+	include_directories(/usr/local/include/SDL2)
+endif()
 set(LIBSRC_FILE ${LIBSRC_FILE} adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
+install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
-set(SRC_FILE ${SRC_FILE} main.cpp)
-add_executable(rse_test ${SRC_FILE})
-target_link_libraries(rse_test boomstick spinner SDL2 openal vorbisfile boost_system)
-
-install(TARGETS resonant rse_test
-	ARCHIVE DESTINATION lib_${TOOL_PREFIX}
-	RUNTIME DESTINATION bin_${TOOL_PREFIX})
 file(GLOB HEADERS "./*.hpp")
 install(FILES ${HEADERS} DESTINATION include/resonant)
+
+if(NOT DEFINED ARCHITECTURE)
+	set(SRC_FILE ${SRC_FILE} main.cpp)
+	add_executable(rse_test ${SRC_FILE})
+	target_link_libraries(rse_test boomstick spinner SDL2 openal vorbisfile boost_system)
+	install(TARGETS rse_test RUNTIME DESTINATION bin_${TOOL_PREFIX})
+endif()
