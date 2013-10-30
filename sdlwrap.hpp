@@ -521,7 +521,7 @@ namespace sdlw {
 			size_t write(const void* src, size_t blockSize, size_t nblock);
 			int64_t size();
 			int64_t seek(int64_t offset, Hence hence);
-			int64_t tell();
+			int64_t tell() const;
 			uint16_t readBE16();
 			uint32_t readBE32();
 			uint64_t readBE64();

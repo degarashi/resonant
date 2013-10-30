@@ -79,7 +79,7 @@ namespace sdlw {
 	int64_t RWops::seek(int64_t offset, Hence hence) {
 		return SDL_RWseek(_ops, offset, hence);
 	}
-	int64_t RWops::tell() {
+	int64_t RWops::tell() const {
 		return SDL_RWtell(_ops);
 	}
 	uint16_t RWops::readBE16() {
