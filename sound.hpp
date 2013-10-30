@@ -1,5 +1,5 @@
 #pragma once
-#include "sound_depAL.hpp"
+#include SOUND_HEADER
 #include "clock.hpp"
 #include <boost/variant.hpp>
 
