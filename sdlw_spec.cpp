@@ -1,6 +1,6 @@
 #include "sdlwrap.hpp"
 
-namespace sdlw {
+namespace rs {
 	namespace {
 		using FeatFunc = SDL_bool (*)();
 		const FeatFunc cs_ff[] = {

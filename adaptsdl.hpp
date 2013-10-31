@@ -2,7 +2,7 @@
 #include "spinner/adaptstream.hpp"
 #include "sdlwrap.hpp"
 
-namespace sdlw {
+namespace rs {
 	struct AdaptSDL : spn::AdaptStream {
 		HLRW 	_hlRW;
 		const static RWops::Hence c_flag[];

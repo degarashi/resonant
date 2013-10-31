@@ -1,6 +1,6 @@
 #include "sdlwrap.hpp"
 
-namespace sdlw {
+namespace rs {
 	void Window::SetStdGLAttributes(int major, int minor, int depth) {
 		SetGLAttributes(SDL_GL_CONTEXT_MAJOR_VERSION, major,
 						SDL_GL_CONTEXT_MINOR_VERSION, minor,

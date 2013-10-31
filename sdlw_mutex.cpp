@@ -1,6 +1,6 @@
 #include "sdlwrap.hpp"
 
-namespace sdlw {
+namespace rs {
 	Mutex::Mutex(): _mutex(SDL_CreateMutex()) {}
 	Mutex::~Mutex() { SDL_DestroyMutex(_mutex); }
 

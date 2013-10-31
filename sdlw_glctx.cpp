@@ -1,6 +1,6 @@
 #include "sdlwrap.hpp"
 
-namespace sdlw {
+namespace rs {
 	GLContext::GLContext(const SPWindow& w) {
 		_ctx = SDL_GL_CreateContext(w->getWindow());
 	}

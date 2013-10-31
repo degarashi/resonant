@@ -1,6 +1,6 @@
 #include "adaptsdl.hpp"
 
-namespace sdlw {
+namespace rs {
 	// ---------------------- AdaptSDL ----------------------
 	const RWops::Hence AdaptSDL::c_flag[] = {RWops::Begin, RWops::Current, RWops::End};
 	AdaptSDL::AdaptSDL(HRW hRW): _hlRW(hRW) {}

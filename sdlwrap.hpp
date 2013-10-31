@@ -18,13 +18,13 @@
 	#define SDLECA(...) EChk_pass(__VA_ARGS__)
 #endif
 
-struct SDLError {
-	static std::string	s_errString;
-	static const char* ErrorDesc();
-	static const char* GetAPIName();
-};
+namespace rs {
+	struct SDLError {
+		static std::string	s_errString;
+		static const char* ErrorDesc();
+		static const char* GetAPIName();
+	};
 
-namespace sdlw {
 	extern SDL_threadID thread_local tls_threadID;
 	//! 実行環境に関する情報を取得
 	class Spec : public spn::Singleton<Spec> {
@@ -543,11 +543,11 @@ namespace sdlw {
 			bool writeLE(uint64_t value);
 			SDL_RWops* getOps();
 	};
-	#define mgr_rw sdlw::RWMgr::_ref()
-	class RWMgr : public spn::ResMgrN<sdlw::RWops, RWMgr> {
+	#define mgr_rw rs::RWMgr::_ref()
+	class RWMgr : public spn::ResMgrN<RWops, RWMgr> {
 		public:
-			using base_type = spn::ResMgrN<sdlw::RWops, RWMgr>;
-			using LHdl = AnotherLHandle<sdlw::RWops>;
+			using base_type = spn::ResMgrN<RWops, RWMgr>;
+			using LHdl = AnotherLHandle<RWops>;
 			LHdl fromFile(const std::string& path, const char* mode, bool bNotKey=false);
 			template <class T>
 			LHdl fromVector(T&& t) {

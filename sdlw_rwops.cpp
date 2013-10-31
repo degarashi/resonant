@@ -1,6 +1,6 @@
 #include "sdlwrap.hpp"
 
-namespace sdlw {
+namespace rs {
 	RWops RWops::FromConstMem(const void* mem, int size, EndCB cb) {
 		return RWops(SDL_RWFromConstMem(mem,size), Read, cb);
 	}
@@ -124,18 +124,18 @@ namespace sdlw {
 
 	// ---------------------------- RWMgr ----------------------------
 	HLRW RWMgr::fromFile(const std::string& path, const char* mode, bool bNotKey) {
-		auto rw = sdlw::RWops::FromFile(path, mode);
+		auto rw = RWops::FromFile(path, mode);
 		if(bNotKey)
 			return base_type::acquire(std::move(rw));
-		return base_type::acquire(path, sdlw::RWops::FromFile(path, mode)).first;
+		return base_type::acquire(path, RWops::FromFile(path, mode)).first;
 	}
 	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::EndCB cb) {
-		return base_type::acquire(sdlw::RWops::FromConstMem(p,size,cb));
+		return base_type::acquire(RWops::FromConstMem(p,size,cb));
 	}
 	HLRW RWMgr::fromMem(void* p, int size, typename RWops::EndCB cb) {
-		return base_type::acquire(sdlw::RWops::FromMem(p,size, cb));
+		return base_type::acquire(RWops::FromMem(p,size, cb));
 	}
 	HLRW RWMgr::fromFP(FILE* fp, bool bAutoClose, const char* mode) {
-		return base_type::acquire(sdlw::RWops::FromFilePointer(fp, bAutoClose, mode));
+		return base_type::acquire(RWops::FromFilePointer(fp, bAutoClose, mode));
 	}
 }

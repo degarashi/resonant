@@ -24,48 +24,50 @@
 	#define AAssertMsg(expr,msg)
 #endif
 
-template <bool A, class ALE, class... Ts>
-void CheckError(const char* filename, const char* funcname, int line, Ts&&... ts) {
-	const char* msg = ALE::ErrorDesc(std::forward<Ts>(ts)...);
-	if(msg) {
-		std::cout << ALE::GetAPIName() << " Error:\t" <<  msg << std::endl
-					<< "at file:\t" << filename << std::endl
-					<< "at function:\t" << funcname << std::endl
-					<< "on line:\t" << line << std::endl;
-		if(A)
-			__builtin_trap();
+namespace rs {
+	template <bool A, class ALE, class... Ts>
+	void CheckError(const char* filename, const char* funcname, int line, Ts&&... ts) {
+		const char* msg = ALE::ErrorDesc(std::forward<Ts>(ts)...);
+		if(msg) {
+			std::cout << ALE::GetAPIName() << " Error:\t" <<  msg << std::endl
+						<< "at file:\t" << filename << std::endl
+						<< "at function:\t" << funcname << std::endl
+						<< "on line:\t" << line << std::endl;
+			if(A)
+				__builtin_trap();
+		}
 	}
-}
-template <bool A, class Chk>
-struct ErrorChecker {
-	int			_line;
-	const char	*_filename, *_fname;
-	ErrorChecker(const char* filename, const char* fname, int line): _filename(filename), _fname(fname), _line(line) {}
-	~ErrorChecker() {
-		CheckError<A, Chk>(_filename, _fname, _line);
+	template <bool A, class Chk>
+	struct ErrorChecker {
+		int			_line;
+		const char	*_filename, *_fname;
+		ErrorChecker(const char* filename, const char* fname, int line): _filename(filename), _fname(fname), _line(line) {}
+		~ErrorChecker() {
+			CheckError<A, Chk>(_filename, _fname, _line);
+		}
+	};
+	template <bool A, class Chk, class Func, class... TsA>
+	auto EChk_base(const char* filename, const char* fname, int line, const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
+		ErrorChecker<A, Chk> chk(filename, fname, line);
+		return func(std::forward<TsA>(ts)...);
 	}
-};
-template <bool A, class Chk, class Func, class... TsA>
-auto EChk_base(const char* filename, const char* fname, int line, const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
-	ErrorChecker<A, Chk> chk(filename, fname, line);
-	return func(std::forward<TsA>(ts)...);
-}
-template <bool A, class Chk>
-void EChk_base(const char* filename, const char* fname, int line) {
-	ErrorChecker<A, Chk> chk(filename, fname, line);
-}
-template <class Func, class... TsA>
-auto EChk_pass(const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
-	return func(std::forward<TsA>(ts)...);
-}
-template <bool A, class Chk, class Func, class... TsA>
-auto EChk_baseA1(const char* filename, const char* fname, int line, const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
-	auto val = func(std::forward<TsA>(ts)...);
-	CheckError<A,Chk>(filename, fname, line, val);
-	return val;
-}
-template <bool A, class Chk, class RES>
-RES EChk_baseA2(const char* filename, const char* fname, int line, const RES& res) {
-	CheckError<A,Chk>(filename, fname, line, res);
-	return res;
+	template <bool A, class Chk>
+	void EChk_base(const char* filename, const char* fname, int line) {
+		ErrorChecker<A, Chk> chk(filename, fname, line);
+	}
+	template <class Func, class... TsA>
+	auto EChk_pass(const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
+		return func(std::forward<TsA>(ts)...);
+	}
+	template <bool A, class Chk, class Func, class... TsA>
+	auto EChk_baseA1(const char* filename, const char* fname, int line, const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
+		auto val = func(std::forward<TsA>(ts)...);
+		CheckError<A,Chk>(filename, fname, line, val);
+		return val;
+	}
+	template <bool A, class Chk, class RES>
+	RES EChk_baseA2(const char* filename, const char* fname, int line, const RES& res) {
+		CheckError<A,Chk>(filename, fname, line, res);
+		return res;
+	}
 }
