@@ -12,4 +12,15 @@ namespace sdlw {
 		AdaptSDL& seekg(streamoff dist, Dir dir) override;
 		streampos tellg() const override;
 	};
+	struct AdaptOSDL : spn::AdaptOStream {
+		HLRW	_hlRW_o;
+
+		AdaptOSDL(HRW hRW);
+		AdaptOSDL& write(const void* src, streamsize len) override;
+		AdaptOSDL& seekp(streamoff dist, Dir dir) override;
+		streampos tellp() const override;
+	};
+	struct AdaptIOSDL : AdaptSDL, AdaptOSDL {
+		AdaptIOSDL(HRW hRW);
+	};
 }
