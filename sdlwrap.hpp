@@ -507,6 +507,13 @@ namespace sdlw {
 			RWops(SDL_RWops* ops, int access, EndCB cb);
 		public:
 			static RWops FromConstMem(const void* mem, int size, EndCB cb=nullptr);
+			template <class T>
+			static RWops FromVector(T&& buff) {
+				spn::ByteBuff* tbuff = new spn::ByteBuff(std::forward<T>(buff));
+				return FromMem(&(*tbuff)[0], tbuff->size(), [tbuff](RWops&){
+					delete tbuff;
+				});
+			}
 			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
 			static RWops FromMem(void* mem, int size, EndCB cb=nullptr);
 			static RWops FromFile(const std::string& path, const char* mode);
@@ -542,6 +549,9 @@ namespace sdlw {
 			using base_type = spn::ResMgrN<sdlw::RWops, RWMgr>;
 			using LHdl = AnotherLHandle<sdlw::RWops>;
 			LHdl fromFile(const std::string& path, const char* mode, bool bNotKey=false);
+			template <class T>
+			LHdl fromVector(T&& t) {
+				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }
 			LHdl fromConstMem(const void* p, int size, typename RWops::EndCB cb=nullptr);
 			LHdl fromMem(void* p, int size, typename RWops::EndCB cb=nullptr);
 			LHdl fromFP(FILE* fp, bool bAutoClose, const char* mode);
