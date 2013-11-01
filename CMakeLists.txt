@@ -31,6 +31,7 @@ include_directories(${PROJECT_SOURCE_DIR}/spinner
 					${CMAKE_INSTALL_PREFIX}/include)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib_${TOOL_PREFIX})
 if(DEFINED ARCHITECTURE)
+	add_definitions(-DGL_GLEXT_PROTOTYPES -DUSE_OPENGLES2)
 	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
 						${CMAKE_INSTALL_PREFIX}/include/SDL2)
 else()

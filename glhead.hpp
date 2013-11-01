@@ -1,18 +1,30 @@
 #pragma once
 
-#include <GL/gl.h>
-#if !defined(WIN32)
-	#include <GL/glx.h>
-	#undef Convex
-	#include "glext.h"
-	#include "glxext.h"
+#ifdef ANDROID
+	#include <GLES2/gl2.h>
+	#include <GLES2/gl2ext.h>
 #else
-	#include "glext.h"
+	#include <GL/gl.h>
 #endif
 
-#define GLDEFINE(name,type)		extern type name;
-#include "glfunc.inc"
-#undef GLDEFINE
+#if !defined(WIN32)
+	#ifndef ANDROID
+		#include <GL/glx.h>
+		#undef Convex
+		#include "glext.h"
+		#include "glxext.h"
+	#endif
+#else
+	#ifndef ANDROID
+		#include "glext.h"
+	#endif
+#endif
+
+#ifndef ANDROID
+	#define GLDEFINE(name,type)		extern type name;
+	#include "glfunc.inc"
+	#undef GLDEFINE
+#endif
 
 #include <memory>
 #include <vector>
@@ -53,6 +65,12 @@ namespace rs {
 	};
 	//! シェーダーIDに対するOpenGL定数
 	const static GLuint c_glShFlag[ShType::NUM_SHTYPE] = {
-		GL_VERTEX_SHADER, GL_GEOMETRY_SHADER, GL_FRAGMENT_SHADER
+		GL_VERTEX_SHADER,
+		#ifdef ANDROID
+			0,
+		#else
+			GL_GEOMETRY_SHADER,
+		#endif
+		GL_FRAGMENT_SHADER
 	};
 }

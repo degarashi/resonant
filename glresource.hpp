@@ -42,7 +42,7 @@ namespace rs {
 			uint16_t	value;
 			uint8_t		id[2];
 		};
-		GL16ID() {}
+		GL16ID() = default;
 		GL16ID(int id0, int id1): id{static_cast<uint8_t>(id0),static_cast<uint8_t>(id1)} {}
 		bool operator < (const GL16ID& t) const { return value < t.value; }
 		bool operator == (const GL16ID& t) const { return value == t.value; }
@@ -50,14 +50,13 @@ namespace rs {
 	};
 	//! ある(Tech:Pass)から別の(Tech:Pass)への遷移を表す
 	struct GLDiffID {
+		struct Pair { GL16ID fromID, toID; };
 		union {
-			uint32_t		value;
-			struct {
-				GL16ID		fromID, toID;
-			};
+			uint32_t	value;
+			Pair		id;
 		};
-		GLDiffID() {}
-		GLDiffID(GL16ID id0, GL16ID id1): fromID(id0), toID(id1) {}
+		GLDiffID() = default;
+		GLDiffID(GL16ID id0, GL16ID id1): id{id0, id1} {}
 		bool operator < (const GLDiffID& t) const { return value < t.value; }
 		bool operator == (const GLDiffID& t) const { return value == t.value; }
 	};
