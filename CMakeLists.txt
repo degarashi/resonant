@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 project(resonant)
 
+option(USE_QT5 NO)
 set(SSE_LEVEL 2)
 set(SOUND_API openal)
 # set(ARCHITECTURE x86)
 # set(SOUND_API opensl)
+
+if(USE_QT5)
+	add_definitions(-DQT5)
+	message(STATUS "using Qt framework5...")
+endif()
 
 include(spinner/CMakeCommon.txt require)
 include(spinner/CMakeCompiler.txt require)
@@ -30,7 +36,7 @@ if(DEFINED ARCHITECTURE)
 else()
 	include_directories(/usr/local/include/SDL2)
 endif()
-set(LIBSRC_FILE ${LIBSRC_FILE} error.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
+set(LIBSRC_FILE ${LIBSRC_FILE} error.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
