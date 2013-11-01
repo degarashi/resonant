@@ -6,20 +6,23 @@
 #include "spinner/dir.hpp"
 #include "spinner/size.hpp"
 #include "glformat.hpp"
+#include "error.hpp"
 
-#define SDLEC_Base(act, ...)	EChk_base<act, SDLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Base0(act)		EChk_base<act, SDLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>, __VA_ARGS__)
-#define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>)
+#define SDLEC_Base(act, ...)	EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Base0(act)		EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
+#define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
 #ifdef DEBUG
 	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
+	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
 #else
 	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define SDLEC_ChkP(act)
 #endif
 
 // OpenGLに関するアサート集
 #define GLEC_Base(act, ...)		EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act)			EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define GLEC_Base0(act)			EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define GLEC(act, ...)			GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
 #define GLECProg(act, id, ...)	GLEC_Base(AAct_##act<GLE_ProgramError, GLuint>(id), __VA_ARGS__)
 #define GLECSh(act, id, ...)	GLEC_Base(AAct_##act<GLE_ShaderError, GLuint>(id), __VA_ARGS__)
@@ -30,8 +33,10 @@
 #define GLEC_Chk(act)			GLEC_Base0(AAct_##act<GLE_Error>())
 #ifdef DEBUG
 	#define GLEC_P(act, ...)	GLEC(act, __VA_ARGS__)
+	#define GLEC_ChkP(act)		GLEC_Chk(act)
 #else
 	#define GLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define GLEC_ChkP(act)
 #endif
 
 namespace rs {
