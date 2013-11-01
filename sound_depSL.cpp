@@ -136,7 +136,7 @@ namespace rs {
 				_buff.resize(cvt.len);
 			cvt.buf = &_buff[0];
 			std::memcpy(&_buff[0], src, len);
-			SDLEC(SDL_ConvertAudio, &cvt);
+			SDLEC(Trap, SDL_ConvertAudio, &cvt);
 			_buff.resize(cvt.len_cvt);
 		} else {
 			// そのまま書き込み
@@ -169,16 +169,16 @@ namespace rs {
 
 		const SLInterfaceID ids[] = {SL_IID_BUFFERQUEUE, SL_IID_PLAYBACKRATE, SL_IID_PLAY, SL_IID_VOLUME};
 		const SLboolean req[] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
-		SLEC_M(eItf, CreateAudioPlayer, &_aplayer.refObj(), &audioSrc, &audioSink, 4, ids, req);
+		SLEC_M(Trap, eItf, CreateAudioPlayer, &_aplayer.refObj(), &audioSrc, &audioSink, 4, ids, req);
 		_aplayer.realize(false);
 
 		_volItf = _aplayer.getInterface<SLVolumeItf>(SL_IID_VOLUME);
 		_playItf = _aplayer.getInterface<SLPlayItf>(SL_IID_PLAY);
 		_bqItf = _aplayer.getInterface<SLBufferQueueItf>(SL_IID_BUFFERQUEUE);
 		_rateItf = _aplayer.getInterface<SLPlaybackRateItf>(SL_IID_PLAYBACKRATE);
-		SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_STOPPED);
+		SLEC_M(Trap, _playItf, SetPlayState, SL_PLAYSTATE_STOPPED);
 		SLuint32 cap;
-		SLEC_M(_rateItf, GetRateRange, 0, &_rateMin, &_rateMax, &_rateStep, &cap);
+		SLEC_M(Trap, _rateItf, GetRateRange, 0, &_rateMin, &_rateMax, &_rateStep, &cap);
 	}
 	ASource_depSL::ASource_depSL(ASource_depSL&& s):
 		_aplayer(std::move(s._aplayer)),
@@ -189,34 +189,34 @@ namespace rs {
 		_rateMin(s._rateMin), _rateMax(s._rateMax), _rateStep(s._rateStep), _blockCount(s._blockCount)
 	{}
 	void ASource_depSL::play() {
-		SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_PLAYING);
+		SLEC_M(Trap, _playItf, SetPlayState, SL_PLAYSTATE_PLAYING);
 	}
 	void ASource_depSL::reset() {
-		SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_STOPPED);
+		SLEC_M(Trap, _playItf, SetPlayState, SL_PLAYSTATE_STOPPED);
 		_blockCount = 0;
 	}
 	void ASource_depSL::pause() {
-		SLEC_M(_playItf, SetPlayState, SL_PLAYSTATE_PAUSED);
+		SLEC_M(Trap, _playItf, SetPlayState, SL_PLAYSTATE_PAUSED);
 	}
 	void ASource_depSL::update(bool bPlaying) {
 		// OpenSLでは終端まで行っても自動でStoppedにならない = なにも処理しない
 	}
 	bool ASource_depSL::isEnded() {
 		SLBufferQueueState bqs;
-		SLEC_M(_bqItf, GetState, &bqs);
+		SLEC_M(Trap, _bqItf, GetState, &bqs);
 		return bqs.count==0;
 	}
 	void ASource_depSL::setGain(float vol) {
-		SLEC_M(_volItf, SetVolumeLevel, VolToMillibel(vol));
+		SLEC_M(Trap, _volItf, SetVolumeLevel, VolToMillibel(vol));
 	}
 	void ASource_depSL::setPitch(float pitch) {
 		SLpermille p = static_cast<SLpermille>(pitch*1000);
 		p = std::min(std::max(p, _rateMin), _rateMax);
-		SLEC_M(_rateItf, SetRate, p);
+		SLEC_M(Trap, _rateItf, SetRate, p);
 	}
 	float ASource_depSL::timeTell(float def) {
 		SLmillisecond ms;
-		SLEC_M(_playItf, GetPosition, &ms);
+		SLEC_M(Trap, _playItf, GetPosition, &ms);
 		return static_cast<float>(ms) / 1000.f;
 	}
 	int64_t ASource_depSL::pcmTell(int64_t def) {
@@ -226,40 +226,40 @@ namespace rs {
 	void ASource_depSL::pcmSeek(int64_t p) {}
 	void ASource_depSL::enqueue(ABuffer_depSL& buff) {
 		auto& bf = buff.getBuff();
-		SLEC_M(_bqItf, Enqueue, &bf[0], bf.size());
+		SLEC_M(Trap, _bqItf, Enqueue, &bf[0], bf.size());
 	}
 	int ASource_depSL::getUsedBlock() {
 		SLBufferQueueState state;
-		SLEC_M(_bqItf, GetState, &state);
+		SLEC_M(Trap, _bqItf, GetState, &state);
 		LOGI("index=%u", (uint32_t)state.playIndex);
 		int ret = state.playIndex - _blockCount;
 		_blockCount = state.playIndex;
 		return std::max(0,ret);
 	}
 	void ASource_depSL::clearBlock() {
-		SLEC_M0(_bqItf, Clear);
+		SLEC_M0(Trap, _bqItf, Clear);
 		_blockCount = 0;
 	}
 
 	// --------------------- SoundMgr_depSL ---------------------
 	SoundMgr_depSL::SoundMgr_depSL(int rate): _outFormat(SDLAFormat(1,0,0,16), rate) {
 		// サウンドエンジンの作成
-		SLEC(slCreateEngine, &_engine.refObj(), 0, nullptr, 0, nullptr, nullptr);
+		SLEC(Trap, slCreateEngine, &_engine.refObj(), 0, nullptr, 0, nullptr, nullptr);
 		_engine.realize(false);
 
 		// OutputMixの初期化
 		_engineItf = _engine.getInterface<SLEngineItf>(SL_IID_ENGINE);
-		SLEC_M(_engineItf, CreateOutputMix, &_outmix.refObj(), 0, nullptr, nullptr);
+		SLEC_M(Trap, _engineItf, CreateOutputMix, &_outmix.refObj(), 0, nullptr, nullptr);
 		_outmix.realize(false);
 	}
 	void SoundMgr_depSL::printVersions(std::ostream& os) {
 		SLresult result;
 		SLuint32 num;
-		SLEC(slQueryNumSupportedEngineInterfaces, &num);
+		SLEC(Trap, slQueryNumSupportedEngineInterfaces, &num);
 		os << "Enumerating OpenSL interfaces..." << std::endl;
 		for(int i=0 ; i<num ; i++) {
 			SLInterfaceID iid;
-			SLEC(slQuerySupportedEngineInterfaces, i, &iid);
+			SLEC(Trap, slQuerySupportedEngineInterfaces, i, &iid);
 			os << GetIIDString(iid) << std::endl;
 		}
 

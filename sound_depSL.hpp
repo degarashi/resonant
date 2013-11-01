@@ -3,13 +3,13 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
-#define SLEC(func, ...)	EChk_baseA2<true, SLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
-#define SLEC_M(obj, method, ...)	EChk_baseA2<true, SLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj, __VA_ARGS__))
-#define SLEC_M0(obj, method)	EChk_baseA2<true, SLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj))
+#define SLEC(act, func, ...)			EChk_baseA2<SLError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#define SLEC_M(act, obj, method, ...)	EChk_baseA2<SLError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj, __VA_ARGS__))
+#define SLEC_M0(act, obj, method)		EChk_baseA2<SLError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj))
 #ifdef DEBUG
-	#define SLECA(...) SLEC(__VA_ARGS__)
+	#define SLECA(act, ...) SLEC(act, __VA_ARGS__)
 #else
-	#define SLECA(...) EChk_pass(__VA_ARGS__)
+	#define SLECA(act, ...) EChk_pass(__VA_ARGS__)
 #endif
 namespace rs {
 	struct SLError {
@@ -34,20 +34,20 @@ namespace rs {
 				return _obj;
 			}
 			void realize(bool async) {
-				SLEC_M(_obj, Realize, SLboolean(async));
+				SLEC_M(Trap, _obj, Realize, SLboolean(async));
 			}
 			void resume(bool async) {
-				SLEC_M(_obj, Resume, async);
+				SLEC_M(Trap, _obj, Resume, async);
 			}
 			SLuint32 getState() {
 				SLuint32 ret;
-				SLEC_M(_obj, GetState, &ret);
+				SLEC_M(Trap, _obj, GetState, &ret);
 				return ret;
 			}
 			template <class ITF>
 			ITF getInterface(const SLInterfaceID& id) {
 				ITF itf;
-				SLEC_M(_obj, GetInterface, id, &itf);
+				SLEC_M(Trap, _obj, GetInterface, id, &itf);
 				return itf;
 			}
 			template <class ITF>
