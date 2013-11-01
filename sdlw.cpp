@@ -16,7 +16,5 @@ namespace rs {
 		return "SDL";
 	}
 
-	namespace sdlw {
-		SDL_threadID thread_local tls_threadID(~0);
-	}
+	SDL_threadID thread_local tls_threadID(~0);
 }
