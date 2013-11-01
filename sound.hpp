@@ -21,9 +21,9 @@ namespace rs {
 			/*! \param[in] offset	取得したいサンプルのオフセット(bytes)
 				\param[in] buffLen	受信バッファサイズ(bytes)
 				\return コピーされたデータサイズ(bytes)  */
-			virtual size_t getData(void* dst, uint64_t offset, size_t buffLen) const { Assert(false); }
+			virtual size_t getData(void* dst, uint64_t offset, size_t buffLen) const { Assert(Trap, false); throw 0; }
 			/*! \param[in] offset 受信オフセット(bytes) */
-			virtual std::pair<const void*, size_t> getAllData(uint64_t offset) const { Assert(false); }
+			virtual std::pair<const void*, size_t> getAllData(uint64_t offset) const { Assert(Trap, false); throw 0; }
 			Duration getDuration() const { return _duration; }
 			const AFormatF& getFormat() const { return _format; }
 	};

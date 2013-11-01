@@ -57,15 +57,15 @@ namespace rs {
 	VorbisFile::VorbisFile(HRW hRW) {
 		_hlRW = hRW;
 
-		OVECA(ov_open_callbacks, hRW.ref().getOps(), &_ovf, nullptr, 0, OVCallbacksNF);
+		OVEC_P(Trap, ov_open_callbacks, hRW.ref().getOps(), &_ovf, nullptr, 0, OVCallbacksNF);
 		vorbis_info* info = ov_info(&_ovf, -1);
 		// Oggのフォーマットは全てsigned int 16bitとみなす
 		_format = AFormatF(AFormat(true, info->channels > 1), info->rate);
-		_dTotal = OVECA(ov_time_total, &_ovf, -1);
-		_iTotal = OVECA(ov_pcm_total, &_ovf, -1);
+		_dTotal = OVEC_P(Trap, ov_time_total, &_ovf, -1);
+		_iTotal = OVEC_P(Trap, ov_pcm_total, &_ovf, -1);
 	}
 	VorbisFile::~VorbisFile() {
-		OVECA(ov_clear, &_ovf);
+		OVEC_P(Trap, ov_clear, &_ovf);
 	}
 	const AFormatF& VorbisFile::getFormat() const {
 		return _format;
@@ -75,32 +75,32 @@ namespace rs {
 		return pcmTell() == _iTotal;
 	}
 	bool VorbisFile::timeSeek(double s) {
-		OVECA(ov_time_seek, &_ovf, s);
+		OVEC_P(Trap, ov_time_seek, &_ovf, s);
 		return isEOF();
 	}
 	void VorbisFile::timeSeekPage(double s) {
-		OVECA(ov_time_seek_page, &_ovf, s);
+		OVEC_P(Trap, ov_time_seek_page, &_ovf, s);
 	}
 	bool VorbisFile::timeSeekLap(double s) {
-		OVECA(ov_time_seek_lap, &_ovf, s);
+		OVEC_P(Trap, ov_time_seek_lap, &_ovf, s);
 		return isEOF();
 	}
 	void VorbisFile::timeSeekPageLap(double s) {
-		OVECA(ov_time_seek_page_lap, &_ovf, s);
+		OVEC_P(Trap, ov_time_seek_page_lap, &_ovf, s);
 	}
 	bool VorbisFile::pcmSeek(int64_t pos) {
-		OVECA(ov_pcm_seek, &_ovf, pos);
+		OVEC_P(Trap, ov_pcm_seek, &_ovf, pos);
 		return isEOF();
 	}
 	void VorbisFile::pcmSeekPage(int64_t pos) {
-		OVECA(ov_pcm_seek_page, &_ovf, pos);
+		OVEC_P(Trap, ov_pcm_seek_page, &_ovf, pos);
 	}
 	bool VorbisFile::pcmSeekLap(int64_t pos) {
-		OVECA(ov_pcm_seek_lap, &_ovf, pos);
+		OVEC_P(Trap, ov_pcm_seek_lap, &_ovf, pos);
 		return isEOF();
 	}
 	void VorbisFile::pcmSeekPageLap(int64_t pos) {
-		OVECA(ov_pcm_seek_page_lap, &_ovf, pos);
+		OVEC_P(Trap, ov_pcm_seek_page_lap, &_ovf, pos);
 	}
 	size_t VorbisFile::read(void* dst, size_t toRead) {
 		if(toRead == 0)
@@ -125,10 +125,10 @@ namespace rs {
 		return _iTotal;
 	}
 	double VorbisFile::timeTell() const {
-		return OVECA(ov_time_tell, const_cast<OggVorbis_File*>(&this->_ovf));
+		return OVEC_P(Trap, ov_time_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 	}
 	int64_t VorbisFile::pcmTell() const {
 		auto* self = const_cast<VorbisFile*>(this);
-		return OVECA(ov_pcm_tell, const_cast<OggVorbis_File*>(&this->_ovf));
+		return OVEC_P(Trap, ov_pcm_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 	}
 }

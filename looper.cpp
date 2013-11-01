@@ -43,7 +43,7 @@ namespace rs {
 	}
 
 	void Looper::Prepare() {
-		Assert(&tls_looper.get() == nullptr)
+		Assert(Trap, &tls_looper.get() == nullptr)
 		tls_looper = Looper();
 	}
 

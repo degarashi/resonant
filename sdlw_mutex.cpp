@@ -5,13 +5,13 @@ namespace rs {
 	Mutex::~Mutex() { SDL_DestroyMutex(_mutex); }
 
 	bool Mutex::lock() {
-		return SDLECA(SDL_LockMutex, _mutex) == 0;
+		return SDLEC_P(Trap, SDL_LockMutex, _mutex) == 0;
 	}
 	bool Mutex::try_lock() {
-		return SDLECA(SDL_TryLockMutex, _mutex) == 0;
+		return SDLEC_P(Trap, SDL_TryLockMutex, _mutex) == 0;
 	}
 	void Mutex::unlock() {
-		SDLECA(SDL_UnlockMutex, _mutex);
+		SDLEC_P(Trap, SDL_UnlockMutex, _mutex);
 	}
 	SDL_mutex* Mutex::getMutex() {
 		return _mutex;

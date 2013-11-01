@@ -3,18 +3,19 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC(...) EChk_base<true, ALError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALCEC(...) EChk_base<true, SoundMgr_depAL>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALEC_Check EChk_base<true, ALError>(__FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define ALEC(act, ...)	EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC_Chk(act)	EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define ALCEC(act, ...)	EChk_base<SoundMgr_depAL>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #ifdef DEBUG
-	#define ALECA(...) ALEC(__VA_ARGS__)
-	#define ALCECA(...) ALCEC(__VA_ARGS__)
-	#define OVECA(...) OVEC(__VA_ARGS__)
+	#define ALEC_P(act, ...) ALEC(act, __VA_ARGS__)
+	#define ALCEC_P(act, ...) ALCEC(act, __VA_ARGS__)
+	#define OVEC_P(act, ...) OVEC(act, __VA_ARGS__)
 #else
-	#define ALECA(...) EChk_pass(__VA_ARGS__)
-	#define ALCECA(...) EChk_pass(__VA_ARGS__)
-	#define OVECA(...) EChk_pass(__VA_ARGS__)
+	#define ALEC_P(act, ...) EChk_pass(__VA_ARGS__)
+	#define ALCEC_P(act, ...) EChk_pass(__VA_ARGS__)
+	#define OVEC_P(act, ...) EChk_pass(__VA_ARGS__)
 #endif
+
 namespace rs {
 	struct ALError {
 		const static std::pair<ALenum, const char*> ErrorList[];

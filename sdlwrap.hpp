@@ -10,12 +10,14 @@
 #include <boost/optional.hpp>
 #include "error.hpp"
 
-#define SDLEC(...) EChk_base<true, SDLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Check EChk_base<true, SDLError>(__FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define SDLEC_Base(act, ...)	EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Base0(act)		EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
+#define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
 #ifdef DEBUG
-	#define SDLECA(...) SDLEC(__VA_ARGS__)
+	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
 #else
-	#define SDLECA(...) EChk_pass(__VA_ARGS__)
+	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
 #endif
 
 namespace rs {
@@ -116,16 +118,16 @@ namespace rs {
 				SDL_DestroyCond(_cond);
 			}
 			void wait(UniLock& u) {
-				SDLECA(SDL_CondWait, _cond, u.getMutex());
+				SDLEC_P(Trap, SDL_CondWait, _cond, u.getMutex());
 			}
 			bool wait_for(UniLock& u, uint32_t msec) {
-				return SDLECA(SDL_CondWaitTimeout, _cond, u.getMutex(), msec) == 0;
+				return SDLEC_P(Trap, SDL_CondWaitTimeout, _cond, u.getMutex(), msec) == 0;
 			}
 			void signal() {
-				SDLECA(SDL_CondSignal, _cond);
+				SDLEC_P(Trap, SDL_CondSignal, _cond);
 			}
 			void signal_all() {
-				SDLECA(SDL_CondBroadcast, _cond);
+				SDLEC_P(Trap, SDL_CondBroadcast, _cond);
 			}
 	};
 	//! 再帰対応のスピンロック
@@ -207,7 +209,7 @@ namespace rs {
 
 		public:
 			TLS() {
-				_tlsID = SDLECA(SDL_TLSCreate);
+				_tlsID = SDLEC_P(Trap, SDL_TLSCreate);
 			}
 			template <class... Args>
 			TLS(Args&&... args): TLS() {
@@ -300,7 +302,7 @@ namespace rs {
 			}
 			~_Thread() {
 				// スレッド実行中だったらエラーを出す
-				Assert(!isRunning())
+				Assert(Trap, !isRunning())
 				SDL_DestroyCond(_condC);
 				SDL_DestroyCond(_condP);
 			}
@@ -308,7 +310,7 @@ namespace rs {
 			void start(Args0&&... args0) {
 				_holder = boost::in_place(std::forward<Args0>(args0)...);
 				// 2回以上呼ぶとエラー
-				Assert(SDL_AtomicGet(&_atmStat) == Idle)
+				Assert(Trap, SDL_AtomicGet(&_atmStat) == Idle)
 				SDL_AtomicSet(&_atmStat, Running);
 
 				_mtxC.lock();
@@ -341,7 +343,7 @@ namespace rs {
 				return SDL_AtomicGet(&_atmInt) == 1;
 			}
 			void join() {
-				Assert(getStatus() != Stat::Idle)
+				Assert(Trap, getStatus() != Stat::Idle)
 				_mtxP.lock();
 				if(_thread) {
 					_mtxP.unlock();
@@ -351,12 +353,12 @@ namespace rs {
 					_mtxP.unlock();
 			}
 			bool try_join(uint32_t ms) {
-				Assert(getStatus() != Stat::Idle)
+				Assert(Trap, getStatus() != Stat::Idle)
 				_mtxP.lock();
 				if(_thread) {
 					int res = SDL_CondWaitTimeout(_condP, _mtxP.getMutex(), ms);
 					_mtxP.unlock();
-					SDLEC_Check
+					SDLEC_Chk(Trap)
 					if(res == 0 || !isRunning()) {
 						SDL_WaitThread(_thread, nullptr);
 						_thread = nullptr;

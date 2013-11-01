@@ -6,11 +6,11 @@
 #include "spinner/misc.hpp"
 #include "clock.hpp"
 
-#define OVEC(...) EChk_baseA1<true, OVError>(__FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
+#define OVEC(act, ...) EChk_baseA1<OVError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
 #ifdef DEBUG
-	#define OVECA(...) OVEC(__VA_ARGS__)
+	#define OVEC_P(act, ...) OVEC(act, __VA_ARGS__)
 #else
-	#define OVECA(...) EChk_pass(__VA_ARGS__)
+	#define OVEC_P(act, ...) EChk_pass(__VA_ARGS__)
 #endif
 
 namespace rs {

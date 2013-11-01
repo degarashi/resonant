@@ -79,7 +79,7 @@ namespace rs {
 		return _playedCur == _writeCur;
 	}
 	void ABufSub::setPlayedCursor(int cur) {
-		Assert(_playedCur <= cur);
+		Assert(Trap, _playedCur <= cur);
 		_playedCur = cur;
 	}
 	void ABufSub::timeSeek(Duration t) {
@@ -106,7 +106,7 @@ namespace rs {
 		SDL_AudioSpec spec;
 		SDLMem buff;
 		Uint32 buffLen;
-		SDLEC(SDL_LoadWAV_RW, hRW.ref().getOps(), 0, &spec, &buff.ptr, &buffLen);
+		SDLEC(Trap, SDL_LoadWAV_RW, hRW.ref().getOps(), 0, &spec, &buff.ptr, &buffLen);
 		AFormat fmt(SDL_AUDIO_BITSIZE(spec.format) > 8, spec.channels!=1);
 		_format = AFormatF(fmt, spec.freq);
 		_buff.resize(buffLen);
@@ -139,7 +139,7 @@ namespace rs {
 	bool AOggStream::isStreaming() const { return true; }
 	size_t AOggStream::getData(void* dst, uint64_t offset, size_t buffLen) const {
 		uint64_t bsize = _format.getBlockSize();
-		Assert(offset % bsize == 0);
+		Assert(Trap, offset % bsize == 0);
 		if(_prevOffset != offset) {
 			auto pcmOffset = offset / bsize;
 			_vfile.pcmSeek(pcmOffset);
