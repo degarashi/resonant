@@ -579,20 +579,59 @@ namespace rs {
 	};
 	DEF_HANDLE(RWMgr, RW, RWops)
 
+	struct Color {
+		//! big endian で見た時のピクセルフォーマット
+		enum PFormat {
+			RGB8, RGBA8, ARGB8, RGB555, RGBA5551, ARGB1555
+		};
+		//! SDLフォーマットとの対応付け
+		struct Info {
+			uint32_t sdlformat,
+					bitsize,
+					maskR, maskG, maskB, maskA;
+		};
+		const static Info c_pfInfo[];
+
+		static uint32_t Map(PFormat format, int r, int g, int b);
+		static uint32_t Map(PFormat format, int r, int g, int b, int a);
+		template <class R, class G, class B>
+		static uint32_t Get(PFormat format, uint32_t pixel, R& r, G& g, B& b) {
+			int tmp;
+			Get(format, pixel, r, g, b, tmp);
+		}
+		template <class R, class G, class B, class A>
+		static uint32_t Get(PFormat format, uint32_t pixel, R& r, G& g, B& b, A& a) {
+			r = 0;
+			g = 0;
+			b = 0;
+			a = 0;
+			SDLEC_P(Trap, SDL_GetRGBA, pixel, c_pfInfo[format].sdlformat,
+				reinterpret_cast<uint8_t*>(&r),
+				reinterpret_cast<uint8_t*>(&g),
+				reinterpret_cast<uint8_t*>(&b),
+				reinterpret_cast<uint8_t*>(&a));
+		}
+	};
+
 	class Surface;
 	using SPSurface = std::shared_ptr<Surface>;
-	/*! 現状ではファイルへの読み書きのみサポート */
 	class Surface {
 		SDL_Surface*	_sfc;
 		Mutex			_mutex;
 
 		Surface(SDL_Surface* sfc);
-
 		public:
+			//! 任意のフォーマットの画像を読み込む
 			static SPSurface Load(HRW hRW);
+			//! 空のサーフェス作成
+			static SPSurface Create(int w, int h, Color::PFormat format);
+			//! ピクセルデータを元にサーフェス作成
+			static SPSurface Create(void* pSrc, int pitch, int w, int h, Color::PFormat format);
+
 			~Surface();
 			void saveAsBMP(HRW hDst) const;
 			void saveAsPNG(HRW hDst) const;
+			void fillRect(const spn::Rect& rect, uint32_t color);
 			void* lock();
 			void* try_lock();
 			void unlock();
