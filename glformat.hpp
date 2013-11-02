@@ -1,5 +1,11 @@
 #pragma once
 #include "glhead.hpp"
+#define BOOST_PP_VARIADICS 1
+#include <boost/preprocessor.hpp>
+#include <boost/variant.hpp>
+#include <boost/optional.hpp>
+#include <unordered_map>
+#include "spinner/misc.hpp"
 
 namespace rs {
 	#ifdef USE_OPENGLES2
@@ -172,7 +178,7 @@ namespace rs {
 		public:
 			GLFormatBase(GLenum fmt): GLFormat(fmt) {
 				// 深度のフォーマットかチェック (デバッグ時)
-				AAssert(Chk<0>::check(fmt));
+				AssertP(Trap, Chk<0>::check(fmt));
 			}
 			GLFormatBase& operator = (GLenum fmt) {
 				Chk<0>::check(fmt);

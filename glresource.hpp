@@ -20,25 +20,6 @@
 	#define SDLEC_ChkP(act)
 #endif
 
-// OpenGLに関するアサート集
-#define GLEC_Base(act, ...)		EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act)			EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define GLEC(act, ...)			GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
-#define GLECProg(act, id, ...)	GLEC_Base(AAct_##act<GLE_ProgramError, GLuint>(id), __VA_ARGS__)
-#define GLECSh(act, id, ...)	GLEC_Base(AAct_##act<GLE_ShaderError, GLuint>(id), __VA_ARGS__)
-#define GLECParam(act, name, ...)	GLEC_Base(AAct_##act<GLE_ParamNotFound, const char*>(name), __VA_ARGS__)
-#define GLECArg(act, shname, argname, ...)	GLEC_Base(AAct_##act<GLE_InvalidArgument, const char*, const char*>(shname, argname), __VA_ARGS__)
-#define GLECLog(act, ...)		GLEC_Base(AAct_##act<GLE_LogicalError>(), __VA_ARGS__)
-
-#define GLEC_Chk(act)			GLEC_Base0(AAct_##act<GLE_Error>())
-#ifdef DEBUG
-	#define GLEC_P(act, ...)	GLEC(act, __VA_ARGS__)
-	#define GLEC_ChkP(act)		GLEC_Chk(act)
-#else
-	#define GLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
-	#define GLEC_ChkP(act)
-#endif
-
 namespace rs {
 	using PathStr = spn::Dir::StrType;
 	//! Tech:Pass の組み合わせを表す
@@ -112,10 +93,6 @@ namespace rs {
 		virtual ~IGLResource() {}
 	};
 	// ------------------ GL例外クラス ------------------
-	//! OpenGLに関する全般的なエラー
-	struct GLE_Error : std::runtime_error {
-		using runtime_error::runtime_error;
-	};
 	using GLGetIV = decltype(glGetShaderiv);
 	using GLInfoFunc = decltype(glGetShaderInfoLog);
 	//! GLSLコンパイル関連のエラー基底
@@ -213,16 +190,6 @@ namespace rs {
 			GLIBuffer(GLuint dtype);
 	};
 	DEF_GLRESOURCE_INNER(GLIBuffer, (initData)(updateData))
-	//! OpenGLエラーIDとその詳細メッセージ
-	struct GLError {
-		const static std::pair<GLenum, const char*> ErrorList[];
-
-		static std::string s_tmp;
-		static const char* ErrorDesc();
-		static const char* GetAPIName();
-		//! エラー値を出力しなくなるまでループする
-		static void ResetError();
-	};
 	class GLFBufferTmp;
 	#define mgr_gl rs::GLRes::_ref()
 	//! OpenGL関連のリソースマネージャ
