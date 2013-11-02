@@ -8,18 +8,6 @@
 #include "glformat.hpp"
 #include "error.hpp"
 
-#define SDLEC_Base(act, ...)	EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Base0(act)		EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
-#define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
-#ifdef DEBUG
-	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
-	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
-#else
-	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
-	#define SDLEC_ChkP(act)
-#endif
-
 namespace rs {
 	using PathStr = spn::Dir::StrType;
 	//! Tech:Pass の組み合わせを表す

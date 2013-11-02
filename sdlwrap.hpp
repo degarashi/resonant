@@ -16,8 +16,10 @@
 #define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
 #ifdef DEBUG
 	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
+	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
 #else
 	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define SDLEC_ChkP(act)
 #endif
 
 namespace rs {
