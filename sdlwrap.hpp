@@ -7,6 +7,7 @@
 #include <SDL_thread.h>
 #include <SDL_events.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <exception>
 #include <stdexcept>
 #include <boost/optional.hpp>
@@ -17,35 +18,68 @@
 #define SDLEC_Base0(act)		EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
-#ifdef DEBUG
-	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
-	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
-#else
-	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
-	#define SDLEC_ChkP(act)
-#endif
 
 #define IMGEC_Base(act, ...)	EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #define IMGEC_Base0(act)		EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define IMGEC(act, ...)			IMGEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define IMGEC_Chk(act)			IMGEC_Base0(AAct_##act<std::runtime_error>())
+
+#define TTFEC_Base(act, ...)	EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define TTFEC_Base0(act)		EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define TTFEC(act, ...)			TTFEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
+#define TTFEC_Chk(act)			TTFEC_Base0(AAct_##act<std::runtime_error>())
+
 #ifdef DEBUG
+	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
+	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
 	#define IMGEC_P(act, ...)	IMGEC(act, __VA_ARGS__)
 	#define IMGEC_ChkP(act)		IMGEC_Chk(act)
+	#define TTFEC_P(act, ...)	TTFEC(act, __VA_ARGS__)
+	#define TTFEC_ChkP(act)		TTFEC_Chk(act)
 #else
+	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define SDLEC_ChkP(act)
 	#define IMGEC_P(act, ...)	EChk_pass(__VA_ARGS__)
 	#define IMGEC_ChkP(act)
+	#define TTFEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define TTFEC_ChkP(act)
 #endif
 
 namespace rs {
-#define DEF_SDLERROR(name) struct name { \
-		static std::string	s_errString; \
-		static const char* ErrorDesc(); \
-		static const char* GetAPIName(); };
-	DEF_SDLERROR(SDLError)
-	DEF_SDLERROR(IMGError)
-	DEF_SDLERROR(TTFError)
-#undef DEF_SDLERROR
+	struct SDLErrorI {
+		static const char* Get();
+		static void Reset();
+		static const char *const c_apiName;
+	};
+	struct IMGErrorI {
+		static const char* Get();
+		static void Reset();
+		static const char *const c_apiName;
+	};
+	struct TTFErrorI {
+		static const char* Get();
+		static void Reset();
+		static const char *const c_apiName;
+	};
+	template <class I>
+	struct ErrorT {
+		static std::string	s_errString;
+		static const char* ErrorDesc() {
+			const char* err = I::Get();
+			if(*err != '\0') {
+				s_errString = err;
+				I::Reset();
+				return s_errString.c_str();
+			}
+			return nullptr;
+		}
+		static const char *const GetAPIName() {
+			return I::c_apiName;
+		}
+	};
+	using SDLError = ErrorT<SDLErrorI>;
+	using IMGError = ErrorT<IMGErrorI>;
+	using TTFError = ErrorT<TTFErrorI>;
 
 	extern SDL_threadID thread_local tls_threadID;
 	//! 実行環境に関する情報を取得

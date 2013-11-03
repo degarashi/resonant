@@ -2,34 +2,18 @@
 #include <iostream>
 
 namespace rs {
-	// -------------------- SDLError --------------------
-	std::string SDLError::s_errString;
-	const char* SDLError::ErrorDesc() {
-		const char* err = SDL_GetError();
-		if(*err != '\0') {
-			s_errString = err;
-			SDL_ClearError();
-			return s_errString.c_str();
-		}
-		return nullptr;
-	}
-	const char* SDLError::GetAPIName() {
-		return "SDL";
-	}
 	SDL_threadID thread_local tls_threadID(~0);
 
+	// -------------------- SDLError --------------------
+	const char* SDLErrorI::Get() { return SDL_GetError(); }
+	void SDLErrorI::Reset() { SDL_ClearError(); }
+	const char *const SDLErrorI::c_apiName = "SDL2";
 	// -------------------- IMGError --------------------
-	std::string IMGError::s_errString;
-	const char* IMGError::ErrorDesc() {
-		const char* err = IMG_GetError();
-		if(*err != '\0') {
-			s_errString = err;
-			IMG_SetError("");
-			return s_errString.c_str();
-		}
-		return nullptr;
-	}
-	const char* IMGError::GetAPIName() {
-		return "SDL2_image";
-	}
+	const char* IMGErrorI::Get() { return IMG_GetError(); }
+	void IMGErrorI::Reset() { IMG_SetError(""); }
+	const char *const IMGErrorI::c_apiName = "SDL2_image";
+	// -------------------- TTFError --------------------
+	const char* TTFErrorI::Get() { return TTF_GetError(); }
+	void TTFErrorI::Reset() { TTF_SetError(""); }
+	const char *const TTFErrorI::c_apiName = "SDL2_ttf";
 }
