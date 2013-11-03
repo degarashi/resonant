@@ -1,6 +1,7 @@
 #pragma once
 #include "spinner/misc.hpp"
 #include "spinner/resmgr.hpp"
+#include "spinner/dir.hpp"
 #include <SDL.h>
 #include <SDL_atomic.h>
 #include <SDL_thread.h>
@@ -537,7 +538,7 @@ namespace rs {
 			}
 			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
 			static RWops FromMem(void* mem, int size, EndCB cb=nullptr);
-			static RWops FromFile(const std::string& path, const char* mode);
+			static RWops FromFile(const spn::PathStr& path, const char* mode);
 
 			RWops(RWops&& ops);
 			RWops& operator = (RWops&& ops);
@@ -569,7 +570,7 @@ namespace rs {
 		public:
 			using base_type = spn::ResMgrN<RWops, RWMgr>;
 			using LHdl = AnotherLHandle<RWops>;
-			LHdl fromFile(const std::string& path, const char* mode, bool bNotKey=false);
+			LHdl fromFile(const spn::PathStr& path, const char* mode, bool bNotKey=false);
 			template <class T>
 			LHdl fromVector(T&& t) {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }

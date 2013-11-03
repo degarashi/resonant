@@ -11,7 +11,7 @@ namespace rs {
 		return RWops(SDL_RWFromFP(fp, autoClose ? SDL_TRUE : SDL_FALSE),
 					 _ReadMode(mode), nullptr);
 	}
-	RWops RWops::FromFile(const std::string& path, const char* mode) {
+	RWops RWops::FromFile(const spn::PathStr& path, const char* mode) {
 		return RWops(SDL_RWFromFile(path.c_str(), mode),
 					_ReadMode(mode), nullptr);
 	}
@@ -123,7 +123,7 @@ namespace rs {
 	}
 
 	// ---------------------------- RWMgr ----------------------------
-	HLRW RWMgr::fromFile(const std::string& path, const char* mode, bool bNotKey) {
+	HLRW RWMgr::fromFile(const spn::PathStr& path, const char* mode, bool bNotKey) {
 		auto rw = RWops::FromFile(path, mode);
 		if(bNotKey)
 			return base_type::acquire(std::move(rw));
