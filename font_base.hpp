@@ -48,51 +48,51 @@ namespace rs {
 		}
 	};
 	using FontName = spn::FixStr<char,32>;
-
-	namespace std {
-		template <>
-		struct hash<CharID> {
-			uint32_t operator()(const CharID& cid) const {
-				// MSBを必ず0にする
-				uint32_t tmp = cid.code ^ 0x1234abcd;
-				return ((cid.cleanedValue() * cid.code) ^ tmp) & 0x7fffffff;
-			}
-		};
-		template <>
-		struct hash<FontName> {
-			uint32_t operator()(const FontName& fn) const {
-				// MSBを必ず1にする
-				return hash<std::string>()(std::string(fn)) | 0x80000000;
-			}
-		};
-		template <>
-		struct hash<CCoreID> {
-			uint32_t operator()(const CCoreID& cid)	const {
-				return cid.cleanedValue();
-			}
-		};
-	}
-
+}
+namespace std {
+	template <>
+	struct hash<rs::CharID> {
+		uint32_t operator()(const rs::CharID& cid) const {
+			// MSBを必ず0にする
+			uint32_t tmp = cid.code ^ 0x1234abcd;
+			return ((cid.cleanedValue() * cid.code) ^ tmp) & 0x7fffffff;
+		}
+	};
+	template <>
+	struct hash<rs::FontName> {
+		uint32_t operator()(const rs::FontName& fn) const {
+			// MSBを必ず1にする
+			return hash<std::string>()(std::string(fn)) | 0x80000000;
+		}
+	};
+	template <>
+	struct hash<rs::CCoreID> {
+		uint32_t operator()(const rs::CCoreID& cid)	const {
+			return cid.cleanedValue();
+		}
+	};
+}
+namespace rs {
 	struct LaneRaw {
-		HTex	hTex;
-		Rect	rect;	//!< 管理している領域
+		HTex		hTex;
+		spn::Rect	rect;	//!< 管理している領域
 	};
 	struct Lane : LaneRaw {
 		Lane	*pNext = nullptr;
-		Lane(HTex hT, const Rect& r): LaneRaw{hT, r} {}
+		Lane(HTex hT, const spn::Rect& r): LaneRaw{hT, r} {}
 	};
 	struct ILaneAlloc {
 		virtual ~ILaneAlloc() {}
 		virtual bool alloc(LaneRaw& dst, size_t w) = 0;
-		virtual void addFreeLane(HTex hTex, const Rect& rect) = 0;
+		virtual void addFreeLane(HTex hTex, const spn::Rect& rect) = 0;
 		virtual void clear() = 0;
 	};
 	using UPLaneAlloc = std::unique_ptr<ILaneAlloc>;
 	//! CharPlaneと、その位置
 	struct CharPos {
 		HTex		hTex;		//!< フォントが格納されているテクスチャ (ハンドル所有権は別途CharPlaneが持つ)
-		RectF		uv;			//!< 参照すべきUV値
-		Rect		box;		//!< フォント原点に対する相対描画位置 (サイズ)
+		spn::RectF	uv;			//!< 参照すべきUV値
+		spn::Rect	box;		//!< フォント原点に対する相対描画位置 (サイズ)
 		int			space;		//!< カーソルを進めるべき距離
 	};
 	//! フォントのGLテクスチャ

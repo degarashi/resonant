@@ -52,7 +52,7 @@ namespace rs {
 			assert(pl->rect.width() >= static_cast<int>(w));
 
 			dst.hTex = pl->hTex;
-			dst.rect = Rect(pl->rect.x0, pl->rect.x0+w, pl->rect.y0, pl->rect.y1);
+			dst.rect = spn::Rect(pl->rect.x0, pl->rect.x0+w, pl->rect.y0, pl->rect.y1);
 			// 使った容量分縮める
 			pl->rect.shrinkLeft(w);
 			if(pl->rect.width() < MinSize) {
@@ -100,7 +100,7 @@ namespace rs {
 					}
 				}
 			}
-			void addFreeLane(HTex hTex, const Rect& rect) override {
+			void addFreeLane(HTex hTex, const spn::Rect& rect) override {
 				_addFreeLane(new Lane{hTex, rect});
 			}
 			/*! \return 容量不足で確保できない時はfalse */
