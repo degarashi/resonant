@@ -64,19 +64,19 @@ namespace rs {
 		r.h = rect.height();
 		SDLEC_P(Trap, SDL_FillRect, _sfc, &r, color);
 	}
-	void* Surface::lock() {
+	Surface::LockObj Surface::lock() {
 		_mutex.lock();
 		SDLEC_P(Trap, SDL_LockSurface, _sfc);
-		return _sfc->pixels;
+		return LockObj(*this, _sfc->pixels, _sfc->pitch);
 	}
-	void* Surface::try_lock() {
+	Surface::LockObj Surface::try_lock() {
 		if(_mutex.try_lock()) {
 			SDLEC_P(Trap, SDL_LockSurface, _sfc);
-			return _sfc->pixels;
+			return LockObj(*this, _sfc->pixels, _sfc->pitch);
 		}
-		return nullptr;
+		return LockObj(*this, nullptr, 0);
 	}
-	void Surface::unlock() {
+	void Surface::_unlock() {
 		SDLEC_P(Trap, SDL_UnlockSurface, _sfc);
 		_mutex.unlock();
 	}
@@ -85,5 +85,21 @@ namespace rs {
 	}
 	const SDL_PixelFormat& Surface::getFormat() const {
 		return *_sfc->format;
+	}
+
+	Surface::LockObj::LockObj(Surface& sfc, void* bits, int pitch): _sfc(sfc), _bits(bits), _pitch(pitch) {}
+	Surface::LockObj::LockObj(LockObj&& lk): _sfc(lk._sfc), _bits(lk._bits), _pitch(lk._pitch) {}
+	Surface::LockObj::~LockObj() {
+		if(_bits)
+			_sfc._unlock();
+	}
+	Surface::LockObj::operator bool() const {
+		return _bits != nullptr;
+	}
+	int Surface::width() const {
+		return _sfc->w;
+	}
+	int Surface::height() const {
+		return _sfc->h;
 	}
 }

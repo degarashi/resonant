@@ -618,6 +618,20 @@ namespace rs {
 	class Surface {
 		SDL_Surface*	_sfc;
 		Mutex			_mutex;
+		class LockObj {
+			Surface& 	_sfc;
+			void*		_bits;
+			int			_pitch;
+
+			public:
+				LockObj(LockObj&& lk);
+				LockObj(Surface& sfc, void* bits, int pitch);
+				~LockObj();
+				void* getBits();
+				int getPitch();
+				operator bool () const;
+		};
+		void _unlock();
 
 		Surface(SDL_Surface* sfc);
 		public:
@@ -632,10 +646,11 @@ namespace rs {
 			void saveAsBMP(HRW hDst) const;
 			void saveAsPNG(HRW hDst) const;
 			void fillRect(const spn::Rect& rect, uint32_t color);
-			void* lock();
-			void* try_lock();
-			void unlock();
+			LockObj lock();
+			LockObj try_lock();
 			spn::Size getSize() const;
 			const SDL_PixelFormat& getFormat() const;
+			int width() const;
+			int height() const;
 	};
 }
