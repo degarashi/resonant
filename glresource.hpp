@@ -9,7 +9,6 @@
 #include "error.hpp"
 
 namespace rs {
-	using PathStr = spn::Dir::StrType;
 	//! Tech:Pass の組み合わせを表す
 	struct GL16ID {
 		union {
@@ -181,8 +180,8 @@ namespace rs {
 	class GLFBufferTmp;
 	#define mgr_gl rs::GLRes::_ref()
 	//! OpenGL関連のリソースマネージャ
-	class GLRes : public spn::ResMgrN<UPResource, GLRes, PathStr> {
-		using base_type = spn::ResMgrN<UPResource, GLRes, PathStr>;
+	class GLRes : public spn::ResMgrN<UPResource, GLRes, spn::PathStr> {
+		using base_type = spn::ResMgrN<UPResource, GLRes, spn::PathStr>;
 		UPFBuffer						_upFb;
 		std::unique_ptr<GLFBufferTmp>	_tmpFb;
 		//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
@@ -209,7 +208,7 @@ namespace rs {
 
 			// ------------ Texture ------------
 			//! ファイルからテクスチャを読み込む
-			AnotherLHandle<UPTexture> loadTexture(const PathStr& path, bool bCube=false);
+			AnotherLHandle<UPTexture> loadTexture(const spn::PathStr& path, bool bCube=false);
 			//! 空のテクスチャを作成
 			/*! 中身はゴミデータ */
 			AnotherLHandle<UPTexture> createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore=false);
@@ -226,14 +225,14 @@ namespace rs {
 
 			// ------------ Buffer ------------
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect> loadEffect(const PathStr& path);
+			AnotherLHandle<UPEffect> loadEffect(const spn::PathStr& path);
 			//! 頂点バッファの確保
 			AnotherLHandle<UPVBuffer> makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
 			AnotherLHandle<UPIBuffer> makeIBuffer(GLuint dtype);
 
 			AnotherSHandle<UPTexture> getEmptyTexture() const;
-			LHdl _common(const PathStr& key, std::function<UPResource()> cb);
+			LHdl _common(const spn::PathStr& key, std::function<UPResource()> cb);
 			GLFBufferTmp& getTmpFramebuffer() const;
 	};
 
@@ -319,7 +318,7 @@ namespace rs {
 			bool isCubemap() const;
 
 			//! 内容をファイルに保存 (主にデバッグ用)
-			bool save(const PathStr& path);
+			void save(const spn::PathStr& path);
 	};
 	DEF_GLRESOURCE_INNER(IGLTexture, (setFilter)(setAnisotropicCoeff)(setUVWrap))
 
@@ -350,14 +349,14 @@ namespace rs {
 	/*! DeviceReset時:
 		再度ファイルから読み出す */
 	class TexFile : public IGLTexture {
-		using QS6 = Pack<PathStr, 6>;
-		boost::variant<PathStr, QS6>	_fPath;
+		using QS6 = Pack<spn::PathStr, 6>;
+		boost::variant<spn::PathStr, QS6>	_fPath;
 
 		public:
 			//! Cube時: 連番ファイル名から作成
-			TexFile(const PathStr& path, bool bCube);
-			TexFile(const PathStr& path0, const PathStr& path1, const PathStr& path2,
-										const PathStr& path3, const PathStr& path4, const PathStr& path5);
+			TexFile(const spn::PathStr& path, bool bCube);
+			TexFile(const spn::PathStr& path0, const spn::PathStr& path1, const spn::PathStr& path2,
+										const spn::PathStr& path3, const spn::PathStr& path4, const spn::PathStr& path5);
 			void onDeviceReset() override;
 			bool operator == (const TexFile& t) const;
 	};

@@ -1,4 +1,6 @@
 #include "glresource.hpp"
+#include "sdlwrap.hpp"
+#include <functional>
 
 namespace rs {
 	// ------------------------- IGLTexture -------------------------
@@ -43,7 +45,7 @@ namespace rs {
 	bool IGLTexture::IsMipmap(State level) {
 		return level >= MipmapNear;
 	}
-	bool IGLTexture::save(const PathStr& path) {
+	void IGLTexture::save(const spn::PathStr& path) {
 		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(GL_RGBA8, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
 		#ifndef USE_OPENGLES2
@@ -54,9 +56,9 @@ namespace rs {
 		#else
 			AssertMsg(Trap, false, "not implemented yet");
 		#endif
-		AssertMsg(Trap, false, "not implemented yet");
-// 		QImage img(&buff[0], _size.width, _size.height, QImage::Format_ARGB32);
-// 		return img.save(path);
+		auto sfc = rs::Surface::Create(&buff[0], sizeof(uint32_t)*_size.width, _size.width, _size.height, Color::RGBA8);
+		auto hlRW = mgr_rw.fromFile(path, "w", true);
+		sfc->saveAsPNG(hlRW);
 	}
 	IGLTexture::Inner1& IGLTexture::setAnisotropicCoeff(float coeff) {
 		_coeff = coeff;
@@ -87,7 +89,7 @@ namespace rs {
 		if(_idTex != 0) {
 			glDeleteTextures(1, &_idTex);
 			_idTex = 0;
-   GLEC_ChkP(Trap)
+			GLEC_ChkP(Trap)
 		}
 	}
 	IGLTexture::Inner1& IGLTexture::setUVWrap(GLuint s, GLuint t) {
@@ -99,31 +101,30 @@ namespace rs {
 		return Inner1::Cast(this);
 	}
 
-	#include <functional>
 	namespace {
 		auto GLTNomipBase = [](GLuint flag, int w, int h, const GLubyte* ptr) -> spn::Size {
 			glTexImage2D(flag, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
 			return spn::Size(w,h);
 		};
 		auto GLTMipBase = [](GLuint flag, int w, int h, const GLubyte* ptr) -> spn::Size {
-			auto res = gluBuild2DMipmaps(flag, GL_RGBA, w, h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
-			if(res != 0)
-				throw GLE_Error(reinterpret_cast<const char*>(gluErrorString(res)));
+			//TODO: glu関数を使わずにミップマップを作成
+			AssertMsg(Trap, false, "not implemented yet")
+// 			auto res = gluBuild2DMipmaps(flag, GL_RGBA, w, h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
+// 			if(res != 0)
+// 				throw GLE_Error(reinterpret_cast<const char*>(gluErrorString(res)));
 			return spn::Size(w,h);
 		};
 
 		// Mip / NoMip を吸収
-		auto GLTNomipI = [](GLuint flag, const QImage& img) -> spn::Size {
-			return GLTNomipBase(flag, img.width(), img.height(), img.constBits()); };
-		auto GLTMipI = [](GLuint flag, const QImage& img) -> spn::Size {
-			return GLTMipBase(flag, img.width(), img.height(), img.constBits()); };
+		auto GLTNomipI = [](GLuint flag, const SPSurface& s) -> spn::Size {
+			return GLTNomipBase(flag, s->width(), s->height(), reinterpret_cast<const GLubyte*>(s->lock().getBits())); };
+		auto GLTMipI = [](GLuint flag, const SPSurface& s) -> spn::Size {
+			return GLTMipBase(flag, s->width(), s->height(), reinterpret_cast<const GLubyte*>(s->lock().getBits())); };
 
-		auto GLTNomip = [](GLuint flag, const QString& str) -> spn::Size {
-			QImage img(str);
-			return GLTNomipI(flag, img); };
-		auto GLTMip = [](GLuint flag, const QString& str) -> spn::Size {
-				QImage img(str);
-				return GLTMipI(flag, img); };
+		auto GLTNomip = [](GLuint flag, const spn::PathStr& str) -> spn::Size {
+			return GLTNomipI(flag, Surface::Load(mgr_rw.fromFile(str, "r", true))); };
+		auto GLTMip = [](GLuint flag, const spn::PathStr& str) -> spn::Size {
+				return GLTMipI(flag, Surface::Load(mgr_rw.fromFile(str, "r", true))); };
 
 		auto GLTNomipG = [](GLuint flag, const ITDGen* gen) -> spn::Size {
 			return GLTNomipBase(flag, gen->getWidth(), gen->getHeight(), gen->getPtr()); };
@@ -161,9 +162,9 @@ namespace rs {
 		}
 	}
 	// ------------------------- TexFile -------------------------
-	TexFile::TexFile(const QString& path, bool bCube): IGLTexture(GL_RGBA8, bCube), _fPath(path) {}
-	TexFile::TexFile(const QString& path0, const QString& path1, const QString& path2,
-					const QString& path3, const QString& path4, const QString& path5): IGLTexture(GL_RGBA8, true), _fPath(QS6{path0,path1,path2,path3,path4,path5}) {}
+	TexFile::TexFile(const spn::PathStr& path, bool bCube): IGLTexture(GL_RGBA8, bCube), _fPath(path) {}
+	TexFile::TexFile(const spn::PathStr& path0, const spn::PathStr& path1, const spn::PathStr& path2,
+					const spn::PathStr& path3, const spn::PathStr& path4, const spn::PathStr& path5): IGLTexture(GL_RGBA8, true), _fPath(QS6{path0,path1,path2,path3,path4,path5}) {}
 
 	void TexFile::onDeviceReset() {
 		if(_onDeviceReset()) {
@@ -175,7 +176,7 @@ namespace rs {
 	bool TexFile::operator == (const TexFile& t) const {
 		return boost::apply_visitor(MyCompare(), _fPath, t._fPath);
 	}
-
+#ifdef QT5
 	// ------------------------- TexUser -------------------------
 	TexUser::TexUser(const QImage& img): IGLTexture(GL_RGBA8, false), _image(img) {}
 	TexUser::TexUser(const QImage& img0, const QImage& img1, const QImage& img2,
@@ -191,8 +192,9 @@ namespace rs {
 	bool TexUser::operator == (const TexUser& t) const {
 		return boost::apply_visitor(MyCompare(), _image, t._image);
 	}
+#endif
 	// ------------------------- TexEmpty -------------------------
-	TexEmpty::TexEmpty(const Size& size, GLInSizedFmt fmt, bool bRestore): IGLTexture(fmt, false), _bRestore(bRestore) {
+	TexEmpty::TexEmpty(const spn::Size& size, GLInSizedFmt fmt, bool bRestore): IGLTexture(fmt, false), _bRestore(bRestore) {
 		_size = size;
 	}
 	void TexEmpty::_prepareBuffer() {
@@ -244,17 +246,17 @@ namespace rs {
 
 	// DeviceLostの時にこのメソッドを読んでも無意味
 	void TexEmpty::writeData(GLInSizedFmt fmt, spn::AB_Byte buff, int width, GLTypeFmt srcFmt, bool bRestore) {
-		int height = buff.getSize() / width;
-		_size = Size(width, height);
+		int height = buff.getLength() / width;
+		_size = spn::Size(width, height);
 		_format = fmt;
 		// バッファ容量がサイズ以上かチェック
 		auto szInput = GLFormat::QuerySize(srcFmt);
-		Assert(buff.getSize() >= width*height*szInput)
+		Assert(Trap, buff.getLength() >= width*height*szInput)
 		// DeviceLost中でなければすぐにテクスチャを作成するが、そうでなければ内部バッファにコピーするのみ
 		if(_idTex != 0) {
 			// テクスチャに転送
 			glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, fmt.get(), srcFmt.get(), buff.getPtr());
-			GL_Check()
+			GLEC_Chk(Trap)
 		} else {
 			if(bRestore) {
 				// 内部バッファへmove
@@ -266,7 +268,7 @@ namespace rs {
 	}
 	void TexEmpty::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt) {
 		size_t bs = GLFormat::QueryByteSize(_format.get(), GL_UNSIGNED_BYTE);
-		auto sz = buff.getSize();
+		auto sz = buff.getLength();
 		int height = sz / (width * bs);
 		if(_idTex != 0) {
 			auto u = use();
@@ -279,7 +281,7 @@ namespace rs {
 			if(_buff) {
 				// でもフォーマットが違う時は警告だけ出して何もしない
 				if(*_typeFormat != srcFmt)
-					WarnArg(false, "テクスチャのフォーマットが違うので部分的に書き込めない")
+					AssertMsg(Warn, false, "テクスチャのフォーマットが違うので部分的に書き込めない")
 				else {
 					auto& b = *_buff;
 					auto* dst = &b[_size.width * ofsY + ofsX];

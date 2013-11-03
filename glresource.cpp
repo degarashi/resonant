@@ -16,14 +16,14 @@ namespace rs {
 		onDeviceLost();
 	}
 
-	GLRes::LHdl GLRes::_common(const PathStr& key, std::function<UPResource ()> cb) {
+	GLRes::LHdl GLRes::_common(const spn::PathStr& key, std::function<UPResource ()> cb) {
 		LHdl lh = getFromKey(key);
 		if(!lh.valid())
 			lh = base_type::acquire(key, cb()).first;
 		initHandle(lh);
 		return std::move(lh);
 	}
-	HLTex GLRes::loadTexture(const PathStr& path, bool bCube) {
+	HLTex GLRes::loadTexture(const spn::PathStr& path, bool bCube) {
 		LHdl lh = _common(path, [&](){return UPResource(new TexFile(path,bCube));});
 		return Cast<UPTexture>(std::move(lh));
 	}
@@ -38,7 +38,7 @@ namespace rs {
 		initHandle(lh);
 		return Cast<UPShader>(std::move(lh));
 	}
-	HLFx GLRes::loadEffect(const PathStr& path) {
+	HLFx GLRes::loadEffect(const spn::PathStr& path) {
 		LHdl lh = _common(path, [&](){ return UPResource(new GLEffect(path)); });
 		return Cast<UPEffect>(std::move(lh));
 	}
