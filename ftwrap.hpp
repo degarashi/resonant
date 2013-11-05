@@ -1,6 +1,7 @@
 #pragma once
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_OUTLINE_H
 #include "spinner/misc.hpp"
 #include "spinner/abstbuff.hpp"
 #include "spinner/resmgr.hpp"
@@ -14,8 +15,15 @@ namespace rs {
 				Mono = FT_RENDER_MODE_MONO,
 				LCD = FT_RENDER_MODE_LCD
 			};
+			enum class Style {
+				Normal,
+				Bold,
+				Italic,
+				Strike
+			};
 		private:
 			FT_Face		_face;
+			Style		_style;
 			struct FInfo {
 				int	height,
 					maxWidth;		// フォントの最大横幅
@@ -40,6 +48,8 @@ namespace rs {
 			~FTFace();
 			void setPixelSizes(int w, int h);
 			void setCharSize(int w, int h, int dpW, int dpH);
+			void setSizeFromLine(int lineHeight);
+			void setStyle(Style style);
 			//! 文字のビットマップを準備
 			void prepareGlyph(char32_t code, RenderMode mode);
 			const Info& getGlyphInfo() const;
@@ -48,6 +58,7 @@ namespace rs {
 			const char* getStyleName() const;
 			int getNFace() const;
 			int getFaceIndex() const;
+			Style getStyle() const;
 	};
 	//! 1bitのモノクロビットマップを8bitのグレースケールへ変換
 	spn::ByteBuff Convert1Bit_8Bit(const void* src, int width, int pitch, int nrow);

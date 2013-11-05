@@ -17,7 +17,7 @@ namespace rs {
 	}
 
 	// ---------------------- FTFace ----------------------
-	FTFace::FTFace(FT_Face face): _face(face) {}
+	FTFace::FTFace(FT_Face face): _face(face), _style(Style::Normal) {}
 	FTFace::FTFace(FTFace&& f): _face(f._face) {
 		f._face = nullptr;
 	}
@@ -34,16 +34,24 @@ namespace rs {
 	// 		  _info.horiBearingX == _info.bmp_left &&
 	// 		  _info.horiBearingY == _info.bmp_top);
 	void FTFace::prepareGlyph(char32_t code, RenderMode mode) {
-	// 	FT_Load_Char(_face, code, FT_LOAD_RENDER);
 		uint32_t gindex = FT_Get_Char_Index(_face, code);
-		int res = FT_Load_Glyph(_face, gindex, FT_LOAD_DEFAULT);
-		auto& slot2 = _face->glyph;
-		// Auto -> FT_LOAD_DEFAULT
-		// Bitmap -> FT_LOAD_DEFAULT if(!bitmap) Render_Glyph(MONO)
-		// AA -> FT_LOAD_NO_BITMAP Render_Glyph(DEFAULT)
-
-		res = FT_Render_Glyph(_face->glyph, FT_RENDER_MODE_NORMAL);//static_cast<FT_Render_Mode>(mode));
-		auto& slot = _face->glyph;
+		FT_Load_Glyph(_face, gindex, _style==Style::Normal ? FT_LOAD_DEFAULT : FT_LOAD_NO_BITMAP);
+		auto* slot = _face->glyph;
+		if(_style == Style::Normal) {
+			if(slot->format != FT_GLYPH_FORMAT_BITMAP)
+				FT_Render_Glyph(slot, static_cast<FT_Render_Mode>(mode));
+		} else if(_style == Style::Bold) {
+			int strength = 1 << 6;
+			FT_Outline_Embolden(&slot->outline, strength);
+			FT_Render_Glyph(slot, static_cast<FT_Render_Mode>(mode));
+		} else if(_style == Style::Italic) {
+			FT_Matrix mat;
+			mat.xx = 1 << 16;
+			mat.xy = 0x5800;
+			mat.yx = 0;
+			mat.yy = 1 << 16;
+			FT_Outline_Transform(&slot->outline, &mat);
+		}
 		assert(slot->format == FT_GLYPH_FORMAT_BITMAP);
 
 		auto& met = slot->metrics;
@@ -69,6 +77,15 @@ namespace rs {
 	}
 	void FTFace::setCharSize(int w, int h, int dpW, int dpH) {
 		FT_Set_Char_Size(_face, w, h, dpW, dpH);
+		_updateFaceInfo();
+	}
+	void FTFace::setSizeFromLine(int lineHeight) {
+		FT_Size_RequestRec req;
+		req.height = lineHeight;
+		req.width = 0;
+		req.type = FT_SIZE_REQUEST_TYPE_CELL;
+		req.horiResolution = req.vertResolution = 0;
+		FT_Request_Size(_face, &req);
 		_updateFaceInfo();
 	}
 	void FTFace::_updateFaceInfo() {
