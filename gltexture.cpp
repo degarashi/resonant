@@ -56,7 +56,7 @@ namespace rs {
 		#else
 			AssertMsg(Trap, false, "not implemented yet");
 		#endif
-		auto sfc = rs::Surface::Create(&buff[0], sizeof(uint32_t)*_size.width, _size.width, _size.height, Color::RGBA8);
+		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, Color::RGBA8);
 		auto hlRW = mgr_rw.fromFile(path, "w", true);
 		sfc->saveAsPNG(hlRW);
 	}

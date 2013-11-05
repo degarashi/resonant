@@ -31,7 +31,8 @@ namespace rs {
 	}
 
 	// -------------------- Surface --------------------
-	Surface::Surface(SDL_Surface* sfc): _sfc(sfc) {}
+	Surface::Surface(SDL_Surface* sfc): _sfc(sfc), _buff(nullptr, 0) {}
+	Surface::Surface(SDL_Surface* sfc, spn::ByteBuff&& buff): _sfc(sfc), _buff(std::move(buff)) {}
 	Surface::~Surface() {
 		SDL_FreeSurface(_sfc);
 	}
@@ -40,10 +41,15 @@ namespace rs {
 		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurface, 0, w, h, info.bitsize, info.maskR, info.maskG, info.maskB, info.maskA);
 		return SPSurface(new Surface(sfc));
 	}
-	SPSurface Surface::Create(void* pSrc, int pitch, int w, int h, Color::PFormat format) {
+	SPSurface Surface::Create(const spn::ByteBuff& src, int pitch, int w, int h, Color::PFormat format) {
+		return Create(spn::ByteBuff(src), pitch, w, h, format);
+	}
+	SPSurface Surface::Create(spn::ByteBuff&& src, int pitch, int w, int h, Color::PFormat format) {
 		auto& info = Color::c_pfInfo[format];
-		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurfaceFrom, pSrc, w, h, info.bitsize, pitch, info.maskR, info.maskG, info.maskB, info.maskA);
-		return SPSurface(new Surface(sfc));
+		if(pitch==0)
+			pitch = info.bitsize/8*w;
+		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurfaceFrom, &src[0], w, h, info.bitsize, pitch, info.maskR, info.maskG, info.maskB, info.maskA);
+		return SPSurface(new Surface(sfc, std::move(src)));
 	}
 	SPSurface Surface::Load(HRW hRW) {
 		SDL_RWops* rw = hRW.ref().getOps();

@@ -670,6 +670,7 @@ namespace rs {
 	class Surface {
 		SDL_Surface*	_sfc;
 		Mutex			_mutex;
+		spn::AB_Byte	_buff;
 		class LockObj {
 			Surface& 	_sfc;
 			void*		_bits;
@@ -686,13 +687,15 @@ namespace rs {
 		void _unlock();
 
 		Surface(SDL_Surface* sfc);
+		Surface(SDL_Surface* sfc, spn::ByteBuff&& buff);
 		public:
 			//! 任意のフォーマットの画像を読み込む
 			static SPSurface Load(HRW hRW);
 			//! 空のサーフェス作成
 			static SPSurface Create(int w, int h, Color::PFormat format);
 			//! ピクセルデータを元にサーフェス作成
-			static SPSurface Create(void* pSrc, int pitch, int w, int h, Color::PFormat format);
+			static SPSurface Create(const spn::ByteBuff& src, int pitch, int w, int h, Color::PFormat format);
+			static SPSurface Create(spn::ByteBuff&& src, int pitch, int w, int h, Color::PFormat format);
 
 			~Surface();
 			void saveAsBMP(HRW hDst) const;
