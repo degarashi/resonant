@@ -572,7 +572,7 @@ namespace rs {
 			}
 			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
 			static RWops FromMem(void* mem, int size, EndCB cb=nullptr);
-			static RWops FromFile(const spn::PathStr& path, const char* mode);
+			static RWops FromFile(spn::ToPathStr path, const char* mode);
 
 			RWops(RWops&& ops);
 			RWops& operator = (RWops&& ops);
@@ -598,13 +598,14 @@ namespace rs {
 			bool writeLE(uint32_t value);
 			bool writeLE(uint64_t value);
 			SDL_RWops* getOps();
+			spn::ByteBuff readAll();
 	};
 	#define mgr_rw rs::RWMgr::_ref()
 	class RWMgr : public spn::ResMgrN<RWops, RWMgr> {
 		public:
 			using base_type = spn::ResMgrN<RWops, RWMgr>;
 			using LHdl = AnotherLHandle<RWops>;
-			LHdl fromFile(const spn::PathStr& path, const char* mode, bool bNotKey=false);
+			LHdl fromFile(spn::ToPathStr path, const char* mode, bool bNotKey=false);
 			template <class T>
 			LHdl fromVector(T&& t) {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }

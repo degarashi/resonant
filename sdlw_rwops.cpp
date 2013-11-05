@@ -11,8 +11,8 @@ namespace rs {
 		return RWops(SDL_RWFromFP(fp, autoClose ? SDL_TRUE : SDL_FALSE),
 					 _ReadMode(mode), nullptr);
 	}
-	RWops RWops::FromFile(const spn::PathStr& path, const char* mode) {
-		return RWops(SDL_RWFromFile(path.c_str(), mode),
+	RWops RWops::FromFile(spn::ToPathStr path, const char* mode) {
+		return RWops(SDL_RWFromFile(path.getStringPtr(), mode),
 					_ReadMode(mode), nullptr);
 	}
 	int RWops::_ReadMode(const char* mode) {
@@ -121,13 +121,22 @@ namespace rs {
 	SDL_RWops* RWops::getOps() {
 		return _ops;
 	}
+	spn::ByteBuff RWops::readAll() {
+		auto pos = tell();
+		size_t sz = size();
+		spn::ByteBuff buff(sz);
+		seek(0, Begin);
+		read(&buff[0], sz, 1);
+		seek(pos, Begin);
+		return std::move(buff);
+	}
 
 	// ---------------------------- RWMgr ----------------------------
-	HLRW RWMgr::fromFile(const spn::PathStr& path, const char* mode, bool bNotKey) {
+	HLRW RWMgr::fromFile(spn::ToPathStr path, const char* mode, bool bNotKey) {
 		auto rw = RWops::FromFile(path, mode);
 		if(bNotKey)
 			return base_type::acquire(std::move(rw));
-		return base_type::acquire(path, RWops::FromFile(path, mode)).first;
+		return base_type::acquire(spn::PathStr(path.getStringPtr()), RWops::FromFile(path, mode)).first;
 	}
 	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::EndCB cb) {
 		return base_type::acquire(RWops::FromConstMem(p,size,cb));
