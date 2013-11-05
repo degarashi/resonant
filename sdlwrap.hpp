@@ -77,6 +77,9 @@ namespace rs {
 			return I::c_apiName;
 		}
 	};
+	template <class T>
+	std::string ErrorT<T>::s_errString;
+
 	using SDLError = ErrorT<SDLErrorI>;
 	using IMGError = ErrorT<IMGErrorI>;
 	using TTFError = ErrorT<TTFErrorI>;
