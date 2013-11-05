@@ -35,10 +35,11 @@ if(DEFINED ARCHITECTURE)
 	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
 						${CMAKE_INSTALL_PREFIX}/include/SDL2)
 else()
-	include_directories(/usr/local/include/SDL2)
+	include_directories(/usr/local/include/SDL2
+						/usr/local/include/freetype2)
 endif()
 
-set(LIBSRC_FILE ${LIBSRC_FILE} gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp error.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
+set(LIBSRC_FILE ${LIBSRC_FILE} ftwrap.cpp fontgen.cpp font_common.cpp gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp error.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
@@ -48,6 +49,6 @@ install(FILES ${HEADERS} DESTINATION include/resonant)
 if(NOT DEFINED ARCHITECTURE)
 	set(SRC_FILE ${SRC_FILE} main.cpp)
 	add_executable(rse_test ${SRC_FILE})
-	target_link_libraries(rse_test resonant boomstick spinner SDL2_image SDL2 openal vorbisfile boost_system)
+	target_link_libraries(rse_test resonant boomstick spinner SDL2_image SDL2 freetype openal vorbisfile boost_system)
 	install(TARGETS rse_test RUNTIME DESTINATION bin_${TOOL_PREFIX})
 endif()
