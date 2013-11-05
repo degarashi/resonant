@@ -546,10 +546,20 @@ namespace rs {
 				Current = RW_SEEK_CUR,
 				End = RW_SEEK_END
 			};
+			enum Type {
+				ConstMem,		//!< 外部Constメモリ	(管轄外)
+				Mem,			//!< 外部メモリ			(管轄外)
+				Vector,			//!< 管轄メモリ
+				File,
+				FilePointer
+			};
 			using EndCB = std::function<void (RWops&)>;
 		private:
 			SDL_RWops*	_ops;
 			int			_access;
+			Type		_type;
+			const void*	_ptr;
+			size_t		_size;
 			enum Access : int {
 				Read = 0x01,
 				Write = 0x02,
@@ -560,15 +570,15 @@ namespace rs {
 
 			static int _ReadMode(const char* mode);
 			void _clear();
-			RWops(SDL_RWops* ops, int access, EndCB cb);
+			RWops(SDL_RWops* ops, int access, Type type, EndCB cb, const void* ptr=nullptr, size_t sz=0);
 		public:
 			static RWops FromConstMem(const void* mem, int size, EndCB cb=nullptr);
 			template <class T>
 			static RWops FromVector(T&& buff) {
 				spn::ByteBuff* tbuff = new spn::ByteBuff(std::forward<T>(buff));
-				return FromMem(&(*tbuff)[0], tbuff->size(), [tbuff](RWops&){
+				return RWops(SDL_RWFromMem(&(*tbuff)[0], tbuff->size()), Read|Write, Type::Vector, [tbuff](RWops&){
 					delete tbuff;
-				});
+				}, &(*tbuff)[0], tbuff->size());
 			}
 			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
 			static RWops FromMem(void* mem, int size, EndCB cb=nullptr);
@@ -599,6 +609,12 @@ namespace rs {
 			bool writeLE(uint64_t value);
 			SDL_RWops* getOps();
 			spn::ByteBuff readAll();
+			Type getType() const;
+			bool isMemory() const;
+			//! isMemory()==trueの時だけ有効
+			std::pair<const void*, size_t> getMemoryPtrC() const;
+			//! Type::Vector時のみ有効
+			std::pair<void*, size_t> getMemoryPtr();
 	};
 	#define mgr_rw rs::RWMgr::_ref()
 	class RWMgr : public spn::ResMgrN<RWops, RWMgr> {

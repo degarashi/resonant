@@ -2,18 +2,18 @@
 
 namespace rs {
 	RWops RWops::FromConstMem(const void* mem, int size, EndCB cb) {
-		return RWops(SDL_RWFromConstMem(mem,size), Read, cb);
+		return RWops(SDL_RWFromConstMem(mem,size), Read, Type::ConstMem, cb, mem, size);
 	}
 	RWops RWops::FromMem(void* mem, int size, EndCB cb) {
-		return RWops(SDL_RWFromMem(mem,size), Read|Write, cb);
+		return RWops(SDL_RWFromMem(mem,size), Read|Write, Type::Mem, cb, mem, size);
 	}
 	RWops RWops::FromFilePointer(FILE* fp, bool autoClose, const char* mode) {
 		return RWops(SDL_RWFromFP(fp, autoClose ? SDL_TRUE : SDL_FALSE),
-					 _ReadMode(mode), nullptr);
+					 _ReadMode(mode), Type::FilePointer, nullptr);
 	}
 	RWops RWops::FromFile(spn::ToPathStr path, const char* mode) {
 		return RWops(SDL_RWFromFile(path.getStringPtr(), mode),
-					_ReadMode(mode), nullptr);
+					_ReadMode(mode), Type::File, nullptr);
 	}
 	int RWops::_ReadMode(const char* mode) {
 		int ret = 0;
@@ -29,7 +29,9 @@ namespace rs {
 		return ret;
 	}
 
-	RWops::RWops(SDL_RWops* ops, int access, EndCB cb): _ops(ops), _access(access), _endCB(cb) {
+	RWops::RWops(SDL_RWops* ops, int access, Type type, EndCB cb, const void* ptr, size_t sz):
+		_ops(ops), _access(access), _type(type), _endCB(cb), _ptr(ptr), _size(sz)
+	{
 		if(!ops)
 			throw std::runtime_error("invalid file");
 	}
@@ -49,15 +51,14 @@ namespace rs {
 		_access = 0;
 		_endCB = nullptr;
 	}
-	RWops::RWops(RWops&& ops): _ops(ops._ops), _access(ops._access), _endCB(std::move(ops._endCB)) {
+	RWops::RWops(RWops&& ops): _ops(ops._ops), _access(ops._access),
+		_type(ops._type), _ptr(ops._ptr), _size(ops._size), _endCB(std::move(ops._endCB))
+	{
 		ops._clear();
 	}
 	RWops& RWops::operator = (RWops&& ops) {
-		close();
-		_ops = ops._ops;
-		_access = ops._access;
-		ops._clear();
-		return *this;
+		this->~RWops();
+		return *(new(this) RWops(std::move(ops)));
 	}
 
 	int RWops::getAccessFlag() const {
@@ -70,6 +71,8 @@ namespace rs {
 		return SDL_RWwrite(_ops, src, blockSize, nblock);
 	}
 	int64_t RWops::size() {
+		if(isMemory())
+			return _size;
 		auto pos = tell();
 		seek(0, Hence::End);
 		int64_t ret = tell();
@@ -129,6 +132,13 @@ namespace rs {
 		read(&buff[0], sz, 1);
 		seek(pos, Begin);
 		return std::move(buff);
+	}
+	RWops::Type RWops::getType() const { return _type; }
+	bool RWops::isMemory() const { return _ptr != nullptr; }
+	std::pair<const void*, size_t> RWops::getMemoryPtrC() const { return std::make_pair(_ptr, _size); }
+	std::pair<void*, size_t> RWops::getMemoryPtr() {
+		AssertP(Trap, _type==Type::Vector);
+		return std::make_pair(const_cast<void*>(_ptr), _size);
 	}
 
 	// ---------------------------- RWMgr ----------------------------
