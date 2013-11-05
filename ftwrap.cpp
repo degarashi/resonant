@@ -1,29 +1,58 @@
 #include "ftwrap.hpp"
 
 namespace rs {
+	namespace {
+		#undef __FTERRORS_H__
+		#define FT_ERRORDEF(e, v, s) {e, s},
+		#define FT_ERROR_START_LIST {
+		#define FT_ERROR_END_LIST {0,0} };
+		const std::pair<int, const char*> c_ftErrors[] =
+		#include FT_ERRORS_H
+	}
+	// ---------------------- FTError ----------------------
+	const char* FTError::ErrorDesc(int result) {
+		if(result != 0) {
+			for(auto& e : c_ftErrors) {
+				if(e.first == result)
+					return e.second;
+			}
+			return "unknown error";
+		}
+		return nullptr;
+	}
+	const char* FTError::GetAPIName() {
+		return "FreeType";
+	}
 	// ---------------------- FTLibrary ----------------------
 	FTLibrary::FTLibrary() {
-		FT_Init_FreeType(&_lib);
+		FTEC(Trap, FT_Init_FreeType, &_lib);
 	}
 	FTLibrary::~FTLibrary() {
 		if(_lib)
-			FT_Done_FreeType(_lib);
+			FTEC_P(Trap, FT_Done_FreeType, _lib);
 	}
 	HLFT FTLibrary::newFace(HRW hRW, int index) {
 		FT_Face face;
-		auto buff = hRW.ref().readAll();
-		FT_New_Memory_Face(_lib, &buff[0], buff.size(), index, &face);
-		return acquire(FTFace(face));
+		HLRW hlRW;
+		// 中身がメモリじゃなければ一旦コピーする
+		if(!hRW.ref().isMemory())
+			hlRW = mgr_rw.fromVector(hRW.ref().readAll());
+		else
+			hlRW = hRW;
+
+		auto m = hlRW.ref().getMemoryPtrC();
+		FTEC(Trap, FT_New_Memory_Face, _lib, reinterpret_cast<const uint8_t*>(m.first), m.second, index, &face);
+		return acquire(FTFace(face, hlRW.get()));
 	}
 
 	// ---------------------- FTFace ----------------------
-	FTFace::FTFace(FT_Face face): _face(face), _style(Style::Normal) {}
-	FTFace::FTFace(FTFace&& f): _face(f._face) {
+	FTFace::FTFace(FT_Face face, HRW hRW): _face(face), _style(Style::Normal), _hlRW(hRW) {}
+	FTFace::FTFace(FTFace&& f): _face(f._face), _style(f._style), _hlRW(std::move(f._hlRW)), _finfo(f._finfo), _info(f._info) {
 		f._face = nullptr;
 	}
 	FTFace::~FTFace() {
 		if(_face)
-			FT_Done_Face(_face);
+			FTEC_P(Trap, FT_Done_Face, _face);
 	}
 	// met.width>>6 == bitmap.width
 	// met.height>>6 == bitmap.height
@@ -35,7 +64,7 @@ namespace rs {
 	// 		  _info.horiBearingY == _info.bmp_top);
 	void FTFace::prepareGlyph(char32_t code, RenderMode mode) {
 		uint32_t gindex = FT_Get_Char_Index(_face, code);
-		FT_Load_Glyph(_face, gindex, _style==Style::Normal ? FT_LOAD_DEFAULT : FT_LOAD_NO_BITMAP);
+		FTEC(Trap, FT_Load_Glyph, _face, gindex, _style==Style::Normal ? FT_LOAD_DEFAULT : FT_LOAD_NO_BITMAP);
 		auto* slot = _face->glyph;
 		if(_style == Style::Normal) {
 			if(slot->format != FT_GLYPH_FORMAT_BITMAP)
@@ -52,7 +81,7 @@ namespace rs {
 			mat.yy = 1 << 16;
 			FT_Outline_Transform(&slot->outline, &mat);
 		}
-		assert(slot->format == FT_GLYPH_FORMAT_BITMAP);
+		Assert(Trap, slot->format == FT_GLYPH_FORMAT_BITMAP);
 
 		auto& met = slot->metrics;
 		auto& bm = slot->bitmap;
@@ -72,11 +101,11 @@ namespace rs {
 		return _finfo;
 	}
 	void FTFace::setPixelSizes(int w, int h) {
-		FT_Set_Pixel_Sizes(_face, w, h);
+		FTEC(Trap, FT_Set_Pixel_Sizes, _face, w, h);
 		_updateFaceInfo();
 	}
 	void FTFace::setCharSize(int w, int h, int dpW, int dpH) {
-		FT_Set_Char_Size(_face, w, h, dpW, dpH);
+		FTEC(Trap, FT_Set_Char_Size, _face, w, h, dpW, dpH);
 		_updateFaceInfo();
 	}
 	void FTFace::setSizeFromLine(int lineHeight) {
@@ -84,8 +113,9 @@ namespace rs {
 		req.height = lineHeight;
 		req.width = 0;
 		req.type = FT_SIZE_REQUEST_TYPE_CELL;
-		req.horiResolution = req.vertResolution = 0;
-		FT_Request_Size(_face, &req);
+		req.horiResolution = 300;
+		req.vertResolution = 300;
+		FTEC(Trap, FT_Request_Size, _face, &req);
 		_updateFaceInfo();
 	}
 	void FTFace::_updateFaceInfo() {

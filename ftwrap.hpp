@@ -6,8 +6,20 @@
 #include "spinner/abstbuff.hpp"
 #include "spinner/resmgr.hpp"
 #include "sdlwrap.hpp"
+#include "error.hpp"
+
+#define FTEC(act, func, ...)	EChk_baseA2<::rs::FTError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#ifdef DEBUG
+	#define FTEC_P(act, ...)	FTEC(act, __VA_ARGS__)
+#else
+	#define FTEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+#endif
 
 namespace rs {
+	struct FTError {
+		static const char* ErrorDesc(int result);
+		static const char* GetAPIName();
+	};
 	class FTFace {
 		public:
 			enum class RenderMode {
@@ -24,6 +36,7 @@ namespace rs {
 		private:
 			FT_Face		_face;
 			Style		_style;
+			HLRW		_hlRW;
 			struct FInfo {
 				int	height,
 					maxWidth;		// フォントの最大横幅
@@ -43,7 +56,7 @@ namespace rs {
 			void _updateFaceInfo();
 
 		public:
-			FTFace(FT_Face face);
+			FTFace(FT_Face face, HRW hRW=HRW());
 			FTFace(FTFace&& f);
 			~FTFace();
 			void setPixelSizes(int w, int h);
