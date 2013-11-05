@@ -3,6 +3,7 @@
 #include "spinner/resmgr.hpp"
 #include "spinner/abstbuff.hpp"
 #include "font_base.hpp"
+#include "font_ft_dep.hpp"
 
 namespace rs {
 	//! CharCodeとフォントテクスチャ対応付け (全Face共通)
