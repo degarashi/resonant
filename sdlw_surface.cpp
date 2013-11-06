@@ -102,6 +102,12 @@ namespace rs {
 	Surface::LockObj::operator bool() const {
 		return _bits != nullptr;
 	}
+	void* Surface::LockObj::getBits() {
+		return _sfc._sfc->pixels;
+	}
+	int Surface::LockObj::getPitch() const {
+		return _sfc._sfc->pitch;
+	}
 	int Surface::width() const {
 		return _sfc->w;
 	}

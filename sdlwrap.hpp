@@ -684,7 +684,7 @@ namespace rs {
 				LockObj(Surface& sfc, void* bits, int pitch);
 				~LockObj();
 				void* getBits();
-				int getPitch();
+				int getPitch() const;
 				operator bool () const;
 		};
 		void _unlock();
