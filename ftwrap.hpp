@@ -38,7 +38,8 @@ namespace rs {
 			Style		_style;
 			HLRW		_hlRW;
 			struct FInfo {
-				int	height,
+				int	baseline,
+					height,
 					maxWidth;		// フォントの最大横幅
 			};
 			FInfo		_finfo;

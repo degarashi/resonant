@@ -105,22 +105,25 @@ namespace rs {
 		_updateFaceInfo();
 	}
 	void FTFace::setCharSize(int w, int h, int dpW, int dpH) {
-		FTEC(Trap, FT_Set_Char_Size, _face, w, h, dpW, dpH);
+		FTEC(Trap, FT_Set_Char_Size, _face, w<<6, h<<6, dpW, dpH);
 		_updateFaceInfo();
 	}
 	void FTFace::setSizeFromLine(int lineHeight) {
 		FT_Size_RequestRec req;
-		req.height = lineHeight;
+		req.height = lineHeight<<6;
 		req.width = 0;
 		req.type = FT_SIZE_REQUEST_TYPE_CELL;
-		req.horiResolution = 300;
-		req.vertResolution = 300;
+		req.horiResolution = 0;
+		req.vertResolution = 0;
 		FTEC(Trap, FT_Request_Size, _face, &req);
 		_updateFaceInfo();
 	}
 	void FTFace::_updateFaceInfo() {
-		_finfo.maxWidth = _face->max_advance_width;
-		_finfo.height = _face->height;
+		auto& met = _face->size->metrics;
+		_finfo.baseline = (_face->height + _face->descender) *
+				met.y_ppem / _face->units_per_EM;
+		_finfo.height = met.height >> 6;
+		_finfo.maxWidth = met.max_advance >> 6;
 	}
 	const char* FTFace::getFamilyName() const { return _face->family_name; }
 	const char* FTFace::getStyleName() const { return _face->style_name; }
