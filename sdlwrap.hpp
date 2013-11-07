@@ -46,6 +46,12 @@
 #endif
 
 namespace rs {
+	//! RAII形式でSDLの初期化 (for spn::MInitializer)
+	struct SDLInitializer {
+		SDLInitializer(uint32_t flag);
+		~SDLInitializer();
+	};
+
 	struct SDLErrorI {
 		static const char* Get();
 		static void Reset();

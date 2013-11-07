@@ -3,7 +3,13 @@
 
 namespace rs {
 	SDL_threadID thread_local tls_threadID(~0);
-
+	// -------------------- SDLInitializer --------------------
+	SDLInitializer::SDLInitializer(uint32_t flag) {
+		SDL_Init(flag);
+	}
+	SDLInitializer::~SDLInitializer() {
+		SDL_Quit();
+	}
 	// -------------------- SDLError --------------------
 	const char* SDLErrorI::Get() { return SDL_GetError(); }
 	void SDLErrorI::Reset() { SDL_ClearError(); }
