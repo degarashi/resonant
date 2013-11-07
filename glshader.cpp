@@ -1,10 +1,11 @@
 #include "glresource.hpp"
 
+// OpenGL関数群の定義
+#define GLDEFINE(name,type)		type name;
+#include "glfunc.inc"
+#undef GLDEFINE
+
 namespace rs {
-	// OpenGL関数群の定義
-	#define GLDEFINE(name,type)		type name;
-	#include "glfunc.inc"
-	#undef GLDEFINE
 	namespace {
 		bool g_bglfuncInit = false;
 	}
