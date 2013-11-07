@@ -117,10 +117,8 @@ namespace rs {
 			// 同じFaceの同じ文字列には同一のハンドルが返されるようにする
 			/*! \param[in] cid makeCoreIDで作成したFaceID設定済みID
 				\param[in] s 表示したい文字列 */
-			template <class T>
-			LHdl createText(CCoreID cid, const std::basic_string<T>& str) {
-				// ここでUTF32文字列に変換
-				auto str32 = spn::Text::UTFConvertTo32(spn::AbstString<T>(str));
+			LHdl createText(CCoreID cid, spn::To32Str str) {
+				std::u32string str32(str.moveTo());
 				// CCoreIDを付加した文字列をキーにする
 				auto& ar = _getArray(cid);
 				auto tag = _MakeTextTag(cid, str32);

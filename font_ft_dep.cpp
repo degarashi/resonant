@@ -78,10 +78,11 @@ namespace rs {
 	CCoreID Font_FTDep::adjustParams(CCoreID cid) { return cid; }
 	std::pair<spn::ByteBuff, spn::Rect> Font_FTDep::getChara(char32_t code) {
 		auto& ft = _hlFT.ref();
+		ft.prepareGlyph(code, FTFace::RenderMode::Normal);
 		const auto& gi = ft.getGlyphInfo();
 		spn::ByteBuff buff;
 		spn::Rect rect(gi.horiBearingX, gi.horiBearingX + gi.width,
-						gi.horiBearingY, gi.horiBearingY + gi.height);
+						-gi.horiBearingY, -gi.horiBearingY + gi.height);
 		if(gi.nlevel == 2)
 			buff = Convert1Bit_8Bit(gi.data, gi.width, gi.pitch, gi.height);
 		else {
