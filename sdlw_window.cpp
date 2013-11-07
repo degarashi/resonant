@@ -8,7 +8,7 @@ namespace rs {
 						SDL_GL_DEPTH_SIZE, depth);
 	}
 	SPWindow Window::Create(const std::string& title, int w, int h, uint32_t flag, bool bShare) {
-		return Create(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag, bShare);
+		return Create(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag|SDL_WINDOW_OPENGL, bShare);
 	}
 	SPWindow Window::Create(const std::string& title, int x, int y, int w, int h, uint32_t flag, bool bShare) {
 		SetGLAttributes(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, bShare ? 1 : 0);
