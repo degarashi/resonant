@@ -18,18 +18,16 @@ namespace rs {
 				Item(Item&& it);
 				Item(int fIdx, HRW hRW);
 				Item(int fIdx, const spn::PathStr& p);
-				HLFT makeFont(spn::ToPathStr basepath) const;
+				HLFT makeFont() const;
 			};
 		private:
-			std::u32string	_basePath;
 			using SPFace = std::shared_ptr<FTFace>;
-			//! [FamilyName -> フォントパス]
+			//! [FamilyName -> FullPath]
 			using FontMap = std::unordered_map<std::string, Item>;
 			FontMap			_fontMap;
 
 		public:
-			FontFamily(spn::To32Str basepath);
-			void loadFamilyWildCard(spn::To32Str pattern);
+			void loadFamilyWildCard(spn::To8Str pattern);
 			void loadFamily(HRW hRW);
 
 			//! FamilyNameからフォントを特定

@@ -7,27 +7,20 @@ namespace rs {
 	FontFamily::Item::Item(int fIdx, HRW hRW): faceIndex(fIdx), hlRW(hRW) {}
 	FontFamily::Item::Item(int fIdx, const spn::PathStr& p): faceIndex(fIdx), path(p) {}
 	FontFamily::Item::Item(Item&& it): faceIndex(it.faceIndex), hlRW(std::move(it.hlRW)), path(std::move(it.path)) {}
-	HLFT FontFamily::Item::makeFont(spn::ToPathStr basepath) const {
+	HLFT FontFamily::Item::makeFont() const {
 		if(hlRW)
 			return mgr_font.newFace(hlRW, faceIndex);
-		else {
-			spn::PathStr p(path.get());
-			p += '/';
-			p += basepath.getStringPtr();
-			return mgr_font.newFace(mgr_rw.fromFile(p, "r", true), faceIndex);
-		}
+		return mgr_font.newFace(mgr_rw.fromFile(path.get(), "r", true), faceIndex);
 	}
-	void FontFamily::loadFamilyWildCard(spn::To32Str pattern) {
+	void FontFamily::loadFamilyWildCard(spn::To8Str pattern) {
 		size_t len = pattern.getLength();
 		if(len == 0)
 			return;
 
-		spn::Dir dir(pattern);
-		if(dir.isAbsolute())
-			dir.pushFront(_basePath);
-		dir.enumEntryWildCard(dir.plain_utf8(), [this](const spn::PathBlock& p) {
+		spn::Dir dir;
+		dir.enumEntryWildCard(pattern.moveTo(), [this](const spn::PathBlock& p, bool bDir) {
 			loadFamily(mgr_rw.fromFile(p.plain_utf32(), "r", true));
-		}, true);
+		});
 	}
 	void FontFamily::loadFamily(HRW hRW) {
 		HLFT hlf = newFace(hRW, 0);
@@ -43,7 +36,7 @@ namespace rs {
 		auto itr = _fontMap.find(name);
 		if(itr == _fontMap.end())
 			return HLFT();
-		return itr->second.makeFont(_basePath);
+		return itr->second.makeFont();
 	}
 	HLFT FontFamily::fontFromFile(const spn::PathStr& path) {
 		return HLFT();
@@ -51,7 +44,6 @@ namespace rs {
 	HLFT FontFamily::fontFromID(CCoreID id) const {
 		return HLFT();
 	}
-	FontFamily::FontFamily(spn::To32Str basepath): _basePath(basepath.moveTo()) {}
 
 	// ---------------------- Font_FTDep ----------------------
 	Font_FTDep::Font_FTDep(const std::string& name, CCoreID cid): _bAA(cid.at<CCoreID::Flag>()&CCoreID::Flag_AA) {
