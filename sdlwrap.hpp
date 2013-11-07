@@ -73,6 +73,9 @@ namespace rs {
 			}
 			return nullptr;
 		}
+		static void Reset() {
+			I::Reset();
+		}
 		static const char *const GetAPIName() {
 			return I::c_apiName;
 		}

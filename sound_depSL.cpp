@@ -24,6 +24,7 @@ namespace rs {
 			DEF_ERROR_PAIR(SL_RESULT_CONTROL_LOST)
 		};
 	}
+	void SLError::Reset(){}
 	const char* SLError::GetAPIName() {
 		return "OpenSL";
 	}

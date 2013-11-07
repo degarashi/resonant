@@ -22,6 +22,9 @@ namespace rs {
 		{AL_INVALID_OPERATION, "Illegal AL call"},
 		{AL_OUT_OF_MEMORY, "Not enough memory"}
 	};
+	void ALError::Reset() {
+		while(alGetError() != AL_NO_ERROR);
+	}
 	const char* ALError::GetAPIName() {
 		return "OpenAL";
 	}
@@ -184,6 +187,9 @@ namespace rs {
 	};
 	const char* SoundMgr_depAL::GetAPIName() {
 		return "OpenAL_C";
+	}
+	void SoundMgr_depAL::Reset() {
+		while(alcGetError(SoundMgr_depAL::_ref().getDevice()) != ALC_NO_ERROR);
 	}
 	const char* SoundMgr_depAL::ErrorDesc() {
 		ALCenum num = alcGetError(SoundMgr_depAL::_ref().getDevice());

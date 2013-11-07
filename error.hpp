@@ -107,7 +107,9 @@ namespace rs {
 		Act			_act;
 		int			_line;
 		const char	*_filename, *_fname;
-		ErrorChecker(Act&& act, const char* filename, const char* fname, int line): _act(std::move(act)), _filename(filename), _fname(fname), _line(line) {}
+		ErrorChecker(Act&& act, const char* filename, const char* fname, int line): _act(std::move(act)), _filename(filename), _fname(fname), _line(line) {
+			Chk::Reset();
+		}
 		~ErrorChecker() {
 			CheckError<Chk>(_act, _filename, _fname, _line);
 		}

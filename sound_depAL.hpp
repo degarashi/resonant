@@ -20,6 +20,7 @@ namespace rs {
 	struct ALError {
 		const static std::pair<ALenum, const char*> ErrorList[];
 		static const char* ErrorDesc();
+		static void Reset();
 		static const char* GetAPIName();
 	};
 	ALenum AsALFormat(const AFormat& f);
@@ -101,6 +102,7 @@ namespace rs {
 			~SoundMgr_depAL();
 			const static std::pair<ALCenum, const char*> ErrorList[];
 			static const char* GetAPIName();
+			static void Reset();
 			static const char* ErrorDesc();
 
 			void printVersions(std::ostream& os);

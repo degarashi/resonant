@@ -31,6 +31,9 @@ namespace rs {
 			return s_tmp.c_str();
 		return nullptr;
 	}
+	void GLError::Reset() {
+		while(glGetError() != GL_NO_ERROR);
+	}
 	const char* GLError::GetAPIName() {
 		return "OpenGL";
 	}

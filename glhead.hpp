@@ -101,6 +101,7 @@ namespace rs {
 
 		static std::string s_tmp;
 		static const char* ErrorDesc();
+		static void Reset();
 		static const char* GetAPIName();
 		//! エラー値を出力しなくなるまでループする
 		static void ResetError();

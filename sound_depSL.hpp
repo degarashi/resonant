@@ -14,6 +14,7 @@
 namespace rs {
 	struct SLError {
 		static const char* ErrorDesc(SLresult result);
+		static void Reset();
 		static const char* GetAPIName();
 	};
 	std::string GetIIDString(const SLInterfaceID& iid);
