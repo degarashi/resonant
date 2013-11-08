@@ -39,13 +39,13 @@ namespace rs {
 	using UPMainProc = UPtr<IMainProc>;
 	using MPCreate = std::function<IMainProc* ()>;
 
-	class DrawThread : public ThreadL<void (Looper&, const SPWindow&, const UPMainProc&)> {
-		using base = ThreadL<void (Looper&, const SPWindow&)>;
+	class DrawThread : public ThreadL<void (Looper&, SPGLContext&&, const SPWindow&, const UPMainProc&)> {
+		using base = ThreadL<void (Looper&, SPGLContext&&, const SPWindow&, const UPMainProc&)>;
 		int 			_state = 0;
 		uint64_t		_accum = 0;
 		mutable Mutex	_mutex;
 		protected:
-			void runL(Looper& mainLooper, const SPWindow& w, const UPMainProc& mp) override;
+			void runL(Looper& mainLooper, SPGLContext&& ctx_b, const SPWindow& w, const UPMainProc& mp) override;
 			void setState(int s);
 		public:
 			int getState() const;
