@@ -8,11 +8,11 @@
 #include "sdlwrap.hpp"
 #include "error.hpp"
 
-#define FTEC(act, func, ...)	EChk_baseA2<::rs::FTError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#define FTEC(act, func, ...)	::rs::EChk_baseA2<::rs::FTError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
 #ifdef DEBUG
 	#define FTEC_P(act, ...)	FTEC(act, __VA_ARGS__)
 #else
-	#define FTEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define FTEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
 #endif
 
 namespace rs {

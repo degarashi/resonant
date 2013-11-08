@@ -79,8 +79,8 @@ namespace rs {
 
 #include "error.hpp"
 // OpenGLに関するアサート集
-#define GLEC_Base(act, ...)		EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act)			EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define GLEC_Base(act, ...)		::rs::EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define GLEC_Base0(act)			::rs::EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define GLEC(act, ...)			GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
 #define GLECProg(act, id, ...)	GLEC_Base(AAct_##act<GLE_ProgramError, GLuint>(id), __VA_ARGS__)
 #define GLECSh(act, id, ...)	GLEC_Base(AAct_##act<GLE_ShaderError, GLuint>(id), __VA_ARGS__)
@@ -93,7 +93,7 @@ namespace rs {
 	#define GLEC_P(act, ...)	GLEC(act, __VA_ARGS__)
 	#define GLEC_ChkP(act)		GLEC_Chk(act)
 #else
-	#define GLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define GLEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
 	#define GLEC_ChkP(act)
 #endif
 namespace rs {

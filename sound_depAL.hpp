@@ -3,17 +3,17 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC(act, ...)	EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALEC_Chk(act)	EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define ALCEC(act, ...)	EChk_base<SoundMgr_depAL>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC(act, ...)	::rs::EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC_Chk(act)	::rs::EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define ALCEC(act, ...)	::rs::EChk_base<SoundMgr_depAL>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #ifdef DEBUG
 	#define ALEC_P(act, ...) ALEC(act, __VA_ARGS__)
 	#define ALCEC_P(act, ...) ALCEC(act, __VA_ARGS__)
 	#define OVEC_P(act, ...) OVEC(act, __VA_ARGS__)
 #else
-	#define ALEC_P(act, ...) EChk_pass(__VA_ARGS__)
-	#define ALCEC_P(act, ...) EChk_pass(__VA_ARGS__)
-	#define OVEC_P(act, ...) EChk_pass(__VA_ARGS__)
+	#define ALEC_P(act, ...) ::rs::EChk_pass(__VA_ARGS__)
+	#define ALCEC_P(act, ...) ::rs::EChk_pass(__VA_ARGS__)
+	#define OVEC_P(act, ...) ::rs::EChk_pass(__VA_ARGS__)
 #endif
 
 namespace rs {

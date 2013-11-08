@@ -14,18 +14,18 @@
 #include "error.hpp"
 #include "spinner/size.hpp"
 
-#define SDLEC_Base(act, ...)	EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Base0(act)		EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define SDLEC_Base(act, ...)	::rs::EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Base0(act)		::rs::EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
 
-#define IMGEC_Base(act, ...)	EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define IMGEC_Base0(act)		EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define IMGEC_Base(act, ...)	::rs::EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define IMGEC_Base0(act)		::rs::EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define IMGEC(act, ...)			IMGEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define IMGEC_Chk(act)			IMGEC_Base0(AAct_##act<std::runtime_error>())
 
-#define TTFEC_Base(act, ...)	EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define TTFEC_Base0(act)		EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define TTFEC_Base(act, ...)	::rs::EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define TTFEC_Base0(act)		::rs::EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define TTFEC(act, ...)			TTFEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define TTFEC_Chk(act)			TTFEC_Base0(AAct_##act<std::runtime_error>())
 
@@ -37,11 +37,11 @@
 	#define TTFEC_P(act, ...)	TTFEC(act, __VA_ARGS__)
 	#define TTFEC_ChkP(act)		TTFEC_Chk(act)
 #else
-	#define SDLEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define SDLEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
 	#define SDLEC_ChkP(act)
-	#define IMGEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define IMGEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
 	#define IMGEC_ChkP(act)
-	#define TTFEC_P(act, ...)	EChk_pass(__VA_ARGS__)
+	#define TTFEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
 	#define TTFEC_ChkP(act)
 #endif
 
