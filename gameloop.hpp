@@ -20,11 +20,20 @@ namespace rs {
 		};
 	}
 	struct IDrawProc {
-		virtual void runU(uint64_t accum) = 0;
+		//! 描画コールバック
+		/*! 描画スレッドから呼ばれる */
+		/*! \param[in] accum 累積フレーム数
+			\return backbufferのswapをかける時はtrue */
+		virtual bool runU(uint64_t accum) = 0;
 	};
 	using UPDrawProc = UPtr<IDrawProc>;
 	struct IMainProc {
+		//! ゲームアップデートコールバック
+		/*! メインスレッドから呼ばれる */
+		/*! \return ゲーム終了時にfalseを返す */
 		virtual bool runU() = 0;
+		//! 描画コールバックインタフェースを作成
+		/*! 描画スレッドから呼ばれる */
 		virtual IDrawProc* initDraw() = 0;
 	};
 	using UPMainProc = UPtr<IMainProc>;

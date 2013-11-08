@@ -4,9 +4,10 @@
 
 class MyDraw : public rs::IDrawProc {
 	public:
-		void runU(uint64_t accum) override {
+		bool runU(uint64_t accum) override {
 			glClearColor(0,0,(accum&0xff) / 255.0f,1);
 			glClear(GL_COLOR_BUFFER_BIT);
+			return true;
 		}
 };
 class MyMain : public rs::IMainProc {

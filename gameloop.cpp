@@ -22,8 +22,8 @@ namespace rs {
 				if(msg::DrawReq* p = *m) {
 					setState(1);
 					// 1フレーム分の描画処理
-					up->runU(_accum++);
-					ctx->swapWindow();
+					if(up->runU(_accum++))
+						ctx->swapWindow();
 					setState(0);
 				}
 			}
