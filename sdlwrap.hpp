@@ -481,8 +481,6 @@ namespace rs {
 
 	class Window;
 	using SPWindow = std::shared_ptr<Window>;
-	class GLContext;
-	using SPGLContext = std::shared_ptr<GLContext>;
 
 	class Window {
 		public:
@@ -508,8 +506,8 @@ namespace rs {
 				SetGLAttributes(ts...);
 			}
 			static void SetStdGLAttributes(int major, int minor, int depth);
-			static SPWindow Create(const std::string& title, int w, int h, uint32_t flag=0, bool bShare=false);
-			static SPWindow Create(const std::string& title, int x, int y, int w, int h, uint32_t flag=0, bool bShare=false);
+			static SPWindow Create(const std::string& title, int w, int h, uint32_t flag=0);
+			static SPWindow Create(const std::string& title, int x, int y, int w, int h, uint32_t flag=0);
 			~Window();
 
 			void setFullscreen(bool bFull);
@@ -537,13 +535,17 @@ namespace rs {
 
 			static void EnableScreenSaver(bool bEnable);
 	};
+
+	class GLContext;
+	using SPGLContext = std::shared_ptr<GLContext>;
 	class GLContext {
+		//! makeCurrentした時に指定したウィンドウ
 		SPWindow		_spWindow;
 		SDL_GLContext	_ctx;
 
 		GLContext(const SPWindow& w);
 		public:
-			static SPGLContext CreateContext(const SPWindow& w);
+			static SPGLContext CreateContext(const SPWindow& w, bool bShare=false);
 			~GLContext();
 			void makeCurrent(const SPWindow& w);
 			void makeCurrent();
