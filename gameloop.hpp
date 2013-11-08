@@ -19,15 +19,25 @@ namespace rs {
 			State(int st): state(st) {}
 		};
 	}
-	class DrawThread : public ThreadL<void (Looper&, const SPWindow&)> {
+	struct IDrawProc {
+		virtual void runU(uint64_t accum) = 0;
+	};
+	using UPDrawProc = UPtr<IDrawProc>;
+	struct IMainProc {
+		virtual bool runU() = 0;
+		virtual IDrawProc* initDraw() = 0;
+	};
+	using UPMainProc = UPtr<IMainProc>;
+	using MPCreate = std::function<IMainProc* ()>;
+
+	class DrawThread : public ThreadL<void (Looper&, const SPWindow&, const UPMainProc&)> {
 		using base = ThreadL<void (Looper&, const SPWindow&)>;
 		int 			_state = 0;
 		uint64_t		_accum = 0;
 		mutable Mutex	_mutex;
 		protected:
-			void runL(Looper& mainLooper, const SPWindow& w) override;
+			void runL(Looper& mainLooper, const SPWindow& w, const UPMainProc& mp) override;
 			void setState(int s);
-			virtual void runU(uint64_t accum) {}
 		public:
 			int getState() const;
 	};
@@ -35,16 +45,14 @@ namespace rs {
 
 	class MainThread : public ThreadL<void (Looper&,const SPWindow&)> {
 		using base = ThreadL<void (Looper&, const SPWindow&)>;
-		UPDrawTh	_dth;
+		MPCreate	_mcr;
 		protected:
 			void runL(Looper& guiLooper, const SPWindow& w) override;
-			virtual bool runU() { return true; }
-			virtual void initU() {}
-			virtual UPDrawTh initDraw() { return UPDrawTh(new DrawThread); }
 		public:
+			MainThread(MPCreate mcr);
 	};
 	using UPMainTh = UPtr<MainThread>;
 
 	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
-	int GameLoop(UPMainTh&& mth, spn::To8Str title, int w, int h, uint32_t flag, int major=2, int minor=0, int depth=16);
+	int GameLoop(MPCreate mcr, spn::To8Str title, int w, int h, uint32_t flag, int major=2, int minor=0, int depth=16);
 }
