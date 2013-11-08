@@ -312,7 +312,7 @@ namespace rs {
 		SDL_Thread*			_thread;
 
 		using Holder = spn::ArgHolder<Args...>;
-		boost::optional<Holder> _holder;
+		spn::Optional<Holder> _holder;
 
 		enum Stat {
 			Idle,			//!< スレッド開始前
@@ -342,7 +342,7 @@ namespace rs {
 			tls_threadID = SDL_GetThreadID(ths->_thread);
 			Stat stat;
 			try {
-				ths->_holder->inorder([ths](Args... args){ ths->runIt(args...); });
+				ths->_holder->inorder([ths](Args&&... args){ ths->runIt(std::forward<Args>(args)...); });
 				stat = (ths->isInterrupted()) ? Interrupted_End : Finished;
 			} catch(...) {
 				ths->_eptr = std::current_exception();
@@ -374,7 +374,7 @@ namespace rs {
 			}
 			template <class... Args0>
 			void start(Args0&&... args0) {
-				_holder = boost::in_place(std::forward<Args0>(args0)...);
+				_holder = Holder(std::forward<Args0>(args0)...);
 				// 2回以上呼ぶとエラー
 				Assert(Trap, SDL_AtomicGet(&_atmStat) == Idle)
 				SDL_AtomicSet(&_atmStat, Running);
