@@ -5,7 +5,7 @@
 #include "spinner/dir.hpp"
 
 namespace rs {
-	#define mgr_font reinterpret_cast<FontFamily&>(FontFamily::_ref())
+	#define mgr_font reinterpret_cast<::rs::FontFamily&>(::rs::FontFamily::_ref())
 	//! 対象ディレクトリからフォントファイルを列挙しリストアップ
 	class FontFamily : public FTLibrary {
 		public:

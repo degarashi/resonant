@@ -628,7 +628,7 @@ namespace rs {
 			//! Type::Vector時のみ有効
 			std::pair<void*, size_t> getMemoryPtr();
 	};
-	#define mgr_rw rs::RWMgr::_ref()
+	#define mgr_rw (::rs::RWMgr::_ref())
 	class RWMgr : public spn::ResMgrN<RWops, RWMgr> {
 		public:
 			using base_type = spn::ResMgrN<RWops, RWMgr>;

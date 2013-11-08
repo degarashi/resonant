@@ -28,7 +28,7 @@ namespace rs {
 		}
 	};
 
-	#define mgr_pointer PointerMgr::_ref()
+	#define mgr_pointer ::rs::PointerMgr::_ref()
 	class PointerMgr : public spn::ResMgrA<TPos2D, PointerMgr> {};
 	DEF_HANDLE(PointerMgr, Ptr, TPos2D)
 	using PtrNS = spn::noseq_list<HLPtr>;
@@ -87,8 +87,8 @@ namespace rs {
 	};
 	using UPInput = std::unique_ptr<IInput>;
 
-	#define mgr_inputb InputMgrBase::_ref()
-	#define mgr_input reinterpret_cast<InputMgr&>(InputMgrBase::_ref())
+	#define mgr_inputb (::rs::InputMgrBase::_ref())
+	#define mgr_input reinterpret_cast<::rs::InputMgr&>(::rs::InputMgrBase::_ref())
 	class InputMgrBase : public spn::ResMgrA<UPInput, InputMgrBase> {};
 	DEF_HANDLE(InputMgrBase, Input, UPInput)
 }

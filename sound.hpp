@@ -275,7 +275,7 @@ namespace rs {
 	class SGroupMgr : public spn::ResMgrA<AGroup, SGroupMgr> {};
 	DEF_HANDLE(SGroupMgr, Sg, AGroup)
 
-	#define mgr_sound reinterpret_cast<SoundMgr&>(SoundMgr::_ref())
+	#define mgr_sound reinterpret_cast<::rs::SoundMgr&>(::rs::SoundMgr::_ref())
 	class SoundMgr : public SoundMgrDep {
 		ABufMgr		_buffMgr;
 		SSrcMgr 	_srcMgr;

@@ -178,7 +178,7 @@ namespace rs {
 	};
 	DEF_GLRESOURCE_INNER(GLIBuffer, (initData)(updateData))
 	class GLFBufferTmp;
-	#define mgr_gl rs::GLRes::_ref()
+	#define mgr_gl (::rs::GLRes::_ref())
 	//! OpenGL関連のリソースマネージャ
 	class GLRes : public spn::ResMgrN<UPResource, GLRes, spn::PathStr> {
 		using base_type = spn::ResMgrN<UPResource, GLRes, spn::PathStr>;

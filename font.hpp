@@ -73,7 +73,7 @@ namespace rs {
 			void draw(GLEffect* gle);
 			const spn::SizeF& getSize() const;
 	};
-	#define mgr_text FontGen::_ref()
+	#define mgr_text (::rs::FontGen::_ref())
 
 	//! フォント作成クラス: 共通
 	/*! Depで生成するのはあくまでもフォントデータのみであって蓄積はこのクラスで行う */

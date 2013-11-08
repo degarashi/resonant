@@ -212,4 +212,6 @@ namespace rs {
 			// 次回の更新時に処理
 			void update();
 	};
+	using HLAct = InputMgr::HLAct;
+	using HAct = InputMgr::HAct;
 }
