@@ -10,7 +10,7 @@ namespace rs {
 		#include FT_ERRORS_H
 	}
 	// ---------------------- FTError ----------------------
-	const char* FTError::ErrorDesc(int result) {
+	const char* FTError::errorDesc(int result) const {
 		if(result != 0) {
 			for(auto& e : c_ftErrors) {
 				if(e.first == result)
@@ -20,7 +20,7 @@ namespace rs {
 		}
 		return nullptr;
 	}
-	const char* FTError::GetAPIName() {
+	const char* FTError::getAPIName() const {
 		return "FreeType";
 	}
 	// ---------------------- FTLibrary ----------------------

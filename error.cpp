@@ -1,5 +1,8 @@
 #include "error.hpp"
 
+namespace rs {
+	thread_local std::string tls_errMsgTmp;
+}
 LogOUT g_logOut = [](const std::string& str){
 	#ifdef ANDROID
 		LOGI(str.c_str());

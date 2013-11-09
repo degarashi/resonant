@@ -14,18 +14,18 @@
 #include "error.hpp"
 #include "spinner/size.hpp"
 
-#define SDLEC_Base(act, ...)	::rs::EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Base0(act)		::rs::EChk_base<SDLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define SDLEC_Base(act, ...)	::rs::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Base0(act)		::rs::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
 
-#define IMGEC_Base(act, ...)	::rs::EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define IMGEC_Base0(act)		::rs::EChk_base<IMGError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define IMGEC_Base(act, ...)	::rs::EChk_base(act, IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define IMGEC_Base0(act)		::rs::EChk_base(act, IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define IMGEC(act, ...)			IMGEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define IMGEC_Chk(act)			IMGEC_Base0(AAct_##act<std::runtime_error>())
 
-#define TTFEC_Base(act, ...)	::rs::EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define TTFEC_Base0(act)		::rs::EChk_base<TTFError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define TTFEC_Base(act, ...)	::rs::EChk_base(act, TTFError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define TTFEC_Base0(act)		::rs::EChk_base(act, TTFError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define TTFEC(act, ...)			TTFEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define TTFEC_Chk(act)			TTFEC_Base0(AAct_##act<std::runtime_error>())
 
@@ -69,26 +69,22 @@ namespace rs {
 	};
 	template <class I>
 	struct ErrorT {
-		static std::string	s_errString;
-		static const char* ErrorDesc() {
+		const char* errorDesc() const {
 			const char* err = I::Get();
 			if(*err != '\0') {
-				s_errString = err;
+				tls_errMsgTmp = err;
 				I::Reset();
-				return s_errString.c_str();
+				return tls_errMsgTmp.c_str();
 			}
 			return nullptr;
 		}
-		static void Reset() {
+		void reset() const {
 			I::Reset();
 		}
-		static const char *const GetAPIName() {
+		const char *const getAPIName() const {
 			return I::c_apiName;
 		}
 	};
-	template <class T>
-	std::string ErrorT<T>::s_errString;
-
 	using SDLError = ErrorT<SDLErrorI>;
 	using IMGError = ErrorT<IMGErrorI>;
 	using TTFError = ErrorT<TTFErrorI>;

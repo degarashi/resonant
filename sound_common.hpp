@@ -6,7 +6,7 @@
 #include "spinner/misc.hpp"
 #include "clock.hpp"
 
-#define OVEC(act, ...) ::rs::EChk_baseA1<OVError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
+#define OVEC(act, ...) ::rs::EChk_baseA1(AAct_##act<std::runtime_error>(), OVError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
 #ifdef DEBUG
 	#define OVEC_P(act, ...) OVEC(act, __VA_ARGS__)
 #else
@@ -16,8 +16,8 @@
 namespace rs {
 	struct OVError {
 		const static std::pair<int, const char*> ErrorList[];
-		static const char* ErrorDesc(int err);
-		static const char* GetAPIName();
+		const char* errorDesc(int err) const;
+		const char* getAPIName() const;
 	};
 	enum class AState {
 		Initial,

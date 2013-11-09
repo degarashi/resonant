@@ -8,7 +8,7 @@
 #include "sdlwrap.hpp"
 #include "error.hpp"
 
-#define FTEC(act, func, ...)	::rs::EChk_baseA2<::rs::FTError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#define FTEC(act, func, ...)	::rs::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::FTError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
 #ifdef DEBUG
 	#define FTEC_P(act, ...)	FTEC(act, __VA_ARGS__)
 #else
@@ -17,8 +17,8 @@
 
 namespace rs {
 	struct FTError {
-		static const char* ErrorDesc(int result);
-		static const char* GetAPIName();
+		const char* errorDesc(int result) const;
+		const char* getAPIName() const;
 	};
 	class FTFace {
 		public:

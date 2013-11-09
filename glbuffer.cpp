@@ -2,7 +2,6 @@
 
 namespace rs {
 	// ------------------------- GLError -------------------------
-	std::string GLError::s_tmp;
 	const std::pair<GLenum, const char*> GLError::ErrorList[] = {
 		{GL_INVALID_VALUE, "Numeric argument out of range"},
 		{GL_INVALID_ENUM, "Enum argument out of range"},
@@ -10,34 +9,34 @@ namespace rs {
 		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer is incomplete"},
 		{GL_OUT_OF_MEMORY, "Not enough memory left to execute command"}
 	};
-	const char* GLError::ErrorDesc() {
+	const char* GLError::errorDesc() const {
 		GLenum err;
-		s_tmp.clear();
+		tls_errMsgTmp.clear();
 		while((err = glGetError()) != GL_NO_ERROR) {
 			// OpenGLエラー詳細を取得
 			bool bFound = false;
 			for(const auto& e : ErrorList) {
 				if(e.first == err) {
-					s_tmp += e.second;
-					s_tmp += '\n';
+					tls_errMsgTmp += e.second;
+					tls_errMsgTmp += '\n';
 					bFound = true;
 					break;
 				}
 			}
 			if(!bFound)
-				s_tmp += "unknown errorID\n";
+				tls_errMsgTmp += "unknown errorID\n";
 		}
-		if(!s_tmp.empty())
-			return s_tmp.c_str();
+		if(!tls_errMsgTmp.empty())
+			return tls_errMsgTmp.c_str();
 		return nullptr;
 	}
-	void GLError::Reset() {
+	void GLError::reset() const {
 		while(glGetError() != GL_NO_ERROR);
 	}
-	const char* GLError::GetAPIName() {
+	const char* GLError::getAPIName() const {
 		return "OpenGL";
 	}
-	void GLError::ResetError() {
+	void GLError::resetError() const {
 		while(glGetError() != GL_NO_ERROR);
 	}
 	// --------------------------- GLBuffer ---------------------------

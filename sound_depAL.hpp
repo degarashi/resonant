@@ -3,9 +3,9 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC(act, ...)	::rs::EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALEC_Chk(act)	::rs::EChk_base<ALError>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define ALCEC(act, ...)	::rs::EChk_base<SoundMgr_depAL>(AAct_##act<std::runtime_error>(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC(act, ...)	::rs::EChk_base(AAct_##act<std::runtime_error>(), ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC_Chk(act)	::rs::EChk_base(AAct_##act<std::runtime_error>(), ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define ALCEC(act, ...)	::rs::EChk_base(AAct_##act<std::runtime_error>(), ALCError(SoundMgr_depAL::_ref().getDevice()), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #ifdef DEBUG
 	#define ALEC_P(act, ...) ALEC(act, __VA_ARGS__)
 	#define ALCEC_P(act, ...) ALCEC(act, __VA_ARGS__)
@@ -19,9 +19,17 @@
 namespace rs {
 	struct ALError {
 		const static std::pair<ALenum, const char*> ErrorList[];
-		static const char* ErrorDesc();
-		static void Reset();
-		static const char* GetAPIName();
+		const char* errorDesc() const;
+		void reset() const;
+		const char* getAPIName() const;
+	};
+	struct ALCError {
+		ALCdevice* _dev;
+		ALCError(ALCdevice* dev);
+		const static std::pair<ALCenum, const char*> ErrorList[];
+		const char* errorDesc() const;
+		void reset() const;
+		const char* getAPIName() const;
 	};
 	ALenum AsALFormat(const AFormat& f);
 
@@ -100,10 +108,6 @@ namespace rs {
 			SoundMgr_depAL(int rate);
 			SoundMgr_depAL(const SoundMgr_depAL&) = delete;
 			~SoundMgr_depAL();
-			const static std::pair<ALCenum, const char*> ErrorList[];
-			static const char* GetAPIName();
-			static void Reset();
-			static const char* ErrorDesc();
 
 			void printVersions(std::ostream& os);
 			ALCdevice* getDevice() const;

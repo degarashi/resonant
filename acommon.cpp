@@ -2,7 +2,7 @@
 
 namespace rs {
 	// --------------------- OVError ---------------------
-	const char* OVError::GetAPIName() {
+	const char* OVError::getAPIName() const {
 		return "OggVorbis";
 	}
 	const std::pair<int, const char*> OVError::ErrorList[] = {
@@ -17,7 +17,7 @@ namespace rs {
 		{OV_EBADLINK, "The given link exists in the Vorbis data stream, but is not decipherable due to garbacge or corruption"},
 		{OV_ENOSEEK, "The given stream is not seekable"}
 	};
-	const char* OVError::ErrorDesc(int err) {
+	const char* OVError::errorDesc(int err) const {
 		if(err < 0) {
 			for(auto& p : ErrorList) {
 				if(p.first == err)

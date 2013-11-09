@@ -79,8 +79,8 @@ namespace rs {
 
 #include "error.hpp"
 // OpenGLに関するアサート集
-#define GLEC_Base(act, ...)		::rs::EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act)			::rs::EChk_base<GLError>(act, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define GLEC_Base(act, ...)		::rs::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define GLEC_Base0(act)			::rs::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define GLEC(act, ...)			GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
 #define GLECProg(act, id, ...)	GLEC_Base(AAct_##act<GLE_ProgramError, GLuint>(id), __VA_ARGS__)
 #define GLECSh(act, id, ...)	GLEC_Base(AAct_##act<GLE_ShaderError, GLuint>(id), __VA_ARGS__)
@@ -101,12 +101,23 @@ namespace rs {
 	struct GLError {
 		const static std::pair<GLenum, const char*> ErrorList[];
 
-		static std::string s_tmp;
-		static const char* ErrorDesc();
-		static void Reset();
-		static const char* GetAPIName();
+		const char* errorDesc() const;
+		void reset() const;
+		const char* getAPIName() const;
 		//! エラー値を出力しなくなるまでループする
-		static void ResetError();
+		void resetError() const;
+	};
+	struct GLProgError {
+		GLProgError(GLuint id);
+		const char* errorDesc() const;
+		void reset() const;
+		const char* getAPIName() const;
+	};
+	struct GLShError {
+		GLShError(GLuint id);
+		const char* errorDesc() const;
+		void reset() const;
+		const char* getAPIName() const;
 	};
 	//! OpenGLに関する全般的なエラー
 	struct GLE_Error : std::runtime_error {
