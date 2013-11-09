@@ -25,6 +25,7 @@ namespace rs {
 		/*! \param[in] accum 累積フレーム数
 			\return backbufferのswapをかける時はtrue */
 		virtual bool runU(uint64_t accum) = 0;
+		virtual ~IDrawProc() {}
 	};
 	using UPDrawProc = UPtr<IDrawProc>;
 	struct IMainProc {
@@ -35,6 +36,7 @@ namespace rs {
 		//! 描画コールバックインタフェースを作成
 		/*! 描画スレッドから呼ばれる */
 		virtual IDrawProc* initDraw() = 0;
+		virtual ~IMainProc() {}
 	};
 	using UPMainProc = UPtr<IMainProc>;
 	using MPCreate = std::function<IMainProc* ()>;
