@@ -9,11 +9,11 @@ namespace rs {
 		Handler drawHandler(mainLooper);
 		drawHandler.postArgs(msg::DrawInit());
 
-		UPDrawProc up(mp->initDraw());
 		SPGLContext ctx(std::move(ctx_b));
 		ctx->makeCurrent(w);
 		LoadGLFunc();
 		mgr_gl.onDeviceReset();
+		UPDrawProc up(mp->initDraw());
 
 		bool bLoop = true;
 		do {
@@ -49,12 +49,12 @@ namespace rs {
 		InputMgr	inpP;
 
 		UPMainProc mp(_mcr());
-		DrawThread dth;
 		Handler guiHandler(guiLooper);
 		SPGLContext ctx = GLContext::CreateContext(w, false),
 					ctxD = GLContext::CreateContext(w, true);
 		ctxD->makeCurrent();
 		ctx->makeCurrent(w);
+		DrawThread dth;
 		dth.start(std::ref(*getLooper()), std::move(ctxD), w, mp);
 		// 描画スレッドの初期化完了を待つ
 		while(auto m = getLooper()->wait()) {
