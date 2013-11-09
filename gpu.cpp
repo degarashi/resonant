@@ -51,7 +51,7 @@ namespace rs {
 
 		auto* cp = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
 		while(boost::regex_search(cp, cm, re_ext)) {
-			_capSet.insert(cm.str(1));
+			_capSet.insert(cm.str(0));
 			cp = cm.suffix().first;
 		}
 	}
@@ -74,6 +74,22 @@ namespace rs {
 	}
 	const GPUInfo::CapSet& GPUInfo::refCapabilitySet() const {
 		return _capSet;
+	}
+	std::ostream& operator << (std::ostream& os, const GPUInfo::Version& ver) {
+		return os << ver.major << '.' << ver.minor << '-' << ver.revision;
+	}
+	std::ostream& operator << (std::ostream& os, const GPUInfo& info) {
+		using std::endl;
+		os << "OpenGL Version: " << info.version() << endl
+				<< "OpenGL Vendor: " << info.vendor() << endl
+				<< "OpenGL Renderer: " << info.renderer() << endl
+				<< "GLSL Version: " << info.glslVersion() << endl
+				<< "Driver Version: " << info.driverVersion() << endl
+				<< "Extensions: " <<  endl;
+		auto& cs = info.refCapabilitySet();
+		for(auto& c : cs)
+			os << c << endl;
+		return os;
 	}
 
 	// ----------------------- GPUTime -----------------------

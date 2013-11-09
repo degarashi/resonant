@@ -33,6 +33,7 @@ namespace rs {
 			};
 			void clear();
 		};
+		friend std::ostream& operator << (std::ostream& os, const GPUInfo::Version& ver);
 		enum class Profile {
 			Core,
 			Compatibility
@@ -56,5 +57,8 @@ namespace rs {
 
 			void onDeviceLost() override;
 			void onDeviceReset() override;
+			friend std::ostream& operator << (std::ostream& os, const GPUInfo& info);
 	};
+	std::ostream& operator << (std::ostream& os, const GPUInfo::Version& ver);
+	std::ostream& operator << (std::ostream& os, const GPUInfo& info);
 }
