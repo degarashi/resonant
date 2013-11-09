@@ -16,7 +16,7 @@ namespace rs {
 	MsgID::operator int () const { return id; }
 
 	// UPLooper thread_local Looper::tls_looper;
-	TLS<Looper> Looper::tls_looper;
+	TLS<SPLooper> Looper::tls_looper;
 
 	const Duration Message::NoDelay = std::chrono::seconds(0);
 	Message::Message(Message&& m): tpoint(m.tpoint), id(m.id), data(m.data),
@@ -44,7 +44,7 @@ namespace rs {
 
 	void Looper::Prepare() {
 		Assert(Trap, &tls_looper.get() == nullptr)
-		tls_looper = Looper();
+		tls_looper = SPLooper(new Looper());
 	}
 
 	OPMessage Looper::_procMessage(std::function<bool (UniLock&)> lf) {
@@ -94,7 +94,7 @@ namespace rs {
 		_msg.push(std::move(m));
 		_cond.signal_all();
 	}
-	Looper& Looper::GetLooper() {
+	const SPLooper& Looper::GetLooper() {
 		return *tls_looper;
 	}
 	void Looper::setState(bool bRun) {
@@ -105,16 +105,17 @@ namespace rs {
 	}
 
 	// ----------------- Handle -----------------
-	Handler::Handler(Looper& loop): _looper(loop) {}
+	Handler::Handler(const WPLooper& loop): _looper(loop) {}
 	void Handler::handleMessage(const Message& msg) {
 		if(msg.exec)
 			msg.exec();
 	}
 	void Handler::post(Message&& m) {
 		m.handler = m.exec ? this : nullptr;
-		_looper.pushEvent(std::move(m));
+		if(auto sp = _looper.lock())
+			sp->pushEvent(std::move(m));
 	}
-	Looper& Handler::getLooper() const {
+	const WPLooper& Handler::getLooper() const {
 		return _looper;
 	}
 }

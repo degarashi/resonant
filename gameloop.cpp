@@ -5,7 +5,7 @@
 
 namespace rs {
 	// --------------------- DrawThread ---------------------
-	void DrawThread::runL(Looper& mainLooper, SPGLContext&& ctx_b, const SPWindow& w, const UPMainProc& mp) {
+	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext&& ctx_b, const SPWindow& w, const UPMainProc& mp) {
 		Handler drawHandler(mainLooper);
 		drawHandler.postArgs(msg::DrawInit());
 
@@ -40,7 +40,7 @@ namespace rs {
 
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr): _mcr(mcr) {}
-	void MainThread::runL(Looper& guiLooper, const SPWindow& w) {
+	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w) {
 		GLRes 		glrP;
 		RWMgr 		rwP;
 		FontFamily	fontP;
@@ -55,13 +55,13 @@ namespace rs {
 		ctxD->makeCurrent();
 		ctx->makeCurrent(w);
 		DrawThread dth;
-		dth.start(std::ref(*getLooper()), std::move(ctxD), w, mp);
+		dth.start(std::ref(getLooper()), std::move(ctxD), w, mp);
 		// 描画スレッドの初期化完了を待つ
 		while(auto m = getLooper()->wait()) {
 			if(msg::DrawInit* p = *m)
 				break;
 		}
-		Handler drawHandler(*dth.getLooper());
+		Handler drawHandler(dth.getLooper());
 		guiHandler.postArgs(msg::MainInit());
 
 		const spn::FracI fracInterval(50000, 3);
@@ -75,6 +75,25 @@ namespace rs {
 		// ゲームの進行や更新タイミングを図って描画など
 		bool bLoop = true;
 		do {
+			if(!dth.isRunning()) {
+				guiHandler.postArgs(msg::QuitReq());
+				SDL_Event e;
+				e.type = EVID_SIGNAL;
+				SDL_PushEvent(&e);
+				// 何らかの原因で描画スレッドが終了していた時
+				try {
+					// 例外が投げられて終了したかをチェック
+					dth.getResult();
+				} catch (...) {
+					AssertMsg(Warn, false, "MainThread: draw thread was ended by throwing exception")
+					throw;
+				}
+				AssertMsg(Warn, false, "MainThread: draw thread was ended unexpectedly")
+				break;
+			}
+			// 何かメッセージが来てたら処理する
+			while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
+			}
 			// 次のフレーム開始を待つ
 			auto ntp = prevtime + microseconds(16666);
 			auto tp = Clock::now();
@@ -117,11 +136,11 @@ namespace rs {
 		// メインスレッドのメッセージキューを初期化
 		Looper::Prepare();
 		auto& loop = Looper::GetLooper();
-		// 描画スレッドに渡す
+		// メインスレッドに渡す
 		MainThread mth(mcr);
 		mth.start(std::ref(loop), std::ref(_spWindow));
-		// 描画スレッドのキューが準備出来るのを待つ
-		while(auto msg = loop.wait()) {
+		// メインスレッドのキューが準備出来るのを待つ
+		while(auto msg = loop->wait()) {
 			if(msg::MainInit* p = *msg)
 				break;
 		}
@@ -131,7 +150,7 @@ namespace rs {
 		while(bLoop && mth.isRunning() && SDL_WaitEvent(&e)) {
 			if(e.type == EVID_SIGNAL) {
 				// 自作スレッドのキューにメッセージがある
-				while(OPMessage m = loop.peek(std::chrono::seconds(0))) {
+				while(OPMessage m = loop->peek(std::chrono::seconds(0))) {
 					if(msg::QuitReq* p = *m) {
 						e.type = SDL_QUIT;
 						e.quit.timestamp = 0;

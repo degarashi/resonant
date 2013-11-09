@@ -90,9 +90,12 @@ namespace rs {
 	};
 
 	using MsgQueue = spn::pqueue<Message, std::deque>;
-	class Looper {
-	// 	static thread_local UPLooper tls_looper;
-		static TLS<Looper>	tls_looper;
+	class Looper;
+	using SPLooper = std::shared_ptr<Looper>;
+	using WPLooper = std::weak_ptr<Looper>;
+	class Looper : public std::enable_shared_from_this<Looper> {
+	// 	static thread_local SPLooper tls_looper;
+		static TLS<SPLooper>	tls_looper;
 		bool			_bRun = true;
 		MsgQueue		_msg;
 		CondV			_cond;
@@ -109,20 +112,20 @@ namespace rs {
 			// キューに溜まったメッセージをハンドラに渡す -> キューをクリア
 			OPMessage wait();
 			OPMessage peek(std::chrono::milliseconds msec);
-			static Looper& GetLooper();
+			static const SPLooper& GetLooper();
 			void pushEvent(Message&& m);
 			void setState(bool bRun);
 	};
 
 	class Handler {
-		Looper&		_looper;
+		WPLooper	_looper;
 
 		friend class Looper;
 		protected:
 			virtual void handleMessage(const Message& msg);
 		public:
-			Handler(Looper& loop);
-			Looper& getLooper() const;
+			Handler(const WPLooper& loop);
+			const WPLooper& getLooper() const;
 			void post(Message&& m);
 			template <class... Args>
 			void postArgsDelay(Args&&... args) {
@@ -140,25 +143,25 @@ namespace rs {
 	class ThreadL<RET (Args...)> : public Thread<RET (Args...)> {
 		private:
 			using base = Thread<RET (Args...)>;
-			Looper*	_pLooper = nullptr;
+			SPLooper	_spLooper;
 		protected:
 			using base::base;
 			RET run(Args&&... args) override final {
 				Looper::Prepare();
-				_pLooper = &Looper::GetLooper();
+				_spLooper = Looper::GetLooper();
 				return runL(std::forward<Args>(args)...);
 			}
 			virtual RET runL(Args&&... args) = 0;
 		public:
 			bool interrupt() override {
 				if(base::interrupt()) {
-					_pLooper->setState(false);
+					_spLooper->setState(false);
 					return true;
 				}
 				return false;
 			}
-			Looper* getLooper() {
-				return _pLooper;
+			const SPLooper& getLooper() {
+				return _spLooper;
 			}
 	};
 }
