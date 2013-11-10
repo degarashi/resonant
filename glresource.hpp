@@ -88,28 +88,34 @@ namespace rs {
 		GLInfoFunc	_infoF;
 		GLuint		_id;
 
+		static const char* GetErrorName();
 		GLE_ShProgBase(GLGetIV ivF, GLInfoFunc infoF, const std::string& aux, GLuint id);
 	};
 	//! GLSLシェーダーコンパイルエラー
 	struct GLE_ShaderError : GLE_ShProgBase {
+		static const char* GetErrorName();
 		GLE_ShaderError(GLuint id);
 	};
 	//! GLSLプログラムリンクエラー
 	struct GLE_ProgramError : GLE_ShProgBase {
+		static const char* GetErrorName();
 		GLE_ProgramError(GLuint id);
 	};
 	//! GLSL変数が見つからないエラー
 	struct GLE_ParamNotFound : GLE_Error {
+		static const char* GetErrorName();
 		std::string	_name;
 		GLE_ParamNotFound(const std::string& name);
 	};
 	//! GLSLユーザー変数の型エラー
 	struct GLE_InvalidArgument : GLE_Error {
+		static const char* GetErrorName();
 		std::string	_shName, _argName;
 		GLE_InvalidArgument(const std::string& shname, const std::string& argname);
 	};
 	//! GLXファイルの論理的な記述ミス
 	struct GLE_LogicalError : GLE_Error {
+		static const char* GetErrorName();
 		using GLE_Error::GLE_Error;
 	};
 	// ------------------ GLリソース管理 ------------------

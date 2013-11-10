@@ -91,6 +91,7 @@ namespace rs {
 	#define GLEC_P(act, chk, ...)			::rs::EChk_pass(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)
 #endif
+
 namespace rs {
 	//! OpenGLエラーIDとその詳細メッセージ
 	struct GLError {

@@ -52,7 +52,6 @@ namespace rs {
 			g_bglfuncInit = true;
 		}
 	#undef GLDEFINE
-
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {
 		_idSh = glCreateShader(_flag);
@@ -64,8 +63,7 @@ namespace rs {
 		// エラーが無かったか確認
 		GLint compiled;
 		glGetShaderiv(_idSh, GL_COMPILE_STATUS, &compiled);
-		if(compiled == GL_FALSE)
-			throw GLE_ShaderError(_idSh);
+		AssertT(Trap, compiled==GL_TRUE, (GLE_ShaderError)(GLuint), _idSh)
 	}
 
 	GLShader::GLShader() {}

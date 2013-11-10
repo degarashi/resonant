@@ -1,5 +1,6 @@
 #pragma once
 #define BOOST_PP_VARIADICS 1
+#include <boost/preprocessor.hpp>
 #include <boost/format.hpp>
 #include <iostream>
 #include <sstream>
@@ -24,22 +25,21 @@
 // Debug=warning, Release=warning	[Assert_Warn]
 // Debug=warning, Release=none		[Assert_WarnP]
 
-#define Assert_Base(expr, act, ...)		{if(!(expr)) { act.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
-#define Assert(act, expr)				AssertMsg(act, expr, "Assertion failed")
-#define AssertMsg(act, expr, ...)		Assert_Base(expr, AAct_##act<std::runtime_error>(), __VA_ARGS__)
-#define AssertT(act, expr, throwtype)			Assert_Base(expr, AAct_##act##throwtype(), "Assertion failed")
-#define AssertTMsg(act, expr, throwtype, ...)	Assert_Base(expr, AAct_##act##throwtype(__VA_ARGS__), "Assertion failed")
+#define _Assert_Base(expr, act, ...)			{if(!(expr)) { act.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
+#define _AssertT(act, expr, throwtype)			_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>()), BOOST_PP_SEQ_ELEM(0,throwtype)::GetErrorName())
+#define _AssertTArg(act, expr, throwtype, ...)	_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>(__VA_ARGS__)), BOOST_PP_SEQ_ELEM(0,throwtype)::GetErrorName())
+#define AssertT(act, expr, ...)					BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _AssertT, _AssertTArg)(act,expr,__VA_ARGS__)
+
+#define _Assert(act, expr)						_AssertArg(act, expr, "Assertion failed")
+#define _AssertArg(act, expr, ...)				_Assert_Base(expr, (AAct_##act<std::runtime_error>()), __VA_ARGS__)
+#define Assert(act, ...)						BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _Assert, _AssertArg)(act, __VA_ARGS__)
 
 #ifdef DEBUG
-	#define AssertP(act, expr)						Assert(act,expr)
-	#define AssertMsgP(act, expr, ...)				AssertMsg(act,expr, __VA_ARGS__)
-	#define AssertTP(act, expr, throwtype)			AssertT(act,expr,throwtype)
-	#define AssertTMsgP(act, expr, throwtype, ...)	AssertTMsg(act,expr,throwtype, __VA_ARGS__)
+	#define AssertP(act, ...)						Assert(act, __VA_ARGS__)
+	#define AssertTP(act, expr, throwtype, ...)		AssertT(act,expr,throwtype, __VA_ARGS__)
 #else
-	#define AssertP(act, expr)
-	#define AssertMsgP(act, expr, ...)
-	#define AssertTP(act, expr, throwtype)
-	#define AssertTMsgP(act, expr, throwtype, ...)
+	#define AssertP(act, ...)
+	#define AssertTP(act, expr, throwtype, ...)
 #endif
 
 template <class... Ts>

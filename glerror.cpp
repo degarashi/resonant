@@ -81,12 +81,16 @@ namespace rs {
 		(GLE_Error&)*this = GLE_Error(aux + ":\n" + std::move(ret));
 	}
 	// ------------------------- GLE_ShaderError -------------------------
-	GLE_ShaderError::GLE_ShaderError(GLuint id): GLE_ShProgBase(glGetShaderiv, glGetShaderInfoLog, "compile shader failed", id) {}
+	const char* GLE_ShaderError::GetErrorName() { return "compile shader failed"; }
+	GLE_ShaderError::GLE_ShaderError(GLuint id): GLE_ShProgBase(glGetShaderiv, glGetShaderInfoLog, GetErrorName(), id) {}
 	// ------------------------- GLE_ProgramError -------------------------
-	GLE_ProgramError::GLE_ProgramError(GLuint id): GLE_ShProgBase(glGetProgramiv, glGetProgramInfoLog, "link program failed", id) {}
+	const char* GLE_ProgramError::GetErrorName() { return "link program failed"; }
+	GLE_ProgramError::GLE_ProgramError(GLuint id): GLE_ShProgBase(glGetProgramiv, glGetProgramInfoLog, GetErrorName(), id) {}
 	// ------------------------- GLE_ParamNotFound -------------------------
-	GLE_ParamNotFound::GLE_ParamNotFound(const std::string& name): GLE_Error(std::string("parameter not found:\n") + name), _name(name) {}
+	const char* GLE_ParamNotFound::GetErrorName() { return "parameter not found"; }
+	GLE_ParamNotFound::GLE_ParamNotFound(const std::string& name): GLE_Error(std::string(GetErrorName()) + '\n' + name), _name(name) {}
 	// ------------------------- GLE_InvalidArgument -------------------------
-	GLE_InvalidArgument::GLE_InvalidArgument(const std::string& shname, const std::string& argname): GLE_Error(shname + ":\n" + argname),
+	const char* GLE_InvalidArgument::GetErrorName() { return "invalid argument"; }
+	GLE_InvalidArgument::GLE_InvalidArgument(const std::string& shname, const std::string& argname): GLE_Error(std::string(GetErrorName()) + shname + ":\n" + argname),
 		_shName(shname), _argName(argname) {}
 }

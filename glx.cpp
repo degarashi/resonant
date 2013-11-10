@@ -463,7 +463,7 @@ namespace rs {
 					cr->use(IGLTexture::TagUse);
 					glUniform1i(_id, itr->second);
 				} else
-					AssertMsg(Warn, false, "uniform id=%1% is not sampler", _id)
+					Assert(Warn, false, "uniform id=%1% is not sampler", _id)
 			}
 		};
 	}
@@ -505,7 +505,7 @@ namespace rs {
 		_refreshProgram();
 		GLint loc = glGetUniformLocation(_tps->getProgram().cref()->getProgramID(), name.c_str());
 		GLEC_ChkP(Trap)
-		AssertMsg(Warn, loc>=0, "Uniform argument \"%1%\" not found", name)
+		Assert(Warn, loc>=0, "Uniform argument \"%1%\" not found", name)
 		return loc;
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
@@ -656,7 +656,7 @@ namespace rs {
 			bool setKey(const std::string& key) {
 				uniID = glGetUniformLocation(pgID, key.c_str());
 				GLEC_ChkP(Trap)
-				AssertMsg(Warn, uniID>=0, "Uniform argument \"%1%\" not found", key)
+				Assert(Warn, uniID>=0, "Uniform argument \"%1%\" not found", key)
 				return uniID >= 0;
 			}
 			template <class T>

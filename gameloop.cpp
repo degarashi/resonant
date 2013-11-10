@@ -85,10 +85,10 @@ namespace rs {
 					// 例外が投げられて終了したかをチェック
 					dth.getResult();
 				} catch (...) {
-					AssertMsg(Warn, false, "MainThread: draw thread was ended by throwing exception")
+					Assert(Warn, false, "MainThread: draw thread was ended by throwing exception")
 					throw;
 				}
-				AssertMsg(Warn, false, "MainThread: draw thread was ended unexpectedly")
+				Assert(Warn, false, "MainThread: draw thread was ended unexpectedly")
 				break;
 			}
 			// 何かメッセージが来てたら処理する

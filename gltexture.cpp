@@ -108,7 +108,7 @@ namespace rs {
 		};
 		auto GLTMipBase = [](GLuint flag, int w, int h, const GLubyte* ptr) -> spn::Size {
 			//TODO: glu関数を使わずにミップマップを作成
-			AssertMsg(Trap, false, "not implemented yet")
+			Assert(Trap, false, "not implemented yet")
 // 			auto res = gluBuild2DMipmaps(flag, GL_RGBA, w, h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
 // 			if(res != 0)
 // 				throw GLE_Error(reinterpret_cast<const char*>(gluErrorString(res)));
@@ -281,7 +281,7 @@ namespace rs {
 			if(_buff) {
 				// でもフォーマットが違う時は警告だけ出して何もしない
 				if(*_typeFormat != srcFmt)
-					AssertMsg(Warn, false, "テクスチャのフォーマットが違うので部分的に書き込めない")
+					Assert(Warn, false, "テクスチャのフォーマットが違うので部分的に書き込めない")
 				else {
 					auto& b = *_buff;
 					auto* dst = &b[_size.width * ofsY + ofsX];
