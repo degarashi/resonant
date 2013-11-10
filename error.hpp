@@ -24,15 +24,22 @@
 // Debug=warning, Release=warning	[Assert_Warn]
 // Debug=warning, Release=none		[Assert_WarnP]
 
-#define Assert_Base(expr, act, chk, ...) {if(!(expr)) { chk.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
+#define Assert_Base(expr, act, ...)		{if(!(expr)) { act.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
 #define Assert(act, expr)				AssertMsg(act, expr, "Assertion failed")
-#define AssertMsg(act, expr, ...)		Assert_Base(expr, act, AAct_##act<std::runtime_error>(), __VA_ARGS__)
+#define AssertMsg(act, expr, ...)		Assert_Base(expr, AAct_##act<std::runtime_error>(), __VA_ARGS__)
+#define AssertT(act, expr, throwtype)			Assert_Base(expr, AAct_##act##throwtype(), "Assertion failed")
+#define AssertTMsg(act, expr, throwtype, ...)	Assert_Base(expr, AAct_##act##throwtype(__VA_ARGS__), "Assertion failed")
+
 #ifdef DEBUG
-	#define AssertP(act, expr)			Assert(act,expr)
-	#define AssertMsgP(act, expr, ...)	AssertMsg(act,expr, __VA_ARGS__)
+	#define AssertP(act, expr)						Assert(act,expr)
+	#define AssertMsgP(act, expr, ...)				AssertMsg(act,expr, __VA_ARGS__)
+	#define AssertTP(act, expr, throwtype)			AssertT(act,expr,throwtype)
+	#define AssertTMsgP(act, expr, throwtype, ...)	AssertTMsg(act,expr,throwtype, __VA_ARGS__)
 #else
 	#define AssertP(act, expr)
 	#define AssertMsgP(act, expr, ...)
+	#define AssertTP(act, expr, throwtype)
+	#define AssertTMsgP(act, expr, throwtype, ...)
 #endif
 
 template <class... Ts>
@@ -64,8 +71,10 @@ void LogOutput(const char* fmt, Ts&&... ts) {
 }
 
 //! エラー時にメッセージ出力だけする
-template <class E>
+template <class E, class... Ts>
 struct AAct_Warn {
+	template <class... TA>
+	AAct_Warn(TA&&...) {}
 	void onError(const std::string& str) {
 		LogOutput(str);
 	}

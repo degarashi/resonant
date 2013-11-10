@@ -84,6 +84,10 @@ namespace rs {
 	using GLInfoFunc = decltype(glGetShaderInfoLog);
 	//! GLSLコンパイル関連のエラー基底
 	struct GLE_ShProgBase : GLE_Error {
+		GLGetIV 	_ivF;
+		GLInfoFunc	_infoF;
+		GLuint		_id;
+
 		GLE_ShProgBase(GLGetIV ivF, GLInfoFunc infoF, const std::string& aux, GLuint id);
 	};
 	//! GLSLシェーダーコンパイルエラー
@@ -96,12 +100,12 @@ namespace rs {
 	};
 	//! GLSL変数が見つからないエラー
 	struct GLE_ParamNotFound : GLE_Error {
+		std::string	_name;
 		GLE_ParamNotFound(const std::string& name);
 	};
 	//! GLSLユーザー変数の型エラー
 	struct GLE_InvalidArgument : GLE_Error {
-		std::string	shName, argName;
-		std::string _makeMessage() const;
+		std::string	_shName, _argName;
 		GLE_InvalidArgument(const std::string& shname, const std::string& argname);
 	};
 	//! GLXファイルの論理的な記述ミス

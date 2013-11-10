@@ -53,21 +53,6 @@ namespace rs {
 		}
 	#undef GLDEFINE
 
-	GLE_ShProgBase::GLE_ShProgBase(GLGetIV ivF, GLInfoFunc, const std::string& aux, GLuint id): GLE_Error("") {
-		int logSize, length;
-		ivF(id, GL_INFO_LOG_LENGTH, &logSize);
-
-		std::unique_ptr<char> pBuff(new char[logSize]);
-		glGetShaderInfoLog(id, logSize, &length, pBuff.get());
-
-		(GLE_Error&)*this = GLE_Error(aux + pBuff.get());
-	}
-
-	GLE_ShaderError::GLE_ShaderError(GLuint id): GLE_ShProgBase(glGetShaderiv, glGetShaderInfoLog, "compile shader failed: ", id) {}
-	GLE_ProgramError::GLE_ProgramError(GLuint id): GLE_ShProgBase(glGetProgramiv, glGetProgramInfoLog, "link program failed: ", id) {}
-	GLE_ParamNotFound::GLE_ParamNotFound(const std::string& name): GLE_Error(std::string("parameter not found: ") + name) {}
-	GLE_InvalidArgument::GLE_InvalidArgument(const std::string& shname, const std::string& argname): GLE_Error(shname + ':' + argname) {}
-
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {
 		_idSh = glCreateShader(_flag);

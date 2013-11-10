@@ -1,44 +1,6 @@
 #include "glresource.hpp"
 
 namespace rs {
-	// ------------------------- GLError -------------------------
-	const std::pair<GLenum, const char*> GLError::ErrorList[] = {
-		{GL_INVALID_VALUE, "Numeric argument out of range"},
-		{GL_INVALID_ENUM, "Enum argument out of range"},
-		{GL_INVALID_OPERATION, "Operation illegal in current state"},
-		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer is incomplete"},
-		{GL_OUT_OF_MEMORY, "Not enough memory left to execute command"}
-	};
-	const char* GLError::errorDesc() const {
-		GLenum err;
-		tls_errMsgTmp.clear();
-		while((err = glGetError()) != GL_NO_ERROR) {
-			// OpenGLエラー詳細を取得
-			bool bFound = false;
-			for(const auto& e : ErrorList) {
-				if(e.first == err) {
-					tls_errMsgTmp += e.second;
-					tls_errMsgTmp += '\n';
-					bFound = true;
-					break;
-				}
-			}
-			if(!bFound)
-				tls_errMsgTmp += "unknown errorID\n";
-		}
-		if(!tls_errMsgTmp.empty())
-			return tls_errMsgTmp.c_str();
-		return nullptr;
-	}
-	void GLError::reset() const {
-		while(glGetError() != GL_NO_ERROR);
-	}
-	const char* GLError::getAPIName() const {
-		return "OpenGL";
-	}
-	void GLError::resetError() const {
-		while(glGetError() != GL_NO_ERROR);
-	}
 	// --------------------------- GLBuffer ---------------------------
 	DEF_GLRESOURCE_CPP(GLBuffer)
 	GLuint GLBuffer::getBuffID() const { return _idBuff; }

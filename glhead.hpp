@@ -83,24 +83,13 @@ namespace rs {
 #define GLEC_Base0(act, chk)				::rs::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define GLEC(act, ...)						GLEC_Base(AAct_##act<GLE_Error>(), GLError(), __VA_ARGS__)
 #define GLEC_Chk(act)						GLEC_Base0(AAct_##act<GLE_Error>(), GLError())
-#define GLECProg(act, id, ...)				GLEC_Base(AAct_##act<GLE_ProgramError>(), GLProgError(id), __VA_ARGS__)
-#define GLECSh(act, id, ...)				GLEC_Base(AAct_##act<GLE_ShaderError>(), GLShError(id), __VA_ARGS__)
-#define GLECLog(act, expr, ...)					Assert_Base(expr, act, GLE_LogicalError, __VA_ARGS__)
-#define MakeGLEParam(act, name, ...)			GLEC_Base(AAct_##act<GLE_ParamNotFound>(), __VA_ARGS__)
-#define MakeGLEArg(act, shname, argname, ...)	GLEC_Base(AAct_##act<GLE_InvalidArgument, const char*, const char*>(shname, argname), __VA_ARGS__)
 
 #ifdef DEBUG
 	#define GLEC_P(act, chk, ...)			GLEC(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)					GLEC_Chk(act)
-	#define GLECProg_P(act, id, ...)		GLECProg(act, id, __VA_ARGS__)
-	#define GLECSh_P(act, id, ...)			GLECSh(act, id, __VA_ARGS__)
-	#define GLECLog_P(act, expr, ...)		GLECLog(act, expr, __VA_ARGS__)
 #else
 	#define GLEC_P(act, chk, ...)			::rs::EChk_pass(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)
-	#define GLECProg_P(act, id, ...)
-	#define GLECSh_P(act, id, ...)
-	#define GLECLog_P(act, expr, ...)
 #endif
 namespace rs {
 	//! OpenGLエラーIDとその詳細メッセージ
@@ -114,12 +103,14 @@ namespace rs {
 		void resetError() const;
 	};
 	struct GLProgError {
+		GLuint	_id;
 		GLProgError(GLuint id);
 		const char* errorDesc() const;
 		void reset() const;
 		const char* getAPIName() const;
 	};
 	struct GLShError {
+		GLuint	_id;
 		GLShError(GLuint id);
 		const char* errorDesc() const;
 		void reset() const;
