@@ -100,6 +100,8 @@ namespace rs {
 	};
 	//! GLSLユーザー変数の型エラー
 	struct GLE_InvalidArgument : GLE_Error {
+		std::string	shName, argName;
+		std::string _makeMessage() const;
 		GLE_InvalidArgument(const std::string& shname, const std::string& argname);
 	};
 	//! GLXファイルの論理的な記述ミス

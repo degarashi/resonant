@@ -24,15 +24,17 @@
 // Debug=warning, Release=warning	[Assert_Warn]
 // Debug=warning, Release=none		[Assert_WarnP]
 
-#define Assert_Base(expr, act, throwtype, ...) {if(!(expr)) { AAct_##act<throwtype>().onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
-#define Assert(act, expr)			AssertMsg(act, expr, "Assertion failed")
-#define AssertMsg(act, expr, ...)	Assert_Base(expr, act, std::runtime_error, __VA_ARGS__)
+#define Assert_Base(expr, act, chk, ...) {if(!(expr)) { chk.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
+#define Assert(act, expr)				AssertMsg(act, expr, "Assertion failed")
+#define AssertMsg(act, expr, ...)		Assert_Base(expr, act, AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #ifdef DEBUG
 	#define AssertP(act, expr)			Assert(act,expr)
-	#define AssertMsgP(act, expr, ...)
+	#define AssertMsgP(act, expr, ...)	AssertMsg(act,expr, __VA_ARGS__)
 #else
 	#define AssertP(act, expr)
+	#define AssertMsgP(act, expr, ...)
 #endif
+
 template <class... Ts>
 std::string ConcatMessage(boost::format& fmt, Ts&&... t) { return fmt.str(); }
 template <class T, class... Ts>
@@ -61,12 +63,14 @@ void LogOutput(const char* fmt, Ts&&... ts) {
 	LogOutput(ConcatMessage(boost::format(fmt), std::forward<Ts>(ts)...));
 }
 
+//! エラー時にメッセージ出力だけする
 template <class E>
 struct AAct_Warn {
 	void onError(const std::string& str) {
 		LogOutput(str);
 	}
 };
+//! エラー時にメッセージ出力と例外の送出を行う
 template <class E, class... Ts>
 struct AAct_Throw : spn::ArgHolder<Ts...> {
 	using spn::ArgHolder<Ts...>::ArgHolder;
@@ -81,6 +85,7 @@ struct AAct_Throw : spn::ArgHolder<Ts...> {
 		});
 	}
 };
+//! エラー時にデバッガをブレーク、リリース時には例外の送出を行う
 template <class E, class... Ts>
 struct AAct_Trap : AAct_Throw<E,Ts...> {
 	using base_type = AAct_Throw<E,Ts...>;

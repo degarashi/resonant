@@ -79,22 +79,28 @@ namespace rs {
 
 #include "error.hpp"
 // OpenGLに関するアサート集
-#define GLEC_Base(act, ...)		::rs::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act)			::rs::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define GLEC(act, ...)			GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
-#define GLECProg(act, id, ...)	GLEC_Base(AAct_##act<GLE_ProgramError, GLuint>(id), __VA_ARGS__)
-#define GLECSh(act, id, ...)	GLEC_Base(AAct_##act<GLE_ShaderError, GLuint>(id), __VA_ARGS__)
-#define GLECParam(act, name, ...)	GLEC_Base(AAct_##act<GLE_ParamNotFound, const char*>(name), __VA_ARGS__)
-#define GLECArg(act, shname, argname, ...)	GLEC_Base(AAct_##act<GLE_InvalidArgument, const char*, const char*>(shname, argname), __VA_ARGS__)
-#define GLECLog(act, ...)		GLEC_Base(AAct_##act<GLE_LogicalError>(), __VA_ARGS__)
+#define GLEC_Base(act, chk, ...)			::rs::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define GLEC_Base0(act, chk)				::rs::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define GLEC(act, ...)						GLEC_Base(AAct_##act<GLE_Error>(), GLError(), __VA_ARGS__)
+#define GLEC_Chk(act)						GLEC_Base0(AAct_##act<GLE_Error>(), GLError())
+#define GLECProg(act, id, ...)				GLEC_Base(AAct_##act<GLE_ProgramError>(), GLProgError(id), __VA_ARGS__)
+#define GLECSh(act, id, ...)				GLEC_Base(AAct_##act<GLE_ShaderError>(), GLShError(id), __VA_ARGS__)
+#define GLECLog(act, expr, ...)					Assert_Base(expr, act, GLE_LogicalError, __VA_ARGS__)
+#define MakeGLEParam(act, name, ...)			GLEC_Base(AAct_##act<GLE_ParamNotFound>(), __VA_ARGS__)
+#define MakeGLEArg(act, shname, argname, ...)	GLEC_Base(AAct_##act<GLE_InvalidArgument, const char*, const char*>(shname, argname), __VA_ARGS__)
 
-#define GLEC_Chk(act)			GLEC_Base0(AAct_##act<GLE_Error>())
 #ifdef DEBUG
-	#define GLEC_P(act, ...)	GLEC(act, __VA_ARGS__)
-	#define GLEC_ChkP(act)		GLEC_Chk(act)
+	#define GLEC_P(act, chk, ...)			GLEC(act, chk, __VA_ARGS__)
+	#define GLEC_ChkP(act)					GLEC_Chk(act)
+	#define GLECProg_P(act, id, ...)		GLECProg(act, id, __VA_ARGS__)
+	#define GLECSh_P(act, id, ...)			GLECSh(act, id, __VA_ARGS__)
+	#define GLECLog_P(act, expr, ...)		GLECLog(act, expr, __VA_ARGS__)
 #else
-	#define GLEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
+	#define GLEC_P(act, chk, ...)			::rs::EChk_pass(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)
+	#define GLECProg_P(act, id, ...)
+	#define GLECSh_P(act, id, ...)
+	#define GLECLog_P(act, expr, ...)
 #endif
 namespace rs {
 	//! OpenGLエラーIDとその詳細メッセージ
