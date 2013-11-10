@@ -93,4 +93,6 @@ namespace rs {
 	const char* GLE_InvalidArgument::GetErrorName() { return "invalid argument"; }
 	GLE_InvalidArgument::GLE_InvalidArgument(const std::string& shname, const std::string& argname): GLE_Error(std::string(GetErrorName()) + shname + ":\n" + argname),
 		_shName(shname), _argName(argname) {}
+	// ------------------------- GLE_LogicalError -------------------------
+	const char* GLE_LogicalError::GetErrorName() { return "logical error"; }
 }

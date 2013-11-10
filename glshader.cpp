@@ -111,8 +111,7 @@ namespace rs {
 				glAttachShader(_idProg, sh.cref()->getShaderID());
 				GLEC_ChkP(Trap)
 			} else {
-				if(i != ShType::GEOMETRY)
-					throw GLE_Error("missing shader elements (vertex or fragment)");
+				AssertT(Trap, i==ShType::GEOMETRY, (GLE_Error)(const char*), "missing shader elements (vertex or fragment)")
 			}
 		}
 
@@ -120,8 +119,7 @@ namespace rs {
 		// エラーが無いかチェック
 		int ib;
 		glGetProgramiv(_idProg, GL_LINK_STATUS, &ib);
-		if(ib == GL_FALSE)
-			throw GLE_ProgramError(_idProg);
+		AssertT(Trap, ib==GL_TRUE, (GLE_ProgramError)(GLuint), _idProg)
 	}
 	GLProgram::~GLProgram() {
 		onDeviceLost();
@@ -148,8 +146,7 @@ namespace rs {
 	}
 	int GLProgram::getUniformID(const std::string& name) const {
 		GLint id = getUniformIDNc(name);
-		if(id < 0)
-			throw GLE_ParamNotFound(name);
+		AssertT(Trap, id>=0, (GLE_ParamNotFound)(const std::string&), name)
 		return id;
 	}
 	int GLProgram::getUniformIDNc(const std::string& name) const {
@@ -157,8 +154,7 @@ namespace rs {
 	}
 	int GLProgram::getAttribID(const std::string& name) const {
 		GLint id = getAttribIDNc(name);
-		if(id < 0)
-			throw GLE_ParamNotFound(name);
+		AssertT(Trap, id>=0, (GLE_ParamNotFound)(const std::string&), name)
 		return id;
 	}
 	GLuint GLProgram::getProgramID() const {

@@ -119,6 +119,7 @@ namespace rs {
 	};
 	//! OpenGLに関する全般的なエラー
 	struct GLE_Error : std::runtime_error {
+		static const char* GetErrorName() { return "OpenGL Error"; }
 		using runtime_error::runtime_error;
 	};
 }

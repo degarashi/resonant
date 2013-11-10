@@ -110,8 +110,7 @@ namespace rs {
 			//TODO: glu関数を使わずにミップマップを作成
 			Assert(Trap, false, "not implemented yet")
 // 			auto res = gluBuild2DMipmaps(flag, GL_RGBA, w, h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
-// 			if(res != 0)
-// 				throw GLE_Error(reinterpret_cast<const char*>(gluErrorString(res)));
+// 			AssertT(Trap, res==0, (GLE_Error)(const char*), gluErrorString(res))
 			return spn::Size(w,h);
 		};
 
@@ -375,6 +374,6 @@ namespace rs {
 
 	// ------------------------- TDBorder -------------------------
 	TDBorder::TDBorder(const spn::Vec4&, const spn::Vec4&, int w, int h): ITDGen(w,h) {
-		throw std::runtime_error("not implemented yet");
+		Assert(Trap, false, "not implemented yet")
 	}
 }

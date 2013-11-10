@@ -106,8 +106,7 @@ namespace rs {
 
 			uint ofs = 0;
 			for(auto& t2 : t) {
-				if(ofs > t2.offset)
-					throw GLE_Error("invalid vertex offset");
+				AssertT(Trap, ofs<=t2.offset, (GLE_Error)(const char*), "invalid vertex offset")
 				ofs += GLFormat::QuerySize(t2.elemFlag) * t2.elemSize;
 			}
 		}
@@ -208,10 +207,8 @@ namespace rs {
 	void ArgChecker::_checkAndSet(TARGET tgt) {
 		auto t = _target[_cursor];
 		auto* arg = _arg[_cursor];
-		if(t==NONE)
-			throw GLE_InvalidArgument(_shName, "(none)");
-		if(t!=tgt)
-			throw GLE_InvalidArgument(_shName, arg->name);
+		AssertT(Trap, t!=NONE, (GLE_InvalidArgument)(const std::string&)(const char*), _shName, "(none)")
+		AssertT(Trap, t==tgt, (GLE_InvalidArgument)(const std::string&)(const std::string&), _shName, arg->name)
 		_ost << GLType_::cs_typeStr[arg->type] << ' ' << arg->name;
 		++_cursor;
 	}
@@ -348,8 +345,7 @@ namespace rs {
 		return -1;
 	}
 	int GLEffect::getPassID(const std::string& pass) const {
-		if(!_idTech)
-			throw GLE_Error("tech is not selected");
+		AssertT(Trap, _idTech, (GLE_Error)(const char*), "tech is not selected")
 		auto& tech = _techName[*_idTech];
 		int nP = tech.size();
 		for(int i=1 ; i<nP ; i++) {
@@ -359,14 +355,12 @@ namespace rs {
 		return -1;
 	}
 	int GLEffect::getCurPassID() const {
-		if(_idPass)
-			return *_idPass;
-		throw GLE_Error("pass is not selected");
+		AssertT(Trap, _idPass, (GLE_Error)(const char*), "pass is not selected")
+		return *_idPass;
 	}
 	int GLEffect::getCurTechID() const {
-		if(_idTech)
-			return *_idTech;
-		throw GLE_Error("tech is not selected");
+		AssertT(Trap, _idTech, (GLE_Error)(const char*), "tech is not selected")
+		return *_idTech;
 	}
 
 	// Uniformは一旦キャッシュにとっておいて後でセット
@@ -382,8 +376,7 @@ namespace rs {
 	}
 	void GLEffect::_refreshProgram() {
 		if(Bit::ChClear(_rflg, REFL_PROGRAM)) {
-			if(!_idTech || !_idPass)
-				throw GLE_Error("tech or pass is not selected");
+			AssertT(Trap, (_idTech && _idPass), (GLE_Error)(const char*), "tech or pass is not selected")
 
 			GL16ID id(*_idTech, *_idPass);
 			auto& tps = _techMap.at(id);
@@ -688,8 +681,7 @@ namespace rs {
 			selectSh[a.type] = &a;
 
 		// VertexとPixelシェーダは必須、Geometryは任意
-		if(!selectSh[ShType::VERTEX] || !selectSh[ShType::PIXEL])
-			throw GLE_LogicalError("no vertex or pixel shader found");
+		AssertT(Trap, (selectSh[ShType::VERTEX] && selectSh[ShType::PIXEL]), (GLE_LogicalError)(const char*), "no vertex or pixel shader found")
 
 		std::stringstream ss;
 		TPSDupl dupl(gs, tech, pass);
@@ -767,8 +759,7 @@ namespace rs {
 			// 頂点セマンティクス対応リストを生成
 			// セマンティクスの重複はエラー
 			auto& atID = _vAttrID[p->sem];
-			if(atID != -2)
-				throw GLE_LogicalError((boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str());
+			AssertT(Trap, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
 			atID = glGetAttribLocation(prog.getProgramID(), p->name.c_str());
 			GLEC_ChkP(Trap)
 			// -1の場合は警告を出す(もしかしたらシェーダー内で使ってないだけかもしれない)
