@@ -6,13 +6,13 @@
 #include "spinner/abstbuff.hpp"
 #include "spinner/resmgr.hpp"
 #include "sdlwrap.hpp"
-#include "error.hpp"
+#include "spinner/error.hpp"
 
-#define FTEC(act, func, ...)	::rs::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::FTError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
+#define FTEC(act, func, ...)	::spn::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::FTError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
 #ifdef DEBUG
 	#define FTEC_P(act, ...)	FTEC(act, __VA_ARGS__)
 #else
-	#define FTEC_P(act, ...)	::rs::EChk_pass(__VA_ARGS__)
+	#define FTEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
 #endif
 
 namespace rs {

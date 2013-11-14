@@ -11,23 +11,23 @@ namespace rs {
 	};
 	const char* GLError::errorDesc() const {
 		GLenum err;
-		tls_errMsgTmp.clear();
+		spn::tls_errMsgTmp.clear();
 		while((err = glGetError()) != GL_NO_ERROR) {
 			// OpenGLエラー詳細を取得
 			bool bFound = false;
 			for(const auto& e : ErrorList) {
 				if(e.first == err) {
-					tls_errMsgTmp += e.second;
-					tls_errMsgTmp += '\n';
+					spn::tls_errMsgTmp += e.second;
+					spn::tls_errMsgTmp += '\n';
 					bFound = true;
 					break;
 				}
 			}
 			if(!bFound)
-				tls_errMsgTmp += "unknown errorID\n";
+				spn::tls_errMsgTmp += "unknown errorID\n";
 		}
-		if(!tls_errMsgTmp.empty())
-			return tls_errMsgTmp.c_str();
+		if(!spn::tls_errMsgTmp.empty())
+			return spn::tls_errMsgTmp.c_str();
 		return nullptr;
 	}
 	void GLError::reset() const {

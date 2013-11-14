@@ -77,10 +77,10 @@ namespace rs {
 	};
 }
 
-#include "error.hpp"
+#include "spinner/error.hpp"
 // OpenGLに関するアサート集
-#define GLEC_Base(act, chk, ...)			::rs::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act, chk)				::rs::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define GLEC_Base(act, chk, ...)			::spn::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define GLEC_Base0(act, chk)				::spn::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define GLEC(act, ...)						GLEC_Base(AAct_##act<GLE_Error>(), GLError(), __VA_ARGS__)
 #define GLEC_Chk(act)						GLEC_Base0(AAct_##act<GLE_Error>(), GLError())
 
@@ -88,7 +88,7 @@ namespace rs {
 	#define GLEC_P(act, chk, ...)			GLEC(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)					GLEC_Chk(act)
 #else
-	#define GLEC_P(act, chk, ...)			::rs::EChk_pass(act, chk, __VA_ARGS__)
+	#define GLEC_P(act, chk, ...)			::spn::EChk_pass(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)
 #endif
 

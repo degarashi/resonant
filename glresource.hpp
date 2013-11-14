@@ -6,7 +6,8 @@
 #include "spinner/dir.hpp"
 #include "spinner/size.hpp"
 #include "glformat.hpp"
-#include "error.hpp"
+#include "spinner/error.hpp"
+#include "sdlwrap.hpp"
 
 namespace rs {
 	//! Tech:Pass の組み合わせを表す
