@@ -193,8 +193,8 @@ namespace rs {
 	class GLFBufferTmp;
 	#define mgr_gl (::rs::GLRes::_ref())
 	//! OpenGL関連のリソースマネージャ
-	class GLRes : public spn::ResMgrN<UPResource, GLRes, spn::PathStr> {
-		using base_type = spn::ResMgrN<UPResource, GLRes, spn::PathStr>;
+	class GLRes : public spn::ResMgrN<UPResource, GLRes, std::string> {
+		using base_type = spn::ResMgrN<UPResource, GLRes, std::string>;
 		UPFBuffer						_upFb;
 		std::unique_ptr<GLFBufferTmp>	_tmpFb;
 		//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
@@ -203,6 +203,7 @@ namespace rs {
 		//! DeviceLost/Resetの状態管理
 		bool	_bInit;
 
+		//! 既にデバイスがアクティブだったらonDeviceResetを呼ぶ
 		template <class LHDL>
 		void initHandle(LHDL& lh) {
 			if(_bInit)
@@ -220,11 +221,30 @@ namespace rs {
 			void acquire();
 
 			// ------------ Texture ------------
+			using HLTex = AnotherLHandle<UPTexture>;
 			//! ファイルからテクスチャを読み込む
-			AnotherLHandle<UPTexture> loadTexture(const spn::PathStr& path, bool bCube=false);
+			/*! 圧縮テクスチャはファイルヘッダで判定
+				\param[in] fmt OpenGLの内部フォーマット(not ファイルのフォーマット)<br>
+								指定しなければファイルから推定 */
+			HLTex loadTexture(const spn::URI& uri, OPInCompressedFmt fmt=spn::none);
+			//! 連番ファイルからキューブテクスチャを作成
+			HLTex loadCubeTexture(const spn::URI& uri, OPInCompressedFmt fmt=spn::none);
+			//! 個別のファイルからキューブテクスチャを作成
+			/*! 画像サイズとフォーマットは全て一致していなければならない */
+			HLTex loadCubeTexture(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt);
 			//! 空のテクスチャを作成
-			/*! 中身はゴミデータ */
-			AnotherLHandle<UPTexture> createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore=false);
+			/*! 領域だけ確保 */
+			HLTex createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore);
+			/*! 用意したデータで初期化 */
+			HLTex createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data);
+			//! 共通のデータで初期化
+			HLTex createCubeTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream, spn::AB_Byte data);
+			//! 個別のデータで初期化
+			HLTex createCubeTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream,
+									spn::AB_Byte data0, spn::AB_Byte data1, spn::AB_Byte data2,
+									spn::AB_Byte data3, spn::AB_Byte data4, spn::AB_Byte data5);
+
 			// ------------ Shader ------------
 			//! 文字列からシェーダーを作成
 			AnotherLHandle<UPShader> makeShader(GLuint flag, const std::string& src);
@@ -238,14 +258,14 @@ namespace rs {
 
 			// ------------ Buffer ------------
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect> loadEffect(const spn::PathStr& path);
+			AnotherLHandle<UPEffect> loadEffect(const spn::URI& uri);
 			//! 頂点バッファの確保
 			AnotherLHandle<UPVBuffer> makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
 			AnotherLHandle<UPIBuffer> makeIBuffer(GLuint dtype);
 
 			AnotherSHandle<UPTexture> getEmptyTexture() const;
-			LHdl _common(const spn::PathStr& key, std::function<UPResource()> cb);
+			LHdl _common(const std::string& key, std::function<UPResource()> cb);
 			GLFBufferTmp& getTmpFramebuffer() const;
 	};
 
@@ -281,6 +301,15 @@ namespace rs {
 			GLuint getProgramID() const;
 			void use() const;
 	};
+	enum class CubeFace {
+		PositiveX,
+		NegativeX,
+		PositiveY,
+		NegativeY,
+		PositiveZ,
+		NegativeZ,
+		Num
+	};
 	//! OpenGLテクスチャインタフェース
 	/*!	フィルターはNEARESTとLINEARしか無いからboolで管理 */
 	class IGLTexture : public IGLResource {
@@ -303,13 +332,14 @@ namespace rs {
 			//! [mipLevel][Nearest / Linear]
 			const static GLuint cs_Filter[3][2];
 
-			State	_mipLevel;
-			GLuint	_texFlag;	//!< TEXTURE_2D or TEXTURE_CUBE_MAP
-			GLInSizedFmt	_format;
-			float	_coeff;
+			State				_mipLevel;
+			GLuint				_texFlag,	//!< TEXTURE_2D or TEXTURE_CUBE_MAP
+								_faceFlag;	//!< TEXTURE_2D or TEXTURE_CUBE_MAP_POSITIVE_X
+			OPInCompressedFmt	_format;	//!< 値が無効 = 不定
+			float				_coeff;
 
 			bool _onDeviceReset();
-			IGLTexture(GLInSizedFmt fmt, bool bCube);
+			IGLTexture(OPInCompressedFmt fmt, const spn::Size& sz, bool bCube);
 
 			static void Use(IGLTexture& t);
 			static void End(IGLTexture& t);
@@ -320,154 +350,172 @@ namespace rs {
 			Inner1& setUVWrap(GLuint s, GLuint t);
 
 		public:
-			~IGLTexture();
+			IGLTexture(IGLTexture&& t);
+			virtual ~IGLTexture();
 			const spn::Size& getSize() const;
 			GLint getTextureID() const;
+			const GLInCompressedFmt& getFormat() const;
+			GLenum getTexFlag() const;
+			GLenum getFaceFlag() const;
 			void onDeviceLost() override;
-			void setActiveID(GLuint n);	//!< テクスチャユニット番号を指定してBind
+			//! テクスチャユニット番号を指定してBind
+			void setActiveID(GLuint n);
 
 			static bool IsMipmap(State level);
 			bool isMipmap() const;
-			bool isCubemap() const;
-
 			//! 内容をファイルに保存 (主にデバッグ用)
 			void save(const spn::PathStr& path);
+
+			bool isCubemap() const;
+			bool operator == (const IGLTexture& t) const;
 	};
 	DEF_GLRESOURCE_INNER(IGLTexture, (setFilter)(setAnisotropicCoeff)(setUVWrap))
 
+	template <class T>
+	struct IOPArray {
+		virtual int getNPacked() const = 0;
+		virtual const T& getPacked(int n) const = 0;
+		virtual ~IOPArray() {}
+		virtual uint32_t getID() const = 0;
+		virtual bool operator == (const IOPArray& p) const = 0;
+	};
 	template <class T, int N>
-	struct Pack {
-		T	val[N];
-		Pack() = default;
-		Pack(std::initializer_list<T> il) {
-			T* pVal = val;
-			for(auto& a : il)
-				*pVal++ = a;
-		}
-		Pack(const T& t) {
-			for(auto& a : val)
-				a = t;
-		}
+	class OPArray : public IOPArray<T> {
+		spn::Optional<T>	_packed[N];
 
-		bool operator == (const Pack& p) const {
-			for(int i=0 ; i<6 ; i++) {
-				if(val[i] != p.val[i])
-					return false;
+		void _init(spn::Optional<T>* dst) {}
+		template <class TA, class... Ts>
+		void _init(spn::Optional<T>* dst, TA&& ta, Ts&&... ts) {
+			*dst++ = std::forward<TA>(ta);
+			_init(dst, std::forward<Ts>(ts)...);
+		}
+		public:
+			template <class... Ts>
+			OPArray(Ts&&... ts) {
+				static_assert(sizeof...(Ts)==N, "invalid number of argument(s)");
+				_init(_packed, std::forward<Ts>(ts)...);
 			}
-			return true;
-		}
+			int getNPacked() const override { return N; }
+			const T& getPacked(int n) const override {
+				Assert(Trap, n<=N)
+				return *_packed[n];
+			}
+			bool operator == (const IOPArray<T>& p) const override {
+				if(getID()==p.getID() && getNPacked()==p.getNPacked()) {
+					auto& p2 = reinterpret_cast<const OPArray&>(p);
+					for(int i=0 ; i<N ; i++) {
+						if(_packed[i] != p2._packed[i])
+							return false;
+					}
+					return true;
+				}
+				return false;
+			}
+			uint32_t getID() const override { return spn::MakeChunk('P','a','c','k'); }
 	};
+	using SPPackURI = std::shared_ptr<IOPArray<spn::URI>>;
 
-	//! ファイルから生成したテクスチャ
-	/*! DeviceReset時:
-		再度ファイルから読み出す */
-	class TexFile : public IGLTexture {
-		using QS6 = Pack<spn::PathStr, 6>;
-		boost::variant<spn::PathStr, QS6>	_fPath;
-
-		public:
-			//! Cube時: 連番ファイル名から作成
-			TexFile(const spn::PathStr& path, bool bCube);
-			TexFile(const spn::PathStr& path0, const spn::PathStr& path1, const spn::PathStr& path2,
-										const spn::PathStr& path3, const spn::PathStr& path4, const spn::PathStr& path5);
-			void onDeviceReset() override;
-			bool operator == (const TexFile& t) const;
-	};
-#ifdef QT5
-	//! ユーザー定義のユニークテクスチャ (QImage由来)
-	/*! DeviceReset時:
-		QImage使用時: 一旦バッファにコピーして後で復元
-		空テクスチャ時: 何もしない	*/
-	class TexUser : public IGLTexture {
-		using QI6 = Pack<QImage, 6>;
-		boost::variant<QImage, QI6>		_image;
-
-		public:
-			//! QtのImageクラスからテクスチャを生成
-			TexUser(const QImage& img);
-			TexUser(const QImage& img0, const QImage& img1, const QImage& img2,
-					const QImage& img3, const QImage& img4, const QImage& img5);
-			void onDeviceReset() override;
-			bool operator == (const TexUser& t) const;
-	};
-#endif
 	//! ユーザー定義の空テクスチャ
-	/*! テクスチャへの書き込みなどサポート
-		DeviceLost時の復元は任意
+	/*! DeviceLost時の復元は任意
 		内部バッファはDeviceLost用であり、DeviceがActiveな時はnone
-		フォーマット変換は全てOpenGLにさせる */
-	class TexEmpty : public IGLTexture {
-		using OPBuff = boost::optional<spn::ByteBuff>;
-		using OPFormat = boost::optional<GLTypeFmt>;
-
-		bool		_bRestore;
+		フォーマット変換は全てOpenGLにさせる
+		書き込み不可の時は最初の一度だけ書き込める */
+	class Texture_Mem : public IGLTexture {
+		using OPBuff = spn::Optional<spn::ByteBuff>;
+		using OPFormat = spn::Optional<GLTypeFmt>;
 		OPBuff		_buff;			//!< DeviceLost時用のバッファ
 		OPFormat	_typeFormat;	//!< _buffに格納されているデータの形式(Type)
+
+		bool		_bStream;		//!< 頻繁に書き換えられるか(の、ヒント)
+		bool		_bRestore;
 		//! テクスチャフォーマットから必要なサイズを計算してバッファを用意する
-		void _prepareBuffer();
-
+		const GLFormatDesc& _prepareBuffer();
 		public:
-			TexEmpty(const spn::Size& size, GLInSizedFmt fmt, bool bRestore=false);
-			void onDeviceLost() override;
+			Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore);
+			Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff);
 			void onDeviceReset() override;
-			bool operator == (const TexEmpty& t) const;
-
+			void onDeviceLost() override;
 			//! テクスチャ全部書き換え = バッファも置き換え
 			/*! \param[in] fmt テクスチャのフォーマット
 				\param[in] srcFmt 入力フォーマット(Type)
-				\param[in] bRestore trueなら内部バッファにコピーを持っておいてDeviceLostに備える */
-			void writeData(GLInSizedFmt fmt, spn::AB_Byte buff, int width, GLTypeFmt srcFmt, bool bRestore);
+				\param[in] bRestore trueなら内部バッファにコピーを持っておいてDeviceLostに備える
+				\param[in] face Cubemapにおける面 */
+			void writeData(spn::AB_Byte buff, GLTypeFmt srcFmt, CubeFace face=CubeFace::PositiveX);
 			//! 部分的に書き込み
 			/*! \param[in] ofsX 書き込み先オフセット X
 				\param[in] ofsY 書き込み先オフセット Y
-				\param[in] srcFmt 入力フォーマット(Type) */
-			void writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt);
+				\param[in] srcFmt 入力フォーマット(Type)
+				\param[in] face Cubemapにおける面 */
+			void writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace face=CubeFace::PositiveX);
+	};
+	//! 画像ファイルから2Dテクスチャを読む
+	/*! DeviceReset時:
+		再度ファイルから読み出す */
+	class Texture_StaticURI : public IGLTexture {
+		spn::URI			_uri;
+		OPInCompressedFmt	_opFmt;
+		public:
+			static spn::Size LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face);
+			Texture_StaticURI(Texture_StaticURI&& t);
+			Texture_StaticURI(const spn::URI& uri, OPInCompressedFmt fmt);
+			void onDeviceReset() override;
+	};
+	//! 連番または6つの画像ファイルからCubeテクスチャを読む
+	class Texture_StaticCubeURI : public IGLTexture {
+		SPPackURI			_uri;
+		OPInCompressedFmt	_opFmt;
+		public:
+			Texture_StaticCubeURI(Texture_StaticCubeURI&& t);
+			Texture_StaticCubeURI(const spn::URI& uri, OPInCompressedFmt fmt);
+			Texture_StaticCubeURI(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+				const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt);
+			void onDeviceReset() override;
 	};
 
 	//! デバッグ用テクスチャ模様生成インタフェース
-	class ITDGen {
-		protected:
-			using UPByte = std::unique_ptr<GLubyte>;
-			UPByte	_buff;
-			int		_width, _height;
-
-			ITDGen(int w, int h);
-
-		public:
-			const GLubyte* getPtr() const;
-			int getWidth() const;
-			int getHeight() const;
+	struct ITDGen {
+		virtual GLenum getFormat() const = 0;
+		virtual bool isSingle() const = 0;
+		virtual spn::ByteBuff generate(const spn::Size& size, CubeFace face=CubeFace::PositiveX) const = 0;
 	};
+	using UPTDGen = std::unique_ptr<ITDGen>;
+	#define DEF_DEBUGGEN \
+		GLenum getFormat() const override; \
+		bool isSingle() const override; \
+		spn::ByteBuff generate(const spn::Size& size, CubeFace face) const override;
+
 	//! 2色チェッカー
 	class TDChecker : public ITDGen {
+		spn::Vec4	_col[2];
+		int			_nDivW, _nDivH;
 		public:
-			TDChecker(const spn::Vec4& col0, const spn::Vec4& col1, int nDivW, int nDivH, int w, int h);
+			TDChecker(const spn::Vec4& col0, const spn::Vec4& col1, int nDivW, int nDivH);
+			DEF_DEBUGGEN
 	};
 	//! カラーチェッカー
 	/*! 準モンテカルロで色を決定 */
 	class TDCChecker : public ITDGen {
+		int			_nDivW, _nDivH;
 		public:
-			TDCChecker(int nDivW, int nDivH, int w, int h);
+			TDCChecker(int nDivW, int nDivH);
+			DEF_DEBUGGEN
 	};
 	//! ベタ地と1テクセル枠
 	class TDBorder : public ITDGen {
 		public:
-			TDBorder(const spn::Vec4& col, const spn::Vec4& bcol, int w, int h);
+			TDBorder(const spn::Vec4& col, const spn::Vec4& bcol);
+			DEF_DEBUGGEN
 	};
 
-	//! デバッグ用のチェッカーテクスチャ
+	//! デバッグ用のテクスチャ
 	/*! DeviceLost時:
 		再度生成し直す */
-	class TexDebug : public IGLTexture {
+	class Texture_Debug : public IGLTexture {
 		// デバッグ用なので他との共有を考えず、UniquePtrとする
-		std::unique_ptr<ITDGen>	_upGen;
-		using ITD6 = Pack<ITDGen*, 6>;
-		boost::variant<ITDGen*, ITD6>	_gen;
-
+		UPTDGen		_gen;
 		public:
-			TexDebug(ITDGen* gen, bool bCube);
+			Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube);
 			void onDeviceReset() override;
-			bool operator == (const TexDebug& t) const;
 	};
 
 	//! 一時的にFramebufferを使いたい時のヘルパークラス

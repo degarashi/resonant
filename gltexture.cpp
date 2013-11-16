@@ -10,23 +10,28 @@ namespace rs {
 		{GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR},
 		{GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR}
 	};
-	IGLTexture::IGLTexture(GLInSizedFmt fmt, bool bCube):
-		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE),
-		_actID(0), _mipLevel(NoMipmap), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D), _format(fmt), _coeff(0) {}
-
+	IGLTexture::IGLTexture(OPInCompressedFmt fmt, const spn::Size& sz, bool bCube):
+		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE), _size(sz),
+		_actID(0), _mipLevel(NoMipmap), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D),
+		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _format(fmt), _coeff(0) {}
+	#define FUNC_COPY(z, data, elem)	(elem(data.elem))
+	#define SEQ_COPY (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_size)(_actID)(_mipLevel)(_texFlag)(_faceFlag)(_format)(_coeff)
+	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_COPY)) {
+		t._idTex = 0;
+	}
 	void IGLTexture::Use(IGLTexture& t) {
-		glActiveTexture(GL_TEXTURE0 + t._actID);
-		glBindTexture(t._texFlag, t._idTex);
+		GLEC_P(Trap, glActiveTexture, GL_TEXTURE0 + t._actID);
+		GLEC_P(Trap, glBindTexture, t._texFlag, t._idTex);
 		GLEC_ChkP(Trap)
 	}
 	void IGLTexture::End(IGLTexture& t) {
 		GLEC_ChkP(Trap)
-		glBindTexture(t._texFlag, 0);
+		GLEC_P(Trap, glBindTexture, t._texFlag, 0);
 	}
 
 	bool IGLTexture::_onDeviceReset() {
 		if(_idTex == 0) {
-			glGenTextures(1, &_idTex);
+			GLEC_P(Trap, glGenTextures, 1, &_idTex);
 			// フィルタの設定
 			use()->setFilter(_mipLevel, static_cast<bool>(_iLinearMag), static_cast<bool>(_iLinearMin))
 				->setAnisotropicCoeff(_coeff)
@@ -35,7 +40,15 @@ namespace rs {
 		}
 		return false;
 	}
-
+	GLenum IGLTexture::getTexFlag() const {
+		return _texFlag;
+	}
+	GLenum IGLTexture::getFaceFlag() const {
+		return _faceFlag;
+	}
+	const GLInCompressedFmt& IGLTexture::getFormat() const {
+		return *_format;
+	}
 	IGLTexture::~IGLTexture() { onDeviceLost(); }
 	const spn::Size& IGLTexture::getSize() const { return _size; }
 	GLint IGLTexture::getTextureID() const { return _idTex; }
@@ -56,7 +69,7 @@ namespace rs {
 		#else
 			AssertMsg(Trap, false, "not implemented yet");
 		#endif
-		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, Color::RGBA8);
+		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, SDL_PIXELFORMAT_ARGB8888);
 		auto hlRW = mgr_rw.fromFile(path, "w", true);
 		sfc->saveAsPNG(hlRW);
 	}
@@ -100,112 +113,29 @@ namespace rs {
 		glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, _iWrapT);
 		return Inner1::Cast(this);
 	}
-
-	namespace {
-		auto GLTNomipBase = [](GLuint flag, int w, int h, const GLubyte* ptr) -> spn::Size {
-			glTexImage2D(flag, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
-			return spn::Size(w,h);
-		};
-		auto GLTMipBase = [](GLuint flag, int w, int h, const GLubyte* ptr) -> spn::Size {
-			//TODO: glu関数を使わずにミップマップを作成
-			Assert(Trap, false, "not implemented yet")
-// 			auto res = gluBuild2DMipmaps(flag, GL_RGBA, w, h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
-// 			AssertT(Trap, res==0, (GLE_Error)(const char*), gluErrorString(res))
-			return spn::Size(w,h);
-		};
-
-		// Mip / NoMip を吸収
-		auto GLTNomipI = [](GLuint flag, const SPSurface& s) -> spn::Size {
-			return GLTNomipBase(flag, s->width(), s->height(), reinterpret_cast<const GLubyte*>(s->lock().getBits())); };
-		auto GLTMipI = [](GLuint flag, const SPSurface& s) -> spn::Size {
-			return GLTMipBase(flag, s->width(), s->height(), reinterpret_cast<const GLubyte*>(s->lock().getBits())); };
-
-		auto GLTNomip = [](GLuint flag, const spn::PathStr& str) -> spn::Size {
-			return GLTNomipI(flag, Surface::Load(mgr_rw.fromFile(str, "r", true))); };
-		auto GLTMip = [](GLuint flag, const spn::PathStr& str) -> spn::Size {
-				return GLTMipI(flag, Surface::Load(mgr_rw.fromFile(str, "r", true))); };
-
-		auto GLTNomipG = [](GLuint flag, const ITDGen* gen) -> spn::Size {
-			return GLTNomipBase(flag, gen->getWidth(), gen->getHeight(), gen->getPtr()); };
-		auto GLTMipG = [](GLuint flag, const ITDGen* gen) -> spn::Size {
-			return GLTMipBase(flag, gen->getWidth(), gen->getHeight(), gen->getPtr()); };
-
-		struct MyCompare : boost::static_visitor<bool> {
-			template <class T>
-			bool operator()(const T& t0, const T& t1) const { return t0 == t1; }
-			template <class T0, class T1>
-			bool operator()(const T0&, const T1&) const { return false; }
-		};
-
-		// Cube / 2D を吸収
-		template <class PROC>
-		struct CubeProc : boost::static_visitor<spn::Size> {
-			PROC _proc;
-			CubeProc(PROC proc): _proc(proc) {}
-
-			template <class T>
-			spn::Size operator()(const T& t) const {
-				return _proc(GL_TEXTURE_2D, t);
-			}
-			template <class T, int N>
-			spn::Size operator()(const Pack<T,N>& pck) const {
-				spn::Size ret;
-				for(int i=0 ; i<6 ; i++)
-					ret = _proc(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, pck.val[i]);
-				return ret;
-			}
-		};
-		template <class PROC>
-		CubeProc<PROC> MakeCubeProc(PROC proc) {
-			return CubeProc<PROC>(proc);
-		}
+	bool IGLTexture::operator == (const IGLTexture& t) const {
+		return getTextureID() == t.getTextureID();
 	}
-	// ------------------------- TexFile -------------------------
-	TexFile::TexFile(const spn::PathStr& path, bool bCube): IGLTexture(GL_RGBA8, bCube), _fPath(path) {}
-	TexFile::TexFile(const spn::PathStr& path0, const spn::PathStr& path1, const spn::PathStr& path2,
-					const spn::PathStr& path3, const spn::PathStr& path4, const spn::PathStr& path5): IGLTexture(GL_RGBA8, true), _fPath(QS6{path0,path1,path2,path3,path4,path5}) {}
 
-	void TexFile::onDeviceReset() {
-		if(_onDeviceReset()) {
-			auto u = use();
-			_size = boost::apply_visitor(MakeCubeProc(isMipmap() ? GLTMip : GLTNomip), _fPath);
-			u->end();
-		}
+	// ------------------------- Texture_Mem -------------------------
+	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore):
+		IGLTexture(fmt, sz, bCube), _bStream(bStream), _bRestore(bRestore)
+	{}
+	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff):
+		Texture_Mem(bCube, fmt, sz, bStream, bRestore)
+	{
+		writeData(buff, srcFmt);
 	}
-	bool TexFile::operator == (const TexFile& t) const {
-		return boost::apply_visitor(MyCompare(), _fPath, t._fPath);
-	}
-#ifdef QT5
-	// ------------------------- TexUser -------------------------
-	TexUser::TexUser(const QImage& img): IGLTexture(GL_RGBA8, false), _image(img) {}
-	TexUser::TexUser(const QImage& img0, const QImage& img1, const QImage& img2,
-					const QImage& img3, const QImage& img4, const QImage& img5): IGLTexture(GL_RGBA8, true), _image(QI6{img0,img1,img2,img3,img4,img5}) {}
-
-	void TexUser::onDeviceReset() {
-		if(_onDeviceReset()) {
-			auto u = use();
-			_size = boost::apply_visitor(MakeCubeProc(isMipmap() ? GLTMipI : GLTNomipI), _image);
-			u->end();
-		}
-	}
-	bool TexUser::operator == (const TexUser& t) const {
-		return boost::apply_visitor(MyCompare(), _image, t._image);
-	}
-#endif
-	// ------------------------- TexEmpty -------------------------
-	TexEmpty::TexEmpty(const spn::Size& size, GLInSizedFmt fmt, bool bRestore): IGLTexture(fmt, false), _bRestore(bRestore) {
-		_size = size;
-	}
-	void TexEmpty::_prepareBuffer() {
-		auto& info = *GLFormat::QueryInfo(_format);
+	const GLFormatDesc& Texture_Mem::_prepareBuffer() {
+		auto& info = *GLFormat::QueryInfo(*_format);
 		_typeFormat = info.toType;
 		_buff = spn::ByteBuff(_size.width * _size.height * GLFormat::QuerySize(info.toType) * info.numType);
+		return info;
 	}
-	void TexEmpty::onDeviceLost() {
+	void Texture_Mem::onDeviceLost() {
 		if(_idTex != 0) {
 			if(_bRestore) {
-				_prepareBuffer();
-				auto& info = *GLFormat::QueryInfo(_format);
+				auto& info = _prepareBuffer();
 	#ifdef USE_OPENGLES2
 				//	OpenGL ES2ではglTexImage2Dが実装されていないのでFramebufferにセットしてglReadPixelsで取得
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
@@ -222,7 +152,7 @@ namespace rs {
 			IGLTexture::onDeviceLost();
 		}
 	}
-	void TexEmpty::onDeviceReset() {
+	void Texture_Mem::onDeviceReset() {
 		if(_onDeviceReset()) {
 			auto u = use();
 			if(_bRestore && _buff) {
@@ -230,8 +160,8 @@ namespace rs {
 				GLenum baseFormat = GLFormat::QueryInfo(_format.get())->toBase;
 				glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, baseFormat, _typeFormat.get(), &_buff->operator [](0));
 				// DeviceがActiveな時はバッファを空にしておく
-				_buff = boost::none;
-				_typeFormat = boost::none;
+				_buff = spn::none;
+				_typeFormat = spn::none;
 			} else {
 				// とりあえず領域だけ確保しておく
 				glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -239,25 +169,18 @@ namespace rs {
 			u->end();
 		}
 	}
-	bool TexEmpty::operator == (const TexEmpty& t) const {
-		return getTextureID() == t.getTextureID();
-	}
-
 	// DeviceLostの時にこのメソッドを読んでも無意味
-	void TexEmpty::writeData(GLInSizedFmt fmt, spn::AB_Byte buff, int width, GLTypeFmt srcFmt, bool bRestore) {
-		int height = buff.getLength() / width;
-		_size = spn::Size(width, height);
-		_format = fmt;
+	void Texture_Mem::writeData(spn::AB_Byte buff, GLTypeFmt srcFmt, CubeFace face) {
 		// バッファ容量がサイズ以上かチェック
 		auto szInput = GLFormat::QuerySize(srcFmt);
-		Assert(Trap, buff.getLength() >= width*height*szInput)
+		Assert(Trap, buff.getLength() >= _size.width*_size.height*szInput)
 		// DeviceLost中でなければすぐにテクスチャを作成するが、そうでなければ内部バッファにコピーするのみ
 		if(_idTex != 0) {
 			// テクスチャに転送
-			glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, fmt.get(), srcFmt.get(), buff.getPtr());
+			glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, _format.get(), srcFmt.get(), buff.getPtr());
 			GLEC_Chk(Trap)
 		} else {
-			if(bRestore) {
+			if(_bRestore) {
 				// 内部バッファへmove
 				_buff = spn::ByteBuff();
 				buff.setTo(*_buff);
@@ -265,7 +188,7 @@ namespace rs {
 			}
 		}
 	}
-	void TexEmpty::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt) {
+	void Texture_Mem::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace face) {
 		size_t bs = GLFormat::QueryByteSize(_format.get(), GL_UNSIGNED_BYTE);
 		auto sz = buff.getLength();
 		int height = sz / (width * bs);
@@ -296,60 +219,155 @@ namespace rs {
 			}
 		}
 	}
-
-	// ------------------------- TexDebug -------------------------
-	TexDebug::TexDebug(ITDGen* gen, bool bCube): IGLTexture(GL_RGBA8, bCube), _upGen(gen) {
-		if(bCube) _gen = ITD6(gen);
-		else _gen = gen;
+	// ------------------------- Texture_StaticURI -------------------------
+	Texture_StaticURI::Texture_StaticURI(const spn::URI& uri, OPInCompressedFmt fmt):
+		IGLTexture(fmt, spn::Size(0,0), false), _uri(uri) {}
+	Texture_StaticURI::Texture_StaticURI(Texture_StaticURI&& t):
+		IGLTexture(std::move(static_cast<IGLTexture&>(t))), _uri(std::move(t._uri)) {}
+	void Texture_StaticURI::onDeviceReset() {
+		if(_onDeviceReset())
+			_size = LoadTexture(*this, mgr_rw.fromURI(_uri, "r", true), CubeFace::PositiveX);
 	}
-	void TexDebug::onDeviceReset() {
+	// メンバ関数?
+	spn::Size MakeTex(GLenum tflag, const SPSurface& sfc, bool bP2, bool bMip) {
+		// SDLフォーマットから適したOpenGLフォーマットへ変換
+		SPSurface tsfc = sfc;
+		uint32_t fmt = tsfc->getFormat().format;
+		if(auto op = GLFormat::QuerySDLtoSDLGL(fmt)) {
+			fmt = *op;
+			tsfc = tsfc->convert(fmt);
+		}
+		auto info = GLFormat::QuerySDLtoGL(fmt);
+		Assert(Trap, info)
+
+		// テクスチャ用のサイズ調整
+		auto size = tsfc->getSize();
+		spn::PowSize n2size{size.width, size.height};
+		using CB = std::function<void (const void*)>;
+		std::function<void (CB)>	func;
+		// 2乗サイズ合わせではなくpitchが詰めてある場合は変換しなくていい
+		if(!bP2 && tsfc->isContinuous()) {
+			func = [&tsfc](CB cb) {
+				auto lk = tsfc->lock();
+				cb(lk.getBits());
+			};
+		} else {
+			// 2乗サイズ合わせ
+			if(bP2 && size != n2size)
+				tsfc = tsfc->resize(n2size);
+			func = [&tsfc, &info](CB cb) {
+				auto buff = tsfc->extractAsContinuous(info->toSDLFormat);
+				cb(&buff[0]);
+			};
+		}
+		// ミップマップの場合はサイズを縮小しながらテクスチャを書き込む
+		size = tsfc->getSize();
+		auto ret = size;
+		int layer = 0;
+		auto make = [tflag, &layer, &info, &size](const void* data) {
+			glTexImage2D(tflag, layer++, info->type, size.width, size.height, 0, info->toBase, info->toType, data);
+		};
+		if(!bMip)
+			func(make);
+		else {
+			for(;;) {
+				func(make);
+				if(size.width==1 && size.height==1)
+					break;
+				size.shiftR_one(1);
+				tsfc = tsfc->resize(size);
+			}
+		}
+		return ret;
+	}
+	spn::Size MakeMip(GLenum tflag, GLenum format, const spn::Size& size, const spn::ByteBuff& buff, bool bP2, bool bMip) {
+		// 簡単の為に一旦SDL_Surfaceに変換
+		auto info = GLFormat::QueryInfo(format);
+		int pixelsize = info->numType * GLFormat::QuerySize(info->toBase);
+		SPSurface sfc = Surface::Create(buff, pixelsize*size.width, size.width, size.height, info->toSDLFormat);
+		return MakeTex(tflag, sfc, bP2, bMip);
+	}
+	spn::Size Texture_StaticURI::LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face) {
+		SPSurface sfc = Surface::Load(hRW);
+		auto tbd = tex.use();
+		GLenum tflag = tex.getFaceFlag() + static_cast<int>(face) - static_cast<int>(CubeFace::PositiveX);
+		return MakeTex(tflag, sfc, true, tex.isMipmap());
+	}
+
+	// ------------------------- Texture_StaticCubeURI -------------------------
+	Texture_StaticCubeURI::Texture_StaticCubeURI(Texture_StaticCubeURI&& t): IGLTexture(std::move(static_cast<IGLTexture&>(t))), _uri(std::move(t._uri)) {}
+	Texture_StaticCubeURI::Texture_StaticCubeURI(const spn::URI& uri, OPInCompressedFmt fmt): IGLTexture(fmt, spn::Size(0,0), true), _uri(new OPArray<spn::URI, 1>(uri)) {}
+	Texture_StaticCubeURI::Texture_StaticCubeURI(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+			const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt):
+			IGLTexture(fmt, spn::Size(0,0), true), _uri(new OPArray<spn::URI, 6>(uri0, uri1, uri2, uri3, uri4, uri5)) {}
+	void Texture_StaticCubeURI::onDeviceReset() {
 		if(_onDeviceReset()) {
+			int mask = _uri->getNPacked()==1 ? 0x00 : 0xff;
+			for(int i=0 ; i<6 ; i++)
+				_size = Texture_StaticURI::LoadTexture(*this, mgr_rw.fromURI(_uri->getPacked(i & mask), "r", true), static_cast<CubeFace>(i));
+		}
+	}
+
+	// ------------------------- Texture_Debug -------------------------
+	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube): IGLTexture(gen->getFormat(), size, bCube), _gen(gen) {}
+	void Texture_Debug::onDeviceReset() {
+		if(_onDeviceReset()) {
+			GLenum fmt = getFormat();
+			auto size = getSize();
 			auto u = use();
-			_size = boost::apply_visitor(MakeCubeProc(isMipmap() ? GLTMipG : GLTNomipG), _gen);
+			if(isCubemap()) {
+				if(_gen->isSingle()) {
+					auto buff = _gen->generate(getSize());
+					for(int i=0 ; i<6 ; i++)
+						MakeMip(getFaceFlag()+i, fmt, size, buff, true, isMipmap());
+				}
+				for(int i=0 ; i<6 ; i++)
+					MakeMip(getFaceFlag()+i, fmt, size, _gen->generate(getSize(), static_cast<CubeFace>(i)), true, isMipmap());
+			} else
+				MakeMip(getFaceFlag(), fmt, size, _gen->generate(getSize(), CubeFace::PositiveX), true, isMipmap());
 			u->end();
 		}
 	}
-	bool TexDebug::operator == (const TexDebug& t) const {
-		return boost::apply_visitor(MyCompare(), _gen, t._gen);
-	}
 
-	// ------------------------- ITDGen -------------------------
-	ITDGen::ITDGen(int w, int h): _width(w), _height(h) {}
-	const GLubyte* ITDGen::getPtr() const { return _buff.get(); }
-	int ITDGen::getWidth() const { return _width; }
-	int ITDGen::getHeight() const { return _height; }
+	namespace {
+		// ブレゼンハムアルゴリズム
+		struct Bresen {
+			int _width, _tgt;
+			int _cur, _error;
 
-	struct Bresen {
-		int _width, _tgt;
-		int _cur, _error;
-
-		Bresen(int width, int tgt): _width(width), _tgt(tgt), _cur(0), _error(0/*width/2*/) {}
-		int current() const { return _cur; }
-		void advance() {
-			_error += _tgt;
-			if(_error >= _width) {
-				_error -= _width;
-				++_cur;
+			Bresen(int width, int tgt): _width(width), _tgt(tgt), _cur(0), _error(0/*width/2*/) {}
+			int current() const { return _cur; }
+			void advance() {
+				_error += _tgt;
+				if(_error >= _width) {
+					_error -= _width;
+					++_cur;
+				}
 			}
-		}
-	};
-
+		};
+	}
 	// ------------------------- TDChecker -------------------------
-	TDChecker::TDChecker(const spn::Vec4& col0, const spn::Vec4& col1, int nDivW, int nDivH, int w, int h): ITDGen(w,h) {
+	TDChecker::TDChecker(const spn::Vec4& col0, const spn::Vec4& col1, int nDivW, int nDivH):
+		_col{col0,col1}, _nDivW(nDivW), _nDivH(nDivH)
+	{}
+	GLenum TDChecker::getFormat() const { return GL_RGBA8; }
+	bool TDChecker::isSingle() const { return true; }
+	spn::ByteBuff TDChecker::generate(const spn::Size& size, CubeFace face) const {
 		GLubyte pack[2][4];
-		const spn::Vec4* (col[2]) = {&col0, &col1};
 		for(int k=0 ; k<2 ; k++) {
 			for(int i=0 ; i<4 ; i++)
-				pack[k][i] = static_cast<GLubyte>((*col)[k].m[i] * 255 + 0.5f);
+				pack[k][i] = static_cast<GLubyte>(_col[k].m[i] * 255 + 0.5f);
 		}
 
+		int w = size.width,
+			h = size.height;
 		// データの生成
-		Bresen brY(h, nDivH);
-		GLuint* ptr = new GLuint[w*h];
-		_buff.reset(reinterpret_cast<GLubyte*>(ptr));
+		Bresen brY(h, _nDivH);
+		spn::ByteBuff buff(w*h*sizeof(GLuint));
+		auto* ptr = reinterpret_cast<GLuint*>(&buff[0]);
 		for(int i=0 ; i<h ; i++) {
 			int y = brY.current();
-			Bresen brX(w, nDivW);
+			Bresen brX(w, _nDivW);
 			for(int j=0 ; j<w ; j++) {
 				int x = brX.current();
 				*ptr++ = *reinterpret_cast<GLuint*>(pack[(x^y) & 1]);
@@ -357,23 +375,31 @@ namespace rs {
 			}
 			brY.advance();
 		}
+		return std::move(buff);
 	}
-
 	// ------------------------- TDCChecker -------------------------
-	TDCChecker::TDCChecker(int, int, int w, int h): ITDGen(w, h) {
+	TDCChecker::TDCChecker(int nDivW, int nDivH): _nDivW(nDivW), _nDivH(nDivH) {}
+	GLenum TDCChecker::getFormat() const { return GL_RGBA8; }
+	bool TDCChecker::isSingle() const { return true; }
+	spn::ByteBuff TDCChecker::generate(const spn::Size& size, CubeFace face) const {
 		const static GLubyte tex[] = {
 			255, 255, 255, 255,     0,   0,   0, 255,   255, 255, 255 ,255,     0,   0,   0, 255,
 			255,   0,   0, 255,     0, 255,   0, 255,     0,   0, 255 ,255,   255, 255, 255, 255,
 			128,   0,   0, 255,     0, 128,   0, 255,     0,   0, 128 ,255,   128, 128, 128, 255,
 			255, 255,   0, 255,   255,   0, 255, 255,     0, 255, 255 ,255,   255, 255, 255, 255,
 		};
-		auto* ptr = new GLubyte[sizeof(tex)];
-		memcpy(ptr, tex, sizeof(tex));
-		_buff.reset(ptr);
+		spn::ByteBuff buff(sizeof(tex));
+		memcpy(&buff[0], tex, sizeof(tex));
+		return std::move(buff);
 	}
 
 	// ------------------------- TDBorder -------------------------
-	TDBorder::TDBorder(const spn::Vec4&, const spn::Vec4&, int w, int h): ITDGen(w,h) {
+	TDBorder::TDBorder(const spn::Vec4&, const spn::Vec4&) {
 		Assert(Trap, false, "not implemented yet")
+	}
+	GLenum TDBorder::getFormat() const { return GL_RGBA8; }
+	bool TDBorder::isSingle() const { return true; }
+	spn::ByteBuff TDBorder::generate(const spn::Size& size, CubeFace face) const {
+		Assert(Trap, false, "not implemented yet") throw 0;
 	}
 }

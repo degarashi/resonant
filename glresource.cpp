@@ -1,5 +1,6 @@
 #include "glresource.hpp"
 #include "glx.hpp"
+#include "adaptsdl.hpp"
 
 namespace rs {
 	GLRes::GLRes() {
@@ -7,39 +8,56 @@ namespace rs {
 		_upFb.reset(new GLFBuffer());
 
 		// EmptyTexture = 1x1の単色テクスチャ
-		_hlEmptyTex.reset(new HLTex(createTexture(spn::Size(1,1), GL_RGBA8, true)));
 		uint32_t buff1 = 0xffffffff;
-		auto* t = reinterpret_cast<TexEmpty*>(_hlEmptyTex->ref().get());
-		t->writeData(GL_RGBA8, spn::AB_Byte(&buff1, 1), 1, GL_UNSIGNED_BYTE, true);
+		_hlEmptyTex.reset(new HLTex(createTexture(spn::Size(1,1), GL_RGBA8, false, true, GL_UNSIGNED_BYTE, spn::AB_Byte(&buff1, 1))));
 	}
 	GLRes::~GLRes() {
 		onDeviceLost();
 	}
-
-	GLRes::LHdl GLRes::_common(const spn::PathStr& key, std::function<UPResource ()> cb) {
+	GLRes::LHdl GLRes::_common(const std::string& key, std::function<UPResource ()> cb) {
 		LHdl lh = getFromKey(key);
 		if(!lh.valid())
 			lh = base_type::acquire(key, cb()).first;
 		initHandle(lh);
 		return std::move(lh);
 	}
-	HLTex GLRes::loadTexture(const spn::PathStr& path, bool bCube) {
-		LHdl lh = _common(path, [&](){return UPResource(new TexFile(path,bCube));});
+	HLTex GLRes::loadTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
+		LHdl lh = _common(uri.plainUri_utf8(), [&](){return UPResource(new Texture_StaticURI(uri, fmt));});
 		return Cast<UPTexture>(std::move(lh));
 	}
-	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore) {
-		LHdl lh = base_type::acquire(UPResource(new TexEmpty(size, fmt, bRestore)));
+	HLTex GLRes::loadCubeTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
+		LHdl lh = _common(uri.plainUri_utf8(), [&](){return UPResource(new Texture_StaticCubeURI(uri, fmt));});
+		return Cast<UPTexture>(std::move(lh));
+	}
+	HLTex GLRes::loadCubeTexture(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt)
+	{
+		std::string tmp(uri0.plainUri_utf8());
+		auto fn = [&tmp](const spn::URI& u) { tmp.append(u.plainUri_utf8()); };
+		fn(uri1); fn(uri2); fn(uri3); fn(uri4); fn(uri5);
+
+		LHdl lh = _common(tmp, [&](){return UPResource(new Texture_StaticCubeURI(uri0,uri1,uri2,uri3,uri4,uri5,fmt));});
+		return Cast<UPTexture>(std::move(lh));
+	}
+	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore) {
+		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore)));
 		initHandle(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
-
+	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data) {
+		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore, srcFmt, data)));
+		initHandle(lh);
+		return Cast<UPTexture>(std::move(lh));
+	}
 	HLSh GLRes::makeShader(GLuint flag, const std::string& src) {
 		LHdl lh = base_type::acquire(UPResource(new GLShader(flag, src)));
 		initHandle(lh);
 		return Cast<UPShader>(std::move(lh));
 	}
-	HLFx GLRes::loadEffect(const spn::PathStr& path) {
-		LHdl lh = _common(path, [&](){ return UPResource(new GLEffect(path)); });
+	HLFx GLRes::loadEffect(const spn::URI& uri) {
+		HLRW hlRW = mgr_rw.fromURI(uri, "r", true);
+		AdaptSDL as(hlRW);
+		LHdl lh = _common(uri.plainUri_utf8(), [&](){ return UPResource(new GLEffect(as)); });
 		return Cast<UPEffect>(std::move(lh));
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
@@ -69,7 +87,6 @@ namespace rs {
 	HTex GLRes::getEmptyTexture() const {
 		return _hlEmptyTex->get();
 	}
-
 	bool GLRes::deviceStatus() const {
 		return _bInit;
 	}
