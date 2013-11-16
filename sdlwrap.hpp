@@ -578,10 +578,11 @@ namespace rs {
 			//! RWopsが解放される直前に呼ばれる関数
 			EndCB		_endCB;
 
-			static int _ReadMode(const char* mode);
 			void _clear();
 			RWops(SDL_RWops* ops, int access, Type type, EndCB cb, const void* ptr=nullptr, size_t sz=0);
 		public:
+			static int ReadMode(const char* mode);
+			static std::string ReadModeStr(int mode);
 			static RWops FromConstMem(const void* mem, int size, EndCB cb=nullptr);
 			template <class T>
 			static RWops FromVector(T&& buff) {
@@ -626,12 +627,23 @@ namespace rs {
 			//! Type::Vector時のみ有効
 			std::pair<void*, size_t> getMemoryPtr();
 	};
+	struct UriHandler;
+	using SPUriHandler = std::shared_ptr<UriHandler>;
 	#define mgr_rw (::rs::RWMgr::_ref())
 	class RWMgr : public spn::ResMgrN<RWops, RWMgr> {
+		using HandlerL = std::vector<SPUriHandler>;
+		HandlerL _handler;
+
 		public:
 			using base_type = spn::ResMgrN<RWops, RWMgr>;
 			using LHdl = AnotherLHandle<RWops>;
-			LHdl fromFile(spn::ToPathStr path, const char* mode, bool bNotKey=false);
+			void addUriHandler(const SPUriHandler& h);
+			void remUriHandler(const SPUriHandler& h);
+
+			//! 任意のURIからハンドル作成(ReadOnly)
+			/*! \param[in] bNoShared trueなら同じキーでリソースを共有しない */
+			LHdl fromURI(const spn::URI& uri, const char* mode, bool bNoShared);
+			LHdl fromFile(spn::ToPathStr path, const char* mode, bool bNoShared);
 			template <class T>
 			LHdl fromVector(T&& t) {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }
@@ -640,6 +652,21 @@ namespace rs {
 			LHdl fromFP(FILE* fp, bool bAutoClose, const char* mode);
 	};
 	DEF_HANDLE(RWMgr, RW, RWops)
+	struct UriHandler {
+		virtual HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) = 0;
+	};
+	//! アセットZipからのファイル読み込み (Android only)
+	struct UriH_AssetZip : UriHandler {
+		spn::PathStr	_zipPath;			//!< Asset中のZipファイルのパス
+		UriH_AssetZip(spn::ToPathStr zippath);
+		HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) override;
+	};
+	//! ファイルシステムからのファイル読み込み
+	struct UriH_File : UriHandler {
+		spn::PathStr	_basePath;
+		UriH_File(spn::ToPathStr path);
+		HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) override;
+	};
 
 	struct Color {
 		//! big endian で見た時のピクセルフォーマット

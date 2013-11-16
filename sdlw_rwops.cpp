@@ -9,13 +9,13 @@ namespace rs {
 	}
 	RWops RWops::FromFilePointer(FILE* fp, bool autoClose, const char* mode) {
 		return RWops(SDL_RWFromFP(fp, autoClose ? SDL_TRUE : SDL_FALSE),
-					 _ReadMode(mode), Type::FilePointer, nullptr);
+					 ReadMode(mode), Type::FilePointer, nullptr);
 	}
 	RWops RWops::FromFile(spn::ToPathStr path, const char* mode) {
 		return RWops(SDL_RWFromFile(path.getStringPtr(), mode),
-					_ReadMode(mode), Type::File, nullptr);
+					ReadMode(mode), Type::File, nullptr);
 	}
-	int RWops::_ReadMode(const char* mode) {
+	int RWops::ReadMode(const char* mode) {
 		int ret = 0;
 		const std::pair<char,int> c_flag[] = {{'r', Read}, {'w', Write}, {'b', Binary}};
 		const char* c = mode;
@@ -27,6 +27,19 @@ namespace rs {
 			++c;
 		}
 		return ret;
+	}
+	std::string RWops::ReadModeStr(int mode) {
+		std::string ret;
+		ret.resize(3);
+		auto* pDst = &ret[0];
+		if(mode & Read)
+			*pDst++ = 'r';
+		if(mode & Write)
+			*pDst++ = 'w';
+		if(mode & Binary)
+			*pDst++ = 'b';
+		ret.resize(pDst - &ret[0]);
+		return std::move(ret);
 	}
 
 	RWops::RWops(SDL_RWops* ops, int access, Type type, EndCB cb, const void* ptr, size_t sz):
@@ -142,9 +155,9 @@ namespace rs {
 	}
 
 	// ---------------------------- RWMgr ----------------------------
-	HLRW RWMgr::fromFile(spn::ToPathStr path, const char* mode, bool bNotKey) {
+	HLRW RWMgr::fromFile(spn::ToPathStr path, const char* mode, bool bNoShared) {
 		auto rw = RWops::FromFile(path, mode);
-		if(bNotKey)
+		if(bNoShared)
 			return base_type::acquire(std::move(rw));
 		return base_type::acquire(spn::PathStr(path.getStringPtr()), RWops::FromFile(path, mode)).first;
 	}
@@ -156,5 +169,31 @@ namespace rs {
 	}
 	HLRW RWMgr::fromFP(FILE* fp, bool bAutoClose, const char* mode) {
 		return base_type::acquire(RWops::FromFilePointer(fp, bAutoClose, mode));
+	}
+	void RWMgr::addUriHandler(const SPUriHandler& h) {
+		Assert(Trap, std::find(_handler.begin(), _handler.end(), h)==_handler.end())
+		_handler.push_back(h);
+	}
+	void RWMgr::remUriHandler(const SPUriHandler& h) {
+		auto itr = std::find(_handler.begin(), _handler.end(), h);
+		Assert(Trap, itr!=_handler.end())
+		_handler.erase(itr);
+	}
+	HLRW RWMgr::fromURI(const spn::URI& uri, const char* mode, bool bNoShared) {
+		int access = RWops::ReadMode(mode);
+		HLRW ret;
+		for(auto& h : _handler) {
+			if((ret = h->loadURI(uri, access, bNoShared)))
+				return std::move(ret);
+		}
+		Assert(Warn, false, "no such file \"%s\"", uri.plainUri_utf8())
+		return HLRW();
+	}
+	// ---------------------------- UriH_File ----------------------------
+	UriH_File::UriH_File(spn::ToPathStr path): _basePath(path.moveTo()) {}
+	HLRW UriH_File::loadURI(const spn::URI& uri, int access, bool bNoShared) {
+		if(uri.getType_utf8() == "file")
+			return mgr_rw.fromFile(uri.plain_utf32(), RWops::ReadModeStr(access).c_str(), bNoShared);
+		return HLRW();
 	}
 }
