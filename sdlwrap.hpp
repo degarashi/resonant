@@ -668,81 +668,74 @@ namespace rs {
 		HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) override;
 	};
 
-	struct Color {
-		//! big endian で見た時のピクセルフォーマット
-		enum PFormat {
-			RGB8, RGBA8, ARGB8, RGB555, RGBA5551, ARGB1555
+	struct RGB {
+		union {
+			uint8_t ar[3];
+			struct { uint8_t r,g,b; };
 		};
-		//! SDLフォーマットとの対応付け
-		struct Info {
-			uint32_t sdlformat,
-					bitsize,
-					maskR, maskG, maskB, maskA;
+	};
+	struct RGBA {
+		union {
+			uint8_t ar[4];
+			struct { uint8_t r,g,b,a; };
 		};
-		const static Info c_pfInfo[];
-
-		static uint32_t Map(PFormat format, int r, int g, int b);
-		static uint32_t Map(PFormat format, int r, int g, int b, int a);
-		template <class R, class G, class B>
-		static uint32_t Get(PFormat format, uint32_t pixel, R& r, G& g, B& b) {
-			int tmp;
-			Get(format, pixel, r, g, b, tmp);
-		}
-		template <class R, class G, class B, class A>
-		static uint32_t Get(PFormat format, uint32_t pixel, R& r, G& g, B& b, A& a) {
-			r = 0;
-			g = 0;
-			b = 0;
-			a = 0;
-			SDLEC_P(Trap, SDL_GetRGBA, pixel, c_pfInfo[format].sdlformat,
-				reinterpret_cast<uint8_t*>(&r),
-				reinterpret_cast<uint8_t*>(&g),
-				reinterpret_cast<uint8_t*>(&b),
-				reinterpret_cast<uint8_t*>(&a));
-		}
+		RGBA() = default;
+		RGBA(RGB rgb, int a): ar{rgb.r, rgb.g, rgb.b, static_cast<uint8_t>(a)} {}
 	};
 
 	class Surface;
 	using SPSurface = std::shared_ptr<Surface>;
 	class Surface {
 		SDL_Surface*	_sfc;
-		Mutex			_mutex;
+		mutable Mutex	_mutex;
 		spn::AB_Byte	_buff;
 		class LockObj {
-			Surface& 	_sfc;
+			const Surface& 	_sfc;
 			void*		_bits;
 			int			_pitch;
 
 			public:
 				LockObj(LockObj&& lk);
-				LockObj(Surface& sfc, void* bits, int pitch);
+				LockObj(const Surface& sfc, void* bits, int pitch);
 				~LockObj();
 				void* getBits();
 				int getPitch() const;
 				operator bool () const;
 		};
-		void _unlock();
+		void _unlock() const;
 
 		Surface(SDL_Surface* sfc);
 		Surface(SDL_Surface* sfc, spn::ByteBuff&& buff);
 		public:
+			static uint32_t Map(uint32_t format, RGB rgb);
+			static uint32_t Map(uint32_t format, RGBA rgba);
+			static RGBA Get(uint32_t format, uint32_t pixel);
+
 			//! 任意のフォーマットの画像を読み込む
 			static SPSurface Load(HRW hRW);
 			//! 空のサーフェス作成
-			static SPSurface Create(int w, int h, Color::PFormat format);
+			static SPSurface Create(int w, int h, uint32_t format);
 			//! ピクセルデータを元にサーフェス作成
-			static SPSurface Create(const spn::ByteBuff& src, int pitch, int w, int h, Color::PFormat format);
-			static SPSurface Create(spn::ByteBuff&& src, int pitch, int w, int h, Color::PFormat format);
+			static SPSurface Create(const spn::ByteBuff& src, int pitch, int w, int h, uint32_t format);
+			static SPSurface Create(spn::ByteBuff&& src, int pitch, int w, int h, uint32_t format);
 
 			~Surface();
 			void saveAsBMP(HRW hDst) const;
 			void saveAsPNG(HRW hDst) const;
 			void fillRect(const spn::Rect& rect, uint32_t color);
-			LockObj lock();
-			LockObj try_lock();
+			LockObj lock() const;
+			LockObj try_lock() const;
 			spn::Size getSize() const;
 			const SDL_PixelFormat& getFormat() const;
 			int width() const;
 			int height() const;
+			SPSurface convert(uint32_t fmt) const;
+			SPSurface convert(const SDL_PixelFormat& fmt) const;
+			bool isContinuous() const;
+			spn::ByteBuff extractAsContinuous(uint32_t dstFmt=0) const;
+			void blit(const SPSurface& sfc, const spn::Rect& srcRect, int dstX, int dstY) const;
+			void blitScaled(const SPSurface& sfc, const spn::Rect& srcRect, const spn::Rect& dstRect) const;
+			SDL_Surface* getSurface();
+			SPSurface resize(const spn::Size& s) const;
 	};
 }

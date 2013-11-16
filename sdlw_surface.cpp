@@ -1,33 +1,23 @@
 #include "sdlwrap.hpp"
 
 namespace rs {
-	// -------------------- Color --------------------
-	const Color::Info Color::c_pfInfo[] = {
-		{SDL_PIXELFORMAT_RGB888, 24, 0x00ff0000, 0x0000ff00, 0x000000ff},
-		{SDL_PIXELFORMAT_RGBA8888, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff},
-		{SDL_PIXELFORMAT_ARGB8888, 32, 0x000000ff, 0xff000000, 0x00ff0000, 0x0000ff00},
-		{SDL_PIXELFORMAT_RGB555, 16, 0x1e00, 0x01e0, 0x001f, 0x0000},
-		{SDL_PIXELFORMAT_RGBA5551, 16, 0xf800, 0x07c0, 0x003e, 0x0001},
-		{SDL_PIXELFORMAT_ARGB1555, 16, 0x7c00, 0x03e0, 0x001f, 0x8000}
-	};
-	uint32_t Color::Map(PFormat format, int r, int g, int b) {
-		return Map(format, r, g, b, 255);
+	namespace {
+		std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)> MakeUPFormat(uint32_t fmt) {
+			return std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>(SDL_AllocFormat(fmt), SDL_FreeFormat);
+		}
 	}
-	uint32_t Color::Map(PFormat format, int r, int g, int b, int a) {
-		auto& info = c_pfInfo[format];
-		SDL_PixelFormat fmt = {};
-		fmt.format = info.sdlformat;
-		fmt.BitsPerPixel = info.bitsize;
-		fmt.BytesPerPixel = (info.bitsize+7)/8;
-		fmt.Rmask = info.maskR;
-		fmt.Gmask = info.maskG;
-		fmt.Bmask = info.maskB;
-		fmt.Amask = info.maskA;
-		return SDLEC_P(Trap, SDL_MapRGBA, &fmt,
-			static_cast<uint8_t>(r),
-			static_cast<uint8_t>(g),
-			static_cast<uint8_t>(b),
-			static_cast<uint8_t>(a));
+	uint32_t Surface::Map(uint32_t format, RGB rgb) {
+		return Map(format, RGBA(rgb, 255));
+	}
+	uint32_t Surface::Map(uint32_t format, RGBA rgba) {
+		auto fmt = MakeUPFormat(format);
+		return SDLEC_P(Trap, SDL_MapRGBA, fmt.get(), rgba.r, rgba.g, rgba.b, rgba.a);
+	}
+	RGBA Surface::Get(uint32_t format, uint32_t pixel) {
+		auto fmt = MakeUPFormat(format);
+		RGBA ret;
+		SDLEC_P(Trap, SDL_GetRGBA, pixel, fmt.get(), &ret.r, &ret.g, &ret.b, &ret.a);
+		return ret;
 	}
 
 	// -------------------- Surface --------------------
@@ -36,19 +26,19 @@ namespace rs {
 	Surface::~Surface() {
 		SDL_FreeSurface(_sfc);
 	}
-	SPSurface Surface::Create(int w, int h, Color::PFormat format) {
-		auto& info = Color::c_pfInfo[format];
-		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurface, 0, w, h, info.bitsize, info.maskR, info.maskG, info.maskB, info.maskA);
+	SPSurface Surface::Create(int w, int h, uint32_t format) {
+		auto fmt = MakeUPFormat(format);
+		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurface, 0, w, h, fmt->BitsPerPixel, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
 		return SPSurface(new Surface(sfc));
 	}
-	SPSurface Surface::Create(const spn::ByteBuff& src, int pitch, int w, int h, Color::PFormat format) {
+	SPSurface Surface::Create(const spn::ByteBuff& src, int pitch, int w, int h, uint32_t format) {
 		return Create(spn::ByteBuff(src), pitch, w, h, format);
 	}
-	SPSurface Surface::Create(spn::ByteBuff&& src, int pitch, int w, int h, Color::PFormat format) {
-		auto& info = Color::c_pfInfo[format];
+	SPSurface Surface::Create(spn::ByteBuff&& src, int pitch, int w, int h, uint32_t format) {
+		auto fmt = MakeUPFormat(format);
 		if(pitch==0)
-			pitch = info.bitsize/8*w;
-		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurfaceFrom, &src[0], w, h, info.bitsize, pitch, info.maskR, info.maskG, info.maskB, info.maskA);
+			pitch = fmt->BytesPerPixel*w;
+		auto* sfc = SDLEC(Trap, SDL_CreateRGBSurfaceFrom, &src[0], w, h, fmt->BitsPerPixel, pitch, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
 		return SPSurface(new Surface(sfc, std::move(src)));
 	}
 	SPSurface Surface::Load(HRW hRW) {
@@ -70,19 +60,19 @@ namespace rs {
 		r.h = rect.height();
 		SDLEC_P(Trap, SDL_FillRect, _sfc, &r, color);
 	}
-	Surface::LockObj Surface::lock() {
+	Surface::LockObj Surface::lock() const {
 		_mutex.lock();
 		SDLEC_P(Trap, SDL_LockSurface, _sfc);
 		return LockObj(*this, _sfc->pixels, _sfc->pitch);
 	}
-	Surface::LockObj Surface::try_lock() {
+	Surface::LockObj Surface::try_lock() const {
 		if(_mutex.try_lock()) {
 			SDLEC_P(Trap, SDL_LockSurface, _sfc);
 			return LockObj(*this, _sfc->pixels, _sfc->pitch);
 		}
 		return LockObj(*this, nullptr, 0);
 	}
-	void Surface::_unlock() {
+	void Surface::_unlock() const {
 		SDLEC_P(Trap, SDL_UnlockSurface, _sfc);
 		_mutex.unlock();
 	}
@@ -93,7 +83,7 @@ namespace rs {
 		return *_sfc->format;
 	}
 
-	Surface::LockObj::LockObj(Surface& sfc, void* bits, int pitch): _sfc(sfc), _bits(bits), _pitch(pitch) {}
+	Surface::LockObj::LockObj(const Surface& sfc, void* bits, int pitch): _sfc(sfc), _bits(bits), _pitch(pitch) {}
 	Surface::LockObj::LockObj(LockObj&& lk): _sfc(lk._sfc), _bits(lk._bits), _pitch(lk._pitch) {}
 	Surface::LockObj::~LockObj() {
 		if(_bits)
@@ -113,5 +103,75 @@ namespace rs {
 	}
 	int Surface::height() const {
 		return _sfc->h;
+	}
+	SPSurface Surface::convert(uint32_t fmt) const {
+		SDL_Surface* nsfc = SDL_ConvertSurfaceFormat(_sfc, fmt, 0);
+		Assert(Trap, nsfc)
+		return SPSurface(new Surface(nsfc));
+	}
+	SPSurface Surface::convert(const SDL_PixelFormat& fmt) const {
+		SDL_Surface* nsfc = SDL_ConvertSurface(_sfc, &fmt, 0);
+		Assert(Trap, nsfc)
+		return SPSurface(new Surface(nsfc));
+	}
+	bool Surface::isContinuous() const {
+		return _sfc->pitch == _sfc->w * _sfc->format->BytesPerPixel;
+	}
+	spn::ByteBuff Surface::extractAsContinuous(uint32_t dstFmt) const {
+		auto& myformat = getFormat();
+		if(dstFmt == 0)
+			dstFmt = myformat.format;
+
+		int w = width(),
+			h = height();
+		auto lk = lock();
+		if(isContinuous() && dstFmt==myformat.format) {
+			auto* src = reinterpret_cast<uint8_t*>(lk.getBits());
+			return spn::ByteBuff(src, src + w*h*myformat.BytesPerPixel);
+		}
+
+		std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>	upFmt(SDL_AllocFormat(dstFmt), SDL_FreeFormat);
+		size_t dstSize = w * h * upFmt->BytesPerPixel;
+		spn::ByteBuff dst(dstSize);
+		SDLEC(Trap, SDL_ConvertPixels,
+					w,h,
+					myformat.format, lk.getBits(), lk.getPitch(),
+					dstFmt, &dst[0], w*upFmt->BytesPerPixel);
+		return std::move(dst);
+	}
+	SDL_Surface* Surface::getSurface() {
+		return _sfc;
+	}
+	namespace {
+		SDL_Rect ToSDLRect(const spn::Rect& r) {
+			SDL_Rect ret;
+			ret.x = r.x0;
+			ret.y = r.y0;
+			ret.w = r.width();
+			ret.h = r.height();
+			return ret;
+		}
+	}
+	void Surface::blit(const SPSurface& sfc, const spn::Rect& srcRect, int dstX, int dstY) const {
+		SDL_Rect sr = ToSDLRect(srcRect),
+				dr;
+		dr.x = dstX;
+		dr.y = dstY;
+		dr.w = dr.w;
+		dr.h = dr.h;
+		SDLEC(Trap, SDL_BlitSurface, _sfc, &sr, sfc->getSurface(), &dr);
+	}
+	void Surface::blitScaled(const SPSurface& sfc, const spn::Rect& srcRect, const spn::Rect& dstRect) const {
+		SDL_Rect sr = ToSDLRect(srcRect),
+				dr = ToSDLRect(dstRect);
+		SDLEC(Trap, SDL_BlitScaled, _sfc, &sr, sfc->getSurface(), &dr);
+	}
+	SPSurface Surface::resize(const spn::Size& s) const {
+		auto sz = getSize();
+		spn::Rect srcRect(0,sz.width, 0,sz.height),
+				dstRect(0,s.width, 0,s.height);
+		SPSurface nsfc = Create(s.width, s.height, getFormat().format);
+		blitScaled(nsfc, srcRect, dstRect);
+		return std::move(nsfc);
 	}
 }
