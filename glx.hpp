@@ -4,6 +4,7 @@
 #include "glresource.hpp"
 #include "glx_parse.hpp"
 #include "spinner/matrix.hpp"
+#include "spinner/adaptstream.hpp"
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -237,7 +238,7 @@ namespace rs {
 		public:
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
-			GLEffect(const std::string& fPath);
+			GLEffect(spn::AdaptStream& s);
 			void onDeviceLost() override;
 			void onDeviceReset() override;
 

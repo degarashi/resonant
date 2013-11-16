@@ -237,14 +237,15 @@ namespace rs {
 	}
 
 	// ----------------- GLEffect -----------------
-	GLEffect::GLEffect(const std::string& fPath) {
-		std::ifstream ifs(fPath);
-		if(!ifs.is_open())
-			throw EC_FileNotFound(fPath);
-
+	GLEffect::GLEffect(spn::AdaptStream& s) {
+		// 一括でメモリに読み込む
+		std::string str;
+		s.seekg(0, s.end);
+		auto len = s.tellg();
+		s.seekg(0, s.beg);
+		str.resize(len);
+		s.read(&str[0], len);
 		GR_Glx glx;
-		std::istreambuf_iterator<char> bItrB(ifs), bItrE;
-		std::string str(bItrB, bItrE);
 		auto itr = str.cbegin();
 		bool bS = boost::spirit::qi::phrase_parse(itr, str.cend(), glx, standard::space, _result);
 	#ifdef DEBUG
