@@ -18,13 +18,19 @@ namespace rs {
 		auto itr = s_idMap->find(FmtID(Query_Info, fmt));
 		if(itr != s_idMap->end())
 			return boost::get<GLFormatDesc>(itr->second);
-		return boost::none;
+		return spn::none;
+	}
+	spn::Optional<uint32_t> GLFormat::QuerySDLtoSDLGL(uint32_t fmt) {
+		auto itr = s_SDLtoSDLGL->find(fmt);
+		if(itr != s_SDLtoSDLGL->end())
+			return itr->second;
+		return spn::none;
 	}
 	GLFormat::OPInfo GLFormat::QuerySDLtoGL(uint32_t fmt) {
 		auto itr = s_SDLtoGL->find(fmt);
 		if(itr != s_SDLtoGL->end())
 			return itr->second;
-		return boost::none;
+		return spn::none;
 	}
 	size_t GLFormat::QuerySize(GLenum typ) {
 		auto itr = s_idMap->find(FmtID(Query_TypeSize, typ));
@@ -39,7 +45,7 @@ namespace rs {
 		auto itr = s_idMap->find(FmtID(Query_GLSLTypeInfo, fmt));
 		if(itr != s_idMap->end())
 			return boost::get<GLSLFormatDesc>(itr->second);
-		return boost::none;
+		return spn::none;
 	}
 	GLenum GLFormat::get() const { return value; }
 	const GLFormatV::RetFormatV GLFormatV::cs_retV[] = {
@@ -71,6 +77,8 @@ namespace rs {
 		return boost::apply_visitor(TmpVisitor(), *this);
 	}
 	GLFormat::IDMap* GLFormat::s_idMap;
+	GLFormat::SDLtoGL* GLFormat::s_SDLtoGL;
+	GLFormat::SDLtoSDLGL* GLFormat::s_SDLtoSDLGL;
 
 	constexpr uint32_t MakeDim() {
 		return 0;
@@ -79,15 +87,15 @@ namespace rs {
 	constexpr uint32_t MakeDim(T0 t, Ts... ts) {
 		return (t << (sizeof...(ts)*3)) | MakeDim(ts...);
 	}
-
 	#define NOTHING
 	#define ADD_IDMAP(fmtT, fmtGL, second)	s_idMap->insert(std::make_pair(FmtID(fmtT, fmtGL), second));
 	#define ADD_FMTID1(z, data, elem)			ADD_IDMAP(data, elem, Invalid)
 	#define ADD_FMTID_ALL(z, data, elem)		ADD_IDMAP(Query_All, elem, data)
 	#define ADD_FMTID_DSC(z, data, elem)		ADD_IDMAP(Query_DSC, elem, data)
 	void GLFormat::Initialize() {
-		s_idMap = new IDMap(4096);
-		s_SDLtoGL = new SDLtoGL(4096);
+		s_idMap = new IDMap(1024);
+		s_SDLtoGL = new SDLtoGL(1024);
+		s_SDLtoSDLGL = new SDLtoSDLGL(64);
 		#include "glformat_const.inc"
 		// フォーマット判定用エントリ
 		BOOST_PP_SEQ_FOR_EACH(ADD_FMTID1, Internal, SEQ_INTERNAL)
@@ -126,6 +134,8 @@ namespace rs {
 			if(p.toSDLFormat!=SDL_PIXELFORMAT_UNKNOWN && itr==s_SDLtoGL->end())
 				s_SDLtoGL->emplace(p.toSDLFormat, p);
 		}
+		for(auto& p : c_SDLtoSDLGL)
+			s_SDLtoSDLGL->insert(p);
 
 		for(auto& p : c_GLTypeList)
 			s_idMap->insert(std::make_pair(FmtID(Query_TypeSize, p.first), p.second));

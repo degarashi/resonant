@@ -3,8 +3,8 @@
 #define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 #include <boost/variant.hpp>
-#include <boost/optional.hpp>
 #include <unordered_map>
+#include "spinner/optional.hpp"
 #include "spinner/misc.hpp"
 #include <SDL.h>
 
@@ -147,13 +147,15 @@ namespace rs {
 			using IDMap = std::unordered_map<FmtID, boost::variant<uint32_t,GLFormatDesc, GLSLFormatDesc>>;
 			// SDL_PixelFormatEnum -> OpenGLFormatDesc
 			using SDLtoGL = std::unordered_map<uint32_t, const GLFormatDesc&>;
+			using SDLtoSDLGL = std::unordered_map<uint32_t, uint32_t>;
 
 			static IDMap* s_idMap;
 			static SDLtoGL* s_SDLtoGL;
+			static SDLtoSDLGL* s_SDLtoSDLGL;
 
 		public:
-			using OPInfo = boost::optional<const GLFormatDesc&>;
-			using OPGLSLInfo = boost::optional<const GLSLFormatDesc&>;
+			using OPInfo = spn::Optional<const GLFormatDesc&>;
+			using OPGLSLInfo = spn::Optional<const GLSLFormatDesc&>;
 
 			GLFormat() = default;
 			GLFormat(const GLFormat& fmt) = default;
@@ -166,6 +168,7 @@ namespace rs {
 			static OPInfo QueryInfo(GLenum fmt);
 			//! SDLフォーマットからOpenGLフォーマットへの変換
 			static OPInfo QuerySDLtoGL(uint32_t fmt);
+			static spn::Optional<uint32_t> QuerySDLtoSDLGL(uint32_t fmt);
 			//! GLTypeFmtのバイト数
 			static size_t QuerySize(GLenum typ);
 			//! fmtをtypで保存した場合の1画素のバイト数を計算
@@ -237,6 +240,8 @@ namespace rs {
 	using GLInRenderFmt = GLFormatBase<RenderFmtCheck>;
 	using GLInReadFmt = GLFormatBase<ReadFmtCheck>;
 	using GLTypeFmt = GLFormatBase<TypeFmtCheck>;
+	using OPInSizedFmt = spn::Optional<GLInSizedFmt>;
+	using OPInCompressedFmt = spn::Optional<GLInCompressedFmt>;
 
 	using tagGLFormatV = boost::variant<boost::none_t, GLDepthFmt, GLStencilFmt, GLDSFmt, GLInFmt, GLInSizedFmt, GLInCompressedFmt, GLInRenderFmt, GLInReadFmt, GLTypeFmt>;
 	class GLFormatV : public tagGLFormatV {
