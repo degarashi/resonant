@@ -31,13 +31,13 @@ namespace rs {
 		explicit ValueSettingR(const ValueSetting& s);
 		void action() const;
 		template <class GF, class T0>
-		void action(GF gf, T0) const { gf(boost::get<T0>(value[0])); }
+		void action(GF gf, T0) const { GLEC_P(Trap, gf, boost::get<T0>(value[0])); }
 		template <class GF, class T0, class T1>
-		void action(GF gf, T0,T1) const { gf(boost::get<T0>(value[0]), boost::get<T1>(value[1])); }
+		void action(GF gf, T0,T1) const { GLEC_P(Trap, gf, boost::get<T0>(value[0]), boost::get<T1>(value[1])); }
 		template <class GF, class T0, class T1, class T2>
-		void action(GF gf, T0,T1,T2) const { gf(boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2])); }
+		void action(GF gf, T0,T1,T2) const { GLEC_P(Trap, gf, boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2])); }
 		template <class GF, class T0, class T1, class T2, class T3>
-		void action(GF gf, T0,T1,T2,T3) const { gf(boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2]), boost::get<T3>(value[3])); }
+		void action(GF gf, T0,T1,T2,T3) const { GLEC_P(Trap, gf, boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2]), boost::get<T3>(value[3])); }
 
 		bool operator == (const ValueSettingR& s) const;
 	};
