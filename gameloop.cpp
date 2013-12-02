@@ -2,6 +2,7 @@
 #include "input.hpp"
 #include "font.hpp"
 #include "spinner/frac.hpp"
+#include "camera.hpp"
 
 namespace rs {
 	// --------------------- DrawThread ---------------------
@@ -46,6 +47,7 @@ namespace rs {
 		FontFamily	fontP;
 		fontP.loadFamilyWildCard("/home/slice/.fonts/*.ttc");
 		FontGen		fgenP(spn::PowSize(512,512));
+		CameraMgr	camP;
 		InputMgr	inpP;
 
 		UPMainProc mp(_mcr());

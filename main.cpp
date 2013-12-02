@@ -5,6 +5,7 @@
 #include "spinner/vector.hpp"
 #include "gpu.hpp"
 #include "glx.hpp"
+#include "camera.hpp"
 
 // void test0() {
 // 	auto fc = mgr_ft.newFace(mgr_rw.fromFile("/home/slice/.fonts/msgothic.ttc", "r", true), 2);
@@ -32,13 +33,17 @@
 
 // MainThread と DrawThread 間のデータ置き場
 struct Mth_DthData {
-	rs::HLInput hlIk;
+	rs::HLInput hlIk,
+				hlIm;
 	rs::HLAct actQuit,
 			actButton,
 			actLeft,
 			actRight,
 			actUp,
-			actDown;
+			actDown,
+			actMoveX,
+			actMoveY;
+	rs::HLCam hlCam;
 };
 #define shared (Mth_Dth::_ref())
 class Mth_Dth : public spn::Singleton<Mth_Dth>, public rs::SpinLock<Mth_DthData> {};
@@ -107,35 +112,41 @@ class MyDraw : public rs::IDrawProc {
 			rs::SetSwapInterval(1);
 		}
 		bool runU(uint64_t accum) override {
-			glClearColor(0,0,1,1);//(accum&0xff) / 255.0f,1);
+			glClearColor(0,0,1,1);
 			glClearDepth(1.0f);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			int w = 640,
 				h = 480;
 			glViewport(0,0,w,h);
 
-			static float angle = 0,
-						angleX = 0;
-			spn::Mat44 m4 = spn::Mat44::RotationX(spn::DEGtoRAD(angle));
-			m4 *= spn::Mat44::RotationY(spn::DEGtoRAD(angleX));
-			m4 *= spn::Mat44::PerspectiveFovLH(spn::DEGtoRAD(60), float(w)/h, 0.01f, 100.0f);
-
 			auto* pFx = _hlFx.ref().get();
 			GLint id = pFx->getUniformID("mTrans");
-			pFx->setUniform(m4, id);
-			id = pFx->getUniformID("tDiffuse");
-			pFx->setUniform(_hlTex, id);
 
 			auto lk = shared.lock();
-			constexpr float speed = 1.f;
+			constexpr float speed = 0.25f;
+			float mvF=0, mvS=0;
 			if(mgr_input.isKeyPressing(lk->actUp))
-				angle += speed;
+				mvF += speed;
 			if(mgr_input.isKeyPressing(lk->actDown))
-				angle -= speed;
+				mvF -= speed;
 			if(mgr_input.isKeyPressing(lk->actLeft))
-				angleX -= speed;
+				mvS -= speed;
 			if(mgr_input.isKeyPressing(lk->actRight))
-				angleX += speed;
+				mvS += speed;
+			float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
+				yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
+			rs::CamData& cd = lk->hlCam.ref();
+			cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
+			cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
+			cd.moveFwd3D(mvF);
+			cd.moveSide3D(mvS);
+			cd.setFOV(spn::DEGtoRAD(60));
+			cd.setZPlane(0.01f, 100.f);
+			cd.setAspect(float(w)/h);
+
+			pFx->setUniform(cd.getViewProjMatrix().convert44(), id);
+			id = pFx->getUniformID("tDiffuse");
+			pFx->setUniform(_hlTex, id);
 
 			pFx->setVStream(_hlVb.get(), 0);
 			pFx->setIStream(_hlIb.get());
@@ -159,10 +170,24 @@ class MyMain : public rs::IMainProc {
 			lk->actRight = mgr_input.addAction("right");
 			lk->actUp = mgr_input.addAction("up");
 			lk->actDown = mgr_input.addAction("down");
+			lk->actMoveX = mgr_input.addAction("moveX");
+			lk->actMoveY = mgr_input.addAction("moveY");
 			mgr_input.link(lk->actLeft, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_A));
 			mgr_input.link(lk->actRight, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_D));
 			mgr_input.link(lk->actUp, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_W));
 			mgr_input.link(lk->actDown, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_S));
+
+			lk->hlIm = rs::Mouse::OpenMouse(0);
+			lk->hlIm.ref()->setMouseMode(rs::MouseMode::Relative);
+			lk->hlIm.ref()->setDeadZone(0, 1.f, 0.f);
+			lk->hlIm.ref()->setDeadZone(1, 1.f, 0.f);
+			mgr_input.link(lk->actMoveX, rs::InF::AsAxis(lk->hlIm, 0));
+			mgr_input.link(lk->actMoveY, rs::InF::AsAxis(lk->hlIm, 1));
+			mgr_input.link(lk->actQuit, rs::InF::AsAxisNegative(lk->hlIm, 0));
+
+			lk->hlCam = mgr_cam.emplace();
+			rs::CamData& cd = lk->hlCam.ref();
+			cd.setOfs(0,0,-3);
 		}
 		bool runU() override {
 			auto lk = shared.lock();
