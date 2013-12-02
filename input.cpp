@@ -2,14 +2,14 @@
 #include "common.hpp"
 
 namespace rs {
-	DZone::DZone(int dz): deadzone(dz) {}
+	DZone::DZone(float r, float dz): ratio(r), deadzone(dz) {}
 	int DZone::filter(int val) const {
-		float v = static_cast<float>(val);
-		float range = spn::Rcp22Bit(InputRange - static_cast<float>(deadzone));
-
+		float fval = (val * ratio) / InputRange;
 		if(val > 0)
-			return std::max(0, val-deadzone);
-		return std::min(0, val+deadzone);
+			fval = std::max(0.f, fval-deadzone*ratio);
+		else
+			fval = std::min(0.f, fval+deadzone*ratio);
+		return spn::Saturate(static_cast<int>(fval * InputRange), InputRange);
 	}
 
 	void RecvPtrGroup::newPointer(WPtr wptr) {
@@ -81,6 +81,11 @@ namespace rs {
 	WPtr Mouse::getPointer() const {
 		// 常にマウスの座標を返す
 		return _hlPtr.weak();
+	}
+	void Mouse::setDeadZone(int num, float r, float dz) {
+		auto& d = _axisDZ[num];
+		d.ratio = r;
+		d.deadzone = dz;
 	}
 
 	// ----------------- Joypad -----------------
@@ -205,7 +210,7 @@ namespace rs {
 	InputMgr::Action::Action(Action&& a) noexcept: _link(std::move(a._link)), _state(a._state), _value(a._value) {}
 	void InputMgr::Action::update() {
 		int sum = 0;
-		// linkの値を全部加算
+		// linkの値を加算合成
 		for(auto& l : _link)
 			sum += l.getValue();
 		sum = spn::Saturate(sum, InputRange);
@@ -255,6 +260,9 @@ namespace rs {
 	}
 	bool InputMgr::isKeyPressing(HAct hAct) const {
 		return _checkKeyValue([](int st){ return st>0; }, hAct);
+	}
+	int InputMgr::getKeyValue(HAct hAct) const {
+		return hAct.ref().getValue();
 	}
 
 	InputMgr::HLAct InputMgr::addAction(const std::string& name) {

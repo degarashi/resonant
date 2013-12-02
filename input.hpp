@@ -4,11 +4,13 @@
 #include <unordered_set>
 
 namespace rs {
+	//! アナログ入力値のデッドゾーンと倍率調整
 	struct DZone {
-		int deadzone;
+		float ratio,
+			deadzone;
 
 		DZone(const DZone& dz) = default;
-		DZone(int dz=0);
+		DZone(float r=1.f, float dz=0);
 		int filter(int val) const;
 	};
 	using DZoneL = std::vector<DZone>;
@@ -67,6 +69,7 @@ namespace rs {
 			void setMouseMode(MouseMode mode) override;
 			MouseMode getMouseMode() const override;
 			WPtr getPointer() const override;
+			void setDeadZone(int num, float r, float dz) override;
 
 			static HLInput OpenMouse(int num);
 	};
@@ -196,6 +199,7 @@ namespace rs {
 			bool isKeyPressed(HAct hAct) const;
 			bool isKeyReleased(HAct hAct) const;
 			bool isKeyPressing(HAct hAct) const;
+			int getKeyValue(HAct hAct) const;
 
 			HLInput addInput(UPInput&& u);
 			HLAct addAction(const std::string& name);

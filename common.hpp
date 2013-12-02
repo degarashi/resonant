@@ -76,6 +76,7 @@ namespace rs {
 			virtual int numButtons() const { return 0; }
 			virtual int numAxes() const { return 0; }
 			virtual int numHats() const { return 0; }
+			virtual void setDeadZone(int num, float r, float dz) {}
 
 			virtual void setMouseMode(MouseMode mode) {}
 			virtual MouseMode getMouseMode() const { return MouseMode::Absolute; }
