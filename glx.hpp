@@ -89,8 +89,7 @@ namespace rs {
 	};
 
 	using UniVal = boost::variant<bool, int, float, spn::Vec3, spn::Vec4,
-					spn::Mat32, spn::AMat32, spn::Mat33, spn::AMat33,
-					spn::Mat43, spn::AMat43, spn::Mat44, spn::AMat44, HLTex>;
+					spn::Mat32, spn::Mat33, spn::Mat43, spn::Mat44, HLTex>;
 	using UniMapStr = std::unordered_map<std::string, UniVal>;
 	using UniMapID = std::unordered_map<GLint, UniVal>;
 	using UniEntryMap = std::unordered_set<std::string>;
