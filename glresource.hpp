@@ -193,8 +193,8 @@ namespace rs {
 	class GLFBufferTmp;
 	#define mgr_gl (::rs::GLRes::_ref())
 	//! OpenGL関連のリソースマネージャ
-	class GLRes : public spn::ResMgrN<UPResource, GLRes, std::string> {
-		using base_type = spn::ResMgrN<UPResource, GLRes, std::string>;
+	class GLRes : public spn::ResMgrN<UPResource, GLRes, std::allocator, std::string> {
+		using base_type = spn::ResMgrN<UPResource, GLRes, std::allocator, std::string>;
 		UPFBuffer						_upFb;
 		std::unique_ptr<GLFBufferTmp>	_tmpFb;
 		//! 空のテクスチャ (何もテクスチャをセットしない事を示す)

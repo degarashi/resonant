@@ -77,7 +77,7 @@ namespace rs {
 
 	//! フォント作成クラス: 共通
 	/*! Depで生成するのはあくまでもフォントデータのみであって蓄積はこのクラスで行う */
-	class FontGen : public spn::ResMgrN<TextObj, FontGen, std::u32string> {
+	class FontGen : public spn::ResMgrN<TextObj, FontGen, std::allocator, std::u32string> {
 		//! フォントの名前リスト
 		/*! そんなに数いかないと思うのでvectorを使う */
 		using FaceList = std::vector<Face>;
