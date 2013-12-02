@@ -3,6 +3,7 @@
 #include "spinner/plane.hpp"
 #include "spinner/quat.hpp"
 #include "spinner/resmgr.hpp"
+#include "spinner/alignedalloc.hpp"
 #include "boomstick/geom3D.hpp"
 
 namespace rs {
@@ -91,6 +92,6 @@ namespace rs {
 			void setPose(const Pose3D& ps);
 	};
 	#define mgr_cam (::rs::CameraMgr::_ref())
-	class CameraMgr : public spn::ResMgrA<CamData, CameraMgr> {};
+	class CameraMgr : public spn::ResMgrA<CamData, CameraMgr, spn::Alloc16> {};
 	DEF_HANDLE(CameraMgr, Cam, CamData)
 }
