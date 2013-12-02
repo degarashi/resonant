@@ -21,7 +21,7 @@ namespace rs {
 			_matV *= tq.asMat33();
 
 			_matP = AMat44::PerspectiveFovLH(_fov, _aspect, _nearZ, _farZ);
-			_matVP = _matV * _matP;
+			_matVP = _matV.convertA44() * _matP;
 		}
 	}
 	void CamData::_calcVPInv() const {
@@ -60,26 +60,22 @@ namespace rs {
 		std::memcpy(reinterpret_cast<void*>(ths), reinterpret_cast<const void*>(src), sizeof(CamData)-sizeof(Pose3D));
 	}
 	void CamData::moveFwd2D(float speed) {
-		const Quat& q = getRot();
-		Vec3 vZ = q.getZAxis();
+		Vec3 vZ = getDir();
 		vZ.y = 0;
 		vZ.normalize();
 		addOfsVec(vZ * speed);
 	}
 	void CamData::moveSide2D(float speed) {
-		const Quat& q = getRot();
-		Vec3 vX = q.getXAxis();
+		Vec3 vX = getRight();
 		vX.y = 0;
 		vX.normalize();
 		addOfsVec(vX * speed);
 	}
 	void CamData::moveFwd3D(float speed) {
-		const Quat& q = getRot();
-		addOfsVec(q.getZAxis() * speed);
+		addOfsVec(getDir() * speed);
 	}
 	void CamData::moveSide3D(float speed) {
-		const Quat& q = getRot();
-		addOfsVec(q.getXAxis() * speed);
+		addOfsVec(getRight() * speed);
 	}
 	void CamData::turnAxis(const Vec3& axis, float rad) {
 		Quat q = getRot();
