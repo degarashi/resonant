@@ -132,6 +132,7 @@ namespace rs {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		Window::SetStdGLAttributes(major, minor, depth);
 		SPWindow _spWindow = Window::Create(title.moveTo(), w, h, flag);
+		rs::SDLMouse::SetWindow(_spWindow->getWindow());
 
 		// メインスレッドのメッセージキューを初期化
 		Looper::Prepare();
