@@ -188,7 +188,7 @@ namespace rs {
 			}
 		}
 		mth.interrupt();
-		mth.join();
+		mth.getResult();
 		return 0;
 	}
 }

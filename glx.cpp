@@ -412,8 +412,7 @@ namespace rs {
 			// Sampler2D変数が見つかった順にテクスチャIDを割り振る
 			GLint cur = 0;
 			for(GLint i=0 ; i<nUnif ; i++) {
-				glGetActiveUniform(pid, i, 0, &len, &size, &typ, cbuff);
-    GLEC_ChkP(Trap)
+				GLEC_P(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
 				if(typ == GL_SAMPLER_2D)
 					_texIndex.insert(std::make_pair(i, cur++));
 			}
