@@ -236,6 +236,10 @@ namespace rs {
 			throw GLE_InvalidArgument(_shName, "(missing arguments)");
 	}
 
+	namespace {
+		boost::regex re_comment(R"(//[^\s$]+)"),		//!< 一行コメント
+					re_comment2(R"(/\*[^\*]*\*/)");		//!< 範囲コメント
+	}
 	// ----------------- GLEffect -----------------
 	GLEffect::GLEffect(spn::AdaptStream& s) {
 		// 一括でメモリに読み込む
@@ -245,6 +249,11 @@ namespace rs {
 		s.seekg(0, s.beg);
 		str.resize(len);
 		s.read(&str[0], len);
+
+		// コメント部分を除去 -> スペースに置き換える
+		str = boost::regex_replace(str, re_comment, " ");
+		str = boost::regex_replace(str, re_comment2, " ");
+
 		GR_Glx glx;
 		auto itr = str.cbegin();
 		bool bS = boost::spirit::qi::phrase_parse(itr, str.cend(), glx, standard::space, _result);
