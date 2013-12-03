@@ -39,7 +39,7 @@ namespace rs {
 		virtual ~IMainProc() {}
 	};
 	using UPMainProc = UPtr<IMainProc>;
-	using MPCreate = std::function<IMainProc* ()>;
+	using MPCreate = std::function<IMainProc* (const SPWindow&)>;
 
 	class DrawThread : public ThreadL<void (const SPLooper&, SPGLContext&&, const SPWindow&, const UPMainProc&)> {
 		using base = ThreadL<void (Looper&, SPGLContext&&, const SPWindow&, const UPMainProc&)>;

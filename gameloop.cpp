@@ -50,7 +50,7 @@ namespace rs {
 		CameraMgr	camP;
 		InputMgr	inpP;
 
-		UPMainProc mp(_mcr());
+		UPMainProc mp(_mcr(w));
 		Handler guiHandler(guiLooper);
 		SPGLContext ctx = GLContext::CreateContext(w, false),
 					ctxD = GLContext::CreateContext(w, true);
@@ -81,7 +81,7 @@ namespace rs {
 				guiHandler.postArgs(msg::QuitReq());
 				SDL_Event e;
 				e.type = EVID_SIGNAL;
-				SDL_PushEvent(&e);
+				SDLEC_P(Warn, SDL_PushEvent, &e);
 				// 何らかの原因で描画スレッドが終了していた時
 				try {
 					// 例外が投げられて終了したかをチェック
@@ -103,7 +103,7 @@ namespace rs {
 				auto dur = ntp - tp;
 				if(dur >= microseconds(1000)) {
 					// 時間に余裕があるならスリープをかける
-					SDL_Delay(duration_cast<milliseconds>(dur).count() - 1);
+					SDLEC_P(Warn, SDL_Delay, duration_cast<milliseconds>(dur).count() - 1);
 				}
 				// スピンウェイト
 				while(Clock::now() < ntp);
