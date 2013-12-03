@@ -44,6 +44,7 @@ struct Mth_DthData {
 			actMoveX,
 			actMoveY;
 	rs::HLCam hlCam;
+	rs::SPWindow spWin;
 };
 #define shared (Mth_Dth::_ref())
 class Mth_Dth : public spn::Singleton<Mth_Dth>, public rs::SpinLock<Mth_DthData> {};
@@ -53,6 +54,7 @@ class MyDraw : public rs::IDrawProc {
 	rs::HLVb 	_hlVb;
 	rs::HLIb 	_hlIb;
 	rs::HLTex 	_hlTex;
+	spn::Size	_size;
 	public:
 		MyDraw() {
 			struct TmpV {
@@ -110,19 +112,29 @@ class MyDraw : public rs::IDrawProc {
 
 			_hlTex.ref()->save("/tmp/test.png");
 			rs::SetSwapInterval(1);
+
+			_size *= 0;
+			auto lk = shared.lock();
+			auto& cd = lk->hlCam.ref();
+			cd.setFOV(spn::DEGtoRAD(60));
+			cd.setZPlane(0.01f, 500.f);
 		}
 		bool runU(uint64_t accum) override {
 			glClearColor(0,0,1,1);
 			glClearDepth(1.0f);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-			int w = 640,
-				h = 480;
-			glViewport(0,0,w,h);
 
+			auto lk = shared.lock();
+			auto& cd = lk->hlCam.ref();
+			auto sz = lk->spWin->getSize();
+			if(sz != _size) {
+				_size = sz;
+				cd.setAspect(float(_size.width)/_size.height);
+				glViewport(0,0,_size.width, _size.height);
+			}
 			auto* pFx = _hlFx.ref().get();
 			GLint id = pFx->getUniformID("mTrans");
 
-			auto lk = shared.lock();
 			constexpr float speed = 0.25f;
 			float mvF=0, mvS=0;
 			if(mgr_input.isKeyPressing(lk->actUp))
@@ -135,14 +147,11 @@ class MyDraw : public rs::IDrawProc {
 				mvS += speed;
 			float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
 				yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
-			rs::CamData& cd = lk->hlCam.ref();
+
 			cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
 			cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
 			cd.moveFwd3D(mvF);
 			cd.moveSide3D(mvS);
-			cd.setFOV(spn::DEGtoRAD(60));
-			cd.setZPlane(0.01f, 100.f);
-			cd.setAspect(float(w)/h);
 
 			pFx->setUniform(cd.getViewProjMatrix().convert44(), id);
 			id = pFx->getUniformID("tDiffuse");
@@ -157,9 +166,10 @@ class MyDraw : public rs::IDrawProc {
 class MyMain : public rs::IMainProc {
 	Mth_Dth _mth;
 	public:
-		MyMain() {
+		MyMain(const rs::SPWindow& sp) {
 			auto lk = shared.lock();
 			lk->hlIk = rs::Keyboard::OpenKeyboard();
+			lk->spWin = sp;
 
 			lk->actQuit = mgr_input.addAction("quit");
 			mgr_input.link(lk->actQuit, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_ESCAPE));
@@ -202,5 +212,5 @@ class MyMain : public rs::IMainProc {
 
 using namespace rs;
 int main(int argc, char **argv) {
-	return GameLoop([](){ return new MyMain; }, "HelloSDL2", 640, 480, SDL_WINDOW_SHOWN, 2,0,24);
+	return GameLoop([](const rs::SPWindow& sp){ return new MyMain(sp); }, "HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN, 2,0,24);
 }
