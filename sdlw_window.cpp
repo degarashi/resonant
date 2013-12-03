@@ -11,13 +11,13 @@ namespace rs {
 		return Create(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag|SDL_WINDOW_OPENGL);
 	}
 	SPWindow Window::Create(const std::string& title, int x, int y, int w, int h, uint32_t flag) {
-		return SPWindow(new Window(SDL_CreateWindow(title.c_str(), x, y, w, h, flag|SDL_WINDOW_OPENGL)));
+		return SPWindow(new Window(SDLEC_P(Trap, SDL_CreateWindow, title.c_str(), x, y, w, h, flag|SDL_WINDOW_OPENGL)));
 	}
 	Window::Window(SDL_Window* w): _window(w) {
 		_checkState();
 	}
 	Window::~Window() {
-		SDL_DestroyWindow(_window);
+		SDLEC_P(Warn, SDL_DestroyWindow, _window);
 	}
 	void Window::_checkState() {
 		uint32_t f = getSDLFlag();
@@ -33,58 +33,58 @@ namespace rs {
 			_stat = Stat::Shown;
 	}
 	void Window::setFullscreen(bool bFull) {
-		SDL_SetWindowFullscreen(_window, bFull ? SDL_WINDOW_FULLSCREEN : 0);
+		SDLEC_P(Warn, SDL_SetWindowFullscreen, _window, bFull ? SDL_WINDOW_FULLSCREEN : 0);
 		_checkState();
 	}
 	void Window::setGrab(bool bGrab) {
-		SDL_SetWindowGrab(_window, bGrab ? SDL_TRUE : SDL_FALSE);
+		SDLEC_P(Warn, SDL_SetWindowGrab, _window, bGrab ? SDL_TRUE : SDL_FALSE);
 	}
 	void Window::setMaximumSize(int w, int h) {
-		SDL_SetWindowMaximumSize(_window, w, h);
+		SDLEC_P(Warn, SDL_SetWindowMaximumSize, _window, w, h);
 	}
 	void Window::setMinimumSize(int w, int h) {
-		SDL_SetWindowMinimumSize(_window, w, h);
+		SDLEC_P(Warn, SDL_SetWindowMinimumSize, _window, w, h);
 	}
 	void Window::setSize(int w, int h) {
-		SDL_SetWindowSize(_window, w, h);
+		SDLEC_P(Warn, SDL_SetWindowSize, _window, w, h);
 	}
 	void Window::show(bool bShow) {
 		if(bShow)
-			SDL_ShowWindow(_window);
+			SDLEC_P(Warn, SDL_ShowWindow, _window);
 		else
-			SDL_HideWindow(_window);
+			SDLEC_P(Warn, SDL_HideWindow, _window);
 		_checkState();
 	}
 	void Window::setTitle(const std::string& title) {
-		SDL_SetWindowTitle(_window, title.c_str());
+		SDLEC_P(Warn, SDL_SetWindowTitle, _window, title.c_str());
 	}
 	void Window::maximize() {
-		SDL_MaximizeWindow(_window);
+		SDLEC_P(Warn, SDL_MaximizeWindow, _window);
 		_checkState();
 	}
 	void Window::minimize() {
-		SDL_MinimizeWindow(_window);
+		SDLEC_P(Warn, SDL_MinimizeWindow, _window);
 		_checkState();
 	}
 	void Window::restore() {
-		SDL_RestoreWindow(_window);
+		SDLEC_P(Warn, SDL_RestoreWindow, _window);
 		_checkState();
 	}
 	void Window::setPosition(int x, int y) {
-		SDL_SetWindowPosition(_window, x, y);
+		SDLEC_P(Warn, SDL_SetWindowPosition, _window, x, y);
 	}
 	void Window::raise() {
-		SDL_RaiseWindow(_window);
+		SDLEC_P(Warn, SDL_RaiseWindow, _window);
 		_checkState();
 	}
 	uint32_t Window::getID() const {
-		return SDL_GetWindowID(_window);
+		return SDLEC_P(Warn, SDL_GetWindowID, _window);
 	}
 	Window::Stat Window::getState() const {
 		return _stat;
 	}
 	bool Window::isGrabbed() const {
-		return SDL_GetWindowGrab(_window) == SDL_TRUE;
+		return SDLEC_P(Warn, SDL_GetWindowGrab, _window) == SDL_TRUE;
 	}
 	bool Window::isResizable() const {
 		return getSDLFlag() & SDL_WINDOW_RESIZABLE;
@@ -95,8 +95,24 @@ namespace rs {
 	bool Window::hasMouseFocus() const {
 		return getSDLFlag() & SDL_WINDOW_MOUSE_FOCUS;
 	}
+	namespace {
+		spn::Size GetSize(void (*func)(SDL_Window*,int*,int*), SDL_Window* wd) {
+			int w,h;
+			SDLEC_P(Warn, func, wd, &w, &h);
+			return spn::Size(w,h);
+		}
+	}
+	spn::Size Window::getSize() const {
+		return GetSize(SDL_GetWindowSize, _window);
+	}
+	spn::Size Window::getMaximumSize() const {
+		return GetSize(SDL_GetWindowMaximumSize, _window);
+	}
+	spn::Size Window::getMinimumSize() const {
+		return GetSize(SDL_GetWindowMinimumSize, _window);
+	}
 	uint32_t Window::getSDLFlag() const {
-		return SDL_GetWindowFlags(_window);
+		return SDLEC_P(Warn, SDL_GetWindowFlags, _window);
 	}
 	SDL_Window* Window::getWindow() const {
 		return _window;
@@ -104,8 +120,8 @@ namespace rs {
 
 	void Window::EnableScreenSaver(bool bEnable) {
 		if(bEnable)
-			SDL_EnableScreenSaver();
+			SDLEC_P(Warn, SDL_EnableScreenSaver);
 		else
-			SDL_DisableScreenSaver();
+			SDLEC_P(Warn, SDL_DisableScreenSaver);
 	}
 }

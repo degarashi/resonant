@@ -526,6 +526,9 @@ namespace rs {
 			bool isResizable() const;
 			bool hasInputFocus() const;
 			bool hasMouseFocus() const;
+			spn::Size getSize() const;
+			spn::Size getMaximumSize() const;
+			spn::Size getMinimumSize() const;
 			uint32_t getSDLFlag() const;
 			SDL_Window* getWindow() const;
 
