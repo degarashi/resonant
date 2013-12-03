@@ -78,6 +78,8 @@ namespace rs {
 	spn::ByteBuff Convert1Bit_8Bit(const void* src, int width, int pitch, int nrow);
 	//! 8bitのグレースケールを24bitのPackedBitmapへ変換
 	spn::ByteBuff Convert8Bit_Packed24Bit(const void* src, int width, int pitch, int nrow);
+	//! 8bitのグレースケールを32bitのPackedBitmapへ変換
+	spn::ByteBuff Convert8Bit_Packed32Bit(const void* src, int width, int pitch, int nrow);
 	#define mgr_ft (::rs::FTLibrary::_ref())
 	class FTLibrary : public spn::ResMgrA<FTFace, FTLibrary> {
 		FT_Library	_lib;

@@ -116,17 +116,27 @@ namespace rs {
 		}
 		return std::move(buff);
 	}
-	spn::ByteBuff Convert8Bit_Packed24Bit(const void* src, int width, int pitch, int nrow) {
-		auto* pSrc = reinterpret_cast<const uint8_t*>(src);
-		spn::ByteBuff buff(width*nrow*sizeof(uint32_t));
-		auto* dst = reinterpret_cast<uint8_t*>(&buff[0]);
-		for(int i=0 ; i<nrow ; i++) {
-			for(int j=0 ; j<width ; j++) {
-				auto tmp = pSrc[j];
-				*dst++=tmp; *dst++=tmp; *dst++=tmp;
+	namespace {
+		template <int NB>
+		spn::ByteBuff ExpandBits(const void* src, int width, int pitch, int nrow) {
+			auto* pSrc = reinterpret_cast<const uint8_t*>(src);
+			spn::ByteBuff buff(width*nrow*NB);
+			auto* dst = reinterpret_cast<uint8_t*>(&buff[0]);
+			for(int i=0 ; i<nrow ; i++) {
+				for(int j=0 ; j<width ; j++) {
+					auto tmp = pSrc[j];
+					for(int k=0 ; k<NB ; k++)
+						*dst++ = tmp;
+				}
+				pSrc += pitch;
 			}
-			pSrc += pitch;
+			return std::move(buff);
 		}
-		return std::move(buff);
+	}
+	spn::ByteBuff Convert8Bit_Packed24Bit(const void* src, int width, int pitch, int nrow) {
+		return ExpandBits<3>(src, width, pitch, nrow);
+	}
+	spn::ByteBuff Convert8Bit_Packed32Bit(const void* src, int width, int pitch, int nrow) {
+		return ExpandBits<4>(src, width, pitch, nrow);
 	}
 }

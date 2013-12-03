@@ -36,6 +36,8 @@ namespace rs {
 		CharPos& cp = fontMap[chID];
 		// Dependクラスから文字のビットデータを取得
 		auto res = dep.getChara(c);
+		// この時点では1ピクセル8bitなので、32bitRGBAに展開
+		res.first = Convert8Bit_Packed32Bit(&res.first[0], res.second.width(), res.second.width(), res.second.height());
 		cp.box = res.second;
 		cp.space = dep.width(c);
 		if(res.second.width() <= 0) {

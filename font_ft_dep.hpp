@@ -60,7 +60,7 @@ namespace rs {
 			CCoreID adjustParams(CCoreID cid);
 
 			//! 使用テクスチャとUV範囲、カーソル移動距離など取得
-			/*! \return first=フォントピクセルデータ
+			/*! \return first=フォントピクセルデータ(各ピクセル8bit)
 						second=フォント原点に対する描画オフセット */
 			std::pair<spn::ByteBuff, spn::Rect> getChara(char32_t code);
 			int maxWidth() const;
