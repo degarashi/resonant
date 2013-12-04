@@ -99,7 +99,9 @@ namespace rs {
 			// 次のフレーム開始を待つ
 			auto ntp = prevtime + microseconds(16666);
 			auto tp = Clock::now();
-			if(ntp > tp) {
+			if(ntp <= tp)
+				ntp = tp;
+			else {
 				auto dur = ntp - tp;
 				if(dur >= microseconds(1000)) {
 					// 時間に余裕があるならスリープをかける
@@ -118,7 +120,8 @@ namespace rs {
 			// 時間が残っていれば描画
 			// 最大スキップフレームを超過してたら必ず描画
 			auto dur = Clock::now() - tp;
-			if(skip < MAX_SKIPFRAME && dur > microseconds(DRAW_THRESHOLD_USEC)) {
+			auto count = std::chrono::duration_cast<std::chrono::microseconds>(dur).count();
+			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
 				skip = 0;
 				drawHandler.postArgs(msg::DrawReq());
 			} else
