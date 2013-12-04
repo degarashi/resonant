@@ -88,7 +88,7 @@ namespace rs {
 		auto& ft = _hlFT.ref();
 		ft.prepareGlyph(c, (_charType & CCoreID::CharFlag_AA) ? FTFace::RenderMode::Normal : FTFace::RenderMode::Mono,
 							_boldP>0, _bItalic);
-		return ft.getGlyphInfo().width;
+		return ft.getGlyphInfo().advanceX;
 	}
 	int Font_FTDep::maxWidth() const {
 		return _hlFT.cref().getFaceInfo().maxWidth;
