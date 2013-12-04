@@ -51,7 +51,12 @@ namespace rs {
 		InputMgr	inpP;
 
 		UPMainProc mp(_mcr(w));
-		Handler guiHandler(guiLooper);
+		Handler guiHandler(guiLooper, [](){
+			SDL_Event e;
+			e.type = EVID_SIGNAL;
+			SDL_PushEvent(&e);
+		});
+
 		SPGLContext ctx = GLContext::CreateContext(w, false),
 					ctxD = GLContext::CreateContext(w, true);
 		ctxD->makeCurrent();
@@ -78,7 +83,6 @@ namespace rs {
 		bool bLoop = true;
 		do {
 			if(!dth.isRunning()) {
-				guiHandler.postArgs(msg::QuitReq());
 				SDL_Event e;
 				e.type = EVID_SIGNAL;
 				SDLEC_P(Warn, SDL_PushEvent, &e);
@@ -87,6 +91,7 @@ namespace rs {
 					// 例外が投げられて終了したかをチェック
 					dth.getResult();
 				} catch (...) {
+					guiHandler.postArgs(msg::QuitReq());
 					Assert(Warn, false, "MainThread: draw thread was ended by throwing exception")
 					throw;
 				}
@@ -131,6 +136,7 @@ namespace rs {
 		// 描画スレッドの終了を待つ
 		dth.interrupt();
 		dth.join();
+		guiHandler.postArgs(msg::QuitReq());
 	}
 
 	int GameLoop(MPCreate mcr, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
