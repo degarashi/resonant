@@ -105,12 +105,17 @@ namespace rs {
 	}
 
 	// ----------------- Handle -----------------
-	Handler::Handler(const WPLooper& loop): _looper(loop) {}
+	Handler::Handler(const WPLooper& loop, Callback cb): _looper(loop), _cb(cb) {}
+	void Handler::_callback() {
+		if(_cb)
+			_cb();
+	}
 	void Handler::handleMessage(const Message& msg) {
 		if(msg.exec)
 			msg.exec();
 	}
 	void Handler::post(Message&& m) {
+		_callback();
 		m.handler = m.exec ? this : nullptr;
 		if(auto sp = _looper.lock())
 			sp->pushEvent(std::move(m));

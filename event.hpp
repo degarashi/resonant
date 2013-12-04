@@ -118,21 +118,26 @@ namespace rs {
 	};
 
 	class Handler {
+		using Callback = std::function<void ()>; //MEMO Message&を渡しても良いかもしれない
 		WPLooper	_looper;
+		Callback	_cb;
 
 		friend class Looper;
+		void _callback();
 		protected:
 			virtual void handleMessage(const Message& msg);
 		public:
-			Handler(const WPLooper& loop);
+			Handler(const WPLooper& loop, Callback cb=Callback());
 			const WPLooper& getLooper() const;
 			void post(Message&& m);
 			template <class... Args>
 			void postArgsDelay(Args&&... args) {
+				_callback();
 				post(Message(std::forward<Args>(args)...));
 			}
 			template <class... Args>
 			void postArgs(Args&&... args) {
+				_callback();
 				post(Message(std::chrono::seconds(0), std::forward<Args>(args)...));
 			}
 	};
