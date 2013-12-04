@@ -95,7 +95,7 @@ namespace rs {
 	//! GLSLシェーダーコンパイルエラー
 	struct GLE_ShaderError : GLE_ShProgBase {
 		static const char* GetErrorName();
-		GLE_ShaderError(GLuint id);
+		GLE_ShaderError(const std::string& src, GLuint id);
 	};
 	//! GLSLプログラムリンクエラー
 	struct GLE_ProgramError : GLE_ShProgBase {

@@ -56,14 +56,16 @@ namespace rs {
 	void GLShader::_initShader() {
 		_idSh = glCreateShader(_flag);
 
-		const auto* pStr = _source.c_str();
+		std::string ss("#version 110\n");
+		ss.append(_source);
+		const auto* pStr = ss.c_str();
 		glShaderSource(_idSh, 1, &pStr, nullptr);
 		glCompileShader(_idSh);
 
 		// エラーが無かったか確認
 		GLint compiled;
 		glGetShaderiv(_idSh, GL_COMPILE_STATUS, &compiled);
-		AssertT(Throw, compiled==GL_TRUE, (GLE_ShaderError)(GLuint), _idSh)
+		AssertT(Throw, compiled==GL_TRUE, (GLE_ShaderError)(const std::string&)(GLuint), ss, _idSh)
 	}
 
 	GLShader::GLShader() {}
