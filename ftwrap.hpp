@@ -27,15 +27,8 @@ namespace rs {
 				Mono = FT_RENDER_MODE_MONO,
 				LCD = FT_RENDER_MODE_LCD
 			};
-			enum class Style {
-				Normal,
-				Bold,
-				Italic,
-				Strike
-			};
 		private:
 			FT_Face		_face;
-			Style		_style;
 			HLRW		_hlRW;
 			struct FInfo {
 				int	baseline,
@@ -63,16 +56,14 @@ namespace rs {
 			void setPixelSizes(int w, int h);
 			void setCharSize(int w, int h, int dpW, int dpH);
 			void setSizeFromLine(int lineHeight);
-			void setStyle(Style style);
 			//! 文字のビットマップを準備
-			void prepareGlyph(char32_t code, RenderMode mode);
+			void prepareGlyph(char32_t code, RenderMode mode, bool bBold, bool bItalic);
 			const Info& getGlyphInfo() const;
 			const FInfo& getFaceInfo() const;
 			const char* getFamilyName() const;
 			const char* getStyleName() const;
 			int getNFace() const;
 			int getFaceIndex() const;
-			Style getStyle() const;
 	};
 	//! 1bitのモノクロビットマップを8bitのグレースケールへ変換
 	spn::ByteBuff Convert1Bit_8Bit(const void* src, int width, int pitch, int nrow);

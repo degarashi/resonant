@@ -45,8 +45,10 @@ namespace rs {
 		HLFT			_hlFT;
 		// 一時バッファは対応する最大サイズで確保
 		spn::ByteBuff	_buff;
-		//! アンチエイリアスフラグ
-		bool			_bAA;
+		//! キャラクタフラグ (AAや縁取りなど)
+		int				_charType;
+		int				_boldP;
+		bool			_bItalic;
 		//! 描画に必要な範囲を取得
 		spn::Rect _boundingRect(char32_t code) const;
 

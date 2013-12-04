@@ -46,8 +46,8 @@ namespace rs {
 	}
 
 	// ---------------------- FTFace ----------------------
-	FTFace::FTFace(FT_Face face, HRW hRW): _face(face), _style(Style::Normal), _hlRW(hRW) {}
-	FTFace::FTFace(FTFace&& f): _face(f._face), _style(f._style), _hlRW(std::move(f._hlRW)), _finfo(f._finfo), _info(f._info) {
+	FTFace::FTFace(FT_Face face, HRW hRW): _face(face), _hlRW(hRW) {}
+	FTFace::FTFace(FTFace&& f): _face(f._face), _hlRW(std::move(f._hlRW)), _finfo(f._finfo), _info(f._info) {
 		f._face = nullptr;
 	}
 	FTFace::~FTFace() {
@@ -62,24 +62,31 @@ namespace rs {
 	// 			_info.height == _info.bmp_height &&
 	// 		  _info.horiBearingX == _info.bmp_left &&
 	// 		  _info.horiBearingY == _info.bmp_top);
-	void FTFace::prepareGlyph(char32_t code, RenderMode mode) {
+	void FTFace::prepareGlyph(char32_t code, RenderMode mode, bool bBold, bool bItalic) {
 		uint32_t gindex = FT_Get_Char_Index(_face, code);
-		FTEC(Trap, FT_Load_Glyph, _face, gindex, _style==Style::Normal ? FT_LOAD_DEFAULT : FT_LOAD_NO_BITMAP);
+		int loadflag = mode==RenderMode::Mono ? FT_LOAD_MONOCHROME : FT_LOAD_DEFAULT;
+		if(bBold || bItalic)
+			loadflag |= FT_LOAD_NO_BITMAP;
+		FTEC(Trap, FT_Load_Glyph, _face, gindex, loadflag);
+
 		auto* slot = _face->glyph;
-		if(_style == Style::Normal) {
+		if(!bBold && !bItalic) {
 			if(slot->format != FT_GLYPH_FORMAT_BITMAP)
-				FT_Render_Glyph(slot, static_cast<FT_Render_Mode>(mode));
-		} else if(_style == Style::Bold) {
-			int strength = 1 << 6;
-			FT_Outline_Embolden(&slot->outline, strength);
-			FT_Render_Glyph(slot, static_cast<FT_Render_Mode>(mode));
-		} else if(_style == Style::Italic) {
-			FT_Matrix mat;
-			mat.xx = 1 << 16;
-			mat.xy = 0x5800;
-			mat.yx = 0;
-			mat.yy = 1 << 16;
-			FT_Outline_Transform(&slot->outline, &mat);
+				FTEC(Trap, FT_Render_Glyph, slot, static_cast<FT_Render_Mode>(mode));
+		} else {
+			if(bBold) {
+				int strength = 1 << 6;
+				FTEC(Trap, FT_Outline_Embolden, &slot->outline, strength);
+				FTEC(Trap, FT_Render_Glyph, slot, static_cast<FT_Render_Mode>(mode));
+			}
+			if(bItalic) {
+				FT_Matrix mat;
+				mat.xx = 1 << 16;
+				mat.xy = 0x5800;
+				mat.yx = 0;
+				mat.yy = 1 << 16;
+				FT_Outline_Transform(&slot->outline, &mat);
+			}
 		}
 		Assert(Trap, slot->format == FT_GLYPH_FORMAT_BITMAP);
 
@@ -87,7 +94,7 @@ namespace rs {
 		auto& bm = slot->bitmap;
 		_info.data = bm.buffer;
 		_info.advanceX = slot->advance.x >> 6;
-		_info.nlevel = bm.num_grays;
+		_info.nlevel = mode==RenderMode::Mono ? 2 : bm.num_grays;
 		_info.pitch = bm.pitch;
 		_info.height = bm.rows;
 		_info.width = bm.width;

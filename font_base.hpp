@@ -4,21 +4,39 @@
 
 namespace rs {
 	//! キャラクタの属性値を32bitで表す
-	struct CharIDDef : spn::BitDef<uint32_t, spn::BitF<0,8>, spn::BitF<8,8>, spn::BitF<16,8>, spn::BitF<24,2>, spn::BitF<26,1>, spn::BitF<27,3>> {
-		enum { Width, Height, FaceID, Flag, Italic, Weight };
-		enum { Flag_Nothing, Flag_AA };
+	struct CharIDDef : spn::BitDef<uint32_t,
+		spn::BitF<0,8>, // Width
+		spn::BitF<8,8>, // Height
+		spn::BitF<16,8>, // FaceID
+		spn::BitF<24,2>, // Flag
+		spn::BitF<26,1>, // Italic
+		spn::BitF<27,3>, // Weight
+		spn::BitF<30,2> // SizeType
+	> {
+		enum { Width, Height, FaceID, CharFlag, Italic, Weight, SizeType };
+		enum CharFlagT {
+			CharFlag_AA = 0x01,
+			CharFlag_Hemming = 0x02
+		};
+		//! フォントのサイズ指定方法
+		enum SizeTypeT {
+			SizeType_Pixel,			//!< ピクセル単位の指定
+			SizeType_Point,			//!< DPIに相対したポイント指定
+			SizeType_LineHeight		//!< ラインに収まるサイズ
+		};
 	};
 	//! フォントのサイズやAAの有無を示す値
 	struct CCoreID : spn::BitField<CharIDDef> {
 		CCoreID() = default;
 		CCoreID(const CCoreID& id) = default;
-		CCoreID(int w, int h, int flag, bool bItalic, int weightID, int faceID=-1) {
+		CCoreID(int w, int h, uint32_t charFlag, bool bItalic, int weightID, CharIDDef::SizeTypeT sizeType, int faceID=-1) {
 			at<Width>() = w;
 			at<Height>() = h;
-			at<Flag>() = flag;
+			at<CharFlag>() = charFlag;
 			at<Italic>() = static_cast<int>(bItalic);
 			at<Weight>() = weightID;
 			at<FaceID>() = faceID;
+			at<SizeType>() = sizeType;
 		}
 	};
 	//! CCoreID + 文字コード(UCS4)
@@ -28,8 +46,8 @@ namespace rs {
 		CharID() = default;
 		CharID(const CharID& id) = default;
 		CharID(char32_t ccode, CCoreID coreID): CCoreID(coreID), code(ccode) {}
-		CharID(char32_t ccode, int w, int h, int faceID, int flag, bool bItalic, int weightID):
-			CCoreID(w,h,faceID,flag,bItalic,weightID), code(ccode) {}
+		CharID(char32_t ccode, int w, int h, int faceID, CharIDDef::CharFlagT flag, bool bItalic, int weightID, CharIDDef::SizeTypeT sizeType):
+			CCoreID(w, h, flag, bItalic, weightID, sizeType, faceID), code(ccode) {}
 
 		uint64_t get64Bit() const {
 			uint64_t val = code;
