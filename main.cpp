@@ -42,7 +42,8 @@ struct Mth_DthData {
 			actUp,
 			actDown,
 			actMoveX,
-			actMoveY;
+			actMoveY,
+			actPress;
 	rs::HLCam hlCam;
 	rs::SPWindow spWin;
 };
@@ -55,8 +56,10 @@ class MyDraw : public rs::IDrawProc {
 	rs::HLIb 	_hlIb;
 	rs::HLTex 	_hlTex;
 	spn::Size	_size;
+	bool		_bPress;
 	public:
 		MyDraw() {
+			_bPress = false;
 			struct TmpV {
 				spn::Vec3 pos;
 				spn::Vec4 tex;
@@ -135,6 +138,12 @@ class MyDraw : public rs::IDrawProc {
 			auto* pFx = _hlFx.ref().get();
 			GLint id = pFx->getUniformID("mTrans");
 
+			auto btn = mgr_input.isKeyPressing(lk->actPress);
+			if(btn ^ _bPress) {
+				lk->hlIm.ref()->setMouseMode((!_bPress) ? rs::MouseMode::Relative : rs::MouseMode::Absolute);
+				_bPress = btn;
+			}
+
 			constexpr float speed = 0.25f;
 			float mvF=0, mvS=0;
 			if(mgr_input.isKeyPressing(lk->actUp))
@@ -145,13 +154,14 @@ class MyDraw : public rs::IDrawProc {
 				mvS -= speed;
 			if(mgr_input.isKeyPressing(lk->actRight))
 				mvS += speed;
-			float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
-				yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
-
-			cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
-			cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
 			cd.moveFwd3D(mvF);
 			cd.moveSide3D(mvS);
+			if(_bPress) {
+				float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
+					yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
+				cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
+				cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
+			}
 
 			pFx->setUniform(cd.getViewProjMatrix().convert44(), id);
 			id = pFx->getUniformID("tDiffuse");
@@ -182,18 +192,18 @@ class MyMain : public rs::IMainProc {
 			lk->actDown = mgr_input.addAction("down");
 			lk->actMoveX = mgr_input.addAction("moveX");
 			lk->actMoveY = mgr_input.addAction("moveY");
+			lk->actPress = mgr_input.addAction("press");
 			mgr_input.link(lk->actLeft, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_A));
 			mgr_input.link(lk->actRight, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_D));
 			mgr_input.link(lk->actUp, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_W));
 			mgr_input.link(lk->actDown, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_S));
 
 			lk->hlIm = rs::Mouse::OpenMouse(0);
-			lk->hlIm.ref()->setMouseMode(rs::MouseMode::Relative);
 			lk->hlIm.ref()->setDeadZone(0, 1.f, 0.f);
 			lk->hlIm.ref()->setDeadZone(1, 1.f, 0.f);
 			mgr_input.link(lk->actMoveX, rs::InF::AsAxis(lk->hlIm, 0));
 			mgr_input.link(lk->actMoveY, rs::InF::AsAxis(lk->hlIm, 1));
-			mgr_input.link(lk->actQuit, rs::InF::AsAxisNegative(lk->hlIm, 0));
+			mgr_input.link(lk->actPress, rs::InF::AsButton(lk->hlIm, 0));
 
 			lk->hlCam = mgr_cam.emplace();
 			rs::CamData& cd = lk->hlCam.ref();
