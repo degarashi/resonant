@@ -4,6 +4,26 @@
 #include "spinner/abstbuff.hpp"
 
 namespace rs {
+	struct PrintEvent {
+		enum Type {
+			EVENT_WINDOW = 0x01,
+			EVENT_TOUCH = 0x02,
+			NUM_EVENT = 2,
+			ALL_EVENT = ~0
+		};
+		using Checker = std::function<bool (uint32_t)>;
+		using PrintF = bool (*)(const SDL_Event&);
+		struct TypeP {
+			Checker	checker;
+			PrintF	proc;
+		};
+		const static TypeP cs_type[NUM_EVENT];
+
+		static bool Window(const SDL_Event& e);
+		static bool Touch(const SDL_Event& e);
+		static void All(const SDL_Event& e, uint32_t filter = ALL_EVENT);
+	};
+
 	template <class T>
 	using UPtr = std::unique_ptr<T>;
 	namespace msg {

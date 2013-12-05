@@ -170,6 +170,7 @@ namespace rs {
 					}
 				}
 			} else {
+				PrintEvent::All(e);
 				switch(e.type) {
 					case SDL_WINDOWEVENT:
 						// ウィンドウ閉じたら終了
