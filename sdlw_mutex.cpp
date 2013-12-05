@@ -2,8 +2,13 @@
 
 namespace rs {
 	Mutex::Mutex(): _mutex(SDL_CreateMutex()) {}
-	Mutex::~Mutex() { SDL_DestroyMutex(_mutex); }
-
+	Mutex::Mutex(Mutex&& m): _mutex(m._mutex) {
+		m._mutex = nullptr;
+	}
+	Mutex::~Mutex() {
+		if(_mutex)
+			SDL_DestroyMutex(_mutex);
+	}
 	bool Mutex::lock() {
 		return SDLEC_P(Trap, SDL_LockMutex, _mutex) == 0;
 	}

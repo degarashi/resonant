@@ -141,6 +141,7 @@ namespace rs {
 				post(Message(std::chrono::seconds(0), std::forward<Args>(args)...));
 			}
 	};
+
 	//! Looper付きスレッド
 	template <class T>
 	class ThreadL;
@@ -151,12 +152,12 @@ namespace rs {
 			SPLooper	_spLooper;
 		protected:
 			using base::base;
-			RET run(Args&&... args) override final {
+			RET run(Args... args) override final {
 				Looper::Prepare();
 				_spLooper = Looper::GetLooper();
 				return runL(std::forward<Args>(args)...);
 			}
-			virtual RET runL(Args&&... args) = 0;
+			virtual RET runL(Args... args) = 0;
 		public:
 			bool interrupt() override {
 				if(base::interrupt()) {

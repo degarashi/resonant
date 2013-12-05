@@ -138,8 +138,9 @@ namespace rs {
 
 		public:
 			Mutex();
-			Mutex(const Mutex& m) = delete;
-			Mutex& operator = (const Mutex& m) = delete;
+			Mutex(Mutex&& m);
+			Mutex(const Mutex&) = delete;
+			Mutex& operator = (const Mutex&) = delete;
 			~Mutex();
 
 			bool lock();
@@ -338,7 +339,7 @@ namespace rs {
 			tls_threadID = SDL_GetThreadID(ths->_thread);
 			Stat stat;
 			try {
-				ths->_holder->inorder([ths](Args&&... args){ ths->runIt(std::forward<Args>(args)...); });
+				ths->_holder->inorder([ths](Args... args){ ths->runIt(std::forward<Args>(args)...); });
 				stat = (ths->isInterrupted()) ? Interrupted_End : Finished;
 			} catch(...) {
 				ths->_eptr = std::current_exception();
@@ -349,10 +350,22 @@ namespace rs {
 			// SDLの戻り値は使わない
 			return 0;
 		}
+		//! move-ctorの後に値を掃除する
+		void _clean() {
+			_thread = nullptr;
+			_holder = spn::none;
+			_condC = _condP = nullptr;
+		}
 		protected:
 			std::exception_ptr	_eptr;
 			virtual RET run(Args...) = 0;
 		public:
+			_Thread(_Thread&& th): _atmInt(std::move(th._atmInt)), _thread(th._thread), _holder(std::move(th._holder)),
+				_atmStat(std::move(th._atmStat)), _condC(th._condC), _condP(th._condP),
+				_mtxC(std::move(th._mtxC)), _mtxP(std::move(th._mtxP))
+			{
+				th._clean();
+			}
 			_Thread(const _Thread& t) = delete;
 			_Thread& operator = (const _Thread& t) = delete;
 			_Thread(): _thread(nullptr), _eptr(nullptr) {
@@ -363,10 +376,12 @@ namespace rs {
 				SDL_AtomicSet(&_atmStat, Idle);
 			}
 			~_Thread() {
-				// スレッド実行中だったらエラーを出す
-				Assert(Trap, !isRunning())
-				SDL_DestroyCond(_condC);
-				SDL_DestroyCond(_condP);
+				if(_thread) {
+					// スレッド実行中だったらエラーを出す
+					Assert(Trap, !isRunning())
+					SDL_DestroyCond(_condC);
+					SDL_DestroyCond(_condP);
+				}
 			}
 			template <class... Args0>
 			void start(Args0&&... args0) {
@@ -447,6 +462,7 @@ namespace rs {
 		protected:
 			virtual RET run(Args...) = 0;
 		public:
+			using base_type::base_type;
 			void runIt(Args... args) {
 				_retVal = run(std::forward<Args>(args)...);
 			}
@@ -464,6 +480,7 @@ namespace rs {
 		protected:
 			virtual void run(Args...) = 0;
 		public:
+			using base_type::base_type;
 			void runIt(Args... args) {
 				run(std::forward<Args>(args)...);
 			}
