@@ -105,6 +105,7 @@ namespace rs {
 	}
 
 	// ----------------- Handle -----------------
+	Handler::Handler(Handler&& h): _looper(h._looper), _cb(h._cb) {}
 	Handler::Handler(const WPLooper& loop, Callback cb): _looper(loop), _cb(cb) {}
 	void Handler::_callback() {
 		if(_cb)

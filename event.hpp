@@ -127,6 +127,7 @@ namespace rs {
 		protected:
 			virtual void handleMessage(const Message& msg);
 		public:
+			Handler(Handler&& h);
 			Handler(const WPLooper& loop, Callback cb=Callback());
 			const WPLooper& getLooper() const;
 			void post(Message&& m);
