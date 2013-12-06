@@ -7,30 +7,8 @@
 #include "glx.hpp"
 #include "camera.hpp"
 
-// void test0() {
-// 	auto fc = mgr_ft.newFace(mgr_rw.fromFile("/home/slice/.fonts/msgothic.ttc", "r", true), 2);
-// 	auto& f = fc.ref();
-// 	f.setPixelSizes(0, 64);
-// 	f.setSizeFromLine(16);
-// 	f.prepareGlyph(U'𠀋', FTFace::RenderMode::Normal);
-// 	const auto& a = f.getGlyphInfo();
-//
-// 	const void* data = a.data;
-// 	int pitch = a.pitch;
-// 	spn::ByteBuff buff;
-// 	if(a.nlevel == 2) {
-// 		buff = Convert1Bit_8Bit(data, a.width, pitch, a.height);
-// 		pitch *= 8;
-// 		data = &buff[0];
-// 	}
-// 	buff = Convert8Bit_Packed24Bit(data, a.width, pitch, a.height);
-// 	auto sf = Surface::Create(std::move(buff), 0, a.width, a.height, Color::RGB8);
-// 	sf->saveAsPNG(mgr_rw.fromFile("/tmp/kusoge.png","w",true));
-// 	auto& gi = f.getGlyphInfo();
-// }
-// 	CCoreID id = gen.makeCoreID("MS Gothic", CCoreID(0, 16, 0, false, 0));
-// 	HLText hlText = gen.createText(id, "HELLO,WORLD");
-
+using namespace rs;
+using namespace spn;
 // MainThread と DrawThread 間のデータ置き場
 struct Mth_DthData {
 	rs::HLInput hlIk,
@@ -199,6 +177,7 @@ class MyMain : public rs::IMainProc {
 			mgr_input.link(lk->actDown, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_S));
 
 			lk->hlIm = rs::Mouse::OpenMouse(0);
+			lk->hlIm.ref()->setMouseMode(rs::MouseMode::Absolute);
 			lk->hlIm.ref()->setDeadZone(0, 1.f, 0.f);
 			lk->hlIm.ref()->setDeadZone(1, 1.f, 0.f);
 			mgr_input.link(lk->actMoveX, rs::InF::AsAxis(lk->hlIm, 0));
@@ -215,12 +194,18 @@ class MyMain : public rs::IMainProc {
 				return false;
 			return true;
 		}
+		void onPause() override {
+			LogOutput("OnPause");
+		}
+		void onResume() override {
+			LogOutput("OnResume");
+		}
 		rs::IDrawProc* initDraw() override {
 			return new MyDraw;
 		}
 };
-
 using namespace rs;
 int main(int argc, char **argv) {
-	return GameLoop([](const rs::SPWindow& sp){ return new MyMain(sp); }, "HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN, 2,0,24);
+	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); });
+	return gloop.run("HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN, 2,0,24);
 }

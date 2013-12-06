@@ -6,7 +6,7 @@
 
 namespace rs {
 	// --------------------- DrawThread ---------------------
-	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext&& ctx_b, const SPWindow& w, const UPMainProc& mp) {
+	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, const UPMainProc& mp) {
 		Handler drawHandler(mainLooper);
 		drawHandler.postArgs(msg::DrawInit());
 
@@ -83,9 +83,6 @@ namespace rs {
 		bool bLoop = true;
 		do {
 			if(!dth.isRunning()) {
-				SDL_Event e;
-				e.type = EVID_SIGNAL;
-				SDLEC_P(Warn, SDL_PushEvent, &e);
 				// 何らかの原因で描画スレッドが終了していた時
 				try {
 					// 例外が投げられて終了したかをチェック
@@ -100,6 +97,22 @@ namespace rs {
 			}
 			// 何かメッセージが来てたら処理する
 			while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
+				if(msg::PauseReq* pr = *m) {
+					// ユーザーに通知(Pause)
+					mp->onPause();
+					// Resumeメッセージが来るまでwaitループ
+					for(;;) {
+						OPMessage m = getLooper()->wait();
+						if(msg::ResumeReq* rr = *m) {
+							// ユーザーに通知(Resume)
+							mp->onResume();
+							break;
+						} else if(msg::StopReq* sr = *m)
+							mp->onStop();
+						else if(msg::ReStartReq* rr = *m)
+							mp->onReStart();
+					}
+				}
 			}
 			// 次のフレーム開始を待つ
 			auto ntp = prevtime + microseconds(16666);
@@ -139,7 +152,57 @@ namespace rs {
 		guiHandler.postArgs(msg::QuitReq());
 	}
 
-	int GameLoop(MPCreate mcr, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
+	void GameLoop::_procWindowEvent(SDL_Event& e) {
+		switch(e.window.event) {
+			case SDL_WINDOWEVENT_CLOSE:
+				// ウィンドウ閉じたら終了
+				e.type = SDL_QUIT;
+				e.quit.timestamp = 0;
+				SDL_PushEvent(&e);
+				break;
+			case SDL_WINDOWEVENT_FOCUS_GAINED:
+				_setLevel(Level::Active);
+				break;
+			case SDL_WINDOWEVENT_FOCUS_LOST:
+				_setLevel(Level::Pause);
+				break;
+			default: break;
+		}
+	}
+
+	// それぞれユーザースレッドに通知
+	void GameLoop::_onPause() {
+		_handler->postArgs(msg::PauseReq());
+	}
+	void GameLoop::_onResume() {
+		_handler->postArgs(msg::ResumeReq());
+	}
+	void GameLoop::_onStop() {
+		_handler->postArgs(msg::StopReq());
+	}
+	void GameLoop::_onReStart() {
+		_handler->postArgs(msg::ReStartReq());
+	}
+	void GameLoop::_setLevel(Level level) {
+		int ilevel = static_cast<int>(level),
+			curLevel = static_cast<int>(_level);
+		int idx = ilevel > curLevel ? 0 : 1,
+			inc = ilevel > curLevel ? 1 : -1;
+		while(ilevel != curLevel) {
+			if(LFunc f = cs_lfunc[curLevel][idx])
+				(this->*f)();
+			curLevel += inc;
+		}
+		_level = level;
+	}
+	const GameLoop::LFunc GameLoop::cs_lfunc[static_cast<int>(Level::NumLevel)][2] = {
+		{&GameLoop::_onReStart, nullptr},
+		{&GameLoop::_onResume, &GameLoop::_onStop},
+		{nullptr, &GameLoop::_onPause}
+	};
+	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
+	GameLoop::GameLoop(MPCreate mcr): _mcr(mcr), _level(Level::Active) {}
+	int GameLoop::run(spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		Window::SetStdGLAttributes(major, minor, depth);
 		SPWindow _spWindow = Window::Create(title.moveTo(), w, h, flag);
@@ -149,17 +212,18 @@ namespace rs {
 		Looper::Prepare();
 		auto& loop = Looper::GetLooper();
 		// メインスレッドに渡す
-		MainThread mth(mcr);
-		mth.start(std::ref(loop), std::ref(_spWindow));
+		_mth = MainThread(_mcr);
+		_mth->start(std::ref(loop), std::ref(_spWindow));
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
 			if(msg::MainInit* p = *msg)
 				break;
 		}
+		_handler = Handler(_mth->getLooper());
 		// GUIスレッドのメッセージループ
 		SDL_Event e;
 		bool bLoop = true;
-		while(bLoop && mth.isRunning() && SDL_WaitEvent(&e)) {
+		while(bLoop && _mth->isRunning() && SDL_WaitEvent(&e)) {
 			if(e.type == EVID_SIGNAL) {
 				// 自作スレッドのキューにメッセージがある
 				while(OPMessage m = loop->peek(std::chrono::seconds(0))) {
@@ -171,15 +235,11 @@ namespace rs {
 				}
 			} else {
 				PrintEvent::All(e);
+				// 当分はGame_Sleep()でリソース解放、Game_Wakeup()でリソース復帰とする
+				// (onStop()やonStart()は関知しない)
 				switch(e.type) {
 					case SDL_WINDOWEVENT:
-						// ウィンドウ閉じたら終了
-						if(e.window.event == SDL_WINDOWEVENT_CLOSE) {
-							e.type = SDL_QUIT;
-							e.quit.timestamp = 0;
-							SDL_PushEvent(&e);
-						}
-						break;
+						_procWindowEvent(e); break;
 					case SDL_QUIT:
 						// アプリケーション終了コールが来たらループを抜ける
 						bLoop = false;
@@ -190,15 +250,18 @@ namespace rs {
 						break;
 					case SDL_APP_WILLENTERBACKGROUND:	// Android: onPause()
 					case SDL_APP_DIDENTERBACKGROUND:	// Android: onPause()
+						_setLevel(Level::Stop);
 						break;
 					case SDL_APP_WILLENTERFOREGROUND:	// Android: onResume()
 					case SDL_APP_DIDENTERFOREGROUND:	// Android: onResume()
+						_setLevel(Level::Active);
 						break;
 				}
 			}
 		}
-		mth.interrupt();
-		mth.getResult();
+		_mth->interrupt();
+		_mth->getResult();
 		return 0;
 	}
 }
+
