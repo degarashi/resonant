@@ -6,6 +6,7 @@
 #include "gpu.hpp"
 #include "glx.hpp"
 #include "camera.hpp"
+#include "font.hpp"
 
 using namespace rs;
 using namespace spn;
@@ -33,8 +34,11 @@ class MyDraw : public rs::IDrawProc {
 	rs::HLVb 	_hlVb;
 	rs::HLIb 	_hlIb;
 	rs::HLTex 	_hlTex;
+	rs::HLText	_hlText;
+
 	spn::Size	_size;
 	bool		_bPress;
+	GLint		_passView, _passText;
 	public:
 		MyDraw() {
 			_bPress = false;
@@ -73,6 +77,9 @@ class MyDraw : public rs::IDrawProc {
 			_hlTex = mgr_gl.loadTexture(spn::URI("file:///home/slice/test.png"));
 			_hlTex.ref()->use()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
 
+			rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
+			_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nなんということじゃ\nつるぎの　もちかたが　ちがうぞ");
+
 			rs::GPUInfo info;
 			info.onDeviceReset();
 			std::cout << info;
@@ -81,17 +88,10 @@ class MyDraw : public rs::IDrawProc {
 			auto& pFx = *_hlFx.ref();
 			GLint techID = pFx.getTechID("TheTech");
 			pFx.setTechnique(techID, true);
-			GLint passID = pFx.getPassID("P0");
-			pFx.setPass(passID);
-			// 頂点フォーマット定義
-			rs::SPVDecl decl(new rs::VDecl{
-				{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
-				{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
-			});
-			pFx.setVDecl(std::move(decl));
-			pFx.setUniform(spn::Vec4{1,2,3,4}, pFx.getUniformID("lowVal"));
 
-			_hlTex.ref()->save("/tmp/test.png");
+			_passView = pFx.getPassID("P0");
+			_passText = pFx.getPassID("P1");
+// 			pFx.setUniform(spn::Vec4{1,2,3,4}, pFx.getUniformID("lowVal"));
 			rs::SetSwapInterval(1);
 
 			_size *= 0;
@@ -113,8 +113,9 @@ class MyDraw : public rs::IDrawProc {
 				cd.setAspect(float(_size.width)/_size.height);
 				glViewport(0,0,_size.width, _size.height);
 			}
-			auto* pFx = _hlFx.ref().get();
-			GLint id = pFx->getUniformID("mTrans");
+			auto& fx = *_hlFx.ref();
+			fx.setPass(_passView);
+			GLint id = fx.getUniformID("mTrans");
 
 			auto btn = mgr_input.isKeyPressing(lk->actPress);
 			if(btn ^ _bPress) {
@@ -141,13 +142,32 @@ class MyDraw : public rs::IDrawProc {
 				cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
 			}
 
-			pFx->setUniform(cd.getViewProjMatrix().convert44(), id);
-			id = pFx->getUniformID("tDiffuse");
-			pFx->setUniform(_hlTex, id);
+			fx.setUniform(cd.getViewProjMatrix().convert44(), id);
+			id = fx.getUniformID("tDiffuse");
+			fx.setUniform(_hlTex, id);
 
-			pFx->setVStream(_hlVb.get(), 0);
-			pFx->setIStream(_hlIb.get());
-			pFx->drawIndexed(GL_TRIANGLES, 6, 0);
+			// 頂点フォーマット定義
+			rs::SPVDecl decl(new rs::VDecl{
+				{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
+				{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
+			});
+			fx.setVDecl(std::move(decl));
+			fx.setVStream(_hlVb.get(), 0);
+			fx.setIStream(_hlIb.get());
+			fx.drawIndexed(GL_TRIANGLES, 6, 0);
+
+			fx.setPass(_passText);
+			id = fx.getUniformID("mText");
+
+			auto fn = [](int x, int y, float r) {
+				float rx = Rcp22Bit(512),
+					ry = Rcp22Bit(384);
+				return Mat33(rx*r,		0,			0,
+							0,			ry*r, 		0,
+							-1.f+x*rx,	1.f-y*ry,	1);
+			};
+			fx.setUniform(fn(0,0,1), id);
+ 			_hlText.ref().draw(&fx);
 			return true;
 		}
 };
