@@ -38,6 +38,9 @@ namespace rs {
 
 		//! 描画リクエスト
 		struct DrawReq : MsgBase<DrawReq> {
+			// 管理用の描画リクエストID
+			uint64_t	id;
+			DrawReq(uint64_t t): id(t) {}
 		};
 		//! スレッド終了リクエスト
 		struct QuitReq : MsgBase<QuitReq> {};
@@ -75,19 +78,28 @@ namespace rs {
 	using MPCreate = std::function<IMainProc* (const SPWindow&)>;
 
 	class DrawThread : public ThreadL<void (const SPLooper&, SPGLContext, const SPWindow&, const UPMainProc&)> {
-		using base = ThreadL<void (Looper&, SPGLContext, const SPWindow&, const UPMainProc&)>;
-		int 			_state = 0;
-		uint64_t		_accum = 0;
-		mutable Mutex	_mutex;
+		public:
+			enum class State {
+				Idle,
+				Drawing
+			};
+		private:
+			using base = ThreadL<void (Looper&, SPGLContext, const SPWindow&, const UPMainProc&)>;
+			struct Info {
+				State		state = State::Idle;
+				uint64_t	accum = 0;
+			};
+			SpinLock<Info>		_info;
 		protected:
 			void runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, const UPMainProc& mp) override;
-			void setState(int s);
 		public:
-			int getState() const;
+			State getState() const;
+			uint64_t getAccum() const;
 	};
 	class MainThread : public ThreadL<void (const SPLooper&,const SPWindow&)> {
 		using base = ThreadL<void (Looper&, const SPWindow&)>;
 		MPCreate	_mcr;
+		uint64_t	_accum;
 		protected:
 			void runL(const SPLooper& guiLooper, const SPWindow& w) override;
 		public:
@@ -101,7 +113,7 @@ namespace rs {
 		void _onStop();
 		void _onReStart();
 
-		enum class Level {
+		enum Level {
 			/*! ゲーム停止。リソース解放
 				Android: OnPauseの時
 				Desktop: 最小化された時 */
@@ -114,7 +126,7 @@ namespace rs {
 			NumLevel
 		};
 		using LFunc = void (GameLoop::*)();
-		const static LFunc cs_lfunc[][2];
+		const static LFunc cs_lfunc[NumLevel][2];
 
 		void _setLevel(Level level);
 		void _procWindowEvent(SDL_Event& e);

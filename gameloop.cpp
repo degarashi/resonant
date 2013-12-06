@@ -21,26 +21,30 @@ namespace rs {
 			// メインスレッドから描画開始の指示が来るまで待機
 			while(auto m = getLooper()->wait()) {
 				if(msg::DrawReq* p = *m) {
-					setState(1);
+					{
+						auto lk = _info.lock();
+						lk->state = State::Drawing;
+						lk->accum = p->id;
+					}
 					// 1フレーム分の描画処理
-					if(up->runU(_accum++))
+					if(up->runU(p->id))
 						ctx->swapWindow();
-					setState(0);
+					glFinish();
+					_info.lock()->state = State::Idle;
 				}
+				// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
 			}
 		} while(bLoop && !isInterrupted());
 	}
-	void DrawThread::setState(int s) {
-		UniLock lk(_mutex);
-		_state = s;
+	DrawThread::State DrawThread::getState() const {
+		return const_cast<DrawThread*>(this)->_info.lock()->state;
 	}
-	int DrawThread::getState() const {
-		UniLock lk(_mutex);
-		return _state;
+	uint64_t DrawThread::getAccum() const {
+		return const_cast<DrawThread*>(this)->_info.lock()->accum;
 	}
 
 	// --------------------- MainThread ---------------------
-	MainThread::MainThread(MPCreate mcr): _mcr(mcr) {}
+	MainThread::MainThread(MPCreate mcr): _mcr(mcr), _accum(0) {}
 	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w) {
 		GLRes 		glrP;
 		RWMgr 		rwP;
@@ -100,17 +104,30 @@ namespace rs {
 				if(msg::PauseReq* pr = *m) {
 					// ユーザーに通知(Pause)
 					mp->onPause();
-					// Resumeメッセージが来るまでwaitループ
 					for(;;) {
+						// DrawThreadがIdleになるまで待つ
+						while(dth.getAccum() != _accum ||
+							dth.getState() != DrawThread::State::Idle)
+							SDL_Delay(0);
+
+						// Resumeメッセージが来るまでwaitループ
 						OPMessage m = getLooper()->wait();
 						if(msg::ResumeReq* rr = *m) {
 							// ユーザーに通知(Resume)
 							mp->onResume();
 							break;
-						} else if(msg::StopReq* sr = *m)
+						} else if(msg::StopReq* sr = *m) {
 							mp->onStop();
-						else if(msg::ReStartReq* rr = *m)
+							// OpenGLリソースの解放
+							mgr_gl.onDeviceLost();
+							glFinish();
+						}
+						else if(msg::ReStartReq* rr = *m) {
+							// OpenGLリソースの再確保
+							mgr_gl.onDeviceReset();
+							glFinish();
 							mp->onReStart();
+						}
 					}
 				}
 			}
@@ -141,7 +158,7 @@ namespace rs {
 			auto count = std::chrono::duration_cast<std::chrono::microseconds>(dur).count();
 			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
 				skip = 0;
-				drawHandler.postArgs(msg::DrawReq());
+				drawHandler.postArgs(msg::DrawReq(++_accum));
 			} else
 				++skip;
 		} while(bLoop && !isInterrupted());
@@ -160,11 +177,17 @@ namespace rs {
 				e.quit.timestamp = 0;
 				SDL_PushEvent(&e);
 				break;
+			case SDL_WINDOWEVENT_MINIMIZED:
+				_setLevel(std::min(_level, Stop));
+				break;
+			case SDL_WINDOWEVENT_RESTORED:
+				_setLevel(std::max(_level, Pause));
+				break;
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
-				_setLevel(Level::Active);
+				_setLevel(std::max(_level, Active));
 				break;
 			case SDL_WINDOWEVENT_FOCUS_LOST:
-				_setLevel(Level::Pause);
+				_setLevel(std::min(_level, Pause));
 				break;
 			default: break;
 		}
@@ -184,8 +207,8 @@ namespace rs {
 		_handler->postArgs(msg::ReStartReq());
 	}
 	void GameLoop::_setLevel(Level level) {
-		int ilevel = static_cast<int>(level),
-			curLevel = static_cast<int>(_level);
+		int ilevel = level,
+			curLevel = _level;
 		int idx = ilevel > curLevel ? 0 : 1,
 			inc = ilevel > curLevel ? 1 : -1;
 		while(ilevel != curLevel) {
@@ -195,13 +218,13 @@ namespace rs {
 		}
 		_level = level;
 	}
-	const GameLoop::LFunc GameLoop::cs_lfunc[static_cast<int>(Level::NumLevel)][2] = {
+	const GameLoop::LFunc GameLoop::cs_lfunc[NumLevel][2] = {
 		{&GameLoop::_onReStart, nullptr},
 		{&GameLoop::_onResume, &GameLoop::_onStop},
 		{nullptr, &GameLoop::_onPause}
 	};
 	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
-	GameLoop::GameLoop(MPCreate mcr): _mcr(mcr), _level(Level::Active) {}
+	GameLoop::GameLoop(MPCreate mcr): _mcr(mcr), _level(Active) {}
 	int GameLoop::run(spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		Window::SetStdGLAttributes(major, minor, depth);
@@ -250,11 +273,11 @@ namespace rs {
 						break;
 					case SDL_APP_WILLENTERBACKGROUND:	// Android: onPause()
 					case SDL_APP_DIDENTERBACKGROUND:	// Android: onPause()
-						_setLevel(Level::Stop);
+						_setLevel(std::min(_level, Stop));
 						break;
 					case SDL_APP_WILLENTERFOREGROUND:	// Android: onResume()
 					case SDL_APP_DIDENTERFOREGROUND:	// Android: onResume()
-						_setLevel(Level::Active);
+						_setLevel(std::max(_level, Active));
 						break;
 				}
 			}

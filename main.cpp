@@ -220,6 +220,12 @@ class MyMain : public rs::IMainProc {
 		void onResume() override {
 			LogOutput("OnResume");
 		}
+		void onStop() override {
+			LogOutput("OnStop");
+		}
+		void onReStart() override {
+			LogOutput("OnReStart");
+		}
 		rs::IDrawProc* initDraw() override {
 			return new MyDraw;
 		}
