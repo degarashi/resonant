@@ -2,7 +2,6 @@
 #include "SDL2/SDL_thread.h"
 
 namespace rs {
-	const MsgID MsgBase::ID{GetNewMessageID()};
 	int GetNewMessageID() {
 		static int s_messageID = 0;
 		return s_messageID++;

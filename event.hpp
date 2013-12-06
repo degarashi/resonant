@@ -26,9 +26,12 @@ namespace rs {
 		bool operator == (const MsgID& m) const;
 		bool operator < (const MsgID& m) const;
 	};
+	template <class T>
 	struct MsgBase {
 		const static MsgID ID;
 	};
+	template <class T>
+	const MsgID MsgBase<T>::ID{GetNewMessageID()};
 
 	struct Message {
 		const static Duration NoDelay;
@@ -51,7 +54,7 @@ namespace rs {
 		Message(const Message& m) = delete;
 		Message(Message&& m);
 		Message(Duration delay, Exec&& e);
-		template <class T, class = typename std::is_base_of<MsgBase,T>::type>
+		template <class T, class = typename std::is_base_of<MsgBase<T>,T>::type>
 		Message(Duration delay, const T& info, Exec&& e = Exec()): tpoint(Clock::now() + delay), id{info.ID}, handler(nullptr), exec(std::move(e)) {
 			static_assert(sizeof(T) <= sizeof(Message::Data), "invalid payload size (T > Message_Default)");
 			std::memcpy(&data, &info, sizeof(T));
@@ -62,7 +65,7 @@ namespace rs {
 		bool operator < (const Message& m) const;
 
 		template <class T,
-				class = typename std::is_base_of<MsgBase,T>::type,
+				class = typename std::is_base_of<MsgBase<T>,T>::type,
 				class = typename std::enable_if<std::is_pointer<T>::value>::type>
 		operator T () {
 			using TR = typename std::remove_pointer<T>::type;
@@ -71,7 +74,7 @@ namespace rs {
 			return nullptr;
 		}
 		template <class T,
-				class = typename std::is_base_of<MsgBase,T>::type,
+				class = typename std::is_base_of<MsgBase<T>,T>::type,
 				class = typename std::enable_if<std::is_pointer<T>::value>::type>
 		operator const T () const {
 			T t = const_cast<Message*>(this)->operator T();

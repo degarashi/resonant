@@ -28,20 +28,21 @@ namespace rs {
 	using UPtr = std::unique_ptr<T>;
 	namespace msg {
 		// ---- 初期化時 ----
-		struct DrawInit : MsgBase {};
-		struct MainInit : MsgBase {};
+		struct DrawInit : MsgBase<DrawInit> {};
+		struct MainInit : MsgBase<MainInit> {};
 		// ---- ステート遷移 ----
-		struct PauseReq : MsgBase {};
-		struct ResumeReq : MsgBase {};
-		struct StopReq : MsgBase {};
-		struct ReStartReq : MsgBase {};
+		struct PauseReq : MsgBase<PauseReq> {};
+		struct ResumeReq : MsgBase<ResumeReq> {};
+		struct StopReq : MsgBase<StopReq> {};
+		struct ReStartReq : MsgBase<ReStartReq> {};
 
 		//! 描画リクエスト
-		struct DrawReq : MsgBase {};
+		struct DrawReq : MsgBase<DrawReq> {
+		};
 		//! スレッド終了リクエスト
-		struct QuitReq : MsgBase {};
+		struct QuitReq : MsgBase<QuitReq> {};
 		//! スレッド状態値更新
-		struct State : MsgBase {
+		struct State : MsgBase<State> {
 			int state;
 			State(int st): state(st) {}
 		};
