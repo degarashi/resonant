@@ -21,30 +21,29 @@ namespace rs {
 			// メインスレッドから描画開始の指示が来るまで待機
 			while(auto m = getLooper()->wait()) {
 				if(msg::DrawReq* p = *m) {
-					{
-						auto lk = _info.lock();
-						lk->state = State::Drawing;
-						lk->accum = p->id;
-					}
+					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
 					if(up->runU(p->id))
 						ctx->swapWindow();
 					glFinish();
-					_info.lock()->state = State::Idle;
+					{
+						auto lk = _info.lock();
+						lk->state = State::Idle;
+						lk->accum = p->id;
+					}
 				}
 				// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
 			}
 		} while(bLoop && !isInterrupted());
 	}
-	DrawThread::State DrawThread::getState() const {
-		return const_cast<DrawThread*>(this)->_info.lock()->state;
-	}
-	uint64_t DrawThread::getAccum() const {
-		return const_cast<DrawThread*>(this)->_info.lock()->accum;
-	}
 
 	// --------------------- MainThread ---------------------
-	MainThread::MainThread(MPCreate mcr): _mcr(mcr), _accum(0) {}
+	MainThread::MainThread(MPCreate mcr): _mcr(mcr) {
+		auto lk = _info.lock();
+		lk->accumUpd = lk->accumDraw = 0;
+		lk->tmBegin = Clock::now();
+		lk->fps = 0;
+	}
 	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w) {
 		GLRes 		glrP;
 		RWMgr 		rwP;
@@ -106,8 +105,7 @@ namespace rs {
 					mp->onPause();
 					for(;;) {
 						// DrawThreadがIdleになるまで待つ
-						while(dth.getAccum() != _accum ||
-							dth.getState() != DrawThread::State::Idle)
+						while(dth.getInfo()->accum != getInfo()->accumDraw)
 							SDL_Delay(0);
 
 						// Resumeメッセージが来るまでwaitループ
@@ -148,6 +146,7 @@ namespace rs {
 			prevtime = ntp;
 
 			// ゲーム進行
+			++getInfo()->accumUpd;
 			mgr_input.update();
 			if(!mp->runU())
 				break;
@@ -158,7 +157,7 @@ namespace rs {
 			auto count = std::chrono::duration_cast<std::chrono::microseconds>(dur).count();
 			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
 				skip = 0;
-				drawHandler.postArgs(msg::DrawReq(++_accum));
+				drawHandler.postArgs(msg::DrawReq(++getInfo()->accumDraw));
 			} else
 				++skip;
 		} while(bLoop && !isInterrupted());

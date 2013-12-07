@@ -2,6 +2,7 @@
 #include "event.hpp"
 #include "sdlwrap.hpp"
 #include "spinner/abstbuff.hpp"
+#include "clock.hpp"
 
 namespace rs {
 	struct PrintEvent {
@@ -77,7 +78,11 @@ namespace rs {
 	using UPMainProc = UPtr<IMainProc>;
 	using MPCreate = std::function<IMainProc* (const SPWindow&)>;
 
-	class DrawThread : public ThreadL<void (const SPLooper&, SPGLContext, const SPWindow&, const UPMainProc&)> {
+	#define draw_thread (::rs::DrawThread::_ref())
+	//! 描画スレッド
+	class DrawThread : public spn::Singleton<DrawThread>,
+						public ThreadL<void (const SPLooper&, SPGLContext, const SPWindow&, const UPMainProc&)>
+	{
 		public:
 			enum class State {
 				Idle,
@@ -86,28 +91,44 @@ namespace rs {
 		private:
 			using base = ThreadL<void (Looper&, SPGLContext, const SPWindow&, const UPMainProc&)>;
 			struct Info {
-				State		state = State::Idle;
-				uint64_t	accum = 0;
+				State		state = State::Idle;	//!< 現在の動作状態(描画中か否か)
+				uint64_t	accum = 0;				//!< 描画が終わったフレーム番号
 			};
 			SpinLock<Info>		_info;
 		protected:
 			void runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, const UPMainProc& mp) override;
 		public:
-			State getState() const;
-			uint64_t getAccum() const;
+			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
+			auto getInfo() const -> decltype(_info.lockC()) { return _info.lockC(); }
 	};
-	class MainThread : public ThreadL<void (const SPLooper&,const SPWindow&)> {
+	#define main_thread (::rs::MainThread::_ref())
+	//! メインスレッド
+	class MainThread : public spn::Singleton<MainThread>,
+						public ThreadL<void (const SPLooper&,const SPWindow&)>
+	{
 		using base = ThreadL<void (Looper&, const SPWindow&)>;
 		MPCreate	_mcr;
-		uint64_t	_accum;
+
+		struct Info {
+			uint64_t	accumUpd;	//!< アップデート累積カウンタ
+			uint64_t	accumDraw;	//!< 描画フレーム累積カウンタ
+			Timepoint	tmBegin;	//!< ゲーム開始時の時刻
+			int			fps;		//!< FPS値
+		};
+		SpinLock<Info>		_info;
+
 		protected:
 			void runL(const SPLooper& guiLooper, const SPWindow& w) override;
 		public:
 			MainThread(MPCreate mcr);
+			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
+			auto getInfo() const -> decltype(_info.lockC()) { return _info.lockC(); }
 	};
 
 	extern const uint32_t EVID_SIGNAL;
-	class GameLoop {
+	#define gui_thread (::rs::GameLoop::_ref())
+	//! GUIスレッド
+	class GameLoop : public spn::Singleton<GameLoop> {
 		void _onPause();
 		void _onResume();
 		void _onStop();
@@ -127,7 +148,6 @@ namespace rs {
 		};
 		using LFunc = void (GameLoop::*)();
 		const static LFunc cs_lfunc[NumLevel][2];
-
 		void _setLevel(Level level);
 		void _procWindowEvent(SDL_Event& e);
 
