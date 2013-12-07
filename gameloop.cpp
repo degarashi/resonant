@@ -3,6 +3,8 @@
 #include "font.hpp"
 #include "spinner/frac.hpp"
 #include "camera.hpp"
+#include "updator.hpp"
+#include "scene.hpp"
 
 namespace rs {
 	// --------------------- DrawThread ---------------------
@@ -52,6 +54,11 @@ namespace rs {
 		FontGen		fgenP(spn::PowSize(512,512));
 		CameraMgr	camP;
 		InputMgr	inpP;
+		ObjMgr		objP;
+		ObjRep		objrP;
+		UpdMgr		updP;
+		UpdRep		updrP;
+		SceneMgr	scP;
 
 		UPMainProc mp(_mcr(w));
 		Handler guiHandler(guiLooper, [](){
@@ -234,18 +241,18 @@ namespace rs {
 		Looper::Prepare();
 		auto& loop = Looper::GetLooper();
 		// メインスレッドに渡す
-		_mth = MainThread(_mcr);
-		_mth->start(std::ref(loop), std::ref(_spWindow));
+		MainThread mth(_mcr);
+		mth.start(std::ref(loop), std::ref(_spWindow));
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
 			if(msg::MainInit* p = *msg)
 				break;
 		}
-		_handler = Handler(_mth->getLooper());
+		_handler = Handler(mth.getLooper());
 		// GUIスレッドのメッセージループ
 		SDL_Event e;
 		bool bLoop = true;
-		while(bLoop && _mth->isRunning() && SDL_WaitEvent(&e)) {
+		while(bLoop && mth.isRunning() && SDL_WaitEvent(&e)) {
 			if(e.type == EVID_SIGNAL) {
 				// 自作スレッドのキューにメッセージがある
 				while(OPMessage m = loop->peek(std::chrono::seconds(0))) {
@@ -281,8 +288,8 @@ namespace rs {
 				}
 			}
 		}
-		_mth->interrupt();
-		_mth->getResult();
+		mth.interrupt();
+		mth.getResult();
 		return 0;
 	}
 }

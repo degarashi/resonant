@@ -106,7 +106,7 @@ namespace rs {
 	class MainThread : public spn::Singleton<MainThread>,
 						public ThreadL<void (const SPLooper&,const SPWindow&)>
 	{
-		using base = ThreadL<void (Looper&, const SPWindow&)>;
+		using base = ThreadL<void (const SPLooper&,const SPWindow&)>;
 		MPCreate	_mcr;
 
 		struct Info {
@@ -151,10 +151,8 @@ namespace rs {
 		void _setLevel(Level level);
 		void _procWindowEvent(SDL_Event& e);
 
-		using OPMain = spn::Optional<MainThread>;
 		using OPHandler = spn::Optional<Handler>;
 		MPCreate	_mcr;
-		OPMain		_mth;
 		OPHandler	_handler;
 		Level		_level;
 
