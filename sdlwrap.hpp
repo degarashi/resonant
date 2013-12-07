@@ -193,30 +193,37 @@ namespace rs {
 				SDLEC_P(Trap, SDL_CondBroadcast, _cond);
 			}
 	};
+	template <class SP, class T>
+	struct SpinInner {
+		SP&		_src;
+		T*		_data;
+
+		SpinInner(const SpinInner&) = delete;
+		SpinInner& operator = (const SpinInner&) = delete;
+		SpinInner(SpinInner&& n): _src(n._src), _data(n._data) {}
+		SpinInner(SP& src, T* data): _src(src), _data(data) {}
+		~SpinInner() {
+			unlock();
+		}
+		T& operator * () { return *_data; }
+		T* operator -> () { return _data; }
+		bool valid() const { return _data != nullptr; }
+		void unlock() {
+			if(_data) {
+				_src._unlock();
+				_data = nullptr;
+			}
+		}
+	};
+
 	//! 再帰対応のスピンロック
 	template <class T>
 	class SpinLock {
-		struct Inner {
-			SpinLock&	_src;
-			T*			_data;
+		using Inner = SpinInner<SpinLock<T>, T>;
+		using CInner = SpinInner<SpinLock<T>, const T>;
+		friend Inner;
+		friend CInner;
 
-			Inner(const Inner&) = delete;
-			Inner& operator = (const Inner&) = delete;
-			Inner(Inner&& n): _src(n._src), _data(n._data) {}
-			Inner(SpinLock& src, T* data): _src(src), _data(data) {}
-			~Inner() {
-				unlock();
-			}
-			T& operator * () { return *_data; }
-			T* operator -> () { return _data; }
-			bool valid() const { return _data != nullptr; }
-			void unlock() {
-				if(_data) {
-					_src._unlock();
-					_data = nullptr;
-				}
-			}
-		};
 		SDL_atomic_t	_atmLock,
 						_atmCount;
 		void _unlock() {
@@ -225,7 +232,8 @@ namespace rs {
 		}
 
 		T	_data;
-		Inner _lock(bool bBlock) {
+		template <class I>
+		I _lock(bool bBlock) {
 			do {
 				bool bSuccess = false;
 				if(SDL_AtomicCAS(&_atmLock, 0, tls_threadID) == SDL_TRUE)
@@ -238,10 +246,10 @@ namespace rs {
 				if(bSuccess) {
 					// ロック成功
 					SDL_AtomicAdd(&_atmCount, 1);
-					return Inner(*this, &_data);
+					return I(*this, &_data);
 				}
 			} while(bBlock);
-			return Inner(*this, nullptr);
+			return I(*this, nullptr);
 		}
 
 		public:
@@ -250,10 +258,16 @@ namespace rs {
 				SDL_AtomicSet(&_atmCount, 0);
 			}
 			Inner lock() {
-				return _lock(true);
+				return _lock<Inner>(true);
+			}
+			CInner lockC() const {
+				return const_cast<SpinLock*>(this)->_lock<CInner>(true);
 			}
 			Inner try_lock() {
-				return _lock(false);
+				return _lock<Inner>(false);
+			}
+			CInner try_lockC() const {
+				return const_cast<SpinLock*>(this)->_lock<CInner>(false);
 			}
 	};
 	//! thread local storage (with SDL)
