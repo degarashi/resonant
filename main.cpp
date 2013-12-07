@@ -7,6 +7,8 @@
 #include "glx.hpp"
 #include "camera.hpp"
 #include "font.hpp"
+#include "updator.hpp"
+#include "scene.hpp"
 
 using namespace rs;
 using namespace spn;
@@ -171,6 +173,54 @@ class MyDraw : public rs::IDrawProc {
 			return true;
 		}
 };
+class TestObj : public ObjectT<TestObj> {
+	class MySt : public State {
+		public:
+			MySt(StateID id): State(id) {}
+			void onUpdate(TestObj& self) {
+				self.destroy();
+			}
+	};
+	public:
+		TestObj() {
+			LogOutput("TestObj::ctor");
+			setStateNew<MySt>(128);
+		}
+		~TestObj() {
+			LogOutput("TestObj::dtor");
+		}
+		void onDestroy() override {
+			LogOutput("TestObj::onDestroy");
+		}
+};
+class TScene : public Scene<TScene> {
+	class MySt : public State {
+		public:
+			MySt(StateID id): State(id) {}
+			void onUpdate(TScene& self) override {
+				HLGbj hGbj(rep_gobj.getObj(c_id));
+				if(!hGbj.get().valid())
+					self.destroy();
+				LogOutput("TScene::update");
+			}
+	};
+	public:
+		const static uint32_t c_id;
+		TScene(): Scene(0) {
+			setStateNew<MySt>(256);
+			LogOutput("TScene::ctor");
+			HLGbj hg = mgr_gobj.emplace(new TestObj());
+			rep_gobj.setObj(c_id, hg.get().weak());
+			_update.addObj(0, hg.get());
+			hg.release();
+		}
+		void onDestroy() override {
+			LogOutput("TScene::onDestroy");
+		}
+		~TScene() {
+			LogOutput("TScene::dtor");
+		}
+};
 class MyMain : public rs::IMainProc {
 	Mth_Dth _mth;
 	public:
@@ -213,6 +263,7 @@ class MyMain : public rs::IMainProc {
 			if(mgr_input.isKeyPressed(lk->actQuit))
 				return false;
 			return true;
+			mgr_scene.setPushScene(mgr_gobj.emplace(new TScene()));
 		}
 		void onPause() override {
 			LogOutput("OnPause");
@@ -230,7 +281,6 @@ class MyMain : public rs::IMainProc {
 			return new MyDraw;
 		}
 };
-using namespace rs;
 int main(int argc, char **argv) {
 	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); });
 	return gloop.run("HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN, 2,0,24);
