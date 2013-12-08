@@ -153,7 +153,7 @@ namespace rs {
 	// --------------------- ASource ---------------------
 	ASource::ASource(): _state(new S_Empty(*this)) {}
 	ASource::ASource(ASource&& s): _dep(std::move(s._dep)),
-		_state(std::move(s._state)), _opBuf(std::move(s._opBuf)), _nLoop(s._nLoop), _timePos(s._timePos), _pcmPos(s._pcmPos),
+		_state(std::move(s._state)), _opBuf(std::move(s._opBuf)), _nLoop(s._nLoop), _nInitLoop(s._nInitLoop), _timePos(s._timePos), _pcmPos(s._pcmPos),
 		_fadeTo(s._fadeTo), _fadeOut(s._fadeOut) {}
 	ASource::~ASource() {
 		if(_state)
@@ -186,7 +186,7 @@ namespace rs {
 	void ASource::timeSeek(Duration t) { _state->timeSeek(*this, t); }
 	void ASource::pcmSeek(uint64_t p) { _state->pcmSeek(*this, p); }
 	void ASource::setBuffer(HAb hAb, Duration fadeIn, uint32_t nLoop) {
-		_nLoop = nLoop;
+		_nLoop = _nInitLoop = nLoop;
 		_duration = hAb.ref()->getDuration() * (nLoop+1);
 		_fadeTo.init(std::chrono::seconds(0), fadeIn, 1.f);
 		_fadeOut.init();
@@ -257,6 +257,7 @@ namespace rs {
 		self._timePos = std::chrono::seconds(0);
 		self._playedCur = 0;
 		self._opBuf->rewind();
+		self._nLoop = self._nInitLoop;
 	}
 	void ASource::_refillBuffer() {
 		_dep.clearBlock();

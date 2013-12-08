@@ -171,7 +171,9 @@ namespace rs {
 		using OPBuf = spn::Optional<ABufSub>;
 		OPBuf		_opBuf;
 		ASourceDep	_dep;
-		uint32_t	_nLoop;			//!< イベントキューにEv_Endがセットされてない
+		//MEMO イベントキューにEv_Endがセットされてない
+		uint32_t	_nLoop,
+					_nInitLoop;
 		Duration	_duration;		//!< nLoopを考慮した場合の曲の長さ
 		Timepoint	_tmUpdate;		//!< 前回Updateを呼んだ時刻
 		float		_currentGain,
