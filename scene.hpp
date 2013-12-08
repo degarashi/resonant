@@ -22,23 +22,36 @@ namespace rs {
 			bool onUpdate();
 			//! 描画のタイミングで呼ぶ
 			void onDraw();
+			void onPause();
+			void onStop();
+			void onResume();
+			void onReStart();
 	};
 
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
 	class Scene : public ObjectT<T> {
+		using base = ObjectT<T>;
 		protected:
 			UpdGroup _update, _draw;
 		public:
 			Scene(Priority prio=0): ObjectT<T>(prio), _update(0), _draw(0) {}
 			void onUpdate() override final {
-				ObjectT<T>::onUpdate();
+				base::onUpdate();
 				if(!ObjectT<T>::isDead())
 					_update.onUpdate();
 			}
 			void onDraw() override final {
-				ObjectT<T>::onDraw();
+				base::onDraw();
 				_draw.onUpdate();
 			}
+			#define DEF_ADAPTOR(name) void name() override final { \
+				base::getState()->name(base::getRef()); \
+				base::_doSwitchState(); }
+			DEF_ADAPTOR(onPause)
+			DEF_ADAPTOR(onStop)
+			DEF_ADAPTOR(onResume)
+			DEF_ADAPTOR(onReStart)
+			#undef DEF_ADAPTOR
 	};
 }

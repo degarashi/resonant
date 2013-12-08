@@ -116,6 +116,10 @@ namespace rs {
 			// ---------- Scene用メソッド ----------
 			virtual void onDraw() {}
 			virtual void onDown(ObjTypeID prevID, const Variant& arg) {}
+			virtual void onPause() {}
+			virtual void onStop() {}
+			virtual void onResume() {}
+			virtual void onReStart() {}
 	};
 
 	ObjTypeID GenerateObjTypeID();
@@ -277,7 +281,11 @@ namespace rs {
 					virtual void onHitExit(T& self, WGbj whGbj, int n) {}
 					// --------- Scene用メソッド ---------
 					virtual void onDraw(T& self) {}
-					virtual void onDown(T& self, ObjID prevID, const Variant& arg) {}
+					virtual void onDown(T& self, ObjTypeID prevID, const Variant& arg) {}
+					virtual void onPause(T& self) {}
+					virtual void onStop(T& self) {}
+					virtual void onResume(T& self) {}
+					virtual void onReStart(T& self) {}
 			};
 			using FPState = FlagPtr<State>;
 
@@ -336,6 +344,9 @@ namespace rs {
 						_state->onEnter(getRef(), prevID);
 				}
 			}
+			State* getState() {
+				return _state.get();
+			}
 		public:
 			void destroy() override {
 				Object::destroy();
@@ -348,7 +359,7 @@ namespace rs {
 				AssertP(Trap, !_bSwState)
 			}
 			//! 上の層のシーンから抜ける時に戻り値を渡す (Scene用)
-			void onDown(ObjID prevID, const Variant& arg) override final {
+			void onDown(ObjTypeID prevID, const Variant& arg) override final {
 				_state->onDown(getRef(), prevID, arg);
 				_doSwitchState();
 			}
