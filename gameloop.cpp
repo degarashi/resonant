@@ -125,12 +125,12 @@ namespace rs {
 							mp->onStop();
 							// OpenGLリソースの解放
 							mgr_gl.onDeviceLost();
-							glFinish();
+							glFlush();
 						}
 						else if(msg::ReStartReq* rr = *m) {
 							// OpenGLリソースの再確保
 							mgr_gl.onDeviceReset();
-							glFinish();
+							glFlush();
 							mp->onReStart();
 						}
 					}
