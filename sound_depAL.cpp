@@ -22,9 +22,7 @@ namespace rs {
 		{AL_INVALID_OPERATION, "Illegal AL call"},
 		{AL_OUT_OF_MEMORY, "Not enough memory"}
 	};
-	void ALError::reset() const {
-		while(alGetError() != AL_NO_ERROR);
-	}
+	void ALError::reset() const {}
 	const char* ALError::getAPIName() const {
 		return "OpenAL";
 	}
@@ -49,9 +47,7 @@ namespace rs {
 		{ALC_INVALID_VALUE, "Invalid value parameter passed to an ALC call"},
 		{ALC_OUT_OF_MEMORY, "Out of memory"}
 	};
-	void ALCError::reset() const {
-		while(alcGetError(_dev) != ALC_NO_ERROR);
-	}
+	void ALCError::reset() const {}
 	const char* ALCError::getAPIName() const {
 		return "OpenAL_C";
 	}
@@ -232,12 +228,12 @@ namespace rs {
 	}
 
 	SDL_atomic_t SoundMgr_depAL::s_atmThCounter = {};
-	TLS<int> SoundMgr_depAL::s_thID = []() {
-		return SDL_AtomicAdd(&s_atmThCounter, 0x01)+1;
-	}();
+	TLS<int> SoundMgr_depAL::s_thID;
 
 	void SoundMgr_depAL::makeCurrent() {
 		UniLock lk(_mutex);
+		if(!s_thID.valid())
+			s_thID = SDL_AtomicAdd(&s_atmThCounter, 0x01);
 		int idx = s_thID.get();
 		int sz = _context.size();
 		if(sz <= idx)

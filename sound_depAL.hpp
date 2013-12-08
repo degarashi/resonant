@@ -133,7 +133,7 @@ namespace rs {
 				LinearDistClamp = AL_LINEAR_DISTANCE_CLAMPED,
 				ExponentDist = AL_EXPONENT_DISTANCE,
 				ExponentDistClamp = AL_EXPONENT_DISTANCE_CLAMPED,
-				None = AL_NONE
+				Nothing = AL_NONE
 			};
 			static void SetDistModel(DistModel model);
 	};
