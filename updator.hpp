@@ -165,10 +165,12 @@ namespace rs {
 	using UpdArray = std::vector<UpdBase*>;
 	using UpdList = std::list<UpdBase*>;
 
-	#define rep_upd (::rs::UpdRep::_ref())
-	class UpdRep : public spn::Singleton<UpdRep>, public SHandleMap<GroupID, HUpd>, public IDMap<GroupName, GroupID> {};
-	#define rep_gobj (::rs::ObjRep::_ref())
-	class ObjRep : public spn::Singleton<ObjRep>, public WHandleMap<ObjID, WGbj>, public IDMap<ObjName, ObjID> {};
+	#define rep_upd (::rs::UpdRep::_refI())
+	class UpdRep : public spn::Singleton<UpdRep>, public SHandleMap<GroupID, HUpd>, public IDMap<GroupName, GroupID> {
+		public: static UpdRep& _refI(); };
+	#define rep_gobj (::rs::ObjRep::_refI())
+	class ObjRep : public spn::Singleton<ObjRep>, public WHandleMap<ObjID, WGbj>, public IDMap<ObjName, ObjID> {
+		public: static ObjRep& _refI(); };
 
 	//! UpdBase(Child)の集合体
 	class UpdChild {

@@ -16,6 +16,14 @@ namespace rs {
 		_msgMap.insert(std::make_pair(msg, id));
 		return id;
 	}
+	UpdRep& UpdRep::_refI() {
+		static UpdRep s_rep;
+		return s_rep;
+	}
+	ObjRep& ObjRep::_refI() {
+		static ObjRep s_rep;
+		return s_rep;
+	}
 
 	// -------------------- UpdBase --------------------
 	UpdBase::UpdBase() {}

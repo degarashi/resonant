@@ -55,9 +55,7 @@ namespace rs {
 		CameraMgr	camP;
 		InputMgr	inpP;
 		ObjMgr		objP;
-		ObjRep		objrP;
 		UpdMgr		updP;
-		UpdRep		updrP;
 		SceneMgr	scP;
 
 		UPMainProc mp(_mcr(w));
