@@ -301,6 +301,9 @@ namespace rs {
 					*p = std::forward<TA>(t);
 				return *this;
 			}
+			bool valid() const {
+				return _getPtr();
+			}
 			T& operator * () {
 				return *_getPtr();
 			}
