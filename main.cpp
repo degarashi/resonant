@@ -13,6 +13,7 @@
 using namespace rs;
 using namespace spn;
 // MainThread と DrawThread 間のデータ置き場
+// リソースハンドルはメインスレッド
 struct Mth_DthData {
 	rs::HLInput hlIk,
 				hlIm;
@@ -178,7 +179,7 @@ class TestObj : public ObjectT<TestObj> {
 		public:
 			MySt(StateID id): State(id) {}
 			void onUpdate(TestObj& self) {
-				self.destroy();
+// 				self.destroy();
 			}
 	};
 	public:
@@ -193,25 +194,62 @@ class TestObj : public ObjectT<TestObj> {
 			LogOutput("TestObj::onDestroy");
 		}
 };
+class TScene2 : public Scene<TScene2> {
+	class MySt : public State {
+		public:
+			MySt(): State(0) {}
+			void onUpdate(TScene2& self) override {
+				auto lk = shared.lock();
+				if(mgr_input.isKeyPressed(lk->actQuit))
+					mgr_scene.setPopScene(1);
+			}
+	};
+	public:
+		TScene2() {
+			setStateNew<MySt>();
+			LogOutput("TScene2::ctor");
+		}
+		~TScene2() {
+			LogOutput("TScene2::dtor");
+		}
+};
 class TScene : public Scene<TScene> {
 	class MySt : public State {
 		public:
 			MySt(StateID id): State(id) {}
 			void onUpdate(TScene& self) override {
-				HLGbj hGbj(rep_gobj.getObj(c_id));
-				if(!hGbj.get().valid())
+				HGbj hGbj(rep_gobj.getObj(c_id));
+				if(!hGbj.valid())
 					self.destroy();
-				LogOutput("TScene::update");
+				auto lk = shared.lock();
+				if(mgr_input.isKeyPressed(lk->actButton))
+					mgr_scene.setPushScene(mgr_gobj.emplace(new TScene2()));
+			}
+			void onDown(TScene& self, ObjTypeID prevID, const Variant& arg) override {
+				LogOutput("TScene::onDown");
+				mgr_scene.setPopScene(1);
+			}
+			void onPause(TScene& self) override {
+				LogOutput("TScene::onPause");
+			}
+			void onResume(TScene& self) override {
+				LogOutput("TScene::onResume");
+			}
+			void onStop(TScene& self) override {
+				LogOutput("TScene::onStop");
+			}
+			void onReStart(TScene& self) override {
+				LogOutput("TScene::onReStart");
 			}
 	};
 	public:
-		const static uint32_t c_id;
+		const static ObjID c_id;
 		TScene(): Scene(0) {
 			setStateNew<MySt>(256);
 			LogOutput("TScene::ctor");
 			HLGbj hg = mgr_gobj.emplace(new TestObj());
-			rep_gobj.setObj(c_id, hg.get().weak());
-			_update.addObj(0, hg.get());
+			rep_gobj.setObj(c_id, hg.weak());
+			_update.addObj(0, hg);
 			hg.release();
 		}
 		void onDestroy() override {
@@ -221,6 +259,8 @@ class TScene : public Scene<TScene> {
 			LogOutput("TScene::dtor");
 		}
 };
+const ObjID TScene::c_id = rep_gobj.RegID("Player");
+
 class MyMain : public rs::IMainProc {
 	Mth_Dth _mth;
 	public:
@@ -232,7 +272,7 @@ class MyMain : public rs::IMainProc {
 			lk->actQuit = mgr_input.addAction("quit");
 			mgr_input.link(lk->actQuit, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_ESCAPE));
 			lk->actButton = mgr_input.addAction("button");
-			mgr_input.link(lk->actQuit, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_LSHIFT));
+			mgr_input.link(lk->actButton, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_LSHIFT));
 
 			lk->actLeft = mgr_input.addAction("left");
 			lk->actRight = mgr_input.addAction("right");
@@ -257,26 +297,20 @@ class MyMain : public rs::IMainProc {
 			lk->hlCam = mgr_cam.emplace();
 			rs::CamData& cd = lk->hlCam.ref();
 			cd.setOfs(0,0,-3);
-		}
-		bool runU() override {
-			auto lk = shared.lock();
-			if(mgr_input.isKeyPressed(lk->actQuit))
-				return false;
-			return true;
+
 			mgr_scene.setPushScene(mgr_gobj.emplace(new TScene()));
 		}
+		bool runU() override {
+			return !mgr_scene.onUpdate();
+		}
 		void onPause() override {
-			LogOutput("OnPause");
-		}
+			mgr_scene.onPause(); }
 		void onResume() override {
-			LogOutput("OnResume");
-		}
+			mgr_scene.onResume(); }
 		void onStop() override {
-			LogOutput("OnStop");
-		}
+			mgr_scene.onStop(); }
 		void onReStart() override {
-			LogOutput("OnReStart");
-		}
+			mgr_scene.onReStart(); }
 		rs::IDrawProc* initDraw() override {
 			return new MyDraw;
 		}
