@@ -2,6 +2,8 @@
 #include SOUND_HEADER
 #include "clock.hpp"
 #include <boost/variant.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/version.hpp>
 
 namespace rs {
 	Duration CalcTimeLength(int word_size, int ch, int hz, size_t buffLen);
@@ -14,6 +16,12 @@ namespace rs {
 			AFormatF	_format;
 			Duration	_duration;
 			ABuffer();
+		private:
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int ver) {
+				ar & _format & _duration;
+			}
 		public:
 			virtual ~ABuffer() {}
 			virtual bool isStreaming() const = 0;
@@ -283,6 +291,12 @@ namespace rs {
 		SSrcMgr 	_srcMgr;
 		SGroupMgr	_sgMgr;
 
+		friend class boost::serialization::access;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int ver) {
+			ar & _buffMgr & _srcMgr & _sgMgr;
+		}
+
 		public:
 			using SoundMgrDep::SoundMgrDep;
 			SoundMgr(const SoundMgr&) = delete;
@@ -294,4 +308,18 @@ namespace rs {
 			HLSs createSource();
 			void update();
 	};
+}
+namespace boost {
+	namespace serialization {
+		template <class Archive>
+		inline void load_construct_data(Archive& ar, rs::SoundMgr* smgr, const unsigned int ver) {
+			int rate;
+			ar & rate;
+			new(smgr) rs::SoundMgr(rate);
+		}
+		template <class Archive>
+		inline void save_construct_data(Archive& ar, rs::SoundMgr* smgr, const unsigned int ver) {
+			ar & smgr->getRate();
+		}
+	}
 }

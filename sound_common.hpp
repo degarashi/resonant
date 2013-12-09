@@ -5,6 +5,7 @@
 #include "spinner/vector.hpp"
 #include "spinner/misc.hpp"
 #include "clock.hpp"
+#include <boost/serialization/level.hpp>
 
 #define OVEC(act, ...) ::spn::EChk_baseA1(AAct_##act<std::runtime_error>(), OVError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
 #ifdef DEBUG
@@ -122,3 +123,7 @@ namespace rs {
 			int64_t pcmTell() const;
 	};
 }
+BOOST_CLASS_IMPLEMENTATION(rs::SDLAFormat, primitive_type)
+BOOST_CLASS_IMPLEMENTATION(rs::SDLAFormatCF, primitive_type)
+BOOST_CLASS_IMPLEMENTATION(rs::AFormat, primitive_type)
+BOOST_CLASS_IMPLEMENTATION(rs::AFormatF, primitive_type)
