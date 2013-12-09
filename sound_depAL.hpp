@@ -111,6 +111,7 @@ namespace rs {
 
 			void printVersions(std::ostream& os);
 			ALCdevice* getDevice() const;
+			int getRate() const;
 
 			// スレッドに関連付けられたコンテキストが無ければ生成
 			void makeCurrent();

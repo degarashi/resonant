@@ -194,6 +194,7 @@ namespace rs {
 		alcCloseDevice(_device);
 	}
 	ALCdevice* SoundMgr_depAL::getDevice() const { return _device; }
+	int SoundMgr_depAL::getRate() const { return _rate; }
 	void SoundMgr_depAL::printVersions(std::ostream& os) {
 		os << "version: " << alGetString(AL_VERSION) << std::endl
 			<< "vendor: " << alGetString(AL_VENDOR) << std::endl
