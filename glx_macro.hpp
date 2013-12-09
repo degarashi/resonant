@@ -30,23 +30,3 @@
 #define ENUMTUPLE_FUNC(z,n,data) (BOOST_PP_TUPLE_ELEM(n,data)())
 #define ENUMTUPLE(n,tup) BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT_FROM_TO(n, BOOST_PP_TUPLE_SIZE(tup), ENUMTUPLE_FUNC, tup))
 #define PPFUNC_GLSET_FUNC(ign,data,elem) [](const ValueSettingR& vs) { vs.action(BOOST_PP_TUPLE_ELEM(1,elem), ENUMTUPLE(2,elem)); },
-
-#define MAKE_SEQ(size, rel) MAKE_SEQ_D(size, rel)
-#define MAKE_SEQ_D(size, rel) \
-	BOOST_PP_CAT( \
-		MAKE_SEQ_A_ ## size rel, \
-		0X0 \
-	)() \
-	/**/
-
-// size 2
-#define MAKE_SEQ_A_2(x, y) ((x, y)) MAKE_SEQ_B_2
-#define MAKE_SEQ_B_2(x, y) ((x, y)) MAKE_SEQ_A_2
-// size 3
-#define MAKE_SEQ_A_3(x, y, z) ((x, y, z)) MAKE_SEQ_B_3
-#define MAKE_SEQ_B_3(x, y, z) ((x, y, z)) MAKE_SEQ_A_3
-
-#define MAKE_SEQ_A_20X0()
-#define MAKE_SEQ_B_20X0()
-#define MAKE_SEQ_A_30X0()
-#define MAKE_SEQ_B_30X0()

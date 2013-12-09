@@ -1,4 +1,5 @@
 #include "glx_parse.hpp"
+#include "spinner/macro.hpp"
 
 namespace rs {
 	namespace {
