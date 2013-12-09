@@ -5,6 +5,7 @@
 #include "camera.hpp"
 #include "updator.hpp"
 #include "scene.hpp"
+#include "sound.hpp"
 
 namespace rs {
 	// --------------------- DrawThread ---------------------
@@ -57,6 +58,8 @@ namespace rs {
 		ObjMgr		objP;
 		UpdMgr		updP;
 		SceneMgr	scP;
+		SoundMgr	sndP(44100);
+		sndP.makeCurrent();
 
 		UPMainProc mp(_mcr(w));
 		Handler guiHandler(guiLooper, [](){
