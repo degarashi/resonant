@@ -9,6 +9,7 @@
 #include "font.hpp"
 #include "updator.hpp"
 #include "scene.hpp"
+#include "sound.hpp"
 
 using namespace rs;
 using namespace spn;
@@ -200,7 +201,7 @@ class TScene2 : public Scene<TScene2> {
 			MySt(): State(0) {}
 			void onUpdate(TScene2& self) override {
 				auto lk = shared.lock();
-				if(mgr_input.isKeyPressed(lk->actQuit))
+				if(mgr_input.isKeyPressed(lk->actRight))
 					mgr_scene.setPopScene(1);
 			}
 	};
@@ -214,20 +215,31 @@ class TScene2 : public Scene<TScene2> {
 		}
 };
 class TScene : public Scene<TScene> {
+	HLAb _hlAb;
+	HLSs _hlSs;
 	class MySt : public State {
 		public:
 			MySt(StateID id): State(id) {}
+			void onEnter(TScene& self, StateID prevID) override {
+				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("/home/slice/test.ogg", "r", true));
+				self._hlSs = mgr_sound.createSource();
+				self._hlSs.ref().setBuffer(self._hlAb);
+			}
 			void onUpdate(TScene& self) override {
 				HGbj hGbj(rep_gobj.getObj(c_id));
 				if(!hGbj.valid())
 					self.destroy();
 				auto lk = shared.lock();
-				if(mgr_input.isKeyPressed(lk->actButton))
+				if(mgr_input.isKeyPressed(lk->actLeft))
 					mgr_scene.setPushScene(mgr_gobj.emplace(new TScene2()));
+				if(mgr_input.isKeyPressed(lk->actQuit))
+					mgr_scene.setPopScene(1);
 			}
 			void onDown(TScene& self, ObjTypeID prevID, const Variant& arg) override {
 				LogOutput("TScene::onDown");
-				mgr_scene.setPopScene(1);
+				auto& s = self._hlSs.ref();
+				s.rewind();
+				s.play();
 			}
 			void onPause(TScene& self) override {
 				LogOutput("TScene::onPause");
@@ -301,11 +313,16 @@ class MyMain : public rs::IMainProc {
 			mgr_scene.setPushScene(mgr_gobj.emplace(new TScene()));
 		}
 		bool runU() override {
+			mgr_sound.update();
 			return !mgr_scene.onUpdate();
 		}
 		void onPause() override {
-			mgr_scene.onPause(); }
+			mgr_scene.onPause();
+			mgr_sound.resetCurrent();
+			mgr_sound.suspend(); }
 		void onResume() override {
+			mgr_sound.process();
+			mgr_sound.makeCurrent();
 			mgr_scene.onResume(); }
 		void onStop() override {
 			mgr_scene.onStop(); }
