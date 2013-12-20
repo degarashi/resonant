@@ -216,14 +216,13 @@ class TScene2 : public Scene<TScene2> {
 };
 class TScene : public Scene<TScene> {
 	HLAb _hlAb;
-	HLSs _hlSs;
+	HLSg _hlSg;
 	class MySt : public State {
 		public:
 			MySt(StateID id): State(id) {}
 			void onEnter(TScene& self, StateID prevID) override {
 				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("/home/slice/test.ogg", RWops::Read, false));
-				self._hlSs = mgr_sound.createSource();
-				self._hlSs.ref().setBuffer(self._hlAb, 0);
+				self._hlSg = mgr_sound.createSourceGroup(1);
 			}
 			void onUpdate(TScene& self) override {
 				HGbj hGbj(rep_gobj.getObj(c_id));
@@ -237,10 +236,9 @@ class TScene : public Scene<TScene> {
 			}
 			void onDown(TScene& self, ObjTypeID prevID, const Variant& arg) override {
 				LogOutput("TScene::onDown");
-				auto& s = self._hlSs.ref();
-				s.stop();
-				s.setFadeOut(std::chrono::seconds(5));
-				s.play();
+				auto& s = self._hlSg.ref();
+				s.clear();
+				s.play(self._hlAb, 0);
 			}
 			void onPause(TScene& self) override {
 				LogOutput("TScene::onPause");
