@@ -471,7 +471,7 @@ namespace rs {
 	}
 
 	// --------------------- ASource::S_Playing ---------------------
-	ASource::S_Playing::S_Playing(ASource& s, Duration fadeIn): _fadeIn(fadeIn) {}
+	ASource::S_Playing::S_Playing(ASource& s, Duration fadeIn): _fadeIn(fadeIn), _bSysPause(false) {}
 	void ASource::S_Playing::onEnter(ASource& self, AState prev) {
 		LogOutput("S_Playing");
 
@@ -558,9 +558,15 @@ namespace rs {
 	}
 	void ASource::S_Playing::sys_pause(ASource& self) {
 		self._dep.pause();
+		self._timePos = self._timePos + (Clock::now() - self._tmUpdate);
+		_bSysPause = true;
 	}
 	void ASource::S_Playing::sys_resume(ASource& self) {
-		self._dep.play();
+		self._tmUpdate = Clock::now();
+		if(_bSysPause) {
+			_bSysPause = false;
+			self._dep.play();
+		}
 	}
 	AState ASource::S_Playing::getState() const {
 		return AState::Playing;

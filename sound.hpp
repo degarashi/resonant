@@ -172,6 +172,7 @@ namespace rs {
 			//! 再生中
 			struct S_Playing : IState {
 				Duration	_fadeIn;
+				bool		_bSysPause;
 
 				template <class State>
 				void _fadeOut(ASource& self, Duration fadeOut);
