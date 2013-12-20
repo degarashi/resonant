@@ -1,5 +1,10 @@
 #include "sound.hpp"
+#include "sound_common.hpp"
 
+BOOST_CLASS_EXPORT_IMPLEMENT(rs::ABuffer)
+BOOST_CLASS_EXPORT_IMPLEMENT(rs::AWaveBatch)
+BOOST_CLASS_EXPORT_IMPLEMENT(rs::AOggBatch)
+BOOST_CLASS_EXPORT_IMPLEMENT(rs::AOggStream)
 namespace rs {
 	Duration CalcTimeLength(int word_size, int ch, int hz, size_t buffLen) {
 		auto dur = double(buffLen) / double(word_size * ch * hz);
@@ -19,7 +24,7 @@ namespace rs {
 
 	ABuffer::ABuffer(): _format(AFormat::Format::Invalid, 0) {}
 	// --------------------- ABufSub ---------------------
-	ABufSub::ABufSub(HAb hAb): _hlAb(hAb) {
+	ABufSub::ABufSub(HAb hAb, uint32_t nLoop): _hlAb(hAb), _nLoop(nLoop), _nLoopInit(nLoop) {
 		auto& ab = hAb.ref();
 		if(ab->isStreaming()) {
 			_abuff.reset(new ABufferDep[MAX_AUDIO_BLOCKNUM]);
@@ -31,7 +36,8 @@ namespace rs {
 		_offset = 0;
 		_readCur = _playedCur = _writeCur = 0;
 	}
-	ABufSub::ABufSub(ABufSub&& a): _hlAb(std::move(a._hlAb)), _abuff(std::move(a._abuff)),
+	ABufSub::ABufSub(ABufSub&& a): _hlAb(std::move(a._hlAb)),
+		_nLoop(a._nLoop), _nLoopInit(a._nLoopInit), _abuff(std::move(a._abuff)),
 		_nBuffer(a._nBuffer), _readCur(a._readCur), _playedCur(a._playedCur), _writeCur(a._writeCur),
 		_offset(a._offset)
 	{}
@@ -48,8 +54,12 @@ namespace rs {
 			uint8_t buff[BUFFERSIZE];
 			while(_writeCur < _playedCur + _nBuffer) {
 				auto nread = ab->getData(buff, _offset, sizeof(buff));
-				if(nread == 0)
-					break;
+				if(nread == 0) {
+					if(_nLoop == 0)
+						break;
+					--_nLoop;
+					_offset = 0;
+				}
 				_offset += nread;
 				_abuff[_writeCur % _nBuffer].writeBuffer(ab->getFormat(), buff, nread);
 				++_writeCur;
@@ -73,13 +83,15 @@ namespace rs {
 	void ABufSub::rewind() {
 		_readCur = _writeCur = _playedCur = 0;
 		_offset = 0;
+		_nLoop = _nLoopInit;
 	}
 	bool ABufSub::isEOF() {
 		_fillBuffer();
 		return _playedCur == _writeCur;
 	}
 	void ABufSub::setPlayedCursor(int cur) {
-		Assert(Trap, _playedCur <= cur);
+		AssertP(Trap, _playedCur <= cur)
+		AssertP(Trap, _writeCur >= cur)
 		_playedCur = cur;
 	}
 	void ABufSub::timeSeek(Duration t) {
@@ -138,129 +150,253 @@ namespace rs {
 	}
 	bool AOggStream::isStreaming() const { return true; }
 	size_t AOggStream::getData(void* dst, uint64_t offset, size_t buffLen) const {
+		auto& vfile = const_cast<VorbisFile&>(_vfile);
 		uint64_t bsize = _format.getBlockSize();
 		Assert(Trap, offset % bsize == 0);
 		if(_prevOffset != offset) {
 			auto pcmOffset = offset / bsize;
-			_vfile.pcmSeek(pcmOffset);
+			vfile.pcmSeek(pcmOffset);
 		}
 
-		size_t nread = _vfile.read(dst, buffLen);
+		size_t nread = vfile.read(dst, buffLen);
 		_prevOffset = offset + nread;
 		return nread;
 	}
 
+	// --------------------- ASource::Fade ---------------------
+	ASource::Fade::Fade(): durBegin(cs_zeroDur), durEnd(cs_zeroDur), fromGain(0), toGain(0) {}
+	void ASource::Fade::init(Duration cur, Duration dur, float from, float to, FadeCB* cb) {
+		durBegin =cur;
+		durEnd = cur+dur;
+		fromGain = from;
+		toGain = to;
+		callback.reset(cb);
+	}
+	ASource::Fade& ASource::Fade::operator = (Fade&& f) {
+		this->~Fade();
+		new(this) Fade(std::move(f));
+		return *this;
+	}
+
+	ASource::Fade::Fade(Fade&& f): durBegin(f.durBegin), durEnd(f.durEnd),
+		fromGain(f.fromGain), toGain(f.toGain), callback(std::move(f.callback)) {}
+	float ASource::Fade::calcGain(ASource& self) {
+		Duration cur = self._timePos;
+		if(cur >= durEnd) {
+			if(callback) {
+				callback->onFadeEnd(self);
+				callback.reset(nullptr);
+			}
+			return toGain;
+		}
+		if(cur <= durBegin)
+			return fromGain;
+		using namespace std::chrono;
+		float r = float(duration_cast<microseconds>(cur - durBegin).count()) / float(duration_cast<microseconds>(durEnd - durBegin).count());
+		return (toGain-fromGain) * r + fromGain;
+	}
+
+	// --------------------- ASource::Save ---------------------
+	void ASource::Save::pack(ASource& self) {
+		hAb = self._hlAb;
+		stateID = static_cast<int>(self._state->getState());
+		nLoop = self._nLoop;
+
+		currentGain = self._currentGain;
+		targetGain = self._targetGain;
+		fadeInTime = self._fadeInTime;
+		fadeOutTime = self._fadeOutTime;
+		timePos = self._timePos;
+	}
+	void ASource::Save::unpack(ASource& self) {
+		// _tmUpdateはロードした時刻に合わせる
+		self._tmUpdate = Clock::now();
+		if(hAb.valid())
+			self.setBuffer(hAb, nLoop);
+
+		self._currentGain = currentGain;
+		self._targetGain = targetGain;
+		self._fadeInTime = fadeInTime;
+		self._fadeOutTime = fadeOutTime;
+
+		switch(static_cast<AState>(stateID)) {
+			case AState::Initial:
+				std::cout << "RESTORE Initial" << std::endl;
+				break;
+			case AState::Playing:
+				std::cout << "RESTORE Playing" << std::endl;
+				self.timeSeek(timePos);
+				self.play();
+				break;
+			case AState::Paused:
+				std::cout << "RESTORE Paused" << std::endl;
+				self.timeSeek(timePos);
+				break;
+			case AState::Stopped:
+				std::cout << "RESTORE Stopped" << std::endl;
+				break;
+			case AState::Empty:
+				std::cout << "RESTORE Empty" << std::endl;
+				break;
+			default:
+				AssertP(Trap, false)
+				break;
+		}
+	}
+
 	// --------------------- ASource ---------------------
-	ASource::ASource(): _state(new S_Empty(*this)) {}
-	ASource::ASource(ASource&& s): _dep(std::move(s._dep)),
-		_state(std::move(s._state)), _opBuf(std::move(s._opBuf)), _nLoop(s._nLoop), _nInitLoop(s._nInitLoop), _timePos(s._timePos), _pcmPos(s._pcmPos),
-		_fadeTo(s._fadeTo), _fadeOut(s._fadeOut) {}
+	const Duration ASource::cs_zeroDur = std::chrono::seconds(0);
+	ASource::ASource(): _state(new S_Empty(*this)) {
+		_fadeInTime = _fadeOutTime = cs_zeroDur;
+		auto& fdBeg = _fade[FADE_BEGIN];
+		auto& fdEnd = _fade[FADE_END];
+		auto& fdChg = _fade[FADE_CHANGE];
+		fdBeg.fromGain = 0;
+		fdBeg.toGain = 1;
+		fdEnd.fromGain = 1;
+		fdEnd.toGain = 0;
+		fdChg.fromGain = fdChg.toGain = 1;
+	}
+	ASource::ASource(ASource&& s): Move_Ctor(ASource_SEQ, s) {
+		for(int i=0 ; i<countof(_fade) ; i++)
+			_fade[i] = std::move(s._fade[i]);
+	}
 	ASource::~ASource() {
 		if(_state)
 			stop();
 	}
-	void ASource::play() { _state->play(*this); }
-	void ASource::pause() { _state->pause(*this); }
-	void ASource::rewind() { _state->rewind(*this); }
-	void ASource::stop() { _state->stop(*this); }
-	void ASource::update() { _state->update(*this); }
-	void ASource::setPitch(float pitch) { _dep.setPitch(pitch); }
-	void ASource::setGain(float gain) { _targetGain = gain; }
-	AState ASource::getState() const { return _state->getState(); }
-	void ASource::setRelativeMode(bool bRel) { _dep.setRelativeMode(bRel); }
-	void ASource::setPosition(const Vec3& pos) { _dep.setPosition(pos); }
-	void ASource::setDirection(const Vec3& dir) { _dep.setDirection(dir); }
-	void ASource::setVelocity(const Vec3& vel) { _dep.setVelocity(vel); }
-	void ASource::setGainRange(float gmin, float gmax) { _dep.setGainRange(gmin, gmax); }
-	void ASource::setAngleGain(float inner, float outer) { _dep.setAngleGain(inner, outer); }
-	void ASource::setAngleOuterGain(float gain) { _dep.setAngleOuterGain(gain); }
-	uint32_t ASource::getLooping() const { return _nLoop; }
+	void ASource::_timeSeek(Duration t) {
+		if(t >= _duration) {
+			_timePos = _duration;
+			return;
+		}
+		Duration dur = _hlAb.ref()->getDuration();
+		auto t2 = t;
+		while(t2 >= _duration)
+			t2 -= _duration;
+
+		_opBuf->timeSeek(t2);
+		_timePos = t;
+		_pcmPos = CalcSampleLength(_opBuf->getFormat(), t);
+		_playedCur = 0;
+	}
+	void ASource::_pcmSeek(int64_t t) {
+		AFormatF af = _opBuf->getFormat();
+		t = (af.getBlockSize() * af.freq * 1000000) / t;
+		_timePos = std::chrono::microseconds(t);
+
+		_timeSeek(_timePos);
+	}
+	void ASource::_doChangeState() {
+		if(_nextState) {
+			AState st = _state->getState(),
+				nst = _nextState->getState();
+			_state->onExit(*this, nst);
+			_state.reset(nullptr);
+			std::swap(_state, _nextState);
+			_state->onEnter(*this, st);
+		}
+	}
+	void ASource::play(Duration fadeIn) {
+		_state->play(*this, fadeIn);
+		_doChangeState();
+	}
+	void ASource::pause(Duration fadeOut) {
+		_state->pause(*this, fadeOut);
+		_doChangeState();
+	}
+	void ASource::stop(Duration fadeOut) {
+		_state->stop(*this, fadeOut);
+		_doChangeState();
+	}
+	void ASource::update() {
+		_state->update(*this);
+		_doChangeState();
+	}
+	void ASource::setPitch(float pitch) {
+		_dep.setPitch(pitch);
+	}
+	void ASource::setGain(float gain) {
+		_targetGain = gain;
+	}
+	void ASource::timeSeek(Duration t) {
+		_state->timeSeek(*this, t);
+		_doChangeState();
+	}
+	void ASource::setBuffer(HAb hAb, uint32_t nLoop) {
+		_state->setBuffer(*this, hAb, nLoop);
+		_doChangeState();
+	}
+	AState ASource::getState() const {
+		return _state->getState();
+	}
+	void ASource::setRelativeMode(bool bRel) {
+		_dep.setRelativeMode(bRel);
+	}
+	void ASource::setPosition(const Vec3& pos) {
+		_dep.setPosition(pos);
+	}
+	void ASource::setDirection(const Vec3& dir) {
+		_dep.setDirection(dir);
+	}
+	void ASource::setVelocity(const Vec3& vel) {
+		_dep.setVelocity(vel);
+	}
+	void ASource::setGainRange(float gmin, float gmax) {
+		_dep.setGainRange(gmin, gmax);
+	}
+	void ASource::setAngleGain(float inner, float outer) {
+		_dep.setAngleGain(inner, outer);
+	}
+	void ASource::setAngleOuterGain(float gain) {
+		_dep.setAngleOuterGain(gain);
+	}
+	int ASource::getLooping() const {
+		return _timePos / _duration;
+	}
+	int ASource::getNLoop() const {
+		return _nLoop;
+	}
 	Duration ASource::timeTell() {
-	// 	return _dep.timeTell(_timePos);
 		return _timePos;
 	}
 	uint64_t ASource::pcmTell() {
-	// 	return _dep.pcmTell(_pcmPos);
 		return _pcmPos;
 	}
-	void ASource::timeSeek(Duration t) { _state->timeSeek(*this, t); }
-	void ASource::pcmSeek(uint64_t p) { _state->pcmSeek(*this, p); }
-	void ASource::setBuffer(HAb hAb, Duration fadeIn, uint32_t nLoop) {
-		_nLoop = _nInitLoop = nLoop;
-		_duration = hAb.ref()->getDuration() * (nLoop+1);
-		_fadeTo.init(std::chrono::seconds(0), fadeIn, 1.f);
-		_fadeOut.init();
-		_currentGain = _targetGain = 0.f;
-		_dep.setGain(0);
-		_state->setBuffer(*this, hAb);
+	void ASource::sys_pause() {
+		_state->sys_pause(*this);
 	}
-	void ASource::fadeTo(float gain, Duration dur) {
-		_fadeTo.init(_timePos, dur, gain);
+	void ASource::sys_resume() {
+		_state->sys_resume(*this);
 	}
-	void ASource::setFadeOut(Duration dur, bool bNow) {
-		if(bNow)
-			_fadeOut.init(_timePos, dur, 0.f);
-		else
-			_fadeOut.init(_duration - dur, dur, 0.f);
+
+	void ASource::pcmSeek(uint64_t p) {
+		_state->pcmSeek(*this, p);
+		_doChangeState();
 	}
-	void ASource::_applyFades() {
-		float f;
-		float gain = _targetGain;
-		if(_fadeTo.apply(*this, f))
-			gain = f;
-		if(_fadeOut.apply(*this, f))
-			gain = f;
-		_targetGain = gain;
+	void ASource::setFadeIn(Duration dur) {
+		_fadeInTime = dur;
+	}
+	void ASource::setFadeTo(float gain, Duration dur) {
+		_state->setFadeTo(*this, gain, dur);
+		_doChangeState();
+	}
+	void ASource::setFadeOut(Duration dur) {
+		_fadeOutTime = dur;
+	}
+	float ASource::_applyFades(float gain) {
+		float r = std::min(_fade[FADE_BEGIN].calcGain(*this),
+						_fade[FADE_END].calcGain(*this));
+		return std::min(r, _fade[FADE_CHANGE].calcGain(*this));
 	}
 	void ASource::_advanceGain() {
+		_targetGain = _applyFades(_currentGain);
 		_currentGain += (_targetGain - _currentGain)*0.75f;
 		_dep.setGain(_currentGain);
 	}
-	void ASource::Fade::init() { bValid = false; }
-	void ASource::Fade::init(Duration cur, Duration dur, float to) {
-		bValid = true;
-		durFadeBegin = cur;
-		durFadeEnd = cur + dur;
-		fromGain = -1;
-		toGain = to;
-	}
-	bool ASource::Fade::apply(ASource& self, float& gain) {
-		if(bValid) {
-			Duration tp = self._timePos;
-			if(durFadeBegin <= tp) {
-				if(durFadeEnd <= tp) {
-					gain = toGain;
-					bValid = false;
-				} else {
-					if(fromGain < 0)
-						fromGain = self._currentGain;
-
-					using namespace std::chrono;
-					float r = float(duration_cast<microseconds>(tp - durFadeBegin).count()) / float(duration_cast<microseconds>(durFadeEnd - durFadeBegin).count());
-					gain = (toGain-fromGain) * r + fromGain;
-				}
-				return true;
-			}
-		}
-		return false;
-	}
-
-	// --------------------- ASource::IState ---------------------
-	void ASource::IState::setBuffer(ASource& self, HAb hAb) {
-		stop(self);
-		self._setState<S_Initial>(hAb);
-	}
-	void ASource::S_Initial::_init(ASource& self) {
-		self._dep.reset();
-		self._dep.clearBlock();
-		self._pcmPos = 0;
-		self._timePos = std::chrono::seconds(0);
-		self._playedCur = 0;
-		self._opBuf->rewind();
-		self._nLoop = self._nInitLoop;
-	}
-	void ASource::_refillBuffer() {
-		_dep.clearBlock();
+	void ASource::_refillBuffer(bool bClear) {
+		if(bClear)
+			_dep.clearBlock();
 		// 最初のキューの準備
 		int num = MAX_AUDIO_BLOCKNUM;
 		while(--num >= 0) {
@@ -270,31 +406,120 @@ namespace rs {
 			_dep.enqueue(*pb);
 		}
 	}
-	void ASource::S_Initial::play(ASource& self) {
-		self._refillBuffer();
-		self._setState<S_Playing>();
+	// --------------------- ASource::S_Empty ---------------------
+	ASource::S_Empty::S_Empty(ASource& s) {}
+	void ASource::S_Empty::onEnter(ASource& self, AState prev) {
+		LogOutput("S_Empty");
+		self._pcmPos = 0;
+		self._timePos = std::chrono::seconds(0);
 	}
-	void ASource::S_Playing::pcmSeek(ASource& self, uint64_t t) {}
+	void ASource::S_Empty::setBuffer(ASource& self, HAb hAb, uint32_t nLoop) {
+		self._setState<S_Initial>(hAb, nLoop);
+	}
+	AState ASource::S_Empty::getState() const {
+		return AState::Empty;
+	}
+
+	// --------------------- ASource::S_Initial ---------------------
+	ASource::S_Initial::S_Initial(ASource& s, HAb hAb, uint32_t nLoop): _hlAb(hAb), _nLoop(nLoop) {}
+	ASource::S_Initial::S_Initial(ASource& s) {}
+	void ASource::S_Initial::onEnter(ASource& self, AState prev) {
+		LogOutput("S_Initial");
+		self._dep.reset();
+		self._dep.clearBlock();
+
+		AssertP(Trap, self._hlAb.valid() || _hlAb.valid())
+		if(_hlAb.valid()) {
+			self._hlAb = _hlAb;
+			self._nLoop = _nLoop;
+		}
+		self._duration = self._hlAb.ref()->getDuration() * (_nLoop+1);
+		self._dep.setGain(0);
+		self._opBuf = ABufSub(self._hlAb, self._nLoop);
+
+		self._pcmPos = 0;
+		self._timePos = cs_zeroDur;
+		self._playedCur = 0;
+		self._opBuf->rewind();
+		self._currentGain = self._targetGain = 0.f;
+
+		Duration dur = (self._duration < self._fadeInTime) ?
+						cs_zeroDur :
+						self._fadeInTime;
+		self._fade[FADE_BEGIN].init(cs_zeroDur, dur, 0.f, 1.f);
+		dur = (self._duration < self._fadeOutTime) ?
+				cs_zeroDur :
+				(self._duration - self._fadeOutTime);
+		self._fade[FADE_END].init(dur, self._duration, 1.f, 0.f);
+		self._fade[FADE_CHANGE].init(cs_zeroDur, cs_zeroDur, 1.f, 1.f);
+	}
+	void ASource::S_Initial::play(ASource& self, Duration fadeIn) {
+		self._refillBuffer(true);
+		self._setState<S_Playing>(fadeIn);
+	}
+	void ASource::S_Initial::timeSeek(ASource& self, Duration t) {
+		self._timeSeek(t);
+	}
+	void ASource::S_Initial::pcmSeek(ASource& self, int64_t t) {
+		self._pcmSeek(t);
+	}
+	void ASource::S_Initial::setBuffer(ASource& self, HAb hAb, uint32_t nLoop) {
+		self._setState<S_Initial>(hAb, nLoop);
+	}
+	AState ASource::S_Initial::getState() const {
+		return AState::Initial;
+	}
+
+	// --------------------- ASource::S_Playing ---------------------
+	ASource::S_Playing::S_Playing(ASource& s, Duration fadeIn): _fadeIn(fadeIn) {}
+	void ASource::S_Playing::onEnter(ASource& self, AState prev) {
+		LogOutput("S_Playing");
+
+		self._tmUpdate = Clock::now();
+		auto& fd = self._fade[FADE_CHANGE];
+		fd.durBegin = self._timePos;
+		fd.durEnd = self._timePos + _fadeIn;
+		fd.fromGain = 0.f;
+		fd.toGain = 1.f;
+
+		update(self);
+		self._dep.play();
+	}
+	void ASource::S_Playing::play(ASource& self, Duration fadeIn) {}
+	template <class State>
+	void ASource::S_Playing::_fadeOut(ASource& self, Duration fadeOut) {
+		if(fadeOut == cs_zeroDur)
+			self._setState<State>();
+		else {
+			auto& fd = self._fade[FADE_CHANGE];
+			fd.init(self._timePos, fadeOut, self._currentGain, 0.f, new FadeCB_State<State>());
+		}
+	}
+	void ASource::S_Playing::pause(ASource& self, Duration fadeOut) {
+		_fadeOut<S_Paused>(self, fadeOut);
+	}
+	void ASource::S_Playing::stop(ASource& self, Duration fadeOut) {
+		_fadeOut<S_Initial>(self, fadeOut);
+	}
 	void ASource::S_Playing::update(ASource& self) {
-		self._applyFades();
 		// 前回のUpdateを呼んだ時間からの差を累積
 		Timepoint tnow = Clock::now();
-		Duration dur = tnow - self._tmUpdate;
+		Duration diff = tnow - self._tmUpdate,
+				single = self._opBuf->getDuration();
 		self._tmUpdate = tnow;
-		self._timePos += dur;
+		self._timePos = std::min(self._timePos + diff, self._duration);
 		// 再生時間からサンプル数を計算
 		const AFormatF& af = self._opBuf->getFormat();
 		self._pcmPos = CalcSampleLength(af, self._timePos);
-
 		// 終了チェック
 		if(self._opBuf->isEOF()) {
 			// ループ回数が残っていればもう一周
-			if(self._nLoop-- == 0) {
+			if(self._timePos == self._duration) {
 				// そうでなければ終了ステートへ
-				self._setState<S_Stopped>();
-			} else {
 				self._setState<S_Initial>();
-				self.play();
+				return;
+			} else {
+				// 何もしない (ブロックの最後まで再生を待つ)
 			}
 		} else {
 			// キューの更新
@@ -306,9 +531,68 @@ namespace rs {
 				while(--nproc >= 0 && (pb = self._opBuf->getBlock()))
 					self._dep.enqueue(*pb);
 			}
-			self._dep.update(!self._opBuf->isEOF());
-			IState::update(self);
 		}
+		self._dep.update(!self._opBuf->isEOF());
+		self._advanceGain();
+	}
+	void ASource::S_Playing::timeSeek(ASource& self, Duration t) {
+		self._dep.reset();
+		self._timeSeek(t);
+		self._dep.play();
+	}
+	void ASource::S_Playing::pcmSeek(ASource& self, int64_t t) {
+		self._dep.reset();
+		self._pcmSeek(t);
+		self._dep.play();
+	}
+	void ASource::S_Playing::onExit(ASource& self, AState next) {
+		Duration dur = Clock::now() - self._tmUpdate;
+		self._timePos += dur;
+		self._fade[FADE_CHANGE].init(cs_zeroDur, cs_zeroDur, 1.f, 1.f);
+	}
+	void ASource::S_Playing::setFadeTo(ASource& self, float gain, Duration dur) {
+		self._fade[FADE_CHANGE].init(self._timePos, dur, self._currentGain, gain);
+	}
+	void ASource::S_Playing::setBuffer(ASource& self, HAb hAb, uint32_t nLoop) {
+		self._setState<S_Initial>(hAb, nLoop);
+	}
+	void ASource::S_Playing::sys_pause(ASource& self) {
+		self._dep.pause();
+	}
+	void ASource::S_Playing::sys_resume(ASource& self) {
+		self._dep.play();
+	}
+	AState ASource::S_Playing::getState() const {
+		return AState::Playing;
+	}
+
+	// --------------------- ASource::S_Paused ---------------------
+	ASource::S_Paused::S_Paused(ASource& s) {}
+	void ASource::S_Paused::onEnter(ASource& self, AState prev) {
+		LogOutput("S_Paused");
+		self._dep.pause();
+	}
+	void ASource::S_Paused::play(ASource& self, Duration fadeIn) {
+		self._setState<S_Playing>(fadeIn);
+	}
+	void ASource::S_Paused::stop(ASource& self, Duration fadeOut) {
+		self._setState<S_Initial>();
+	}
+	void ASource::S_Paused::timeSeek(ASource& self, Duration t) {
+		auto& self2 = self;
+		self._setState<S_Initial>();
+		self2.timeSeek(t);
+	}
+	void ASource::S_Paused::pcmSeek(ASource& self, int64_t t) {
+		auto& self2 = self;
+		self._setState<S_Initial>();
+		self2.pcmSeek(t);
+	}
+	void ASource::S_Paused::setBuffer(ASource& self, HAb hAb, uint32_t nLoop) {
+		self._setState<S_Initial>(hAb, nLoop);
+	}
+	AState ASource::S_Paused::getState() const {
+		return AState::Paused;
 	}
 
 	// ------------------ ALGroup ------------------
@@ -362,9 +646,10 @@ namespace rs {
 					st != AState::Paused)
 				{
 					++_nActive;
-					ch.setBuffer(hAb, fadeIn, nLoop);
+					ch.setBuffer(hAb, nLoop);
+					ch.setFadeIn(fadeIn);
 					if(fadeOut > std::chrono::seconds(0))
-						ch.setFadeOut(fadeOut, false);
+						ch.setFadeOut(fadeOut);
 					if(!_bPaused)
 						ch.play();
 					return s.get();
@@ -399,5 +684,18 @@ namespace rs {
 			s.update();
 		for(auto& sg : _sgMgr)
 			sg.update();
+	}
+	void SoundMgr::resetSerializeFlag() {
+		_buffMgr.resetSerializeFlag();
+		_srcMgr.resetSerializeFlag();
+//		_sgMgr.resetSerializeFlag();
+	}
+	void SoundMgr::pauseAllSound() {
+		for(auto& s : _srcMgr)
+			s.sys_pause();
+	}
+	void SoundMgr::resumeAllSound() {
+		for(auto& s : _srcMgr)
+			s.sys_resume();
 	}
 }
