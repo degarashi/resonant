@@ -88,7 +88,7 @@ namespace rs {
 	#define GLEC_P(act, chk, ...)			GLEC(act, chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)					GLEC_Chk(act)
 #else
-	#define GLEC_P(act, chk, ...)			::spn::EChk_pass(act, chk, __VA_ARGS__)
+    #define GLEC_P(act, chk, ...)			::spn::EChk_pass(chk, __VA_ARGS__)
 	#define GLEC_ChkP(act)
 #endif
 
