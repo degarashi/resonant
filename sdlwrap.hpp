@@ -13,6 +13,8 @@
 #include <boost/optional.hpp>
 #include "spinner/error.hpp"
 #include "spinner/size.hpp"
+#include <boost/serialization/access.hpp>
+#include <boost/variant.hpp>
 
 #define SDLEC_Base(act, ...)	::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #define SDLEC_Base0(act)		::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
@@ -589,49 +591,112 @@ namespace rs {
 
 	class RWops {
 		public:
+			struct Callback : boost::serialization::traits<Callback,
+						boost::serialization::object_serializable,
+						boost::serialization::track_never>
+			{
+				virtual void onRelease(RWops& rw) = 0;
+				template <class Archive>
+				void serialize(Archive&, const unsigned int) {}
+			};
 			enum Hence : int {
 				Begin = RW_SEEK_SET,
 				Current = RW_SEEK_CUR,
 				End = RW_SEEK_END
 			};
+			// 管轄外メモリであってもシリアライズ時にはデータ保存する
 			enum Type {
 				ConstMem,		//!< 外部Constメモリ	(管轄外)
 				Mem,			//!< 外部メモリ			(管轄外)
+				ConstVector,	//!< 管轄Constメモリ
 				Vector,			//!< 管轄メモリ
-				File,
-				FilePointer
+				File
 			};
-			using EndCB = std::function<void (RWops&)>;
-		private:
-			SDL_RWops*	_ops;
-			int			_access;
-			Type		_type;
-			const void*	_ptr;
-			size_t		_size;
 			enum Access : int {
 				Read = 0x01,
 				Write = 0x02,
 				Binary = 0x04
 			};
-			//! RWopsが解放される直前に呼ばれる関数
-			EndCB		_endCB;
+			//! 外部バッファ
+			struct ExtBuff {
+				void* 	ptr;
+				size_t	size;
 
+                template <class Archive>
+                void serialize(Archive& ar, const unsigned int) {
+                    AssertP(Trap, false, "this object cannot serialize")
+                }
+			};
+		private:
+			using Data = boost::variant<boost::blank, spn::PathStr, spn::URI, ExtBuff, spn::ByteBuff>;
+			SDL_RWops*	_ops;
+			int			_access;
+			Type		_type;
+			Data		_data;
+
+			//! RWopsが解放される直前に呼ばれる関数
+			using UPCallback = std::unique_ptr<Callback>;
+			UPCallback	_endCB;
+
+            void _deserializeFromMember();
 			void _clear();
-			RWops(SDL_RWops* ops, int access, Type type, EndCB cb, const void* ptr=nullptr, size_t sz=0);
+			friend class boost::serialization::access;
+            BOOST_SERIALIZATION_SPLIT_MEMBER();
+			template <class Archive>
+			void save(Archive& ar, const unsigned int) const {
+                ar & _access;
+                if(isMemory()) {
+                    Type type;
+                    if(_type == Type::ConstMem || _type == Type::ConstVector)
+                        type = Type::ConstVector;
+                    else
+                        type = Type::Vector;
+                    ar & type;
+
+                    auto dat = getMemoryPtrC();
+                    spn::ByteBuff buff(dat.second);
+                    std::memcpy(&buff[0], dat.first, dat.second);
+                    Data data(std::move(buff));
+                    ar & data;
+                } else
+                    ar & _type & _data;
+                int64_t pos = tell();
+                ar & pos & _endCB;
+			}
+            template <class Archive>
+            void load(Archive& ar, const unsigned int) {
+                int64_t pos;
+                ar & _access & _type & _data & pos & _endCB;
+                _deserializeFromType(pos);
+            }
+
+            void _deserializeFromType(int64_t pos);
+			friend spn::ResWrap<RWops, spn::String<std::string>>;
+			RWops() = default;
+			template <class T>
+			RWops(SDL_RWops* ops, Type type, int access, T&& data, Callback* cb=nullptr) {
+				_ops = ops;
+				_type = type;
+				_access = access;
+				_data = std::forward<T>(data);
+				_endCB.reset(cb);
+			}
+			static RWops _FromVector(spn::ByteBuff&& buff, Callback* cb, std::false_type);
+			static RWops _FromVector(spn::ByteBuff&& buff, Callback* cb, std::true_type);
+
 		public:
 			static int ReadMode(const char* mode);
 			static std::string ReadModeStr(int mode);
-			static RWops FromConstMem(const void* mem, int size, EndCB cb=nullptr);
+
+			static RWops FromConstMem(const void* mem, size_t size, Callback* cb=nullptr);
 			template <class T>
-			static RWops FromVector(T&& buff) {
-				spn::ByteBuff* tbuff = new spn::ByteBuff(std::forward<T>(buff));
-				return RWops(SDL_RWFromMem(&(*tbuff)[0], tbuff->size()), Read|Write, Type::Vector, [tbuff](RWops&){
-					delete tbuff;
-				}, &(*tbuff)[0], tbuff->size());
+			static RWops FromVector(T&& buff, Callback* cb=nullptr) {
+				spn::ByteBuff tbuff(std::forward<T>(buff));
+				return _FromVector(std::move(tbuff), cb, typename std::is_const<T>::type());
 			}
-			static RWops FromFilePointer(FILE* fp, bool autoClose, const char* mode);
-			static RWops FromMem(void* mem, int size, EndCB cb=nullptr);
-			static RWops FromFile(spn::ToPathStr path, const char* mode);
+			static RWops FromMem(void* mem, size_t size, Callback* cb=nullptr);
+			static RWops FromFile(spn::ToPathStr path, int access);
+			static RWops FromURI(SDL_RWops* ops, const spn::URI& uri, int access);
 
 			RWops(RWops&& ops);
 			RWops& operator = (RWops&& ops);
@@ -675,34 +740,39 @@ namespace rs {
 		public:
 			using base_type = spn::ResMgrN<RWops, RWMgr>;
 			using LHdl = AnotherLHandle<RWops>;
+			using OPUriHandler = spn::Optional<const SPUriHandler&>;
 			void addUriHandler(const SPUriHandler& h);
 			void remUriHandler(const SPUriHandler& h);
+			OPUriHandler getUriHandler(const spn::URI& uri, int access) const;
 
+			// ---- RWopsへ中継するだけの関数 ----
 			//! 任意のURIからハンドル作成(ReadOnly)
 			/*! \param[in] bNoShared trueなら同じキーでリソースを共有しない */
-			LHdl fromURI(const spn::URI& uri, const char* mode, bool bNoShared);
-			LHdl fromFile(spn::ToPathStr path, const char* mode, bool bNoShared);
+			LHdl fromURI(const spn::URI& uri, int access, bool bNoShared);
+			LHdl fromFile(spn::ToPathStr path, int access, bool bNoShared);
 			template <class T>
 			LHdl fromVector(T&& t) {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }
-			LHdl fromConstMem(const void* p, int size, typename RWops::EndCB cb=nullptr);
-			LHdl fromMem(void* p, int size, typename RWops::EndCB cb=nullptr);
-			LHdl fromFP(FILE* fp, bool bAutoClose, const char* mode);
+			LHdl fromConstMem(const void* p, int size, typename RWops::Callback* cb=nullptr);
+			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
 	};
 	DEF_HANDLE(RWMgr, RW, RWops)
 	struct UriHandler {
+		virtual bool canLoad(const spn::URI& uri, int access) const = 0;
 		virtual HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) = 0;
 	};
 	//! アセットZipからのファイル読み込み (Android only)
 	struct UriH_AssetZip : UriHandler {
 		spn::PathStr	_zipPath;			//!< Asset中のZipファイルのパス
 		UriH_AssetZip(spn::ToPathStr zippath);
+		bool canLoad(const spn::URI& uri, int access) const override;
 		HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) override;
 	};
 	//! ファイルシステムからのファイル読み込み
 	struct UriH_File : UriHandler {
 		spn::PathStr	_basePath;
 		UriH_File(spn::ToPathStr path);
+		bool canLoad(const spn::URI& uri, int access) const override;
 		HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) override;
 	};
 

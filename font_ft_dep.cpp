@@ -10,7 +10,7 @@ namespace rs {
 	HLFT FontFamily::Item::makeFont() const {
 		if(hlRW)
 			return mgr_font.newFace(hlRW, faceIndex);
-		return mgr_font.newFace(mgr_rw.fromFile(path.get(), "r", true), faceIndex);
+		return mgr_font.newFace(mgr_rw.fromFile(path.get(), RWops::Read, true), faceIndex);
 	}
 	void FontFamily::loadFamilyWildCard(spn::To8Str pattern) {
 		size_t len = pattern.getLength();
@@ -19,7 +19,7 @@ namespace rs {
 
 		spn::Dir dir;
 		dir.enumEntryWildCard(pattern.moveTo(), [this](const spn::PathBlock& p, bool bDir) {
-			loadFamily(mgr_rw.fromFile(p.plain_utf32(), "r", true));
+			loadFamily(mgr_rw.fromFile(p.plain_utf32(), RWops::Read, true));
 		});
 	}
 	void FontFamily::loadFamily(HRW hRW) {
@@ -70,7 +70,7 @@ namespace rs {
 			case CCoreID::SizeType_LineHeight:
 				ft.setSizeFromLine(h); break;
 			default:
-				AssertP(Trap, false, "invalid sizetype number")
+                AssertP(Trap, false, "invalid sizetype number");
 		}
 	}
 	Font_FTDep::Font_FTDep(Font_FTDep&& d):

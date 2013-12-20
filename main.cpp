@@ -221,7 +221,7 @@ class TScene : public Scene<TScene> {
 		public:
 			MySt(StateID id): State(id) {}
 			void onEnter(TScene& self, StateID prevID) override {
-				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("/home/slice/test.ogg", "r", true));
+				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("/home/slice/test.ogg", RWops::Read, false));
 				self._hlSs = mgr_sound.createSource();
 				self._hlSs.ref().setBuffer(self._hlAb);
 			}

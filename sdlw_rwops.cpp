@@ -1,19 +1,73 @@
 #include "sdlwrap.hpp"
 
 namespace rs {
-	RWops RWops::FromConstMem(const void* mem, int size, EndCB cb) {
-		return RWops(SDL_RWFromConstMem(mem,size), Read, Type::ConstMem, cb, mem, size);
+	RWops RWops::FromConstMem(const void* mem, size_t size, Callback* cb) {
+		return RWops(SDL_RWFromConstMem(mem,size),
+					Type::ConstMem,
+					Read,
+					ExtBuff{const_cast<void*>(mem),size},
+					cb);
 	}
-	RWops RWops::FromMem(void* mem, int size, EndCB cb) {
-		return RWops(SDL_RWFromMem(mem,size), Read|Write, Type::Mem, cb, mem, size);
+	RWops RWops::FromMem(void* mem, size_t size, Callback* cb) {
+		return RWops(SDL_RWFromMem(mem,size),
+					Type::Mem,
+					Read|Write,
+					ExtBuff{mem,size},
+					cb);
 	}
-	RWops RWops::FromFilePointer(FILE* fp, bool autoClose, const char* mode) {
-		return RWops(SDL_RWFromFP(fp, autoClose ? SDL_TRUE : SDL_FALSE),
-					 ReadMode(mode), Type::FilePointer, nullptr);
+	RWops RWops::FromFile(spn::ToPathStr path, int access) {
+		std::string mode = ReadModeStr(access);
+		spn::PathStr ps = path.moveTo();
+		SDL_RWops* ops = SDL_RWFromFile(ps.c_str(), mode.c_str());
+		return RWops(ops,
+					Type::File,
+					access,
+					std::move(ps),
+					nullptr);
 	}
-	RWops RWops::FromFile(spn::ToPathStr path, const char* mode) {
-		return RWops(SDL_RWFromFile(path.getStringPtr(), mode),
-					ReadMode(mode), Type::File, nullptr);
+	RWops RWops::FromURI(SDL_RWops* ops, const spn::URI& uri, int access) {
+		AssertP(Trap, ops)
+		return RWops(ops,
+					Type::File,
+					access,
+					uri,
+					nullptr);
+	}
+	RWops RWops::_FromVector(spn::ByteBuff&& buff, Callback* cb, std::false_type) {
+		return RWops(SDL_RWFromMem(&buff[0], buff.size()),
+					Type::Vector,
+					Read|Write,
+					std::move(buff),
+					cb);
+	}
+	RWops RWops::_FromVector(spn::ByteBuff&& buff, Callback* cb, std::true_type) {
+		return RWops(SDL_RWFromConstMem(&buff[0], buff.size()),
+					Type::ConstVector,
+					Read,
+					std::move(buff),
+					cb);
+	}
+	void RWops::_deserializeFromType(int64_t pos) {
+		if(_type != Type::File) {
+			auto& buff = boost::get<spn::ByteBuff>(_data);
+			if(_type == Type::ConstVector)
+				_ops = SDL_RWFromConstMem(&buff[0], buff.size());
+			else {
+				AssertP(Trap, _type==Type::Vector)
+				_ops = SDL_RWFromMem(&buff[0], buff.size());
+			}
+		} else {
+			if(_data.which() == 1)
+				_ops = SDL_RWFromFile(boost::get<spn::PathStr>(_data).c_str(), ReadModeStr(_access).c_str());
+			else {
+				AssertP(Trap, _data.which() == 2)
+				auto& uri = boost::get<spn::URI>(_data);
+				auto handler = mgr_rw.getUriHandler(uri, _access);
+				HLRW hlRW = (*handler)->loadURI(uri, _access, true);
+				*this = std::move(hlRW.ref());
+			}
+		}
+		seek(pos, Hence::Begin);
 	}
 	int RWops::ReadMode(const char* mode) {
 		int ret = 0;
@@ -41,20 +95,13 @@ namespace rs {
 		ret.resize(pDst - &ret[0]);
 		return std::move(ret);
 	}
-
-	RWops::RWops(SDL_RWops* ops, int access, Type type, EndCB cb, const void* ptr, size_t sz):
-		_ops(ops), _access(access), _type(type), _endCB(cb), _ptr(ptr), _size(sz)
-	{
-		if(!ops)
-			throw std::runtime_error("invalid file");
-	}
 	RWops::~RWops() {
 		close();
 	}
 	void RWops::close() {
 		if(_ops) {
 			if(_endCB)
-				_endCB(*this);
+				_endCB->onRelease(*this);
 			SDL_RWclose(_ops);
 			_clear();
 		}
@@ -62,10 +109,11 @@ namespace rs {
 	void RWops::_clear() {
 		_ops = nullptr;
 		_access = 0;
-		_endCB = nullptr;
+		_endCB.reset(nullptr);
+		_data = boost::blank();
 	}
 	RWops::RWops(RWops&& ops): _ops(ops._ops), _access(ops._access),
-		_type(ops._type), _ptr(ops._ptr), _size(ops._size), _endCB(std::move(ops._endCB))
+		_type(ops._type), _data(std::move(ops._data)), _endCB(std::move(ops._endCB))
 	{
 		ops._clear();
 	}
@@ -83,14 +131,27 @@ namespace rs {
 	size_t RWops::write(const void* src, size_t blockSize, size_t nblock) {
 		return SDL_RWwrite(_ops, src, blockSize, nblock);
 	}
+	namespace {
+		struct Visitor : boost::static_visitor<int64_t> {
+			RWops& _ops;
+			Visitor(RWops& op): _ops(op) {}
+
+			template <class T>
+			int64_t operator()(RWops::ExtBuff& e) const {
+				return e.size;
+			}
+			template <class T>
+			int64_t operator()(T& t) const {
+				auto pos = _ops.tell();
+				_ops.seek(0, RWops::Hence::End);
+				int64_t ret = _ops.tell();
+				_ops.seek(pos, RWops::Hence::Begin);
+				return ret;
+			}
+		};
+	}
 	int64_t RWops::size() {
-		if(isMemory())
-			return _size;
-		auto pos = tell();
-		seek(0, Hence::End);
-		int64_t ret = tell();
-		seek(pos, Hence::Begin);
-		return ret;
+		return boost::apply_visitor(Visitor(*this), _data);
 	}
 	int64_t RWops::seek(int64_t offset, Hence hence) {
 		return SDL_RWseek(_ops, offset, hence);
@@ -147,28 +208,48 @@ namespace rs {
 		return std::move(buff);
 	}
 	RWops::Type RWops::getType() const { return _type; }
-	bool RWops::isMemory() const { return _ptr != nullptr; }
-	std::pair<const void*, size_t> RWops::getMemoryPtrC() const { return std::make_pair(_ptr, _size); }
-	std::pair<void*, size_t> RWops::getMemoryPtr() {
-		AssertP(Trap, _type==Type::Vector);
-		return std::make_pair(const_cast<void*>(_ptr), _size);
-	}
+	bool RWops::isMemory() const { return _type != File; }
 
-	// ---------------------------- RWMgr ----------------------------
-	HLRW RWMgr::fromFile(spn::ToPathStr path, const char* mode, bool bNoShared) {
-		auto rw = RWops::FromFile(path, mode);
-		if(bNoShared)
-			return base_type::acquire(std::move(rw));
-		return base_type::acquire(spn::PathStr(path.getStringPtr()), RWops::FromFile(path, mode)).first;
+	std::pair<const void*, size_t> RWops::getMemoryPtrC() const {
+		if(_type == Type::ConstMem || _type == Type::Mem) {
+			auto& d = boost::get<ExtBuff>(_data);
+			return std::make_pair(d.ptr, d.size);
+		}
+		if(_type == Type::Vector || _type == Type::ConstVector) {
+			auto& d = boost::get<spn::ByteBuff>(_data);
+			return std::make_pair(&d[0], d.size());
+		}
+		AssertP(Trap, false);
+		return std::make_pair(nullptr, 0);
 	}
-	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::EndCB cb) {
+	std::pair<void*, size_t> RWops::getMemoryPtr() {
+		if(_type == Type::Mem) {
+			auto& d = boost::get<ExtBuff>(_data);
+			return std::make_pair(d.ptr, d.size);
+		}
+		if(_type == Type::Vector) {
+			auto& d = boost::get<spn::ByteBuff>(_data);
+			return std::make_pair(&d[0], d.size());
+		}
+		AssertP(Trap, false);
+		return std::make_pair(nullptr, 0);
+	}
+	// ---------------------------- RWMgr ----------------------------
+	HLRW RWMgr::fromURI(const spn::URI& uri, int access, bool bNoShared) {
+		if(auto handler = getUriHandler(uri, access))
+			return (*handler)->loadURI(uri, access, bNoShared);
+		return HLRW();
+	}
+	HLRW RWMgr::fromFile(spn::ToPathStr path, int access, bool bNoShared) {
+		if(bNoShared)
+			return base_type::acquire(RWops::FromFile(path, access));
+		return base_type::acquire(spn::PathStr(path.getStringPtr()), RWops::FromFile(path, access)).first;
+	}
+	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromConstMem(p,size,cb));
 	}
-	HLRW RWMgr::fromMem(void* p, int size, typename RWops::EndCB cb) {
+	HLRW RWMgr::fromMem(void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromMem(p,size, cb));
-	}
-	HLRW RWMgr::fromFP(FILE* fp, bool bAutoClose, const char* mode) {
-		return base_type::acquire(RWops::FromFilePointer(fp, bAutoClose, mode));
 	}
 	void RWMgr::addUriHandler(const SPUriHandler& h) {
 		Assert(Trap, std::find(_handler.begin(), _handler.end(), h)==_handler.end())
@@ -179,21 +260,22 @@ namespace rs {
 		Assert(Trap, itr!=_handler.end())
 		_handler.erase(itr);
 	}
-	HLRW RWMgr::fromURI(const spn::URI& uri, const char* mode, bool bNoShared) {
-		int access = RWops::ReadMode(mode);
-		HLRW ret;
+	RWMgr::OPUriHandler RWMgr::getUriHandler(const spn::URI& uri, int access) const {
 		for(auto& h : _handler) {
-			if((ret = h->loadURI(uri, access, bNoShared)))
-				return std::move(ret);
+			if(h->canLoad(uri, access))
+				return h;
 		}
-		Assert(Warn, false, "no such file \"%s\"", uri.plainUri_utf8())
-		return HLRW();
+		Assert(Warn, false, "can't handle URI \"%s\"", uri.plainUri_utf8())
+		return spn::none;
 	}
 	// ---------------------------- UriH_File ----------------------------
 	UriH_File::UriH_File(spn::ToPathStr path): _basePath(path.moveTo()) {}
+	bool UriH_File::canLoad(const spn::URI& uri, int access) const {
+		return uri.getType_utf8() == "file";
+	}
 	HLRW UriH_File::loadURI(const spn::URI& uri, int access, bool bNoShared) {
-		if(uri.getType_utf8() == "file")
-			return mgr_rw.fromFile(uri.plain_utf32(), RWops::ReadModeStr(access).c_str(), bNoShared);
+		if(canLoad(uri, access))
+			return mgr_rw.fromFile(uri.plain_utf32(), access, bNoShared);
 		return HLRW();
 	}
 }
