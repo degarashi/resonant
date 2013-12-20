@@ -602,7 +602,7 @@ namespace rs {
 	}
 
 	// ------------------ ALGroup ------------------
-	AGroup::AGroup(AGroup&& a): _source(std::move(a._source)), _nActive(a._nActive), _bPaused(a._bPaused) {}
+	AGroup::AGroup(AGroup&& a): Move_Ctor(AGroup_SEQ, a) {}
 	AGroup::AGroup(int n): _source(n), _nActive(0), _bPaused(false) {
 		for(auto& s : _source)
 			s = mgr_sound.createSource();
@@ -634,7 +634,7 @@ namespace rs {
 	void AGroup::clear() {
 		for(auto& s : _source)
 			s.ref().stop();
-		_nActive = getChannels();
+		_nActive = 0;
 		_bPaused = false;
 	}
 	HSs AGroup::play(HAb hAb, int nLoop) {
@@ -694,7 +694,7 @@ namespace rs {
 	void SoundMgr::resetSerializeFlag() {
 		_buffMgr.resetSerializeFlag();
 		_srcMgr.resetSerializeFlag();
-//		_sgMgr.resetSerializeFlag();
+		_sgMgr.resetSerializeFlag();
 	}
 	void SoundMgr::pauseAllSound() {
 		for(auto& s : _srcMgr)

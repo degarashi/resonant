@@ -367,12 +367,24 @@ namespace rs {
 	class SSrcMgr : public spn::ResMgrA<ASource, SSrcMgr> {};
 	DEF_HANDLE(SSrcMgr, Ss, ASource)
 
+	class SGroupMgr;
 	//! ASourceをひとまとめにして管理
 	class AGroup {
 		using SourceL = std::vector<HLSs>;
 		SourceL	_source;
 		int		_nActive;
 		bool	_bPaused;
+
+		#define AGroup_SEQ (_source)(_nActive)(_bPaused)
+
+		friend class boost::serialization::access;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & _source & _nActive & _bPaused;
+		}
+
+		friend class spn::ResMgrA<AGroup, SGroupMgr>;
+		AGroup() = default;
 		public:
 			AGroup(int n);
 			AGroup(const AGroup& a) = delete;
@@ -402,11 +414,10 @@ namespace rs {
 		void serialize(Archive& ar, const unsigned int ver) {
 			makeCurrent();
 			try {
-				ar & _buffMgr & _srcMgr;
+				ar & _buffMgr & _srcMgr & _sgMgr;
 			} catch(const std::exception& e) {
 				std::cout << e.what() << std::endl;
 			}
-// 			ar & _buffMgr & _srcMgr & _sgMgr;
 		}
 
 		public:
