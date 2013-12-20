@@ -318,12 +318,8 @@ class MyMain : public rs::IMainProc {
 			return !mgr_scene.onUpdate();
 		}
 		void onPause() override {
-			mgr_scene.onPause();
-			mgr_sound.resetCurrent();
-			mgr_sound.suspend(); }
+			mgr_scene.onPause(); }
 		void onResume() override {
-			mgr_sound.process();
-			mgr_sound.makeCurrent();
 			mgr_scene.onResume(); }
 		void onStop() override {
 			mgr_scene.onStop(); }

@@ -6,6 +6,11 @@
 #include "updator.hpp"
 #include "scene.hpp"
 #include "sound.hpp"
+#include <sstream>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include "serialization/smart_ptr.hpp"
+#include "serialization/chrono.hpp"
 
 namespace rs {
 	// --------------------- DrawThread ---------------------
@@ -58,8 +63,8 @@ namespace rs {
 		ObjMgr		objP;
 		UpdMgr		updP;
 		SceneMgr	scP;
-		SoundMgr	sndP(44100);
-		sndP.makeCurrent();
+		std::unique_ptr<SoundMgr> sndP(new SoundMgr(44100));
+		sndP->makeCurrent();
 
 		UPMainProc mp(_mcr(w));
 		Handler guiHandler(guiLooper, [](){
@@ -109,8 +114,10 @@ namespace rs {
 			// 何かメッセージが来てたら処理する
 			while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
 				if(msg::PauseReq* pr = *m) {
+					mgr_sound.pauseAllSound();
 					// ユーザーに通知(Pause)
 					mp->onPause();
+					std::stringstream buffer;	// サウンドデバイスデータ
 					for(;;) {
 						// DrawThreadがIdleになるまで待つ
 						while(dth.getInfo()->accum != getInfo()->accumDraw)
@@ -119,6 +126,7 @@ namespace rs {
 						// Resumeメッセージが来るまでwaitループ
 						OPMessage m = getLooper()->wait();
 						if(msg::ResumeReq* rr = *m) {
+							mgr_sound.resumeAllSound();
 							// ユーザーに通知(Resume)
 							mp->onResume();
 							break;
@@ -127,8 +135,26 @@ namespace rs {
 							// OpenGLリソースの解放
 							mgr_gl.onDeviceLost();
 							glFlush();
+							// サウンドデバイスのバックアップ
+							boost::archive::binary_oarchive oa(buffer);
+ 							oa << mgr_rw;
+							mgr_rw.resetSerializeFlag();
+ 							SoundMgr* sp = sndP.get();
+ 							oa << sp;
+							sp->resetSerializeFlag();
+							// サウンドを一旦全部停止させておく -> 復元した時に以前再生していたものは処理が継続される
+ 							sndP.reset(nullptr);
 						}
 						else if(msg::ReStartReq* rr = *m) {
+							// サウンドデバイスの復元
+ 							boost::archive::binary_iarchive ia(buffer);
+							ia >> mgr_rw;
+ 							SoundMgr* sp = nullptr;
+ 							ia >> sp;
+ 							sndP.reset(sp);
+ 							sndP->makeCurrent();
+							std::cout << "------------";
+							sndP->update();
 							// OpenGLリソースの再確保
 							mgr_gl.onDeviceReset();
 							glFlush();
