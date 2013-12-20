@@ -359,6 +359,7 @@ namespace rs {
 				ths->_holder->inorder([ths](Args... args){ ths->runIt(std::forward<Args>(args)...); });
 				stat = (ths->isInterrupted()) ? Interrupted_End : Finished;
 			} catch(...) {
+				Assert(Warn, false, "thread is finished unexpectedly")
 				ths->_eptr = std::current_exception();
 				stat = Error_End;
 			}

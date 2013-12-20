@@ -290,7 +290,12 @@ namespace rs {
 			}
 		}
 		mth.interrupt();
-		mth.getResult();
+		try {
+			// 例外が投げられて終了したかをチェック
+			mth.getResult();
+		} catch (...) {
+			Assert(Warn, false, "GuiThread: main thread was ended by throwing exception")
+		}
 		return 0;
 	}
 }
