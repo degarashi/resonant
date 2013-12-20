@@ -3,11 +3,11 @@
 namespace rs {
 	size_t VorbisFile::ReadOGC(void* ptr, size_t blocksize, size_t nmblock, void* datasource) {
 		auto* ops = reinterpret_cast<SDL_RWops*>(datasource);
-		int fpos = SDL_RWseek(ops, 0, RW_SEEK_CUR);
-		int fsize = SDL_RWseek(ops, 0, RW_SEEK_END);
+		Sint64 fpos = SDL_RWseek(ops, 0, RW_SEEK_CUR);
+		Sint64 fsize = SDL_RWseek(ops, 0, RW_SEEK_END);
 		SDL_RWseek(ops, fpos, RW_SEEK_SET);
 
-		size_t nblock = std::min((fsize-fpos)/blocksize, nmblock);
+		size_t nblock = std::min((fsize-fpos)/blocksize, Sint64(nmblock));
 		return SDL_RWread(ops, ptr, blocksize, nblock);
 	}
 	int VorbisFile::SeekOGC(void* datasource, ogg_int64_t offset, int whence) {
@@ -54,15 +54,20 @@ namespace rs {
 		rd.format = vf.getFormat();
 		return std::move(rd);
 	}
-	VorbisFile::VorbisFile(HRW hRW) {
-		_hlRW = hRW;
-
-		OVEC_P(Trap, ov_open_callbacks, hRW.ref().getOps(), &_ovf, nullptr, 0, OVCallbacksNF);
+	void VorbisFile::_init() {
+		auto& rw = _hlRW.ref();
+		rw.seek(_initialFPos, RWops::Begin);
+		OVEC_P(Trap, ov_open_callbacks, rw.getOps(), &_ovf, nullptr, 0, OVCallbacksNF);
 		vorbis_info* info = ov_info(&_ovf, -1);
 		// Oggのフォーマットは全てsigned int 16bitとみなす
 		_format = AFormatF(AFormat(true, info->channels > 1), info->rate);
 		_dTotal = OVEC_P(Trap, ov_time_total, &_ovf, -1);
 		_iTotal = OVEC_P(Trap, ov_pcm_total, &_ovf, -1);
+	}
+	VorbisFile::VorbisFile(HRW hRW) {
+		_hlRW = hRW;
+		_initialFPos = hRW.ref().tell();
+		_init();
 	}
 	VorbisFile::~VorbisFile() {
 		OVEC_P(Trap, ov_clear, &_ovf);

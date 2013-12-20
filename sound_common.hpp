@@ -6,6 +6,7 @@
 #include "spinner/misc.hpp"
 #include "clock.hpp"
 #include <boost/serialization/level.hpp>
+#include <boost/serialization/access.hpp>
 
 #define OVEC(act, ...) ::spn::EChk_baseA1(AAct_##act<std::runtime_error>(), OVError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
 #ifdef DEBUG
@@ -85,11 +86,32 @@ namespace rs {
 	extern ov_callbacks OVCallbacksNF, OVCallbacks;
 	// VorbisFile wrapper
 	class VorbisFile {
+		int64_t			_initialFPos;
 		HLRW			_hlRW;
 		OggVorbis_File	_ovf;
 		AFormatF		_format;
 		double			_dTotal;
 		int64_t			_iTotal;
+
+		friend class AOggStream;
+		friend class boost::serialization::access;
+		BOOST_SERIALIZATION_SPLIT_MEMBER();
+		template <class Archive>
+		void load(Archive& ar, const unsigned int) {
+			ar & _hlRW & _initialFPos;
+			_init();
+			int64_t fpos;
+			ar & fpos;
+			pcmSeek(fpos);
+		}
+		template <class Archive>
+		void save(Archive& ar, const unsigned int) const {
+			ar & _hlRW & _initialFPos;
+			int64_t fpos = pcmTell();
+			ar & fpos;
+		}
+		void _init();
+		VorbisFile() = default;
 
 		public:
 			static size_t ReadOGC(void* ptr, size_t blocksize, size_t nmblock, void* datasource);
@@ -127,3 +149,4 @@ BOOST_CLASS_IMPLEMENTATION(rs::SDLAFormat, primitive_type)
 BOOST_CLASS_IMPLEMENTATION(rs::SDLAFormatCF, primitive_type)
 BOOST_CLASS_IMPLEMENTATION(rs::AFormat, primitive_type)
 BOOST_CLASS_IMPLEMENTATION(rs::AFormatF, primitive_type)
+
