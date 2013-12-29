@@ -18,8 +18,8 @@ namespace rs {
 			return;
 
 		spn::Dir dir;
-		dir.enumEntryWildCard(pattern.moveTo(), [this](const spn::PathBlock& p, bool bDir) {
-			loadFamily(mgr_rw.fromFile(p.plain_utf32(), RWops::Read, true));
+		dir.enumEntryWildCard(pattern.moveTo(), [this](const spn::Dir& dir) {
+			loadFamily(mgr_rw.fromFile(dir.plain_utf32(), RWops::Read, true));
 		});
 	}
 	void FontFamily::loadFamily(HRW hRW) {
