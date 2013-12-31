@@ -1,8 +1,15 @@
+#ifdef WIN32
+	#include <windows.h>
+#endif
 #include "glresource.hpp"
 
 // OpenGL関数群の定義
 #define GLDEFINE(name,type)		type name;
-#include "glfunc.inc"
+#ifdef WIN32
+	#include "glfuncW.inc"
+#else
+	#include "glfunc.inc"
+#endif
 #undef GLDEFINE
 
 namespace rs {
@@ -10,7 +17,6 @@ namespace rs {
 		bool g_bglfuncInit = false;
 	}
 	#if defined(_WIN32)
-		#include <windows.h>
 		namespace {
 			using SetSwapInterval_t = bool APIENTRY (*)(int);
 			SetSwapInterval_t g_setswapinterval = nullptr;

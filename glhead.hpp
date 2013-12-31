@@ -9,22 +9,23 @@
 	#include <GL/gl.h>
 #endif
 
-#if !defined(WIN32)
-	#ifndef ANDROID
-		#include <GL/glx.h>
-		#undef Convex
-		#include "glext.h"
-		#include "glxext.h"
-	#endif
-#else
-	#ifndef ANDROID
-		#include "glext.h"
-	#endif
+#if !defined(WIN32) && !defined(ANDROID)
+	#include <GL/glx.h>
+	#undef Convex
+	#include "glext.h"
+	#include "glxext.h"
+#endif
+#ifndef ANDROID
+	#include "glext.h"
 #endif
 
 #ifndef ANDROID
 	#define GLDEFINE(name,type)		extern type name;
-	#include "glfunc.inc"
+	#ifdef WIN32
+		#include "glfuncW.inc"
+	#elif UNIX
+		#include "glfunc.inc"
+	#endif
 	#undef GLDEFINE
 #endif
 
