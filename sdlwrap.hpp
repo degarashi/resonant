@@ -7,7 +7,6 @@
 #include <SDL_thread.h>
 #include <SDL_events.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
 #include <exception>
 #include <stdexcept>
 #include <boost/optional.hpp>
@@ -26,25 +25,16 @@
 #define IMGEC(act, ...)			IMGEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define IMGEC_Chk(act)			IMGEC_Base0(AAct_##act<std::runtime_error>())
 
-#define TTFEC_Base(act, ...)	::spn::EChk_base(act, TTFError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define TTFEC_Base0(act)		::spn::EChk_base(act, TTFError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define TTFEC(act, ...)			TTFEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
-#define TTFEC_Chk(act)			TTFEC_Base0(AAct_##act<std::runtime_error>())
-
 #ifdef DEBUG
 	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
 	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
 	#define IMGEC_P(act, ...)	IMGEC(act, __VA_ARGS__)
 	#define IMGEC_ChkP(act)		IMGEC_Chk(act)
-	#define TTFEC_P(act, ...)	TTFEC(act, __VA_ARGS__)
-	#define TTFEC_ChkP(act)		TTFEC_Chk(act)
 #else
 	#define SDLEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
 	#define SDLEC_ChkP(act)
 	#define IMGEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
 	#define IMGEC_ChkP(act)
-	#define TTFEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
-	#define TTFEC_ChkP(act)
 #endif
 
 namespace rs {
@@ -64,11 +54,7 @@ namespace rs {
 		static void Reset();
 		static const char *const c_apiName;
 	};
-	struct TTFErrorI {
-		static const char* Get();
-		static void Reset();
-		static const char *const c_apiName;
-	};
+
 	template <class I>
 	struct ErrorT {
 		const char* errorDesc() const {
@@ -89,7 +75,6 @@ namespace rs {
 	};
 	using SDLError = ErrorT<SDLErrorI>;
 	using IMGError = ErrorT<IMGErrorI>;
-	using TTFError = ErrorT<TTFErrorI>;
 
 	extern SDL_threadID thread_local tls_threadID;
 	//! 実行環境に関する情報を取得

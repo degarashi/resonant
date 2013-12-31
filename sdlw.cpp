@@ -18,8 +18,4 @@ namespace rs {
 	const char* IMGErrorI::Get() { return IMG_GetError(); }
 	void IMGErrorI::Reset() { IMG_SetError(""); }
 	const char *const IMGErrorI::c_apiName = "SDL2_image";
-	// -------------------- TTFError --------------------
-	const char* TTFErrorI::Get() { return TTF_GetError(); }
-	void TTFErrorI::Reset() { TTF_SetError(""); }
-	const char *const TTFErrorI::c_apiName = "SDL2_ttf";
 }
