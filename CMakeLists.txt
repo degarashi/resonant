@@ -34,6 +34,12 @@ if(DEFINED ARCHITECTURE)
 	add_definitions(-DGL_GLEXT_PROTOTYPES -DUSE_OPENGLES2)
 	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
 						${CMAKE_INSTALL_PREFIX}/include/SDL2)
+elseif(${WIN32})
+#	execute_process(COMMAND which ${CMAKE_CXX_COMPILER} RESULT_VARIABLE CompilerPath)
+#TODO 絶対パスが入ってるので後で直す
+	set(CompilerPath /home/slice/local/i686-w64-mingw32)
+	include_directories(${CompilerPath}/include/SDL2
+						${CompilerPath}/include/freetype2)
 else()
 	include_directories(/usr/local/include/SDL2
 						/usr/local/include/freetype2)
@@ -47,7 +53,14 @@ install(FILES ${HEADERS} DESTINATION include/resonant)
 
 if(NOT DEFINED ARCHITECTURE)
 	set(SRC_FILE ${SRC_FILE} main.cpp)
+	if(${WIN32})
+		add_definitions(-Dmain=SDL_main)
+		set(LINK_LIBS resonant boomstick spinner mingw32 SDL2_image SDL2main SDL2
+			freetype opengl32 OpenAL32 vorbisfile vorbis ogg boost_system boost_regex boost_serialization png z)
+	else()
+		set(LINK_LIBS resonant boomstick spinner SDL2_image SDL2 freetype vorbisfile ogg boost_system boost_regex boost_serialization)
+	endif()
 	add_executable(rse_test ${SRC_FILE})
-	target_link_libraries(rse_test resonant boomstick spinner SDL2_image SDL2 freetype openal vorbisfile boost_system boost_regex boost_serialization GL)
+	target_link_libraries(rse_test ${LINK_LIBS})
 	install(TARGETS rse_test RUNTIME DESTINATION bin_${TOOL_PREFIX})
 endif()
