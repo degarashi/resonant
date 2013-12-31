@@ -1,5 +1,4 @@
 #include "input.hpp"
-#include "common.hpp"
 
 namespace rs {
 	DZone::DZone(float r, float dz): ratio(r), deadzone(dz) {}

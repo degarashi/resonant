@@ -1,6 +1,7 @@
 #include "glresource.hpp"
 #include "sdlwrap.hpp"
 #include <functional>
+#include "glhead.hpp"
 
 namespace rs {
 	// ------------------------- IGLTexture -------------------------

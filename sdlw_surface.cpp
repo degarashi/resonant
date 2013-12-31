@@ -110,7 +110,7 @@ namespace rs {
 		return SPSurface(new Surface(nsfc));
 	}
 	SPSurface Surface::convert(const SDL_PixelFormat& fmt) const {
-		SDL_Surface* nsfc = SDL_ConvertSurface(_sfc, &fmt, 0);
+		SDL_Surface* nsfc = SDL_ConvertSurface(_sfc, const_cast<SDL_PixelFormat*>(&fmt), 0);
 		Assert(Trap, nsfc)
 		return SPSurface(new Surface(nsfc));
 	}
