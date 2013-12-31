@@ -58,7 +58,7 @@ namespace rs {
 	bool IGLTexture::IsMipmap(State level) {
 		return level >= MipmapNear;
 	}
-	void IGLTexture::save(const spn::PathStr& path) {
+	void IGLTexture::save(const std::string& path) {
 		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(GL_RGBA8, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
 		#ifndef USE_OPENGLES2

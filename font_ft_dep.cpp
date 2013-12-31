@@ -5,7 +5,7 @@
 namespace rs {
 	// ---------------------- FontFamily ----------------------
 	FontFamily::Item::Item(int fIdx, HRW hRW): faceIndex(fIdx), hlRW(hRW) {}
-	FontFamily::Item::Item(int fIdx, const spn::PathStr& p): faceIndex(fIdx), path(p) {}
+	FontFamily::Item::Item(int fIdx, const std::string& p): faceIndex(fIdx), path(p) {}
 	FontFamily::Item::Item(Item&& it): faceIndex(it.faceIndex), hlRW(std::move(it.hlRW)), path(std::move(it.path)) {}
 	HLFT FontFamily::Item::makeFont() const {
 		if(hlRW)
@@ -19,7 +19,7 @@ namespace rs {
 
 		spn::Dir dir;
 		dir.enumEntryWildCard(pattern.moveTo(), [this](const spn::Dir& dir) {
-			loadFamily(mgr_rw.fromFile(dir.plain_utf32(), RWops::Read, true));
+			loadFamily(mgr_rw.fromFile(dir.plain_utf8(), RWops::Read, true));
 		});
 	}
 	void FontFamily::loadFamily(HRW hRW) {
@@ -38,7 +38,7 @@ namespace rs {
 			return HLFT();
 		return itr->second.makeFont();
 	}
-	HLFT FontFamily::fontFromFile(const spn::PathStr& path) {
+	HLFT FontFamily::fontFromFile(const std::string& path) {
 		return HLFT();
 	}
 	HLFT FontFamily::fontFromID(CCoreID id) const {

@@ -15,14 +15,13 @@ namespace rs {
 					ExtBuff{mem,size},
 					cb);
 	}
-	RWops RWops::FromFile(spn::ToPathStr path, int access) {
+	RWops RWops::FromFile(const std::string& path, int access) {
 		std::string mode = ReadModeStr(access);
-		spn::PathStr ps = path.moveTo();
-		SDL_RWops* ops = SDL_RWFromFile(ps.c_str(), mode.c_str());
+		SDL_RWops* ops = SDL_RWFromFile(path.c_str(), mode.c_str());
 		return RWops(ops,
 					Type::File,
 					access,
-					std::move(ps),
+					path,
 					nullptr);
 	}
 	RWops RWops::FromURI(SDL_RWops* ops, const spn::URI& uri, int access) {
@@ -58,7 +57,7 @@ namespace rs {
 			}
 		} else {
 			if(_data.which() == 1)
-				_ops = SDL_RWFromFile(boost::get<spn::PathStr>(_data).c_str(), ReadModeStr(_access).c_str());
+				_ops = SDL_RWFromFile(boost::get<std::string>(_data).c_str(), ReadModeStr(_access).c_str());
 			else {
 				AssertP(Trap, _data.which() == 2)
 				auto& uri = boost::get<spn::URI>(_data);
@@ -240,10 +239,10 @@ namespace rs {
 			return (*handler)->loadURI(uri, access, bNoShared);
 		return HLRW();
 	}
-	HLRW RWMgr::fromFile(spn::ToPathStr path, int access, bool bNoShared) {
+	HLRW RWMgr::fromFile(const std::string& path, int access, bool bNoShared) {
 		if(bNoShared)
 			return base_type::acquire(RWops::FromFile(path, access));
-		return base_type::acquire(spn::PathStr(path.getStringPtr()), RWops::FromFile(path, access)).first;
+		return base_type::acquire(path, RWops::FromFile(path, access)).first;
 	}
 	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromConstMem(p,size,cb));
@@ -275,7 +274,7 @@ namespace rs {
 	}
 	HLRW UriH_File::loadURI(const spn::URI& uri, int access, bool bNoShared) {
 		if(canLoad(uri, access))
-			return mgr_rw.fromFile(uri.plain_utf32(), access, bNoShared);
+			return mgr_rw.fromFile(uri.plain_utf8(), access, bNoShared);
 		return HLRW();
 	}
 }

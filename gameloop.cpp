@@ -11,6 +11,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include "serialization/smart_ptr.hpp"
 #include "serialization/chrono.hpp"
+#include "serialization/chars.hpp"
 
 namespace rs {
 	// --------------------- DrawThread ---------------------

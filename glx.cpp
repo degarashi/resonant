@@ -104,7 +104,7 @@ namespace rs {
 			// オフセットでソート
 			std::sort(t.begin(), t.end(), [](const VDInfo& v0, const VDInfo& v1) { return v0.offset < v1.offset; });
 
-			uint ofs = 0;
+			unsigned int ofs = 0;
 			for(auto& t2 : t) {
 				AssertT(Trap, ofs<=t2.offset, (GLE_Error)(const char*), "invalid vertex offset")
 				ofs += GLFormat::QuerySize(t2.elemFlag) * t2.elemSize;

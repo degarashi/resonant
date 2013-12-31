@@ -364,7 +364,7 @@ namespace rs {
 			static bool IsMipmap(State level);
 			bool isMipmap() const;
 			//! 内容をファイルに保存 (主にデバッグ用)
-			void save(const spn::PathStr& path);
+			void save(const std::string& path);
 
 			bool isCubemap() const;
 			bool operator == (const IGLTexture& t) const;

@@ -628,7 +628,7 @@ namespace rs {
                 }
 			};
 		private:
-			using Data = boost::variant<boost::blank, spn::PathStr, spn::URI, ExtBuff, spn::ByteBuff>;
+			using Data = boost::variant<boost::blank, std::string, spn::URI, ExtBuff, spn::ByteBuff>;
 			SDL_RWops*	_ops;
 			int			_access;
 			Type		_type;
@@ -695,7 +695,7 @@ namespace rs {
 				return _FromVector(std::move(tbuff), cb, typename std::is_const<T>::type());
 			}
 			static RWops FromMem(void* mem, size_t size, Callback* cb=nullptr);
-			static RWops FromFile(spn::ToPathStr path, int access);
+			static RWops FromFile(const std::string& path, int access);
 			static RWops FromURI(SDL_RWops* ops, const spn::URI& uri, int access);
 
 			RWops(RWops&& ops);
@@ -749,7 +749,7 @@ namespace rs {
 			//! 任意のURIからハンドル作成(ReadOnly)
 			/*! \param[in] bNoShared trueなら同じキーでリソースを共有しない */
 			LHdl fromURI(const spn::URI& uri, int access, bool bNoShared);
-			LHdl fromFile(spn::ToPathStr path, int access, bool bNoShared);
+			LHdl fromFile(const std::string& path, int access, bool bNoShared);
 			template <class T>
 			LHdl fromVector(T&& t) {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }

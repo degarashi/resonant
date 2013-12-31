@@ -12,12 +12,12 @@ namespace rs {
 			struct Item {
 				int 	faceIndex;
 				HLRW	hlRW;
-				using OPPath = spn::Optional<spn::PathStr>;
+				using OPPath = spn::Optional<std::string>;
 				OPPath	path;
 
 				Item(Item&& it);
 				Item(int fIdx, HRW hRW);
-				Item(int fIdx, const spn::PathStr& p);
+				Item(int fIdx, const std::string& p);
 				HLFT makeFont() const;
 			};
 		private:
@@ -33,7 +33,7 @@ namespace rs {
 			//! FamilyNameからフォントを特定
 			HLFT fontFromFamilyName(const std::string& name) const;
 			//! ファイル名を指定してフォントを探す
-			HLFT fontFromFile(const spn::PathStr& path);
+			HLFT fontFromFile(const std::string& path);
 			//! サイズや形式からフォントを探す
 			HLFT fontFromID(CCoreID id) const;
 	};
@@ -77,7 +77,7 @@ namespace std {
 		size_t operator()(const rs::FontFamily::Item& it) const {
 			if(it.hlRW)
 				return it.hlRW.get().getValue();
-			return hash<spn::PathStr>()(it.path.get());
+			return hash<std::string>()(it.path.get());
 		}
 	};
 }
