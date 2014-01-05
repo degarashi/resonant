@@ -57,7 +57,7 @@ namespace rs {
 		GLRes 		glrP;
 		RWMgr 		rwP;
 		FontFamily	fontP;
-		fontP.loadFamilyWildCard("/home/slice/.fonts/*.ttc");
+		fontP.loadFamilyWildCard("Z:/home/slice/.fonts/*.ttc");
 		FontGen		fgenP(spn::PowSize(512,512));
 		CameraMgr	camP;
 		InputMgr	inpP;

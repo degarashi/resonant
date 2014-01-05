@@ -78,7 +78,7 @@ class MyDraw : public rs::IDrawProc {
 			_hlVb.ref()->use()->initData(tmpV, countof(tmpV), sizeof(TmpV));
 			_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 			_hlIb.ref()->use()->initData(tmpI, countof(tmpI));
-			_hlTex = mgr_gl.loadTexture(spn::URI("file:///home/slice/test.png"));
+			_hlTex = mgr_gl.loadTexture(spn::URI("file://Z:/home/slice/test.png"));
 			_hlTex.ref()->use()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
 
 			rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
@@ -88,7 +88,7 @@ class MyDraw : public rs::IDrawProc {
 			info.onDeviceReset();
 			std::cout << info;
 
-			_hlFx = mgr_gl.loadEffect(spn::URI("file:///home/slice/test.glx"));
+			_hlFx = mgr_gl.loadEffect(spn::URI("file://Z:/home/slice/test.glx"));
 			auto& pFx = *_hlFx.ref();
 			GLint techID = pFx.getTechID("TheTech");
 			pFx.setTechnique(techID, true);
@@ -221,7 +221,7 @@ class TScene : public Scene<TScene> {
 		public:
 			MySt(StateID id): State(id) {}
 			void onEnter(TScene& self, StateID prevID) override {
-				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("/home/slice/test.ogg", RWops::Read, false));
+				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("Z:/home/slice/test.ogg", RWops::Read, false));
 				self._hlSg = mgr_sound.createSourceGroup(1);
 			}
 			void onUpdate(TScene& self) override {
