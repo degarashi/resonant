@@ -5,6 +5,7 @@
 namespace rs {
 	GLRes::GLRes() {
 		_bInit = false;
+		_bInDtor = false;
 		_upFb.reset(new GLFBuffer());
 
 		// EmptyTexture = 1x1の単色テクスチャ
@@ -12,6 +13,8 @@ namespace rs {
 		_hlEmptyTex.reset(new HLTex(createTexture(spn::Size(1,1), GL_RGBA8, false, true, GL_UNSIGNED_BYTE, spn::AB_Byte(&buff1, 1))));
 	}
 	GLRes::~GLRes() {
+		// 破棄フラグを立ててからOnDeviceLost関数を呼ぶ
+		_bInDtor = true;
 		onDeviceLost();
 	}
 	GLRes::LHdl GLRes::_common(const std::string& key, std::function<UPResource ()> cb) {
@@ -89,6 +92,9 @@ namespace rs {
 	}
 	bool GLRes::deviceStatus() const {
 		return _bInit;
+	}
+	bool GLRes::isInDtor() const {
+		return _bInDtor;
 	}
 	void GLRes::onDeviceLost() {
 		if(_bInit) {

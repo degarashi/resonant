@@ -202,6 +202,8 @@ namespace rs {
 		std::unique_ptr<AnotherLHandle<UPTexture>>	_hlEmptyTex;
 		//! DeviceLost/Resetの状態管理
 		bool	_bInit;
+		//! デストラクタ内の時はtrue
+		bool	_bInDtor;
 
 		//! 既にデバイスがアクティブだったらonDeviceResetを呼ぶ
 		template <class LHDL>
@@ -214,6 +216,7 @@ namespace rs {
 			GLRes();
 			~GLRes();
 			bool deviceStatus() const;
+			bool isInDtor() const;
 			void onDeviceLost();
 			void onDeviceReset();
 
