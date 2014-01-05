@@ -58,7 +58,7 @@ if(NOT DEFINED ARCHITECTURE)
 		set(LINK_LIBS resonant boomstick spinner mingw32 SDL2_image SDL2main SDL2
 			freetype opengl32 OpenAL32 vorbisfile vorbis ogg boost_system boost_regex boost_serialization png z)
 	else()
-		set(LINK_LIBS resonant boomstick spinner SDL2_image SDL2 freetype vorbisfile ogg boost_system boost_regex boost_serialization)
+		set(LINK_LIBS resonant boomstick spinner SDL2_image SDL2 freetype vorbisfile ogg boost_system boost_regex boost_serialization GL openal)
 	endif()
 	add_executable(rse_test ${SRC_FILE})
 	target_link_libraries(rse_test ${LINK_LIBS})

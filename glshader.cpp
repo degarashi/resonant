@@ -53,7 +53,11 @@ namespace rs {
 			if(!name) throw std::runtime_error(std::string("error on loading GL function \"") + #name + '\"');
 		void LoadGLFunc() {
 			// 各種API関数
-			#include "glfunc.inc"
+			#ifdef WIN32
+				#include "glfuncW.inc"
+			#else
+				#include "glfunc.inc"
+			#endif
 			// その他OS依存なAPI関数
 			LoadGLAux();
 			g_bglfuncInit = true;

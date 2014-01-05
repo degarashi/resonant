@@ -23,7 +23,7 @@
 	#define GLDEFINE(name,type)		extern type name;
 	#ifdef WIN32
 		#include "glfuncW.inc"
-	#elif UNIX
+	#else
 		#include "glfunc.inc"
 	#endif
 	#undef GLDEFINE
