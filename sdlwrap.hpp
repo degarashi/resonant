@@ -401,7 +401,7 @@ namespace rs {
 
 				_mtxC.lock();
 				// 一旦クラス内部に変数を参照で取っておく
-				SDL_Thread* th = SDL_CreateThread(ThreadFunc, "", this);
+				SDL_Thread* th = SDL_CreateThread(ThreadFunc, nullptr, this);
 				// 子スレッドが開始されるまで待つ
 				SDL_CondWait(_condC, _mtxC.getMutex());
 				_mtxC.unlock();
@@ -435,6 +435,9 @@ namespace rs {
 					_mtxP.unlock();
 					SDL_WaitThread(_thread, nullptr);
 					_thread = nullptr;
+					SDL_DestroyCond(_condP);
+					SDL_DestroyCond(_condC);
+					_condP = _condC = nullptr;
 				} else
 					_mtxP.unlock();
 			}
