@@ -41,9 +41,12 @@ namespace rs {
 						lk->accum = p->id;
 					}
 				}
+				if(msg::QuitReq* q = *m)
+					bLoop = false;
 				// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
 			}
 		} while(bLoop && !isInterrupted());
+		std::cout << "DrawThread End" << std::endl;
 	}
 
 	// --------------------- MainThread ---------------------
@@ -184,8 +187,10 @@ namespace rs {
 			// ゲーム進行
 			++getInfo()->accumUpd;
 			mgr_input.update();
-			if(!mp->runU())
+			if(!mp->runU()) {
+				std::cout << "MainLoop END" << std::endl;
 				break;
+			}
 
 			// 時間が残っていれば描画
 			// 最大スキップフレームを超過してたら必ず描画
@@ -197,9 +202,14 @@ namespace rs {
 			} else
 				++skip;
 		} while(bLoop && !isInterrupted());
+		while(mgr_scene.getTop().valid()) {
+			mgr_scene.setPopScene(1);
+			mgr_scene.onUpdate();
+		}
 
 		// 描画スレッドの終了を待つ
 		dth.interrupt();
+		drawHandler.postArgs(msg::QuitReq());
 		dth.join();
 		guiHandler.postArgs(msg::QuitReq());
 	}
