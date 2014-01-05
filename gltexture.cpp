@@ -32,7 +32,7 @@ namespace rs {
 
 	bool IGLTexture::_onDeviceReset() {
 		if(_idTex == 0) {
-			GLEC_P(Trap, glGenTextures, 1, &_idTex);
+			GLEC_P(Warn, glGenTextures, 1, &_idTex);
 			// フィルタの設定
 			use()->setFilter(_mipLevel, static_cast<bool>(_iLinearMag), static_cast<bool>(_iLinearMin))
 				->setAnisotropicCoeff(_coeff)
@@ -103,7 +103,7 @@ namespace rs {
 		if(_idTex != 0) {
 			glDeleteTextures(1, &_idTex);
 			_idTex = 0;
-			GLEC_ChkP(Trap)
+			GLEC_ChkP(Warn)
 		}
 	}
 	IGLTexture::Inner1& IGLTexture::setUVWrap(GLuint s, GLuint t) {
@@ -135,18 +135,18 @@ namespace rs {
 	}
 	void Texture_Mem::onDeviceLost() {
 		if(_idTex != 0) {
-			if(_bRestore) {
+			if(!mgr_gl.isInDtor() && _bRestore) {
 				auto& info = _prepareBuffer();
 	#ifdef USE_OPENGLES2
 				//	OpenGL ES2ではglTexImage2Dが実装されていないのでFramebufferにセットしてglReadPixelsで取得
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
 				auto u = *tmp;
-				u.attachColor(0, _idTex);
-				glReadPixels(0, 0, _size.width, _size.height, info.toBase, info.toType, &_buff->operator[](0));
-				u.attachColor(0, 0);
+				u->attachColor(0, _idTex);
+				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.toBase, info.toType, &_buff->operator[](0));
+				u->attachColor(0, 0);
 	#else
 				auto u = use();
-				glGetTexImage(GL_TEXTURE_2D, 0, info.toBase, info.toType, &_buff->operator[](0));
+				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.toBase, info.toType, &_buff->operator[](0));
 				u->end();
 	#endif
 			}
@@ -159,13 +159,13 @@ namespace rs {
 			if(_bRestore && _buff) {
 				// バッファの内容から復元
 				GLenum baseFormat = GLFormat::QueryInfo(_format.get())->toBase;
-				glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, baseFormat, _typeFormat.get(), &_buff->operator [](0));
+				GLEC(Warn, glTexImage2D, GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, baseFormat, _typeFormat.get(), &_buff->operator [](0));
 				// DeviceがActiveな時はバッファを空にしておく
 				_buff = spn::none;
 				_typeFormat = spn::none;
 			} else {
 				// とりあえず領域だけ確保しておく
-				glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+				GLEC(Warn, glTexImage2D, GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 			}
 			u->end();
 		}
