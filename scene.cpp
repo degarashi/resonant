@@ -2,7 +2,11 @@
 
 namespace rs {
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
-	HGbj SceneMgr::getTop() const { return _scene.top(); }
+	HGbj SceneMgr::getTop() const {
+		if(_scene.empty())
+			return HGbj();
+		return _scene.top();
+	}
 	void SceneMgr::setPushScene(HGbj hSc, bool bPop) {
 		if(_scene.empty())
 			_scene.push(HLGbj(hSc));
