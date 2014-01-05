@@ -54,6 +54,11 @@ namespace rs {
 		lk->fps = 0;
 	}
 	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w) {
+		SPGLContext ctx = GLContext::CreateContext(w, false),
+					ctxD = GLContext::CreateContext(w, true);
+		ctxD->makeCurrent();
+		ctx->makeCurrent(w);
+
 		GLRes 		glrP;
 		RWMgr 		rwP;
 		FontFamily	fontP;
@@ -74,10 +79,6 @@ namespace rs {
 			SDL_PushEvent(&e);
 		});
 
-		SPGLContext ctx = GLContext::CreateContext(w, false),
-					ctxD = GLContext::CreateContext(w, true);
-		ctxD->makeCurrent();
-		ctx->makeCurrent(w);
 		DrawThread dth;
 		dth.start(std::ref(getLooper()), std::move(ctxD), w, mp);
 		// 描画スレッドの初期化完了を待つ
