@@ -1,4 +1,8 @@
 #pragma once
+#ifdef WIN32
+	#include <intrin.h>
+	#include <windows.h>
+#endif
 #include <SDL2/SDL_thread.h>
 #include "spinner/misc.hpp"
 #include "sdlwrap.hpp"

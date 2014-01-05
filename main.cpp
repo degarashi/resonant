@@ -1,3 +1,7 @@
+#ifdef WIN32
+	#include <intrin.h>
+	#include <windows.h>
+#endif
 #include "gameloop.hpp"
 #include "glhead.hpp"
 #include "input.hpp"

@@ -1,4 +1,7 @@
 #pragma once
+#ifdef WIN32
+	#include <intrin.h>
+#endif
 #include "spinner/resmgr.hpp"
 #include "input_dep_sdl.hpp"
 #include <unordered_set>

@@ -2,6 +2,10 @@
 #include "spinner/misc.hpp"
 #include "spinner/resmgr.hpp"
 #include "spinner/dir.hpp"
+#ifdef WIN32
+	#include <intrin.h>
+	#include <windows.h>
+#endif
 #include <SDL.h>
 #include <SDL_atomic.h>
 #include <SDL_thread.h>

@@ -6,6 +6,10 @@
 #include <unordered_map>
 #include "spinner/optional.hpp"
 #include "spinner/misc.hpp"
+#ifdef WIN32
+	#include <intrin.h>
+	#include <windows.h>
+#endif
 #include <SDL.h>
 
 constexpr uint32_t

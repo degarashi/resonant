@@ -1,4 +1,5 @@
 #ifdef WIN32
+	#include <intrin.h>
 	#include <windows.h>
 #endif
 #include "glresource.hpp"

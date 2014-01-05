@@ -1,4 +1,8 @@
 #pragma once
+#ifdef WIN32
+	#include <intrin.h>
+	#include <windows.h>
+#endif
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_keyboard.h>
