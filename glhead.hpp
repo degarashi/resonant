@@ -96,9 +96,10 @@ namespace rs {
 namespace rs {
 	//! OpenGLエラーIDとその詳細メッセージ
 	struct GLError {
+		std::string _errMsg;
 		const static std::pair<GLenum, const char*> ErrorList[];
 
-		const char* errorDesc() const;
+		const char* errorDesc();
 		void reset() const;
 		const char* getAPIName() const;
 		//! エラー値を出力しなくなるまでループする

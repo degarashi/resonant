@@ -9,25 +9,25 @@ namespace rs {
 		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer is incomplete"},
 		{GL_OUT_OF_MEMORY, "Not enough memory left to execute command"}
 	};
-	const char* GLError::errorDesc() const {
+	const char* GLError::errorDesc() {
 		GLenum err;
-		spn::tls_errMsgTmp.clear();
+		_errMsg.clear();
 		while((err = glGetError()) != GL_NO_ERROR) {
 			// OpenGLエラー詳細を取得
 			bool bFound = false;
 			for(const auto& e : ErrorList) {
 				if(e.first == err) {
-					spn::tls_errMsgTmp += e.second;
-					spn::tls_errMsgTmp += '\n';
+					_errMsg += e.second;
+					_errMsg += '\n';
 					bFound = true;
 					break;
 				}
 			}
 			if(!bFound)
-				spn::tls_errMsgTmp += "unknown errorID\n";
+				_errMsg += "unknown errorID\n";
 		}
-		if(!spn::tls_errMsgTmp.empty())
-			return spn::tls_errMsgTmp.c_str();
+		if(!_errMsg.empty())
+			return _errMsg.c_str();
 		return nullptr;
 	}
 	void GLError::reset() const {

@@ -61,12 +61,13 @@ namespace rs {
 
 	template <class I>
 	struct ErrorT {
-		const char* errorDesc() const {
+		std::string		_errMsg;
+		const char* errorDesc() {
 			const char* err = I::Get();
 			if(*err != '\0') {
-				spn::tls_errMsgTmp = err;
+				_errMsg = err;
 				I::Reset();
-				return spn::tls_errMsgTmp.c_str();
+				return _errMsg.c_str();
 			}
 			return nullptr;
 		}
