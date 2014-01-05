@@ -235,8 +235,10 @@ class TScene : public Scene<TScene> {
 				auto lk = shared.lock();
 				if(mgr_input.isKeyPressed(lk->actLeft))
 					mgr_scene.setPushScene(mgr_gobj.emplace(new TScene2()));
-				if(mgr_input.isKeyPressed(lk->actQuit))
+				if(mgr_input.isKeyPressed(lk->actQuit)) {
+					LogOutput("TScene::onUpdate::Quit");
 					mgr_scene.setPopScene(1);
+				}
 			}
 			void onDown(TScene& self, ObjTypeID prevID, const Variant& arg) override {
 				LogOutput("TScene::onDown");
@@ -333,5 +335,5 @@ class MyMain : public rs::IMainProc {
 };
 int main(int argc, char **argv) {
 	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); });
-	return gloop.run("HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN, 2,0,24);
+	return gloop.run("HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE, 2,0,24);
 }
