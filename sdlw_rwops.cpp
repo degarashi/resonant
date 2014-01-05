@@ -16,8 +16,10 @@ namespace rs {
 					cb);
 	}
 	RWops RWops::FromFile(const std::string& path, int access) {
+		auto* str = path.c_str();
+		str = spn::PathBlock::RemoveDriveLetter(str, str + path.length());
 		std::string mode = ReadModeStr(access);
-		SDL_RWops* ops = SDL_RWFromFile(path.c_str(), mode.c_str());
+		SDL_RWops* ops = SDL_RWFromFile(str, mode.c_str());
 		return RWops(ops,
 					Type::File,
 					access,
@@ -242,7 +244,9 @@ namespace rs {
 	HLRW RWMgr::fromFile(const std::string& path, int access, bool bNoShared) {
 		if(bNoShared)
 			return base_type::acquire(RWops::FromFile(path, access));
-		return base_type::acquire(path, RWops::FromFile(path, access)).first;
+		auto* str = &path[0];
+		str = spn::PathBlock::RemoveDriveLetter(str, str+path.length());
+		return base_type::acquire(str, RWops::FromFile(str, access)).first;
 	}
 	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromConstMem(p,size,cb));
