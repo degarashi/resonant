@@ -8,10 +8,10 @@ namespace rs {
 						SDL_GL_DEPTH_SIZE, depth);
 	}
 	SPWindow Window::Create(const std::string& title, int w, int h, uint32_t flag) {
-		return Create(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag|SDL_WINDOW_OPENGL);
+		return Create(title, 128, 128, w, h, flag|SDL_WINDOW_OPENGL);
 	}
 	SPWindow Window::Create(const std::string& title, int x, int y, int w, int h, uint32_t flag) {
-		return SPWindow(new Window(SDLEC_P(Trap, SDL_CreateWindow, title.c_str(), x, y, w, h, flag|SDL_WINDOW_OPENGL)));
+		return SPWindow(new Window(SDLEC_P(Warn, SDL_CreateWindow, title.c_str(), x, y, w, h, flag|SDL_WINDOW_OPENGL)));
 	}
 	Window::Window(SDL_Window* w): _window(w) {
 		_checkState();
