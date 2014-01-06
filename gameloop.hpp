@@ -26,6 +26,36 @@ namespace rs {
 		static void All(const SDL_Event& e, uint32_t filter = ALL_EVENT);
 	};
 
+	#define mgr_path (AppPath::_ref())
+	//! アプリケーションのパスや引数、その他システムパスを登録
+	/*! 将来的にはLuaによる変数定義で置き換え */
+	class AppPath : public spn::Singleton<AppPath> {
+		public:
+			enum class Type {
+				Sound,
+				Texture,
+				Font,
+				Effect,
+				NumType
+			};
+		private:
+			//! アプリケーション本体のパス
+			spn::PathBlock	_pbApp,
+							_pbAppDir;
+			//! AppPathと連結後のパス
+			spn::PathBlock	_path[static_cast<int>(Type::NumType)];
+		public:
+			AppPath(const char* apppath);
+			//! 改行を区切りとした文字列からシステムパスを設定
+			void setFromText(HRW hRW);
+			//! Luaスクリプト形式でパスを設定 (予定)
+			// void setFromLua();
+
+			const spn::PathBlock& getAppPath() const;
+			const spn::PathBlock& getAppDir() const;
+			const spn::PathBlock& getPath(Type typ) const;
+	};
+
 	template <class T>
 	using UPtr = std::unique_ptr<T>;
 	namespace msg {
@@ -105,9 +135,9 @@ namespace rs {
 	#define main_thread (::rs::MainThread::_ref())
 	//! メインスレッド
 	class MainThread : public spn::Singleton<MainThread>,
-						public ThreadL<void (const SPLooper&,const SPWindow&)>
+						public ThreadL<void (const SPLooper&,const SPWindow&,const char*)>
 	{
-		using base = ThreadL<void (const SPLooper&,const SPWindow&)>;
+		using base = ThreadL<void (const SPLooper&,const SPWindow&,const char*)>;
 		MPCreate	_mcr;
 
 		struct Info {
@@ -119,7 +149,7 @@ namespace rs {
 		SpinLock<Info>		_info;
 
 		protected:
-			void runL(const SPLooper& guiLooper, const SPWindow& w) override;
+			void runL(const SPLooper& guiLooper, const SPWindow& w, const char* apppath) override;
 		public:
 			MainThread(MPCreate mcr);
 			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
@@ -159,6 +189,6 @@ namespace rs {
 
 		public:
 			GameLoop(MPCreate mcr);
-			int run(spn::To8Str title, int w, int h, uint32_t flag, int major=2, int minor=0, int depth=16);
+			int run(const char* apppath, spn::To8Str title, int w, int h, uint32_t flag, int major=2, int minor=0, int depth=16);
 	};
 }

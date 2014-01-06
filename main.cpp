@@ -82,17 +82,21 @@ class MyDraw : public rs::IDrawProc {
 			_hlVb.ref()->use()->initData(tmpV, countof(tmpV), sizeof(TmpV));
 			_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 			_hlIb.ref()->use()->initData(tmpI, countof(tmpI));
-			_hlTex = mgr_gl.loadTexture(spn::URI("file://Z:/home/slice/test.png"));
+			spn::URI uriTex("file", mgr_path.getPath(AppPath::Type::Texture));
+			uriTex <<= "test.png";
+			_hlTex = mgr_gl.loadTexture(uriTex);
 			_hlTex.ref()->use()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
 
 			rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
-			_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nなんということじゃ\nつるぎの　もちかたが　ちがうぞ");
+			_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nまだ\nゲームは　完成　しないのか？");
 
 			rs::GPUInfo info;
 			info.onDeviceReset();
 			std::cout << info;
 
-			_hlFx = mgr_gl.loadEffect(spn::URI("file://Z:/home/slice/test.glx"));
+			spn::URI uriFx("file", mgr_path.getPath(AppPath::Type::Effect));
+			uriFx <<= "test.glx";
+			_hlFx = mgr_gl.loadEffect(uriFx);
 			auto& pFx = *_hlFx.ref();
 			GLint techID = pFx.getTechID("TheTech");
 			pFx.setTechnique(techID, true);
@@ -225,7 +229,9 @@ class TScene : public Scene<TScene> {
 		public:
 			MySt(StateID id): State(id) {}
 			void onEnter(TScene& self, StateID prevID) override {
-				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile("Z:/home/slice/test.ogg", RWops::Read, false));
+				spn::PathBlock pb(mgr_path.getPath(AppPath::Type::Sound));
+				pb <<= "test.ogg";
+				self._hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile(pb.plain_utf8(), RWops::Read, false));
 				self._hlSg = mgr_sound.createSourceGroup(1);
 			}
 			void onUpdate(TScene& self) override {
@@ -333,7 +339,8 @@ class MyMain : public rs::IMainProc {
 			return new MyDraw;
 		}
 };
+
 int main(int argc, char **argv) {
 	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); });
-	return gloop.run("HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE, 2,0,24);
+	return gloop.run(argv[0], "HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE, 2,0,24);
 }

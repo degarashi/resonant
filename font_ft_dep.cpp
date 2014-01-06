@@ -17,7 +17,6 @@ namespace rs {
 		if(len == 0)
 			return;
 
-		spn::Dir::PathReset pr;
 		spn::Dir::EnumEntryWildCard(pattern.moveTo(), [this](const spn::Dir& dir) {
 			loadFamily(mgr_rw.fromFile(dir.plain_utf8(), RWops::Read, true));
 		});

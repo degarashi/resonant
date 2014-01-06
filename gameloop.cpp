@@ -48,7 +48,6 @@ namespace rs {
 		} while(bLoop && !isInterrupted());
 		std::cout << "DrawThread End" << std::endl;
 	}
-
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr): _mcr(mcr) {
 		auto lk = _info.lock();
@@ -56,7 +55,7 @@ namespace rs {
 		lk->tmBegin = Clock::now();
 		lk->fps = 0;
 	}
-	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w) {
+	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* apppath) {
 		SPGLContext ctx = GLContext::CreateContext(w, false),
 					ctxD = GLContext::CreateContext(w, true);
 		ctxD->makeCurrent();
@@ -64,8 +63,12 @@ namespace rs {
 
 		GLRes 		glrP;
 		RWMgr 		rwP;
+		AppPath		appPath(apppath);
+		std::string pathlist("pathlist_");
+		pathlist += TOOL_PREFIX;
+		appPath.setFromText(mgr_rw.fromFile(pathlist.c_str(), RWops::Read, false));
 		FontFamily	fontP;
-		fontP.loadFamilyWildCard("Z:/home/slice/.fonts/*.ttc");
+		fontP.loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
 		FontGen		fgenP(spn::PowSize(512,512));
 		CameraMgr	camP;
 		InputMgr	inpP;
@@ -195,7 +198,6 @@ namespace rs {
 			// 時間が残っていれば描画
 			// 最大スキップフレームを超過してたら必ず描画
 			auto dur = Clock::now() - tp;
-			auto count = std::chrono::duration_cast<std::chrono::microseconds>(dur).count();
 			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
 				skip = 0;
 				drawHandler.postArgs(msg::DrawReq(++getInfo()->accumDraw));
@@ -270,7 +272,7 @@ namespace rs {
 	};
 	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
 	GameLoop::GameLoop(MPCreate mcr): _mcr(mcr), _level(Active) {}
-	int GameLoop::run(spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
+	int GameLoop::run(const char* apppath, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		Window::SetStdGLAttributes(major, minor, depth);
 		SPWindow _spWindow = Window::Create(title.moveTo(), w, h, flag);
@@ -281,7 +283,7 @@ namespace rs {
 		auto& loop = Looper::GetLooper();
 		// メインスレッドに渡す
 		MainThread mth(_mcr);
-		mth.start(std::ref(loop), std::ref(_spWindow));
+		mth.start(std::ref(loop), std::ref(_spWindow), apppath);
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
 			if(msg::MainInit* p = *msg)

@@ -14,6 +14,8 @@ endif()
 
 include(spinner/CMakeCommon.txt require)
 include(spinner/CMakeCompiler.txt require)
+add_definitions(-DTOOL_PREFIX="${TOOL_PREFIX}")
+
 if(SOUND_API STREQUAL "openal")
 	message(STATUS "using OpenAL...")
 	set(LIBSRC_FILE ${LIBSRC_FILE} sound_depAL.cpp)
@@ -44,7 +46,7 @@ else()
 	include_directories(/usr/local/include/SDL2
 						/usr/local/include/freetype2)
 endif()
-set(LIBSRC_FILE ${LIBSRC_FILE} scene.cpp updator.cpp printevent.cpp camera.cpp glerror.cpp gameloop.cpp font_ft_dep.cpp ftwrap.cpp fontgen.cpp font_common.cpp gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
+set(LIBSRC_FILE ${LIBSRC_FILE} apppath.cpp scene.cpp updator.cpp printevent.cpp camera.cpp glerror.cpp gameloop.cpp font_ft_dep.cpp ftwrap.cpp fontgen.cpp font_common.cpp gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
