@@ -23,12 +23,14 @@ namespace rs {
 		ctx->makeCurrent(w);
 		LoadGLFunc();
 		mgr_gl.onDeviceReset();
+		SetSwapInterval(0);
 		UPDrawProc up(mp->initDraw());
 
 		bool bLoop = true;
 		do {
 			// メインスレッドから描画開始の指示が来るまで待機
 			while(auto m = getLooper()->wait()) {
+				SetSwapInterval(0);
 				if(msg::DrawReq* p = *m) {
 					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
@@ -194,6 +196,8 @@ namespace rs {
 				std::cout << "MainLoop END" << std::endl;
 				break;
 			}
+
+			// TODO: ループ早すぎると描画キューにメッセージ溜まりすぎて死ぬ
 
 			// 時間が残っていれば描画
 			// 最大スキップフレームを超過してたら必ず描画
