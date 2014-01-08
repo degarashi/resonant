@@ -104,7 +104,6 @@ class MyDraw : public rs::IDrawProc {
 			_passView = pFx.getPassID("P0");
 			_passText = pFx.getPassID("P1");
 // 			pFx.setUniform(spn::Vec4{1,2,3,4}, pFx.getUniformID("lowVal"));
-			rs::SetSwapInterval(1);
 
 			_size *= 0;
 			auto lk = shared.lock();

@@ -114,7 +114,6 @@ namespace rs {
 		}
 	};
 	AWaveBatch::AWaveBatch(HRW hRW) {
-		auto& rw = hRW.ref();
 		SDL_AudioSpec spec;
 		SDLMem buff;
 		Uint32 buffLen;
