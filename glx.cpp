@@ -473,6 +473,7 @@ namespace rs {
 		// 現状なら_uniMapID.empty()だけで判定できるが便宜上
 		if(Bit::ChClear(_rflg, REFL_UNIFORM)) {
 			_refreshProgram();
+			_tps->getProgram().cref()->use();
 			if(!_uniMapID.empty()) {
 				// UnifParamの変数をシェーダーに設定
 				UniVisitor visitor(_texIndex);
@@ -512,11 +513,13 @@ namespace rs {
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
 		applySetting();
+		_tps->getProgram().cref()->use();
 		glDrawArrays(mode, first, count);
 		GLEC_ChkP(Trap);
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offset) {
 		applySetting();
+		_tps->getProgram().cref()->use();
 		GLenum sz = _iBuffer.cref()->getStride() == sizeof(GLshort) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_BYTE;
 		glDrawElements(mode, count, sz, reinterpret_cast<const GLvoid*>(offset));
 		GLEC_ChkP(Trap);
