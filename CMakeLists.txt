@@ -1,16 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(resonant)
 
-option(USE_QT5 NO)
 set(SSE_LEVEL 2)
 set(SOUND_API openal)
 # set(ARCHITECTURE x86)
 # set(SOUND_API opensl)
-
-if(USE_QT5)
-	add_definitions(-DQT5)
-	message(STATUS "using Qt framework5...")
-endif()
 
 include(spinner/CMakeCommon.txt require)
 include(spinner/CMakeCompiler.txt require)
@@ -37,11 +31,12 @@ if(DEFINED ARCHITECTURE)
 	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
 						${CMAKE_INSTALL_PREFIX}/include/SDL2)
 elseif(${WIN32})
-#	execute_process(COMMAND which ${CMAKE_CXX_COMPILER} RESULT_VARIABLE CompilerPath)
-#TODO 絶対パスが入ってるので後で直す
-	set(CompilerPath /home/slice/local/i686-w64-mingw32)
-	include_directories(${CompilerPath}/include/SDL2
-						${CompilerPath}/include/freetype2)
+	execute_process(COMMAND which ${CMAKE_CXX_COMPILER} OUTPUT_VARIABLE CompilerPath)
+	execute_process(COMMAND ${PROJECT_SOURCE_DIR}/getbasepath.sh ${CompilerPath} OUTPUT_VARIABLE CompilerPath)
+	execute_process(COMMAND ${PROJECT_SOURCE_DIR}/getbasepath.sh ${CompilerPath} OUTPUT_VARIABLE CompilerPath)
+	set(CompilerBasePath ${CompilerPath}/i686-w64-mingw32)
+	include_directories(${CompilerBasePath}/include/SDL2
+						${CompilerBasePath}/include/freetype2)
 else()
 	include_directories(/usr/local/include/SDL2
 						/usr/local/include/freetype2)
