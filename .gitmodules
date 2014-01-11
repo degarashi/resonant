@@ -4,3 +4,6 @@
 [submodule "boomstick"]
 	path = boomstick
 	url = ../boomstick
+[submodule "glextract"]
+	path = glextract
+	url = ../glextract
