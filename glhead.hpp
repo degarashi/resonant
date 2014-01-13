@@ -15,19 +15,23 @@
 	#include "glext.h"
 	#include "glxext.h"
 #endif
+
 #ifndef ANDROID
 	#include "glext.h"
 #endif
+#define GLDEFINE(name,type)		extern type name;
+#define DEF_GLMETHOD(...)
 
-#ifndef ANDROID
-	#define GLDEFINE(name,type)		extern type name;
-	#ifdef WIN32
-		#include "glfuncW.inc"
-	#else
-		#include "glfunc.inc"
-	#endif
-	#undef GLDEFINE
+#ifdef ANDROID
+	#include "android_gl.inc"
+#elif defined(WIN32)
+	#include "mingw_gl.inc"
+#else
+	#include "linux_gl.inc"
 #endif
+
+#undef DEF_GLMETHOD
+#undef GLDEFINE
 
 #include <memory>
 #include <vector>

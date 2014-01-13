@@ -6,11 +6,15 @@
 
 // OpenGL関数群の定義
 #define GLDEFINE(name,type)		type name;
-#ifdef WIN32
-	#include "glfuncW.inc"
+#define DEF_GLMETHOD(...)
+#ifdef ANDROID
+	#include "android_gl.inc"
+#elif defined(WIN32)
+	#include "mingw_gl.inc"
 #else
-	#include "glfunc.inc"
+	#include "linux_gl.inc"
 #endif
+#undef DEF_GLMETHOD
 #undef GLDEFINE
 
 namespace rs {
@@ -51,17 +55,23 @@ namespace rs {
 	// OpenGL関数ロード
 	#define GLDEFINE(name,type)		name = (type)GLGETPROC(name); \
 			if(!name) throw std::runtime_error(std::string("error on loading GL function \"") + #name + '\"');
+	#define DEF_GLMETHOD(...)
 		void LoadGLFunc() {
 			// 各種API関数
-			#ifdef WIN32
-				#include "glfuncW.inc"
-			#else
-				#include "glfunc.inc"
+			#ifndef ANDROID
+				#ifdef ANDROID
+					#include "android_gl.inc"
+				#elif defined(WIN32)
+					#include "mingw_gl.inc"
+				#else
+					#include "linux_gl.inc"
+				#endif
 			#endif
 			// その他OS依存なAPI関数
 			LoadGLAux();
 			g_bglfuncInit = true;
 		}
+	#undef DEF_GLMETHOD
 	#undef GLDEFINE
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {
