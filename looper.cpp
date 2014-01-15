@@ -32,7 +32,7 @@ namespace rs {
 		return tpoint < m.tpoint;
 	}
 	Message::Message(Duration delay, Exec&& e):
-		tpoint(Clock::now() + delay), id{-1}, exec(std::move(e)), handler(nullptr) {}
+		tpoint(Clock::now() + delay), id{-1}, handler(nullptr), exec(std::move(e)) {}
 
 	// ----------------- Looper -----------------
 	Looper::Looper(Looper&& lp): _msg(std::move(lp._msg)) {}
@@ -122,5 +122,16 @@ namespace rs {
 	}
 	const WPLooper& Handler::getLooper() const {
 		return _looper;
+	}
+	void Handler::postExec(Callback cb) {
+		CondV cond;
+		Mutex mutex;
+		UniLock lk(mutex);
+		postArgs(msg::Exec(), [&](){
+			cb();
+			UniLock lk2(mutex);
+			cond.signal();
+		});
+		cond.wait(lk);
 	}
 }

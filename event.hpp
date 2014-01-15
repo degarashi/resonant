@@ -36,6 +36,10 @@ namespace rs {
 	};
 	template <class T>
 	const MsgID MsgBase<T>::ID{GetNewMessageID()};
+	
+	namespace msg {
+		struct Exec : MsgBase<Exec> {};
+	}
 
 	struct Message {
 		const static Duration NoDelay;
@@ -137,6 +141,7 @@ namespace rs {
 			Handler(Handler&& h);
 			Handler(const WPLooper& loop, Callback cb=Callback());
 			const WPLooper& getLooper() const;
+			void postExec(Callback cb);
 			void post(Message&& m);
 			template <class... Args>
 			void postArgsDelay(Args&&... args) {
