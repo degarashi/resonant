@@ -308,6 +308,12 @@ namespace rs {
 			const T& get() const {
 				return this->operator*();
 			}
+			bool initialized() const {
+				return _getPtr() != nullptr;
+			}
+			void terminate() {
+				SDL_TLSSet(_tlsID, nullptr, nullptr);
+			}
 	};
 
 	// SIG = スレッドに関するシグニチャ
