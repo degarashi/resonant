@@ -164,14 +164,14 @@ namespace rs {
 // OpenGLに関するアサート集
 #define GLEC_Base(act, ...)				::spn::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #define GLEC_Base0(act)					::spn::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define GLEC(act, ...)					GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
+#define GLEC(act, func, ...)			GLEC_Base(AAct_##act<GLE_Error>(), [&](){GL.func(__VA_ARGS__);})
 #define GLEC_Chk(act)					GLEC_Base0(AAct_##act<GLE_Error>());
 
 #ifdef DEBUG
-	#define GLEC_P(act, func, ...)			GLEC(act, [&](){GL.func(__VA_ARGS__);})
-	#define GLEC_ChkP(act)					GLEC_Chk(act)
+	#define GLEC_P(act, ...)			GLEC(act, __VA_ARGS__)
+	#define GLEC_ChkP(act)				GLEC_Chk(act)
 #else
-    #define GLEC_P(act, func, ...)			::spn::EChk_pass([&](){GL.func(__VA_ARGS__)})
+    #define GLEC_P(act, func, ...)		::spn::EChk_pass([&](){GL.func(__VA_ARGS__)})
 	#define GLEC_ChkP(act)
 #endif
 
