@@ -14,41 +14,60 @@
 #include "serialization/chars.hpp"
 
 namespace rs {
+	constexpr bool MULTICONTEXT = false;
 	// --------------------- DrawThread ---------------------
 	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, const UPMainProc& mp) {
-		Handler drawHandler(mainLooper);
-		drawHandler.postArgs(msg::DrawInit());
+		Handler mainHandler(mainLooper);
 
 		SPGLContext ctx(std::move(ctx_b));
 		ctx->makeCurrent(w);
-		LoadGLFunc();
+		Handler drawHandler(Looper::GetLooper());
+		GLM::SetShareMode(MULTICONTEXT);
+		GLM::InitializeDrawThread(drawHandler);
+		GLM::LoadGLFunc();
 		mgr_gl.onDeviceReset();
-		SetSwapInterval(0);
+		GL.setSwapInterval(0);
+		mainHandler.postArgs(msg::DrawInit());
 		UPDrawProc up(mp->initDraw());
 
 		bool bLoop = true;
 		do {
 			// メインスレッドから描画開始の指示が来るまで待機
+			// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
 			while(auto m = getLooper()->wait()) {
-				SetSwapInterval(0);
+				GL.setSwapInterval(0);
 				if(msg::DrawReq* p = *m) {
 					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
 					if(up->runU(p->id))
 						ctx->swapWindow();
-					glFinish();
+					GL.glFinish();
 					{
 						auto lk = _info.lock();
 						lk->state = State::Idle;
 						lk->accum = p->id;
 					}
 				}
-				if(msg::QuitReq* q = *m)
+				if(msg::QuitReq* q = *m) {
 					bLoop = false;
-				// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
+					break;
+				}
 			}
 		} while(bLoop && !isInterrupted());
-		std::cout << "DrawThread End" << std::endl;
+		std::cout << "DrawThread destructor begun" << std::endl;
+		
+		up.reset();
+		// 後片付けフェーズ
+		bLoop = true;
+		while(bLoop && !isInterrupted()) {
+			while(auto m = getLooper()->wait()) {
+				if(msg::QuitReq* p = *m) {
+					bLoop = false;
+					break;
+				}
+			}
+		}
+		std::cout << "DrawThread destructor ended" << std::endl;
 	}
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr): _mcr(mcr) {
@@ -59,33 +78,41 @@ namespace rs {
 	}
 	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* apppath) {
 		SPGLContext ctx = GLContext::CreateContext(w, false),
-					ctxD = GLContext::CreateContext(w, true);
-		ctxD->makeCurrent();
-		ctx->makeCurrent(w);
+					ctxD;
+		if(MULTICONTEXT) {
+			ctxD = GLContext::CreateContext(w, true);
+			ctxD->makeCurrent();
+			ctx->makeCurrent(w);
+		} else {
+			ctx->makeCurrent();
+			std::swap(ctxD, ctx);
+		}
 
-		GLRes 		glrP;
-		RWMgr 		rwP;
-		AppPath		appPath(apppath);
+		UPtr<GLRes>		glrP(new GLRes());
+		UPtr<RWMgr>		rwP(new RWMgr());
+		UPtr<AppPath>	appPath(new AppPath(apppath));
 		std::string pathlist("pathlist_");
 		pathlist += TOOL_PREFIX;
-		appPath.setFromText(mgr_rw.fromFile(pathlist.c_str(), RWops::Read, false));
-		FontFamily	fontP;
-		fontP.loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
-		FontGen		fgenP(spn::PowSize(512,512));
-		CameraMgr	camP;
-		InputMgr	inpP;
-		ObjMgr		objP;
-		UpdMgr		updP;
-		SceneMgr	scP;
-		std::unique_ptr<SoundMgr> sndP(new SoundMgr(44100));
+		appPath->setFromText(mgr_rw.fromFile(pathlist.c_str(), RWops::Read, false));
+		UPtr<FontFamily>	fontP(new FontFamily());
+		fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
+		UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
+		UPtr<CameraMgr>		camP(new CameraMgr());
+		UPtr<PointerMgr>	pmP(new PointerMgr());
+		UPtr<InputMgr>		inpP(new InputMgr());
+		UPtr<ObjMgr>		objP(new ObjMgr());
+		UPtr<UpdMgr>		updP(new UpdMgr());
+		UPtr<SceneMgr>		scP(new SceneMgr());
+		UPtr<SoundMgr>		sndP(new SoundMgr(44100));
 		sndP->makeCurrent();
 
+		using UPHandler = UPtr<Handler>;
 		UPMainProc mp(_mcr(w));
-		Handler guiHandler(guiLooper, [](){
+		UPHandler guiHandler(new Handler(guiLooper, [](){
 			SDL_Event e;
 			e.type = EVID_SIGNAL;
 			SDL_PushEvent(&e);
-		});
+		}));
 
 		DrawThread dth;
 		dth.start(std::ref(getLooper()), std::move(ctxD), w, mp);
@@ -94,8 +121,9 @@ namespace rs {
 			if(msg::DrawInit* p = *m)
 				break;
 		}
-		Handler drawHandler(dth.getLooper());
-		guiHandler.postArgs(msg::MainInit());
+		GLM::InitializeMainThread();
+		UPHandler drawHandler(new Handler(dth.getLooper()));
+		guiHandler->postArgs(msg::MainInit());
 
 		const spn::FracI fracInterval(50000, 3);
 		spn::FracI frac(0,1);
@@ -114,7 +142,7 @@ namespace rs {
 					// 例外が投げられて終了したかをチェック
 					dth.getResult();
 				} catch (...) {
-					guiHandler.postArgs(msg::QuitReq());
+					guiHandler->postArgs(msg::QuitReq());
 					Assert(Warn, false, "MainThread: draw thread was ended by throwing exception")
 					throw;
 				}
@@ -144,7 +172,7 @@ namespace rs {
 							mp->onStop();
 							// OpenGLリソースの解放
 							mgr_gl.onDeviceLost();
-							glFlush();
+							GL.glFlush();
 							// サウンドデバイスのバックアップ
 							boost::archive::binary_oarchive oa(buffer);
  							oa << mgr_rw;
@@ -167,7 +195,7 @@ namespace rs {
 							sndP->update();
 							// OpenGLリソースの再確保
 							mgr_gl.onDeviceReset();
-							glFlush();
+							GL.glFlush();
 							mp->onReStart();
 						}
 					}
@@ -204,7 +232,7 @@ namespace rs {
 			auto dur = Clock::now() - tp;
 			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
 				skip = 0;
-				drawHandler.postArgs(msg::DrawReq(++getInfo()->accumDraw));
+				drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw));
 			} else
 				++skip;
 		} while(bLoop && !isInterrupted());
@@ -212,12 +240,34 @@ namespace rs {
 			mgr_scene.setPopScene(1);
 			mgr_scene.onUpdate();
 		}
+		// DrawThreadがIdleになるまで待つ
+		while(dth.getInfo()->accum != getInfo()->accumDraw)
+			SDL_Delay(0);
+		
+		// 描画スレッドを後片付けフェーズへ移行
+		drawHandler->postArgs(msg::QuitReq());
+
+		mp.reset();
+
+		sndP.reset();
+		scP.reset();
+		updP.reset();
+		objP.reset();
+		inpP.reset();
+		camP.reset();
+		fgenP.reset();
+		fontP.reset();
+		appPath.reset();
+		rwP.reset();
+		glrP.reset();
 
 		// 描画スレッドの終了を待つ
 		dth.interrupt();
-		drawHandler.postArgs(msg::QuitReq());
+		drawHandler->postArgs(msg::QuitReq());
 		dth.join();
-		guiHandler.postArgs(msg::QuitReq());
+		guiHandler->postArgs(msg::QuitReq());
+
+		std::cout << "MainThread ended" << std::endl;
 	}
 
 	void GameLoop::_procWindowEvent(SDL_Event& e) {

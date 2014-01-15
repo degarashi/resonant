@@ -9,12 +9,12 @@
 #define SEQ_BLOCK (attribute)(varying)(uniform)(const)
 
 #define SEQ_GLSETTING ((linewidth,glLineWidth,float))((frontface,glFrontFace,unsigned))((cullface,glCullFace,unsigned))((depthrange,glDepthRange,float,float))((viewport,glViewport,float,float,float,float))\
-		((scissor,glScissor,float,float,float,float))((samplecoverage,glSampleCoverage,float,bool))((stencilfunc,glStencilFunc,unsigned,float,unsigned))((stencilfuncfront,StencilFuncFront,unsigned,float,unsigned))\
-		((stencilfuncback,StencilFuncBack,unsigned,float,unsigned))((stencilop,glStencilOp,unsigned,unsigned,unsigned))((stencilopfront,StencilOpFront,unsigned,unsigned,unsigned))((stencilopback,StencilOpBack,unsigned,unsigned,unsigned))\
+		((scissor,glScissor,float,float,float,float))((samplecoverage,glSampleCoverage,float,bool))((stencilfunc,glStencilFunc,unsigned,float,unsigned))((stencilfuncfront,stencilFuncFront,unsigned,float,unsigned))\
+		((stencilfuncback,stencilFuncBack,unsigned,float,unsigned))((stencilop,glStencilOp,unsigned,unsigned,unsigned))((stencilopfront,stencilOpFront,unsigned,unsigned,unsigned))((stencilopback,stencilOpBack,unsigned,unsigned,unsigned))\
 		((depthfunc,glDepthFunc,unsigned))((blendeq,glBlendEquation,unsigned))((blendeqca,glBlendEquationSeparate,unsigned,unsigned))((blendfunc,glBlendFunc,unsigned,unsigned))\
 		((blendfuncca,glBlendFuncSeparate,unsigned,unsigned,unsigned,unsigned))((blendcolor,glBlendColor,float,float,float,float))\
 		((colormask,glColorMask,bool,bool,bool,bool))((depthmask,glDepthMask,bool))\
-		((stencilmask,glStencilMask,unsigned))((stencilmaskfront,StencilMaskFront,unsigned))((stencilmaskback,StencilMaskBack,unsigned))
+		((stencilmask,glStencilMask,unsigned))((stencilmaskfront,stencilMaskFront,unsigned))((stencilmaskback,stencilMaskBack,unsigned))
 
 #define NUM_TEXCOORD 8
 #define PPFUNC_ADDNUM(z,n,data) (BOOST_PP_CAT(data,n))
@@ -29,4 +29,5 @@
 // tupleのn番要素以降を列挙
 #define ENUMTUPLE_FUNC(z,n,data) (BOOST_PP_TUPLE_ELEM(n,data)())
 #define ENUMTUPLE(n,tup) BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT_FROM_TO(n, BOOST_PP_TUPLE_SIZE(tup), ENUMTUPLE_FUNC, tup))
-#define PPFUNC_GLSET_FUNC(ign,data,elem) [](const ValueSettingR& vs) { vs.action(BOOST_PP_TUPLE_ELEM(1,elem), ENUMTUPLE(2,elem)); },
+#define CONCAT_SCOPE(a,b)	a::b
+#define PPFUNC_GLSET_FUNC(ign,data,elem) [](const ValueSettingR& vs) { vs.action(CONCAT_SCOPE(&IGL, BOOST_PP_TUPLE_ELEM(1,elem)), ENUMTUPLE(2,elem)); },

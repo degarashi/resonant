@@ -1,4 +1,5 @@
 #pragma once
+#include "sdlwrap.hpp"
 
 // OpenGL関数プロトタイプは自分で定義するのでマクロを解除しておく
 #undef GL_GLEXT_PROTOTYPES
@@ -15,33 +16,110 @@
 	#include "glext.h"
 	#include "glxext.h"
 #endif
-
 #ifndef ANDROID
 	#include "glext.h"
 #endif
-#define GLDEFINE(name,type)		extern type name;
-#define DEF_GLMETHOD(...)
 
-#ifdef ANDROID
-	#include "android_gl.inc"
-#elif defined(WIN32)
-	#include "mingw_gl.inc"
-#else
-	#include "linux_gl.inc"
-#endif
+namespace rs {
+	struct IGL {
+		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) = 0;
 
-#undef DEF_GLMETHOD
-#undef GLDEFINE
+		#ifdef ANDROID
+			#include "android_gl.inc"
+		#elif defined(WIN32)
+			#include "mingw_gl.inc"
+		#else
+			#include "linux_gl.inc"
+		#endif
+
+		#undef DEF_GLMETHOD
+		virtual void setSwapInterval(int n) = 0;
+		virtual void stencilFuncFront(int func, int ref, int mask) = 0;
+		virtual void stencilFuncBack(int func, int ref, int mask) = 0;
+		virtual void stencilOpFront(int sfail, int dpfail, int dppass) = 0;
+		virtual void stencilOpBack(int sfail, int dpfail, int dppass) = 0;
+		virtual void stencilMaskFront(int mask) = 0;
+		virtual void stencilMaskBack(int mask) = 0;
+	};
+	//! 直でOpenGL関数を呼ぶ
+	struct IGL_Draw : IGL {
+		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) override;
+
+		#ifdef ANDROID
+			#include "android_gl.inc"
+		#elif defined(WIN32)
+			#include "mingw_gl.inc"
+		#else
+			#include "linux_gl.inc"
+		#endif
+		void setSwapInterval(int n) override;
+		void stencilFuncFront(int func, int ref, int mask)  override;
+		void stencilFuncBack(int func, int ref, int mask)  override;
+		void stencilOpFront(int sfail, int dpfail, int dppass)  override;
+		void stencilOpBack(int sfail, int dpfail, int dppass)  override;
+		void stencilMaskFront(int mask)  override;
+		void stencilMaskBack(int mask)  override;
+	};
+	//! DrawThreadにOpenGL関数呼び出しを委託
+	struct IGL_OtherSingle : IGL {
+		#ifdef ANDROID
+			#include "android_gl.inc"
+		#elif defined(WIN32)
+			#include "mingw_gl.inc"
+		#else
+			#include "linux_gl.inc"
+		#endif
+		
+		#undef DEF_GLMETHOD
+		void setSwapInterval(int n) override;
+		void stencilFuncFront(int func, int ref, int mask)  override;
+		void stencilFuncBack(int func, int ref, int mask)  override;
+		void stencilOpFront(int sfail, int dpfail, int dppass)  override;
+		void stencilOpBack(int sfail, int dpfail, int dppass)  override;
+		void stencilMaskFront(int mask)  override;
+		void stencilMaskBack(int mask)  override;
+	};
+	extern TLS<IGL*>	tls_GL;
+	#define GL	(*(*::rs::tls_GL))
+
+	class Handler;
+	//! OpenGL APIラッパー
+	struct GLM {
+		static IGL_Draw			s_ctxDraw;
+		static IGL_OtherSingle	s_ctxSingle;
+		static bool				s_bShare;
+		static Handler*			s_drawHandler;
+
+		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+			using t_##name = ret_type (*)(BOOST_PP_SEQ_ENUM(args)); \
+			static t_##name name;
+
+		#ifdef ANDROID
+			#include "android_gl.inc"
+		#elif defined(WIN32)
+			#include "mingw_gl.inc"
+		#else
+			#include "linux_gl.inc"
+		#endif
+
+		#undef DEF_GLMETHOD
+
+		static void LoadGLFunc();
+		static bool IsGLFuncLoaded();
+		static void SetShareMode(bool bShareEnabled);
+		static void InitializeMainThread();
+		static void InitializeDrawThread(Handler& handler);
+		static void TerminateDrawThread();
+	};
+}
 
 #include <memory>
 #include <vector>
 #include <assert.h>
 
 namespace rs {
-	extern void LoadGLFunc();
-	extern bool IsGLFuncLoaded();
-	extern void SetSwapInterval(int n);
-
 	struct IGLResource;
 	using UPResource = std::unique_ptr<IGLResource>;
 	class GLEffect;
@@ -84,16 +162,16 @@ namespace rs {
 
 #include "spinner/error.hpp"
 // OpenGLに関するアサート集
-#define GLEC_Base(act, chk, ...)			::spn::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act, chk)				::spn::EChk_base(act, chk, __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define GLEC(act, ...)						GLEC_Base(AAct_##act<GLE_Error>(), GLError(), __VA_ARGS__)
-#define GLEC_Chk(act)						GLEC_Base0(AAct_##act<GLE_Error>(), GLError())
+#define GLEC_Base(act, ...)				::spn::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define GLEC_Base0(act)					::spn::EChk_base(act, GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define GLEC(act, ...)					GLEC_Base(AAct_##act<GLE_Error>(), __VA_ARGS__)
+#define GLEC_Chk(act)					GLEC_Base0(AAct_##act<GLE_Error>());
 
 #ifdef DEBUG
-	#define GLEC_P(act, chk, ...)			GLEC(act, chk, __VA_ARGS__)
+	#define GLEC_P(act, func, ...)			GLEC(act, [&](){GL.func(__VA_ARGS__);})
 	#define GLEC_ChkP(act)					GLEC_Chk(act)
 #else
-    #define GLEC_P(act, chk, ...)			::spn::EChk_pass(chk, __VA_ARGS__)
+    #define GLEC_P(act, func, ...)			::spn::EChk_pass([&](){GL.func(__VA_ARGS__)})
 	#define GLEC_ChkP(act)
 #endif
 

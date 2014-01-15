@@ -81,8 +81,8 @@ namespace rs {
 		virtual ~IGLResource() {}
 	};
 	// ------------------ GL例外クラス ------------------
-	using GLGetIV = decltype(glGetShaderiv);
-	using GLInfoFunc = decltype(glGetShaderInfoLog);
+	using GLGetIV = decltype(&IGL::glGetShaderiv);
+	using GLInfoFunc = decltype(&IGL::glGetShaderInfoLog);
 	//! GLSLコンパイル関連のエラー基底
 	struct GLE_ShProgBase : GLE_Error {
 		GLGetIV 	_ivF;

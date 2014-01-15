@@ -185,7 +185,6 @@ namespace rs {
 					int getValue() const;
 			};
 			class ActMgr : public spn::ResMgrN<Action, ActMgr> {} _act;
-			PointerMgr _ptr;
 		public:
 			using HLAct = ActMgr::AnotherLHandle<Action>;
 			using HAct = ActMgr::AnotherSHandle<Action>;

@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(resonant)
 
-set(SSE_LEVEL 2)
+# set(WIN32 TRUE)
+# unset(UNIX)
+#set(SSE_LEVEL 2)
 set(SOUND_API openal)
+# set(UNIX TRUE)
+# unset(WIN32)
 # set(ARCHITECTURE x86)
 # set(SOUND_API opensl)
 
@@ -41,7 +45,7 @@ else()
 	include_directories(/usr/local/include/SDL2
 						/usr/local/include/freetype2)
 endif()
-set(LIBSRC_FILE ${LIBSRC_FILE} apppath.cpp scene.cpp updator.cpp printevent.cpp camera.cpp glerror.cpp gameloop.cpp font_ft_dep.cpp ftwrap.cpp fontgen.cpp font_common.cpp gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
+set(LIBSRC_FILE ${LIBSRC_FILE} glwrapper.cpp apppath.cpp scene.cpp updator.cpp printevent.cpp camera.cpp glerror.cpp gameloop.cpp font_ft_dep.cpp ftwrap.cpp fontgen.cpp font_common.cpp gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 

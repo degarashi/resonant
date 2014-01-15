@@ -23,10 +23,10 @@ namespace rs {
 	void IGLTexture::Use(IGLTexture& t) {
 		GLEC_P(Trap, glActiveTexture, GL_TEXTURE0 + t._actID);
 		GLEC_P(Trap, glBindTexture, t._texFlag, t._idTex);
-		GLEC_ChkP(Trap)
+		GLEC_ChkP(Trap);
 	}
 	void IGLTexture::End(IGLTexture& t) {
-		GLEC_ChkP(Trap)
+		GLEC_ChkP(Trap);
 		GLEC_P(Trap, glBindTexture, t._texFlag, 0);
 	}
 
@@ -65,7 +65,7 @@ namespace rs {
 		#ifndef USE_OPENGLES2
 			// OpenGL ES2では無効
 			auto u = use();
-			glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
+			GL.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
 			u->end();
 		#else
 			AssertMsg(Trap, false, "not implemented yet");
@@ -77,8 +77,8 @@ namespace rs {
 	IGLTexture::Inner1& IGLTexture::setAnisotropicCoeff(float coeff) {
 		_coeff = coeff;
 		GLfloat aMax;
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aMax);
-		glTexParameteri(_texFlag, GL_TEXTURE_MAX_ANISOTROPY_EXT, aMax*_coeff);
+		GL.glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aMax);
+		GL.glTexParameteri(_texFlag, GL_TEXTURE_MAX_ANISOTROPY_EXT, aMax*_coeff);
 		return Inner1::Cast(this);
 	}
 	IGLTexture::Inner1& IGLTexture::setFilter(State miplevel, bool bLinearMag, bool bLinearMin) {
@@ -93,25 +93,25 @@ namespace rs {
 			onDeviceReset();
 			Use(*this);
 		}
-		glTexParameteri(_texFlag, GL_TEXTURE_MAG_FILTER, cs_Filter[0][_iLinearMag]);
-		glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
+		GL.glTexParameteri(_texFlag, GL_TEXTURE_MAG_FILTER, cs_Filter[0][_iLinearMag]);
+		GL.glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
 
 		return Inner1::Cast(this);
 	}
 
 	void IGLTexture::onDeviceLost() {
 		if(_idTex != 0) {
-			glDeleteTextures(1, &_idTex);
+			GL.glDeleteTextures(1, &_idTex);
 			_idTex = 0;
-			GLEC_ChkP(Warn)
+			GLEC_ChkP(Warn);
 		}
 	}
 	IGLTexture::Inner1& IGLTexture::setUVWrap(GLuint s, GLuint t) {
 		_iWrapS = s;
 		_iWrapT = t;
 
-		glTexParameteri(_texFlag, GL_TEXTURE_WRAP_S, _iWrapS);
-		glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, _iWrapT);
+		GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_S, _iWrapS);
+		GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, _iWrapT);
 		return Inner1::Cast(this);
 	}
 	bool IGLTexture::operator == (const IGLTexture& t) const {
@@ -178,8 +178,8 @@ namespace rs {
 		// DeviceLost中でなければすぐにテクスチャを作成するが、そうでなければ内部バッファにコピーするのみ
 		if(_idTex != 0) {
 			// テクスチャに転送
-			glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, _format.get(), srcFmt.get(), buff.getPtr());
-			GLEC_Chk(Trap)
+			GL.glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, _format.get(), srcFmt.get(), buff.getPtr());
+			GLEC_Chk(Trap);
 		} else {
 			if(_bRestore) {
 				// 内部バッファへmove
@@ -197,7 +197,7 @@ namespace rs {
 			auto u = use();
 			// GLテクスチャに転送
 			GLenum baseFormat = GLFormat::QueryInfo(_format.get())->toBase;
-			glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
+			GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
 			u->end();
 		} else {
 			// 内部バッファが存在すればそこに書き込んでおく
@@ -266,7 +266,7 @@ namespace rs {
 		auto ret = size;
 		int layer = 0;
 		auto make = [tflag, &layer, &info, &size](const void* data) {
-			glTexImage2D(tflag, layer++, info->type, size.width, size.height, 0, info->toBase, info->toType, data);
+			GL.glTexImage2D(tflag, layer++, info->type, size.width, size.height, 0, info->toBase, info->toType, data);
 		};
 		if(!bMip)
 			func(make);

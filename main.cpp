@@ -112,11 +112,11 @@ class MyDraw : public rs::IDrawProc {
 			cd.setZPlane(0.01f, 500.f);
 		}
 		bool runU(uint64_t accum) override {
-			glClearColor(0,0,0.5f,1);
-			glClearDepth(1.0f);
- 			glDepthMask(GL_TRUE);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
- 			glDepthMask(GL_FALSE);
+			GL.glClearColor(0,0,0.5f,1);
+			GL.glClearDepth(1.0f);
+ 			GL.glDepthMask(GL_TRUE);
+			GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+ 			GL.glDepthMask(GL_FALSE);
 
 			auto lk = shared.lock();
 			auto& cd = lk->hlCam.ref();
@@ -124,7 +124,7 @@ class MyDraw : public rs::IDrawProc {
 			if(sz != _size) {
 				_size = sz;
 				cd.setAspect(float(_size.width)/_size.height);
-				glViewport(0,0,_size.width, _size.height);
+				GL.glViewport(0,0,_size.width, _size.height);
 			}
 			auto& fx = *_hlFx.ref();
 			fx.setPass(_passView);

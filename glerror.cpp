@@ -12,7 +12,7 @@ namespace rs {
 	const char* GLError::errorDesc() {
 		GLenum err;
 		_errMsg.clear();
-		while((err = glGetError()) != GL_NO_ERROR) {
+		while((err = GL.glGetError()) != GL_NO_ERROR) {
 			// OpenGLエラー詳細を取得
 			bool bFound = false;
 			for(const auto& e : ErrorList) {
@@ -31,25 +31,20 @@ namespace rs {
 		return nullptr;
 	}
 	void GLError::reset() const {
-		while(glGetError() != GL_NO_ERROR);
+		while(GL.glGetError() != GL_NO_ERROR);
 	}
 	const char* GLError::getAPIName() const {
 		return "OpenGL";
 	}
 	void GLError::resetError() const {
-		while(glGetError() != GL_NO_ERROR);
-	}
-	namespace {
-		bool CheckGLError(GLGetIV ivF, GLInfoFunc logF, GLenum getflag, GLuint id) {
-			GLint ib;
-			ivF(id, getflag, &ib);
-			return ib == GL_FALSE;
-		}
+		while(GL.glGetError() != GL_NO_ERROR);
 	}
 	// ------------------------- GLProgError -------------------------
 	GLProgError::GLProgError(GLuint id): _id(id) {}
 	const char* GLProgError::errorDesc() const {
-		if(CheckGLError(glGetProgramiv, glGetProgramInfoLog, GL_LINK_STATUS, _id))
+		GLint ib;
+		GL.glGetProgramiv(_id, GL_LINK_STATUS, &ib);
+		if(ib == GL_FALSE)
 			return "link program failed";
 		return nullptr;
 	}
@@ -60,7 +55,9 @@ namespace rs {
 	// ------------------------- GLShError -------------------------
 	GLShError::GLShError(GLuint id): _id(id) {}
 	const char* GLShError::errorDesc() const {
-		if(CheckGLError(glGetShaderiv, glGetShaderInfoLog, GL_COMPILE_STATUS, _id))
+		GLint ib;
+		GL.glGetShaderiv(_id, GL_COMPILE_STATUS, &ib);
+		if(ib == GL_FALSE)
 			return "compile shader failed";
 		return nullptr;
 	}
@@ -74,20 +71,20 @@ namespace rs {
 		_ivF(ivF), _infoF(infoF), _id(id)
 	{
 		int logSize, length;
-		ivF(id, GL_INFO_LOG_LENGTH, &logSize);
+		(GL.*ivF)(id, GL_INFO_LOG_LENGTH, &logSize);
 		std::string ret;
 		ret.resize(logSize);
-		infoF(id, logSize, &length, &ret[0]);
+		(GL.*infoF)(id, logSize, &length, &ret[0]);
 		(GLE_Error&)*this = GLE_Error(aux + ":\n" + std::move(ret));
 	}
 	// ------------------------- GLE_ShaderError -------------------------
 	const char* GLE_ShaderError::GetErrorName() { return "compile shader failed"; }
 	GLE_ShaderError::GLE_ShaderError(const std::string& src, GLuint id):
-		GLE_ShProgBase(glGetShaderiv, glGetShaderInfoLog, spn::AddLineNumber(src, true, true) + GetErrorName(), id)
+		GLE_ShProgBase(&IGL::glGetShaderiv, &IGL::glGetShaderInfoLog, spn::AddLineNumber(src, true, true) + GetErrorName(), id)
 	{}
 	// ------------------------- GLE_ProgramError -------------------------
 	const char* GLE_ProgramError::GetErrorName() { return "link program failed"; }
-	GLE_ProgramError::GLE_ProgramError(GLuint id): GLE_ShProgBase(glGetProgramiv, glGetProgramInfoLog, GetErrorName(), id) {}
+	GLE_ProgramError::GLE_ProgramError(GLuint id): GLE_ShProgBase(&IGL::glGetProgramiv, &IGL::glGetProgramInfoLog, GetErrorName(), id) {}
 	// ------------------------- GLE_ParamNotFound -------------------------
 	const char* GLE_ParamNotFound::GetErrorName() { return "parameter not found"; }
 	GLE_ParamNotFound::GLE_ParamNotFound(const std::string& name): GLE_Error(std::string(GetErrorName()) + '\n' + name), _name(name) {}

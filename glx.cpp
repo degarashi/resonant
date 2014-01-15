@@ -42,24 +42,6 @@ namespace rs {
 	};
 
 	// -------------- ValueSettingR --------------
-	void ValueSettingR::StencilFuncFront(int func, int ref, int mask) {
-		glStencilFuncSeparate(GL_FRONT, func, ref, mask);
-	}
-	void ValueSettingR::StencilFuncBack(int func, int ref, int mask) {
-		glStencilFuncSeparate(GL_BACK, func, ref, mask);
-	}
-	void ValueSettingR::StencilOpFront(int sfail, int dpfail, int dppass) {
-		glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
-	}
-	void ValueSettingR::StencilOpBack(int sfail, int dpfail, int dppass) {
-		glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
-	}
-	void ValueSettingR::StencilMaskFront(int mask) {
-		glStencilMaskSeparate(GL_FRONT, mask);
-	}
-	void ValueSettingR::StencilMaskBack(int mask) {
-		glStencilMaskSeparate(GL_BACK, mask);
-	}
 	ValueSettingR::ValueSettingR(const ValueSetting& s) {
 		func = cs_func[s.type];
 		int nV = std::min(static_cast<int>(s.value.size()), countof(value));
@@ -78,13 +60,14 @@ namespace rs {
 
 	// -------------- BoolSettingR --------------
 	const VBFunc BoolSettingR::cs_func[] = {
-		glEnable, glDisable
+		&IGL::glEnable, &IGL::glDisable
 	};
 	BoolSettingR::BoolSettingR(const BoolSetting& s) {
 		func = cs_func[(s.value) ? 0 : 1];
 		flag = s.type;
 	}
-	void BoolSettingR::action() const { func(flag); }
+	void BoolSettingR::action() const {
+		(GL.*func)(flag); }
 	bool BoolSettingR::operator == (const BoolSettingR& s) const {
 		return flag==s.flag && func==s.func;
 	}
@@ -120,10 +103,10 @@ namespace rs {
 					auto attrID = attr[t2.semID];
 					if(attrID < 0)
 						return;
-					glEnableVertexAttribArray(attrID);
+					GL.glEnableVertexAttribArray(attrID);
 					// AssertMsg(Trap, "%1%, %2%", t2.semID, attr[t2.semID])
 					GLEC_ChkP(Trap)
-					glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, (const GLvoid*)t2.offset);
+					GL.glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, (const GLvoid*)t2.offset);
 					GLEC_ChkP(Trap)
 				};
 				++cur;
@@ -412,7 +395,7 @@ namespace rs {
 			_texIndex.clear();
 			GLuint pid = tps.getProgram().cref()->getProgramID();
 			GLint nUnif;
-			glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
+			GL.glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
 
 			GLsizei len;
 			int size;
@@ -434,11 +417,11 @@ namespace rs {
 
 			UniVisitor(const GLEffect::TexIndex& ti): _tIdx(ti) {}
 			void setID(GLint id) { _id = id; }
-			void operator()(bool b) const { glUniform1i(_id, b ? 0 : 1); }
-			void operator()(int v) const { glUniform1i(_id, v); }
-			void operator()(float v) const { glUniform1f(_id, v); }
-			void operator()(const spn::Vec3& v) const { glUniform3fv(_id, 1, v.m); }
-			void operator()(const spn::Vec4& v) const { glUniform4fv(_id, 1, v.m);}
+			void operator()(bool b) const { GL.glUniform1i(_id, b ? 0 : 1); }
+			void operator()(int v) const { GL.glUniform1i(_id, v); }
+			void operator()(float v) const { GL.glUniform1f(_id, v); }
+			void operator()(const spn::Vec3& v) const { GL.glUniform3fv(_id, 1, v.m); }
+			void operator()(const spn::Vec4& v) const { GL.glUniform4fv(_id, 1, v.m);}
 			void operator()(const spn::AMat32& m) const {
 				this->operator()(m.convert33()); }
 			void operator()(const spn::Mat32& m) const {
@@ -447,7 +430,7 @@ namespace rs {
 			void operator()(const spn::AMat33& m) const {
 				this->operator()(spn::Mat33(m)); }
 			void operator()(const spn::Mat33& m) const {
-				glUniformMatrix3fv(_id, 1, true, reinterpret_cast<const GLfloat*>(m.ma)); }
+				GL.glUniformMatrix3fv(_id, 1, true, reinterpret_cast<const GLfloat*>(m.ma)); }
 			void operator()(const spn::AMat43& m) const {
 				this->operator()(m.convert44()); }
 			void operator()(const spn::Mat43& m) const {
@@ -455,7 +438,7 @@ namespace rs {
 			void operator()(const spn::AMat44& m) const {
 				this->operator()(spn::Mat44(m)); }
 			void operator()(const spn::Mat44& m) const {
-				glUniformMatrix4fv(_id, 1, true, reinterpret_cast<const GLfloat*>(m.ma));
+				GL.glUniformMatrix4fv(_id, 1, true, reinterpret_cast<const GLfloat*>(m.ma));
 			}
 			void operator()(const HLTex& tex) const {
 				auto itr = _tIdx.find(_id);
@@ -463,7 +446,7 @@ namespace rs {
 					auto& cr = tex.cref();
 					cr->setActiveID(itr->second);
 					cr->use(IGLTexture::TagUse);
-					glUniform1i(_id, itr->second);
+					GL.glUniform1i(_id, itr->second);
 				} else
 					Assert(Warn, false, "uniform id=%1% is not sampler", _id)
 			}
@@ -506,7 +489,7 @@ namespace rs {
 
 	GLint GLEffect::getUniformID(const std::string& name) {
 		_refreshProgram();
-		GLint loc = glGetUniformLocation(_tps->getProgram().cref()->getProgramID(), name.c_str());
+		GLint loc = GL.glGetUniformLocation(_tps->getProgram().cref()->getProgramID(), name.c_str());
 		GLEC_ChkP(Trap)
 		Assert(Warn, loc>=0, "Uniform argument \"%1%\" not found", name)
 		return loc;
@@ -514,14 +497,14 @@ namespace rs {
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
 		applySetting();
 		_tps->getProgram().cref()->use();
-		glDrawArrays(mode, first, count);
+		GL.glDrawArrays(mode, first, count);
 		GLEC_ChkP(Trap);
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offset) {
 		applySetting();
 		_tps->getProgram().cref()->use();
 		GLenum sz = _iBuffer.cref()->getStride() == sizeof(GLshort) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_BYTE;
-		glDrawElements(mode, count, sz, reinterpret_cast<const GLvoid*>(offset));
+		GL.glDrawElements(mode, count, sz, reinterpret_cast<const GLvoid*>(offset));
 		GLEC_ChkP(Trap);
 	}
 	const UniMapID& GLEffect::getUniformMap() {
@@ -659,7 +642,7 @@ namespace rs {
 			UniMapID	result;
 
 			bool setKey(const std::string& key) {
-				uniID = glGetUniformLocation(pgID, key.c_str());
+				uniID = GL.glGetUniformLocation(pgID, key.c_str());
 				GLEC_ChkP(Trap)
 				Assert(Warn, uniID>=0, "Uniform argument \"%1%\" not found", key)
 				return uniID >= 0;
@@ -772,7 +755,7 @@ namespace rs {
 			// セマンティクスの重複はエラー
 			auto& atID = _vAttrID[p->sem];
 			AssertT(Trap, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
-			atID = glGetAttribLocation(prog.getProgramID(), p->name.c_str());
+			atID = GL.glGetAttribLocation(prog.getProgramID(), p->name.c_str());
 			GLEC_ChkP(Trap)
 			// -1の場合は警告を出す(もしかしたらシェーダー内で使ってないだけかもしれない)
 		}

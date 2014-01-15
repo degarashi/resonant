@@ -8,27 +8,27 @@ namespace rs {
 	GLuint GLBuffer::getStride() const { return _stride; }
 
 	void GLBuffer::Use(GLBuffer& b) {
-		glBindBuffer(b._buffType, b.getBuffID());
+		GL.glBindBuffer(b._buffType, b.getBuffID());
 		GLEC_ChkP(Trap)
 	}
 	void GLBuffer::End(GLBuffer& b) {
 		GLEC_ChkP(Trap)
-		glBindBuffer(b._buffType, 0);
+		GL.glBindBuffer(b._buffType, 0);
 	}
 
 	void GLBuffer::onDeviceLost() {
 		if(_idBuff != 0) {
-			glDeleteBuffers(1, &_idBuff);
+			GL.glDeleteBuffers(1, &_idBuff);
 			_idBuff = 0;
 			GLEC_ChkP(Trap)
 		}
 	}
 	void GLBuffer::onDeviceReset() {
 		if(_idBuff == 0) {
-			glGenBuffers(1, &_idBuff);
+			GL.glGenBuffers(1, &_idBuff);
 			if(!_buff.empty()) {
 				auto u = use();
-				glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
+				GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
 				u->end();
 			}
 		}
@@ -43,20 +43,20 @@ namespace rs {
 		_buff.resize(nElem*_stride);
 		std::memcpy(&_buff[0], src, nElem*_stride);
 		if(_idBuff != 0)
-			glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
+			GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
 		return Inner1::Cast(this);
 	}
 	GLBuffer::Inner1& GLBuffer::initData(spn::ByteBuff&& buff, GLuint stride) {
 		_stride = stride;
 		_buff.swap(buff);
 		if(_idBuff != 0)
-			glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
+			GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
 		return Inner1::Cast(this);
 	}
 	GLBuffer::Inner1& GLBuffer::updateData(const void* src, size_t nElem, GLuint offset) {
 		std::memcpy(&_buff[0]+offset, src, nElem*_stride);
 		if(_idBuff != 0)
-			glBufferSubData(_buffType, offset*_stride, nElem*_stride, src);
+			GL.glBufferSubData(_buffType, offset*_stride, nElem*_stride, src);
 		return Inner1::Cast(this);
 	}
 

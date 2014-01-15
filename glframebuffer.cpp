@@ -11,20 +11,20 @@ namespace rs {
 	}
 	void GLRBuffer::onDeviceReset() {
 		if(_idRbo == 0) {
-			glGenRenderbuffers(1, &_idRbo);
+			GL.glGenRenderbuffers(1, &_idRbo);
 			use()->allocate();
 			cs_onReset[_behLost](mgr_gl.getTmpFramebuffer(), *this);
 		}
 	}
 	void GLRBuffer::onDeviceLost() {
 		if(_idRbo != 0) {
-			glDeleteRenderbuffers(1, &_idRbo);
+			GL.glDeleteRenderbuffers(1, &_idRbo);
 			cs_onLost[_behLost](mgr_gl.getTmpFramebuffer(), *this);
 			_idRbo = 0;
 		}
 	}
 	GLRBuffer::Inner1& GLRBuffer::allocate() {
-		glRenderbufferStorage(GL_RENDERBUFFER, _fmt.get(), _width, _height);
+		GL.glRenderbufferStorage(GL_RENDERBUFFER, _fmt.get(), _width, _height);
 		return Inner1::Cast(this);
 	}
 
@@ -64,7 +64,7 @@ namespace rs {
 				}
 			}
 			spn::ByteBuff buff(texSize * rb._width * rb._height);
-			glReadPixels(0, 0, rb._width, rb._height, rb._fmt.get(), rb._buffFmt.get(), &buff[0]);
+			GL.glReadPixels(0, 0, rb._width, rb._height, rb._fmt.get(), rb._buffFmt.get(), &buff[0]);
 			rb._restoreInfo = std::move(buff);
 			fbi.end();
 		}
@@ -74,27 +74,27 @@ namespace rs {
 		Nothing,								// NONE
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// CLEAR
 			const spn::Vec4& c = boost::get<spn::Vec4>(rb._restoreInfo);
-			glClearColor(c.x, c.y, c.z, c.w);
+			GL.glClearColor(c.x, c.y, c.z, c.w);
 			auto fbi = fb->attachColor(0, rb._idRbo);
-			glClear(GL_COLOR_BUFFER_BIT);
+			GL.glClear(GL_COLOR_BUFFER_BIT);
 			fbi.end();
 		},
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto& buff = boost::get<spn::ByteBuff>(rb._restoreInfo);
 			auto fbi = fb->attachColor(0, rb._idRbo);
-			glDrawPixels(0,0, rb._fmt.get(), rb._buffFmt, &buff[0]);
+			GL.glDrawPixels(0,0, rb._fmt.get(), rb._buffFmt, &buff[0]);
 			rb._restoreInfo = boost::none;
 			fbi.end();
 		}
 	};
 
 	void GLRBuffer::Use(GLRBuffer& rb) {
-		glBindRenderbuffer(GL_RENDERBUFFER, rb._idRbo);
+		GL.glBindRenderbuffer(GL_RENDERBUFFER, rb._idRbo);
 		GLEC_Chk(Trap)
 	}
 	void GLRBuffer::End(GLRBuffer&) {
 		GLEC_Chk(Trap)
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		GL.glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 	GLuint GLRBuffer::getBufferID() const {
 		return _idRbo;
@@ -108,13 +108,13 @@ namespace rs {
 	// ------------------------- GLFBufferTmp -------------------------
 	DEF_GLRESOURCE_CPP(GLFBufferTmp)
 	void GLFBufferTmp::Use(GLFBufferTmp& tmp) {
-		glBindFramebuffer(GL_FRAMEBUFFER, tmp._idFb);
+		GL.glBindFramebuffer(GL_FRAMEBUFFER, tmp._idFb);
 	}
 	void GLFBufferTmp::End(GLFBufferTmp&) {
 		constexpr GLenum ids[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3,
 									GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT};
 		for(auto id : ids)
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, id, GL_RENDERBUFFER, 0);
+			GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, id, GL_RENDERBUFFER, 0);
 	}
 	GLFBufferTmp::GLFBufferTmp(GLuint idFb): _idFb(idFb) {}
 	GLFBufferTmp::Inner1& GLFBufferTmp::attachColor(int n, GLuint rb) {
@@ -127,7 +127,7 @@ namespace rs {
 		return _attach(GL_STENCIL_ATTACHMENT, rb);
 	}
 	GLFBufferTmp::Inner1& GLFBufferTmp::_attach(GLenum flag, GLuint rb) {
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, flag, GL_RENDERBUFFER, rb);
+		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, flag, GL_RENDERBUFFER, rb);
 		return Inner1::Cast(this);
 	}
 
@@ -158,7 +158,7 @@ namespace rs {
 	}
 	void GLFBuffer::onDeviceReset() {
 		if(_idFbo == 0) {
-			glGenFramebuffers(1, &_idFbo);
+			GL.glGenFramebuffers(1, &_idFbo);
 			GLEC_Chk(Trap)
 
 			auto v = MakeVisitor(fnReset);
@@ -183,37 +183,37 @@ namespace rs {
 				auto u = use();
 				for(int i=0 ; i<NUM_ATTACHMENT ; i++) {
 					// AttachmentのDetach
-					glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(static_cast<AttID>(i)), GL_RENDERBUFFER, 0);
+					GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(static_cast<AttID>(i)), GL_RENDERBUFFER, 0);
 				}
 				u->end();
 			}
-			glDeleteFramebuffers(1, &_idFbo);
+			GL.glDeleteFramebuffers(1, &_idFbo);
 			_idFbo = 0;
 			GLEC_Chk(Trap)
 			// Attachmentの解放は各ハンドルに任せる
 		}
 	}
 	void GLFBuffer::Use(GLFBuffer& fb) {
-		glBindFramebuffer(GL_FRAMEBUFFER, fb._idFbo);
-		GLenum e = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		GL.glBindFramebuffer(GL_FRAMEBUFFER, fb._idFbo);
+		GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		Assert(Trap, e != GL_FRAMEBUFFER_COMPLETE);
 		GLEC_Chk(Trap)
 	}
 	void GLFBuffer::End(GLFBuffer&) {
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	GLFBuffer::Inner1& GLFBuffer::attach(AttID att, HRb hRb) {
 		_attachment[att] = hRb;
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(att), GL_RENDERBUFFER, hRb.ref()->getBufferID());
+		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(att), GL_RENDERBUFFER, hRb.ref()->getBufferID());
 		return Inner1::Cast(this);
 	}
 	GLFBuffer::Inner1& GLFBuffer::attach(AttID att, HTex hTex) {
 		_attachment[att] = hTex;
-		glFramebufferTexture2D(GL_FRAMEBUFFER, _AttIDtoGL(att), GL_TEXTURE_2D, hTex.ref()->getTextureID(), 0);
+		GL.glFramebufferTexture2D(GL_FRAMEBUFFER, _AttIDtoGL(att), GL_TEXTURE_2D, hTex.ref()->getTextureID(), 0);
 		return Inner1::Cast(this);
 	}
 	GLFBuffer::Inner1& GLFBuffer::detach(AttID att) {
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(att), GL_RENDERBUFFER, 0);
+		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(att), GL_RENDERBUFFER, 0);
 		return Inner1::Cast(this);
 	}
 	GLuint GLFBuffer::getBufferID() const { return _idFbo; }

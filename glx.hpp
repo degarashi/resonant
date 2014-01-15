@@ -14,30 +14,27 @@ namespace rs {
 	//! OpenGLの値設定関数代理クラス
 	struct ValueSettingR;
 	using VSFunc = void (*)(const ValueSettingR&);
-	using VBFunc = decltype(&glEnable);
+	using VBFunc = decltype(&IGL::glEnable);
 	struct ValueSettingR {
 		ValueSetting::ValueT 	value[4];
 		VSFunc					func;
 
 		const static VSFunc cs_func[];
 
-		static void StencilFuncFront(int func, int ref, int mask);
-		static void StencilFuncBack(int func, int ref, int mask);
-		static void StencilOpFront(int sfail, int dpfail, int dppass);
-		static void StencilOpBack(int sfail, int dpfail, int dppass);
-		static void StencilMaskFront(int mask);
-		static void StencilMaskBack(int mask);
-
 		explicit ValueSettingR(const ValueSetting& s);
 		void action() const;
 		template <class GF, class T0>
-		void action(GF gf, T0) const { GLEC_P(Trap, gf, boost::get<T0>(value[0])); }
+		void action(GF gf, T0) const {
+			(GL.*gf)(boost::get<T0>(value[0])); }
 		template <class GF, class T0, class T1>
-		void action(GF gf, T0,T1) const { GLEC_P(Trap, gf, boost::get<T0>(value[0]), boost::get<T1>(value[1])); }
+		void action(GF gf, T0,T1) const {
+			(GL.*gf)(boost::get<T0>(value[0]), boost::get<T1>(value[1])); }
 		template <class GF, class T0, class T1, class T2>
-		void action(GF gf, T0,T1,T2) const { GLEC_P(Trap, gf, boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2])); }
+		void action(GF gf, T0,T1,T2) const {
+			(GL.*gf)(boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2])); }
 		template <class GF, class T0, class T1, class T2, class T3>
-		void action(GF gf, T0,T1,T2,T3) const { GLEC_P(Trap, gf, boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2]), boost::get<T3>(value[3])); }
+		void action(GF gf, T0,T1,T2,T3) const {
+			(GL.*gf)(boost::get<T0>(value[0]), boost::get<T1>(value[1]), boost::get<T2>(value[2]), boost::get<T3>(value[3])); }
 
 		bool operator == (const ValueSettingR& s) const;
 	};

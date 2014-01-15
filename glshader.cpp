@@ -3,19 +3,7 @@
 	#include <windows.h>
 #endif
 #include "glresource.hpp"
-
-// OpenGL関数群の定義
-#define GLDEFINE(name,type)		type name;
-#define DEF_GLMETHOD(...)
-#ifdef ANDROID
-	#include "android_gl.inc"
-#elif defined(WIN32)
-	#include "mingw_gl.inc"
-#else
-	#include "linux_gl.inc"
-#endif
-#undef DEF_GLMETHOD
-#undef GLDEFINE
+#include "event.hpp"
 
 namespace rs {
 	namespace {
@@ -45,18 +33,22 @@ namespace rs {
 			}
 		}
 	#endif
-	bool IsGLFuncLoaded() {
+	bool GLM::IsGLFuncLoaded() {
 		return g_bglfuncInit;
 	}
-	void SetSwapInterval(int n) {
+	void IGL_Draw::setSwapInterval(int n) {
 		g_setswapinterval(n);
+	}
+	void IGL_OtherSingle::setSwapInterval(int n) {
+		GLM::s_drawHandler->postExec([=](){
+			IGL_Draw().setSwapInterval(n);
+		});
 	}
 
 	// OpenGL関数ロード
-	#define GLDEFINE(name,type)		name = (type)GLGETPROC(name); \
-			if(!name) throw std::runtime_error(std::string("error on loading GL function \"") + #name + '\"');
-	#define DEF_GLMETHOD(...)
-		void LoadGLFunc() {
+ 	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+ 		GLM::name = (typename GLM::t_##name) GLGETPROC(name);
+		void GLM::LoadGLFunc() {
 			// 各種API関数
 			#ifndef ANDROID
 				#ifdef ANDROID
@@ -72,20 +64,19 @@ namespace rs {
 			g_bglfuncInit = true;
 		}
 	#undef DEF_GLMETHOD
-	#undef GLDEFINE
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {
-		_idSh = glCreateShader(_flag);
+		_idSh = GL.glCreateShader(_flag);
 
 		std::string ss("#version 110\n");
 		ss.append(_source);
 		const auto* pStr = ss.c_str();
-		glShaderSource(_idSh, 1, &pStr, nullptr);
-		glCompileShader(_idSh);
+		GL.glShaderSource(_idSh, 1, &pStr, nullptr);
+		GL.glCompileShader(_idSh);
 
 		// エラーが無かったか確認
 		GLint compiled;
-		glGetShaderiv(_idSh, GL_COMPILE_STATUS, &compiled);
+		GL.glGetShaderiv(_idSh, GL_COMPILE_STATUS, &compiled);
 		AssertT(Throw, compiled==GL_TRUE, (GLE_ShaderError)(const std::string&)(GLuint), ss, _idSh)
 	}
 
@@ -104,7 +95,7 @@ namespace rs {
 	}
 	void GLShader::onDeviceLost() {
 		if(_idSh!=0) {
-			glDeleteShader(_idSh);
+			GL.glDeleteShader(_idSh);
 			_idSh = 0;
 		}
 	}
@@ -126,22 +117,22 @@ namespace rs {
 		_initProgram();
 	}
 	void GLProgram::_initProgram() {
-		_idProg = glCreateProgram();
+		_idProg = GL.glCreateProgram();
 		for(int i=0 ; i<static_cast<int>(ShType::NUM_SHTYPE) ; i++) {
 			auto& sh = _shader[i];
 			// Geometryシェーダー以外は必須
 			if(sh.valid()) {
-				glAttachShader(_idProg, sh.cref()->getShaderID());
+				GL.glAttachShader(_idProg, sh.cref()->getShaderID());
 				GLEC_ChkP(Trap)
 			} else {
 				AssertT(Trap, i==ShType::GEOMETRY, (GLE_Error)(const char*), "missing shader elements (vertex or fragment)")
 			}
 		}
 
-		glLinkProgram(_idProg);
+		GL.glLinkProgram(_idProg);
 		// エラーが無いかチェック
 		int ib;
-		glGetProgramiv(_idProg, GL_LINK_STATUS, &ib);
+		GL.glGetProgramiv(_idProg, GL_LINK_STATUS, &ib);
 		AssertT(Throw, ib==GL_TRUE, (GLE_ProgramError)(GLuint), _idProg)
 	}
 	GLProgram::~GLProgram() {
@@ -150,7 +141,7 @@ namespace rs {
 	void GLProgram::onDeviceLost() {
 		if(_idProg != 0) {
 			// ShaderはProgramをDeleteすれば自動的にdetachされる
-			glDeleteProgram(_idProg);
+			GL.glDeleteProgram(_idProg);
 			_idProg = 0;
 		}
 	}
@@ -173,7 +164,7 @@ namespace rs {
 		return id;
 	}
 	int GLProgram::getUniformIDNc(const std::string& name) const {
-		return glGetUniformLocation(getProgramID(), name.c_str());
+		return GL.glGetUniformLocation(getProgramID(), name.c_str());
 	}
 	int GLProgram::getAttribID(const std::string& name) const {
 		GLint id = getAttribIDNc(name);
@@ -184,10 +175,10 @@ namespace rs {
 		return _idProg;
 	}
 	int GLProgram::getAttribIDNc(const std::string& name) const {
-		return glGetAttribLocation(getProgramID(), name.c_str());
+		return GL.glGetAttribLocation(getProgramID(), name.c_str());
 	}
 	void GLProgram::use() const {
-		glUseProgram(getProgramID());
+		GL.glUseProgram(getProgramID());
 		GLEC_ChkP(Trap)
 	}
 }
