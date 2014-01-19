@@ -104,6 +104,16 @@ namespace rs {
 			_initShader();
 	}
 
+	// ---------------------- draw::Program ----------------------
+	namespace draw {
+		Program::Program(HRes hRes, GLuint idProg):
+			Token(hRes), _idProg(idProg) {}
+		Program::Program(Program&& p): Token(p), _idProg(p._idProg) {}
+		void Program::exec() {
+			GL.glUseProgram(_idProg);
+		}
+	}
+
 	// ---------------------- GLProgram ----------------------
 	GLProgram::GLProgram(HSh vsh, HSh psh) {
 		_shader[ShType::VERTEX] = vsh;

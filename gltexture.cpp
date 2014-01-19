@@ -5,38 +5,46 @@
 
 namespace rs {
 	// ------------------------- IGLTexture -------------------------
-	DEF_GLRESOURCE_CPP(IGLTexture)
 	const GLuint IGLTexture::cs_Filter[3][2] = {
 		{GL_NEAREST, GL_LINEAR},
 		{GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR},
 		{GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR}
 	};
 	IGLTexture::IGLTexture(OPInCompressedFmt fmt, const spn::Size& sz, bool bCube):
-		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE), _size(sz),
+		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE),
 		_actID(0), _mipLevel(NoMipmap), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D),
-		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _format(fmt), _coeff(0) {}
+		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _coeff(0), _size(sz), _format(fmt) {}
 	#define FUNC_COPY(z, data, elem)	(elem(data.elem))
-	#define SEQ_COPY (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_size)(_actID)(_mipLevel)(_texFlag)(_faceFlag)(_format)(_coeff)
-	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_COPY)) {
+	#define FUNC_MOVE(z, data, elem)	(elem(std::move(data.elem)))
+	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_actID)\
+						(_mipLevel)(_texFlag)(_faceFlag)(_coeff)(_size)(_format)(_bReset)
+	#define SEQ_TEXTURE_M	SEQ_TEXTURE(_preFunc)
+	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_MOVE, t, SEQ_TEXTURE_M)) {
 		t._idTex = 0;
+		t._bReset = false;
+		t._preFunc = nullptr;
 	}
-	void IGLTexture::Use(IGLTexture& t) {
-		GLEC_P(Trap, glActiveTexture, GL_TEXTURE0 + t._actID);
-		GLEC_P(Trap, glBindTexture, t._texFlag, t._idTex);
+	IGLTexture::IGLTexture(IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {
+		t._bReset = false;
+		t._preFunc = std::move(t._preFunc);
+	}
+
+	RUser<IGLTexture> IGLTexture::use() const {
+		return RUser<IGLTexture>(*this);
+	}
+	void IGLTexture::use_begin() const {
+		GLEC_P(Trap, glActiveTexture, GL_TEXTURE0 + _actID);
+		GLEC_P(Trap, glBindTexture, _texFlag, _idTex);
 		GLEC_ChkP(Trap);
 	}
-	void IGLTexture::End(IGLTexture& t) {
+	void IGLTexture::use_end() const {
 		GLEC_ChkP(Trap);
-		GLEC_P(Trap, glBindTexture, t._texFlag, 0);
+		GLEC_P(Trap, glBindTexture, _texFlag, 0);
 	}
 
 	bool IGLTexture::_onDeviceReset() {
 		if(_idTex == 0) {
 			GLEC_P(Warn, glGenTextures, 1, &_idTex);
-			// フィルタの設定
-			use()->setFilter(_mipLevel, static_cast<bool>(_iLinearMag), static_cast<bool>(_iLinearMin))
-				->setAnisotropicCoeff(_coeff)
-				->setUVWrap(_iWrapS, _iWrapT);
 			return true;
 		}
 		return false;
@@ -63,10 +71,11 @@ namespace rs {
 		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(GL_RGBA8, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
 		#ifndef USE_OPENGLES2
-			// OpenGL ES2では無効
-			auto u = use();
-			GL.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
-			u->end();
+			{
+				// OpenGL ES2では無効
+				auto u = use();
+				GL.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
+			}
 		#else
 			AssertMsg(Trap, false, "not implemented yet");
 		#endif
@@ -74,45 +83,35 @@ namespace rs {
 		auto hlRW = mgr_rw.fromFile(path, RWops::Write, true);
 		sfc->saveAsPNG(hlRW);
 	}
-	IGLTexture::Inner1& IGLTexture::setAnisotropicCoeff(float coeff) {
+	void IGLTexture::setAnisotropicCoeff(float coeff) {
 		_coeff = coeff;
-		GLfloat aMax;
-		GL.glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aMax);
-		GL.glTexParameteri(_texFlag, GL_TEXTURE_MAX_ANISOTROPY_EXT, aMax*_coeff);
-		return Inner1::Cast(this);
 	}
-	IGLTexture::Inner1& IGLTexture::setFilter(State miplevel, bool bLinearMag, bool bLinearMin) {
+	void IGLTexture::_reallocate() {
+		onDeviceLost();
+		onDeviceReset();
+	}
+	void IGLTexture::setFilter(State miplevel, bool bLinearMag, bool bLinearMin) {
 		_iLinearMag = bLinearMag ? 1 : 0;
 		_iLinearMin = bLinearMin ? 1 : 0;
 		bool b = isMipmap() ^ IsMipmap(miplevel);
 		_mipLevel = miplevel;
 		if(b) {
 			// ミップマップの有りなしを切り替える時はテクスチャを作りなおす
-			End(*this);
-			onDeviceLost();
-			onDeviceReset();
-			Use(*this);
+			_bReset = true;
 		}
-		GL.glTexParameteri(_texFlag, GL_TEXTURE_MAG_FILTER, cs_Filter[0][_iLinearMag]);
-		GL.glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
-
-		return Inner1::Cast(this);
 	}
 
 	void IGLTexture::onDeviceLost() {
 		if(_idTex != 0) {
 			GL.glDeleteTextures(1, &_idTex);
 			_idTex = 0;
+			_bReset = false;
 			GLEC_ChkP(Warn);
 		}
 	}
-	IGLTexture::Inner1& IGLTexture::setUVWrap(GLuint s, GLuint t) {
+	void IGLTexture::setUVWrap(GLuint s, GLuint t) {
 		_iWrapS = s;
 		_iWrapT = t;
-
-		GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_S, _iWrapS);
-		GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, _iWrapT);
-		return Inner1::Cast(this);
 	}
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
@@ -140,14 +139,13 @@ namespace rs {
 	#ifdef USE_OPENGLES2
 				//	OpenGL ES2ではglTexImage2Dが実装されていないのでFramebufferにセットしてglReadPixelsで取得
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
-				auto u = *tmp;
-				u->attachColor(0, _idTex);
+				auto u = tmp.use();
+				tmp.attachColor(0, _idTex);
 				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.toBase, info.toType, &_buff->operator[](0));
-				u->attachColor(0, 0);
+				tmp.attachColor(0, 0);
 	#else
 				auto u = use();
 				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.toBase, info.toType, &_buff->operator[](0));
-				u->end();
 	#endif
 			}
 			IGLTexture::onDeviceLost();
@@ -167,7 +165,6 @@ namespace rs {
 				// とりあえず領域だけ確保しておく
 				GLEC(Warn, glTexImage2D, GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 			}
-			u->end();
 		}
 	}
 	// DeviceLostの時にこのメソッドを読んでも無意味
@@ -178,13 +175,19 @@ namespace rs {
 		// DeviceLost中でなければすぐにテクスチャを作成するが、そうでなければ内部バッファにコピーするのみ
 		if(_idTex != 0) {
 			// テクスチャに転送
-			GL.glTexImage2D(GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, _format.get(), srcFmt.get(), buff.getPtr());
-			GLEC_Chk(Trap);
+			std::shared_ptr<spn::ByteBuff> pbuff(new spn::ByteBuff(buff.moveTo()));
+			_preFunc = [this, srcFmt, pbuff]() {
+				auto& tfm = getFormat();
+				auto& sz = getSize();
+				use_begin();
+				GL.glTexImage2D(GL_TEXTURE_2D, 0, tfm.get(), sz.width, sz.height,
+								0, tfm.get(), srcFmt.get(), pbuff->data());
+				GLEC_ChkP(Trap);
+			};
 		} else {
 			if(_bRestore) {
 				// 内部バッファへmove
-				_buff = spn::ByteBuff();
-				buff.setTo(*_buff);
+				_buff = buff.moveTo();
 				_typeFormat = srcFmt;
 			}
 		}
@@ -194,11 +197,17 @@ namespace rs {
 		auto sz = buff.getLength();
 		int height = sz / (width * bs);
 		if(_idTex != 0) {
-			auto u = use();
-			// GLテクスチャに転送
-			GLenum baseFormat = GLFormat::QueryInfo(_format.get())->toBase;
-			GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
-			u->end();
+			std::shared_ptr<spn::ByteBuff> pbuff(new spn::ByteBuff(buff.moveTo()));
+			std::shared_ptr<PreFunc> pf(new PreFunc(std::move(_preFunc)));
+			auto& fmt = getFormat();
+			_preFunc = [=]() {
+				if(*pf)
+					(*pf)();
+				auto u = use();
+				// GLテクスチャに転送
+				GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->toBase;
+				GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), pbuff->data());
+			};
 		} else {
 			// 内部バッファが存在すればそこに書き込んでおく
 			if(_buff) {
@@ -220,6 +229,33 @@ namespace rs {
 			}
 		}
 	}
+
+	// ------------------------- draw::Texture -------------------------
+	namespace draw {
+		Texture::Texture(HRes hRes, GLint uid, IGLTexture& t): IGLTexture(t), Uniform(hRes, uid) {}
+		Texture::~Texture() {
+			// IGLTextureのdtorでリソースを開放されないように0にセットしておく
+			_idTex = 0;
+		}
+		void Texture::exec() {
+			auto u = use();
+			{
+				// setAnisotropic
+				GLfloat aMax;
+				GL.glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aMax);
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_MAX_ANISOTROPY_EXT, aMax*_coeff);
+				// setUVWrap
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_S, _iWrapS);
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, _iWrapT);
+				// setFilter
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_MAG_FILTER, cs_Filter[0][_iLinearMag]);
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
+			}
+			GL.glActiveTexture(_actID);
+			GL.glUniform1i(idUnif, getTextureID());
+		}
+	}
+
 	// ------------------------- Texture_StaticURI -------------------------
 	Texture_StaticURI::Texture_StaticURI(const spn::URI& uri, OPInCompressedFmt fmt):
 		IGLTexture(fmt, spn::Size(0,0), false), _uri(uri) {}
@@ -326,7 +362,6 @@ namespace rs {
 					MakeMip(getFaceFlag()+i, fmt, size, _gen->generate(getSize(), static_cast<CubeFace>(i)), true, isMipmap());
 			} else
 				MakeMip(getFaceFlag(), fmt, size, _gen->generate(getSize(), CubeFace::PositiveX), true, isMipmap());
-			u->end();
 		}
 	}
 

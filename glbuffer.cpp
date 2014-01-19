@@ -1,21 +1,34 @@
 #include "glresource.hpp"
 
 namespace rs {
+	// --------------------------- GLBufferCore ---------------------------
+	GLBufferCore::GLBufferCore(GLuint flag, GLuint dtype): _buffType(flag), _drawType(dtype), _stride(0), _idBuff(0) {}
+	GLuint GLBufferCore::getBuffID() const { return _idBuff; }
+	GLuint GLBufferCore::getBuffType() const { return _buffType; }
+	GLuint GLBufferCore::getStride() const { return _stride; }
+	RUser<GLBufferCore> GLBufferCore::use() const {
+		return RUser<GLBufferCore>(*this);
+	}
+	void GLBufferCore::use_begin() const {
+		GL.glBindBuffer(getBuffType(), getBuffID());
+		GLEC_ChkP(Trap)
+	}
+	void GLBufferCore::use_end() const {
+		GLEC_ChkP(Trap)
+		GL.glBindBuffer(getBuffType(), 0);
+	}
+
+	// --------------------------- draw::Buffer ---------------------------
+	namespace draw {
+		Buffer::Buffer(const GLBufferCore& core, HRes hRes):
+			GLBufferCore(core), Token(hRes) {}
+		Buffer::Buffer(Buffer&& b): GLBufferCore(std::move(b)), Token(std::move(b)) {}
+		void Buffer::exec() {
+			use_begin();
+		}
+	}
+
 	// --------------------------- GLBuffer ---------------------------
-	DEF_GLRESOURCE_CPP(GLBuffer)
-	GLuint GLBuffer::getBuffID() const { return _idBuff; }
-	GLuint GLBuffer::getBuffType() const { return _buffType; }
-	GLuint GLBuffer::getStride() const { return _stride; }
-
-	void GLBuffer::Use(GLBuffer& b) {
-		GL.glBindBuffer(b._buffType, b.getBuffID());
-		GLEC_ChkP(Trap)
-	}
-	void GLBuffer::End(GLBuffer& b) {
-		GLEC_ChkP(Trap)
-		GL.glBindBuffer(b._buffType, 0);
-	}
-
 	void GLBuffer::onDeviceLost() {
 		if(_idBuff != 0) {
 			GL.glDeleteBuffers(1, &_idBuff);
@@ -29,65 +42,59 @@ namespace rs {
 			if(!_buff.empty()) {
 				auto u = use();
 				GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
-				u->end();
 			}
 		}
 	}
 	GLBuffer::~GLBuffer() {
 		onDeviceLost();
 	}
-
-	GLBuffer::GLBuffer(GLuint flag, GLuint dtype): _buffType(flag), _drawType(dtype), _stride(0), _idBuff(0) {}
-	GLBuffer::Inner1& GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
+	void GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
 		_stride = stride;
 		_buff.resize(nElem*_stride);
 		std::memcpy(&_buff[0], src, nElem*_stride);
-		if(_idBuff != 0)
+		_preFunc = [=]() {
 			GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
-		return Inner1::Cast(this);
+		};
 	}
-	GLBuffer::Inner1& GLBuffer::initData(spn::ByteBuff&& buff, GLuint stride) {
+	void GLBuffer::initData(spn::ByteBuff&& buff, GLuint stride) {
 		_stride = stride;
 		_buff.swap(buff);
-		if(_idBuff != 0)
+		_preFunc = [=]() {
 			GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
-		return Inner1::Cast(this);
+		};
 	}
-	GLBuffer::Inner1& GLBuffer::updateData(const void* src, size_t nElem, GLuint offset) {
+	void GLBuffer::updateData(const void* src, size_t nElem, GLuint offset) {
 		std::memcpy(&_buff[0]+offset, src, nElem*_stride);
-		if(_idBuff != 0)
+		_preFunc = [=]() {
 			GL.glBufferSubData(_buffType, offset*_stride, nElem*_stride, src);
-		return Inner1::Cast(this);
+		};
+	}
+	draw::Buffer GLBuffer::getDrawToken(IGLX& glx, HRes hRes) const {
+		glx.addPreFunc(std::move(_preFunc));
+		return draw::Buffer(*this, hRes);
 	}
 
 	// --------------------------- GLVBuffer ---------------------------
 	GLVBuffer::GLVBuffer(GLuint dtype): GLBuffer(GL_ARRAY_BUFFER, dtype) {}
 
 	// --------------------------- GLIBuffer ---------------------------
-	DEF_GLRESOURCE_CPP(GLIBuffer)
 	GLIBuffer::GLIBuffer(GLuint dtype): GLBuffer(GL_ELEMENT_ARRAY_BUFFER, dtype) {}
-	GLIBuffer::Inner1& GLIBuffer::initData(const GLubyte* src, size_t nElem) {
+	void GLIBuffer::initData(const GLubyte* src, size_t nElem) {
 		GLBuffer::initData(src, nElem, sizeof(GLubyte));
-		return Inner1::Cast(this);
 	}
-	GLIBuffer::Inner1& GLIBuffer::initData(const GLushort* src, size_t nElem) {
+	void GLIBuffer::initData(const GLushort* src, size_t nElem) {
 		GLBuffer::initData(src, nElem, sizeof(GLushort));
-		return Inner1::Cast(this);
 	}
-	GLIBuffer::Inner1& GLIBuffer::initData(spn::ByteBuff&& buff) {
+	void GLIBuffer::initData(spn::ByteBuff&& buff) {
 		GLBuffer::initData(std::forward<spn::ByteBuff>(buff), sizeof(GLubyte));
-		return Inner1::Cast(this);
 	}
-	GLIBuffer::Inner1& GLIBuffer::initData(const spn::U16Buff& buff) {
+	void GLIBuffer::initData(const spn::U16Buff& buff) {
 		GLBuffer::initData(reinterpret_cast<const void*>(&buff[0]), buff.size(), sizeof(GLushort));
-		return Inner1::Cast(this);
 	}
-	GLIBuffer::Inner1& GLIBuffer::updateData(const GLubyte* src, size_t nElem, GLuint offset) {
+	void GLIBuffer::updateData(const GLubyte* src, size_t nElem, GLuint offset) {
 		GLBuffer::updateData(src, nElem, offset*sizeof(GLubyte));
-		return Inner1::Cast(this);
 	}
-	GLIBuffer::Inner1& GLIBuffer::updateData(const GLushort* src, size_t nElem, GLuint offset) {
+	void GLIBuffer::updateData(const GLushort* src, size_t nElem, GLuint offset) {
 		GLBuffer::updateData(src, nElem, offset*sizeof(GLushort));
-		return Inner1::Cast(this);
 	}
 }

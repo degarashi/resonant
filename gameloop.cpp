@@ -243,7 +243,7 @@ namespace rs {
 		// DrawThreadがIdleになるまで待つ
 		while(dth.getInfo()->accum != getInfo()->accumDraw)
 			SDL_Delay(0);
-		
+
 		// 描画スレッドを後片付けフェーズへ移行
 		drawHandler->postArgs(msg::QuitReq());
 

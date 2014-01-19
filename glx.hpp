@@ -52,13 +52,13 @@ namespace rs {
 
 	struct VData {
 		const static int MAX_STREAM = 4;
-		using HLBuffA = HLVb[MAX_STREAM];
+		using BuffA = const spn::Optional<draw::Buffer> (&)[MAX_STREAM];
 		using AttrA = GLint[static_cast<int>(VSem::NUM_SEMANTIC)];
 
-		const HLBuffA&	hlBuff;
+		BuffA	buff;
 		const AttrA&	attrID;
 
-		VData(const HLBuffA& b, const AttrA& at): hlBuff(b), attrID(at) {}
+		VData(BuffA b, const AttrA& at): buff(b), attrID(at) {}
 	};
 	//! 頂点宣言
 	class VDecl {
@@ -85,11 +85,9 @@ namespace rs {
 			void apply(const VData& vdata) const;
 	};
 
-	using UniVal = boost::variant<bool, int, float, spn::Vec3, spn::Vec4,
-					spn::Mat32, spn::Mat33, spn::Mat43, spn::Mat44, HLTex>;
-	using UniMapStr = std::unordered_map<std::string, UniVal>;
-	using UniMapID = std::unordered_map<GLint, UniVal>;
-	using UniEntryMap = std::unordered_set<std::string>;
+	using UniIDSet = std::unordered_set<GLint>;
+	//! [UniformID -> Token]
+	using UniMap = std::unordered_map<GLint, draw::SPToken>;
 
 	// OpenGLのレンダリング設定
 	using Setting = boost::variant<BoolSettingR, ValueSettingR>;
@@ -102,6 +100,7 @@ namespace rs {
 			using VaryL = std::vector<const VaryEntry*>;
 			using ConstL = std::vector<const ConstEntry*>;
 			using UnifL = std::vector<const UnifEntry*>;
+			using VAttrID = const GLint (&)[static_cast<int>(VSem::NUM_SEMANTIC)];
 
 		private:
 			HLProg			_prog;
@@ -109,11 +108,12 @@ namespace rs {
 			//! Attribute: 頂点セマンティクスに対する頂点ID
 			/*! 無効なセマンティクスは負数 */
 			GLint			_vAttrID[static_cast<int>(VSem::NUM_SEMANTIC)];
+
 			//! Setting: Uniformデフォルト値(texture, vector, float, bool)設定を含む。GLDeviceの設定クラスリスト
 			SettingList		_setting;
 
-			UniEntryMap		_noDefValue;	//!< Uniform非デフォルト値エントリリスト (主にユーザーの入力チェック用)
-			UniMapID		_defValue;		//!< Uniformデフォルト値と対応するID
+			UniIDSet		_noDefValue;	//!< Uniform非デフォルト値エントリIDセット (主にユーザーの入力チェック用)
+			UniMap			_defaultValue;	//!< Uniformデフォルト値と対応するID
 			bool			_bInit = false;	//!< lost/resetのチェック用 (Debug)
 
 			// ----------- GLXStructから読んだデータ群 -----------
@@ -136,14 +136,13 @@ namespace rs {
 			bool findSetting(const Setting& s) const;
 			void swap(TPStructR& tp) noexcept;
 
-			const UniMapID& getUniformDefault() const;
-			const UniEntryMap& getUniformEntries() const;
+			const UniMap& getUniformDefault() const;
+			const UniIDSet& getUniformEntries() const;
+			VAttrID getVAttrID() const;
 
 			const HLProg& getProgram() const;
 			//! OpenGLに設定を適用
 			void applySetting() const;
-			//! 頂点ポインタを設定 (GLXから呼ぶ)
-			void setVertex(const SPVDecl& vdecl, const HLVb (&stream)[VData::MAX_STREAM]) const;
 			//! 設定差分を求める
 			static SettingList CalcDiff(const TPStructR& from, const TPStructR& to);
 	};
@@ -179,65 +178,148 @@ namespace rs {
 			return bRet;
 		}
 	}
+	namespace draw {
+		class Tag {
+			protected:
+				Priority64	_priority;
+			public:
+				virtual void exec() = 0;
+				virtual void cancel() = 0;
+		};
+		using UPTag = std::unique_ptr<Tag>;
+
+		struct Prio {
+			Priority	userP, sysP;
+			float		camDist;
+			int			texID, vertID, indexID;
+
+			Priority64 makeID(float minD, float maxD) const;
+		};
+		struct DrawCall : Token {
+			GLenum	_mode;
+			GLint	_first;
+			GLsizei	_count;
+
+			DrawCall(GLenum mode, GLint first, GLsizei count);
+			void exec() override;
+		};
+		struct DrawCallI : Token {
+			GLenum	_mode, _stride;
+			GLsizei	_count;
+			GLuint	_offset;
+
+			DrawCallI(GLenum mode, GLenum stride, GLsizei count, GLuint offset);
+			void exec() override;
+		};
+		// [Texture, Uniform]
+		class NormalTag : public Tag {
+			friend class ::rs::GLEffect;
+			using FuncL = std::vector<PreFunc>;
+			TokenL		_tokenL;
+			FuncL		_funcL;
+
+			public:
+				NormalTag() = default;
+				NormalTag(NormalTag&& t);
+
+				// ---- from DrawThread ----
+				void exec() override;
+				void cancel() override;
+		};
+		// ProgramとUniformの初期値をセットするTag
+		// [Program, VStream, IStream, FrameBuff, RenderBuff]
+		class InitTag : public Tag {
+			friend class ::rs::GLEffect;
+			using OPProg = spn::Optional<Program>;
+			using OPBuff = spn::Optional<Buffer>;
+			using OPVAttrID = spn::Optional<TPStructR::VAttrID>;
+
+			OPProg		_opProgram;
+			SPVDecl		_spVDecl;
+			OPVAttrID	_opVAttrID;
+			OPBuff		_opVb[VData::MAX_STREAM];
+			OPBuff		_opIb;
+
+			using OPFb = spn::Optional<FrameBuff>;
+			OPFb		_opFb;
+
+			public:
+				InitTag() = default;
+				InitTag(InitTag&& t);
+
+				// ---- from DrawThread ----
+				void exec() override;
+				void cancel() override;
+		};
+
+		class Task {
+			using TagL = std::vector<UPTag>;
+			TagL	_tagL[2];	// ダブルバッファ
+			int		_swFlag;
+
+			void _sortTag();
+
+			public:
+				Task();
+				// ---- from MainThread ----
+				void switchTask();	// 各フレーム描画コマンドの最初に呼ぶ
+				void addTag(draw::Tag* tag);
+				// ---- from DrawThread ----
+				void exec();
+				void cancel();
+		};
+	}
 
 	//! GLXエフェクト管理クラス
-	class GLEffect : public IGLResource {
+	class GLEffect : public IGLResource, public IGLX {
 		public:
+			//! [UniformID -> TextureActiveIndex]
 			using TexIndex = std::unordered_map<GLint, GLint>;
-		private:
-			using UseArray = std::vector<std::string>;
-			//! アクティブなBoolSetting, ValueSettingを適用
-			void _applyShaderSetting() const;
-
+			//! [(TechID|PassID) -> ProgramClass]
 			using TechMap = std::unordered_map<GL16ID, TPStructR>;
-	// TODO: 差分キャッシュの実装 (set差分 + vAttrID)
-	//		using DiffCache = std::unordered_map<GLDiffID, int>;
+			//! Tech名とPass名のセット
 			using TechName = std::vector<std::vector<std::string>>;
+			using TPRef = spn::Optional<const TPStructR&>;
 
-			GLXStruct		_result;		//!< 元になった構造体 (Effectファイル解析結果)
-			TechMap			_techMap;		//!< ゼロから設定を構築する場合の情報や頂点セマンティクス
-	//		DiffCache		_diffCache;		//!< セッティング差分を格納
-			TechName		_techName;		//!< Tech名とPass名のセット
-
-			// --------------- 現在アクティブな設定 ---------------
-			SPVDecl			_spVDecl;
-			HLVb			_vBuffer[VData::MAX_STREAM];
-			HLIb			_iBuffer;
-			using TPID = boost::optional<int>;
-			TPID			_idTech,		//!< 移行予定のTechID
-							_idTechCur,		//!< 現在OpenGLにセットされているTechID
-							_idPass,		//!< 移行予定のPassID
-							_idPassCur;		//!< 現在OpenGLにセットされているPassID
-			bool			_bDefaultParam;	//!< Tech切替時、trueならデフォルト値読み込み
-			UniMapID		_uniMapID,		//!< 設定待ちのエントリ
-							_uniMapIDTmp;	//!< 設定し終わったエントリ
-			using TPRef = boost::optional<const TPStructR&>;
-			TPRef			_tps;			//!< 現在使用中のTech
-			TexIndex		_texIndex;		//!< [AttrID : TextureIndex]
-
-			enum REFLAG {
-				REFL_PROGRAM = 0x01,		//!< シェーダーのUse宣言
-				REFL_UNIFORM = 0x02,		//!< キャッシュしたUniform値の設定
-				REFL_VSTREAM = 0x04,		//!< VStreamの設定
-				REFL_ISTREAM = 0x08,		//!< IStreamの設定
-				REFL_ALL = 0x0f
-			};
-			uint32_t		_rflg = REFL_ALL;
+		private:
+			GLXStruct		_result;			//!< 元になった構造体 (Effectファイル解析結果)
+			TechMap			_techMap;			//!< ゼロから設定を構築する場合の情報や頂点セマンティクス
+			TechName		_techName;
 			bool			_bInit = false;		//!< deviceLost/Resetの状態区別
+			bool			_bDefaultParam;		//!< Tech切替時、trueならデフォルト値読み込み
 
-			// ----- リフレッシュ関数 -----
-			void _refreshProgram();
-			void _refreshUniform();
-			void _refreshVStream();
-			void _refreshIStream();
+			draw::Task		_task;
+			Priority		_sysP;
+			using OPID = spn::Optional<int>;
+			struct {
+				// passをセットしたタイミングでProgramを検索し、InitTagにセット
+				using OPProg = spn::Optional<GLuint>;
+				using OPInitTag = spn::Optional<draw::InitTag>;
+				using OPNormalTag = spn::Optional<draw::NormalTag>;
 
+				OPID			tech,
+								pass;
+				TPRef			tps;		//!< 現在使用中のTech
+				UniMap			uniMap;		//!< 現在設定中のUniform
+				TexIndex		texIndex;	//!< [UniformID : TextureIndex]
+				OPProg			progID;
+
+				bool			bInit;
+				draw::InitTag	init;
+				bool			bNormal;
+				draw::NormalTag	normal;
+
+				draw::Prio		prio;
+			} _current;
+
+			void _exportInitTag();
+			bool _exportUniform();
 		public:
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
 			GLEffect(spn::AdaptStream& s);
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-
 			//! GLEffectで発生する例外基底
 			struct EC_Base : std::runtime_error {
 				using std::runtime_error::runtime_error;
@@ -258,48 +340,53 @@ namespace rs {
 			struct EC_FileNotFound : EC_Base {
 				EC_FileNotFound(const std::string& fPath);
 			};
-
 			//! システムセマンティクス(2D)
 			//! システムセマンティクス(3D)
 			//! システムセマンティクス(Both)
 
-			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
-			GLint getUniformID(const std::string& name);
-			template <class T>
-			void setUniform(T&& v, GLint id) {
-				if(id < 0)
-					return;
-				_rflg |= REFL_UNIFORM;
-				_uniMapID.insert(std::make_pair(id, std::forward<T>(v)));
-			}
-
-			//! 現在セットされているUniform変数の保存用
-			const UniMapID& getUniformMap();
-			//! セーブしておいたUniform変数群を復元
-			void inputParams(const UniMapStr& u);
-			void inputParams(const UniMapID& u);
-			//! 実際にOpenGLへ各種設定を適用
-			void applySetting();
-
+			int getTechID(const std::string& tech) const;
+			int getPassID(const std::string& pass) const;
+			OPID getCurTechID() const;
+			OPID getCurPassID() const;
+			//! Tech切替時に初期値をセットするか
+			void setTechnique(int id, bool bReset);
+			//! Pass指定
+			void setPass(int id);
 			//! 頂点宣言
 			/*! \param[in] decl 頂点定義クラスのポインタ(定数を前提) */
 			void setVDecl(const SPVDecl& decl);
 			void setVStream(HVb vb, int n);
 			void setIStream(HIb ib);
-			//! Tech指定
-			/*!	Techを切り替えるとUniformがデフォルトにリセットされる
-				切替時に引数としてUniMapを渡すとそれで初期化 */
-			void setTechnique(int techID, bool bDefault);
-			int getTechID(const std::string& tech) const;
-			int getCurTechID() const;
-			//! Pass指定
-			void setPass(int passID);
-			int getPassID(const std::string& pass) const;
-			int getCurPassID() const;
+			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
+			GLint getUniformID(const std::string& name) const;
 
+			template <class T>
+			void setUniform(GLint id, const T& t) {
+				if(_current.uniMap.count(id) == 0)
+					_current.uniMap.emplace(id, _MakeUniformToken(id, t));
+			}
+			static draw::SPToken _MakeUniformToken(GLint id, bool b);
+			static draw::SPToken _MakeUniformToken(GLint id, float fv);
+			static draw::SPToken _MakeUniformToken(GLint id, int iv);
+			static draw::SPToken _MakeUniformToken(GLint id, const spn::Vec3& v);
+			static draw::SPToken _MakeUniformToken(GLint id, const spn::Vec4& v);
+			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat32& m);
+			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat33& m);
+			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat43& m);
+			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat44& m);
+			static draw::SPToken _MakeUniformToken(GLint id, HTex hTex);
+
+			void setUserPriority(Priority p);
+			void addPreFunc(PreFunc pf) override;
 			//! IStreamを使用して描画
 			void drawIndexed(GLenum mode, GLsizei count, GLuint offset=0);
 			//! IStreamを使わず描画
 			void draw(GLenum mode, GLint first, GLsizei count);
+
+			// ---- from MainThread ----
+			void beginTask();
+			// ---- from DrawThread ----
+			void execTask();
+			void cancelTask();
 	};
 }

@@ -79,13 +79,13 @@ class MyDraw : public rs::IDrawProc {
 			};
 			mgr_rw.addUriHandler(rs::SPUriHandler(new rs::UriH_File(u8"/")));
 			_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-			_hlVb.ref()->use()->initData(tmpV, countof(tmpV), sizeof(TmpV));
+			_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(TmpV));
 			_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
-			_hlIb.ref()->use()->initData(tmpI, countof(tmpI));
+			_hlIb.ref()->initData(tmpI, countof(tmpI));
 			spn::URI uriTex("file", mgr_path.getPath(AppPath::Type::Texture));
 			uriTex <<= "test.png";
 			_hlTex = mgr_gl.loadTexture(uriTex);
-			_hlTex.ref()->use()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
+			_hlTex.ref()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
 
 			rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
 			_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nまだ\nゲームは　完成　しないのか？");
@@ -103,7 +103,7 @@ class MyDraw : public rs::IDrawProc {
 
 			_passView = pFx.getPassID("P0");
 			_passText = pFx.getPassID("P1");
-// 			pFx.setUniform(spn::Vec4{1,2,3,4}, pFx.getUniformID("lowVal"));
+// 			pFx.setUniform(pFx.getUniformID("lowVal"), spn::Vec4{1,2,3,4});
 
 			_size *= 0;
 			auto lk = shared.lock();
@@ -155,7 +155,7 @@ class MyDraw : public rs::IDrawProc {
 				cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
 			}
 
-			fx.setUniform(cd.getViewProjMatrix().convert44(), id);
+			fx.setUniform(id, cd.getViewProjMatrix().convert44());
 			id = fx.getUniformID("tDiffuse");
 			fx.setUniform(_hlTex, id);
 
@@ -179,7 +179,7 @@ class MyDraw : public rs::IDrawProc {
 							0,			ry*r, 		0,
 							-1.f+x*rx,	1.f-y*ry,	1);
 			};
-			fx.setUniform(fn(0,0,1), id);
+			fx.setUniform(id, fn(0,0,1));
  			_hlText.ref().draw(&fx);
 			return true;
 		}

@@ -149,9 +149,9 @@ namespace rs {
 			ds.nChar = nC;
 			// GLバッファにセット
 			ds.hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-			ds.hlVb.ref()->use()->initData(std::move(vbuff), sizeof(TextV));
+			ds.hlVb.ref()->initData(std::move(vbuff), sizeof(TextV));
 			ds.hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
-			ds.hlIb.ref()->use()->initData(std::move(ibuff));
+			ds.hlIb.ref()->initData(std::move(ibuff));
 		}
 	}
 
