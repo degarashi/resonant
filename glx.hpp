@@ -179,12 +179,18 @@ namespace rs {
 		}
 	}
 	namespace draw {
-		class Tag {
+		class Tag : public IPreFunc {
+			using FuncL = std::vector<PreFunc>;
+			FuncL		_funcL;
 			protected:
 				Priority64	_priority;
 			public:
-				virtual void exec() = 0;
-				virtual void cancel() = 0;
+				Tag() = default;
+				Tag(Tag&& tag);
+
+				virtual void exec();
+				virtual void cancel();
+				void addPreFunc(PreFunc pf) override;
 		};
 		using UPTag = std::unique_ptr<Tag>;
 
@@ -214,17 +220,12 @@ namespace rs {
 		// [Texture, Uniform]
 		class NormalTag : public Tag {
 			friend class ::rs::GLEffect;
-			using FuncL = std::vector<PreFunc>;
 			TokenL		_tokenL;
-			FuncL		_funcL;
-
 			public:
 				NormalTag() = default;
 				NormalTag(NormalTag&& t);
-
 				// ---- from DrawThread ----
 				void exec() override;
-				void cancel() override;
 		};
 		// ProgramとUniformの初期値をセットするTag
 		// [Program, VStream, IStream, FrameBuff, RenderBuff]
@@ -246,10 +247,8 @@ namespace rs {
 			public:
 				InitTag() = default;
 				InitTag(InitTag&& t);
-
 				// ---- from DrawThread ----
 				void exec() override;
-				void cancel() override;
 		};
 
 		class Task {
@@ -271,7 +270,7 @@ namespace rs {
 	}
 
 	//! GLXエフェクト管理クラス
-	class GLEffect : public IGLResource, public IGLX {
+	class GLEffect : public IGLResource {
 		public:
 			//! [UniformID -> TextureActiveIndex]
 			using TexIndex = std::unordered_map<GLint, GLint>;
@@ -302,7 +301,6 @@ namespace rs {
 				TPRef			tps;		//!< 現在使用中のTech
 				UniMap			uniMap;		//!< 現在設定中のUniform
 				TexIndex		texIndex;	//!< [UniformID : TextureIndex]
-				OPProg			progID;
 
 				bool			bInit;
 				draw::InitTag	init;
@@ -377,7 +375,6 @@ namespace rs {
 			static draw::SPToken _MakeUniformToken(GLint id, HTex hTex);
 
 			void setUserPriority(Priority p);
-			void addPreFunc(PreFunc pf) override;
 			//! IStreamを使用して描画
 			void drawIndexed(GLenum mode, GLsizei count, GLuint offset=0);
 			//! IStreamを使わず描画

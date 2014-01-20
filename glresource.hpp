@@ -249,7 +249,7 @@ namespace rs {
 			void exec() override;
 		};
 	}
-	struct IGLX {
+	struct IPreFunc {
 		virtual void addPreFunc(PreFunc pf) = 0;
 	};
 	//! OpenGL関連のリソース
@@ -310,7 +310,7 @@ namespace rs {
 		class Program : public Token {
 			GLuint		_idProg;
 			public:
-				Program(HRes hRes, GLuint idProg);
+				Program(HProg hProg);
 				Program(Program&& p);
 
 				void exec() override;
@@ -334,7 +334,7 @@ namespace rs {
 
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-			draw::Buffer getDrawToken(IGLX& glx, HRes hRes) const;
+			draw::Buffer getDrawToken(IPreFunc& pf, HRes hRes) const;
 	};
 
 	//! 頂点バッファ
@@ -368,7 +368,7 @@ namespace rs {
 			~GLProgram() override;
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-			draw::Program getDrawToken(IGLX& glx, HRes hRes) const;
+			draw::Program getDrawToken(IPreFunc& pf, HRes hRes) const;
 			const HLSh& getShader(ShType type) const;
 			int getUniformID(const std::string& name) const;
 			int getUniformIDNc(const std::string& name) const;
@@ -447,7 +447,7 @@ namespace rs {
 
 			bool isCubemap() const;
 			bool operator == (const IGLTexture& t) const;
-			draw::SPToken getDrawToken(IGLX& glx, GLint id, HRes hRes) const;
+			draw::SPToken getDrawToken(IPreFunc& pf, GLint id, HRes hRes) const;
 	};
 	namespace draw {
 		class Texture : public IGLTexture, public Uniform {
@@ -725,7 +725,7 @@ namespace rs {
 
 			void onDeviceReset() override;
 			void onDeviceLost() override;
-			draw::FrameBuff getDrawToken(IGLX& glx, HRes hRes) const;
+			draw::FrameBuff getDrawToken(IPreFunc& pf, HRes hRes) const;
 			const Res& getAttachment(AttID att) const;
 	};
 }

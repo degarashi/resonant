@@ -69,8 +69,8 @@ namespace rs {
 			GL.glBufferSubData(_buffType, offset*_stride, nElem*_stride, src);
 		};
 	}
-	draw::Buffer GLBuffer::getDrawToken(IGLX& glx, HRes hRes) const {
-		glx.addPreFunc(std::move(_preFunc));
+	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
+		pf.addPreFunc(std::move(_preFunc));
 		return draw::Buffer(*this, hRes);
 	}
 

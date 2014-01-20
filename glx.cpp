@@ -432,8 +432,7 @@ namespace rs {
 		if(!it._opVb[n] || it._opVb[n]->getBuffID() != vb.ref()->getBuffID()) {
 			_current.bInit = true;
 			HRes hRes = vb;
-			const GLBufferCore& core = *vb.ref();
-			it._opVb[n] = spn::construct(std::ref(core), hRes);
+			it._opVb[n] = vb.ref()->getDrawToken(_current.init, hRes);
 		}
 	}
 	void GLEffect::setIStream(HIb ib) {
@@ -441,8 +440,7 @@ namespace rs {
 		if(!it._opIb || it._opIb->getBuffID() != ib.ref()->getBuffID()) {
 			_current.bInit = true;
 			HRes hRes = ib;
-			const GLBufferCore& core = *ib.ref();
-			it._opIb = spn::construct(std::ref(core), hRes);
+			it._opIb = ib.ref()->getDrawToken(_current.init, hRes);
 		}
 	}
 	void GLEffect::setTechnique(int techID, bool bDefault) {
@@ -464,15 +462,18 @@ namespace rs {
 			GL16ID id(*cur.tech, *cur.pass);
 			cur.tps = _techMap.at(id);
 			cur.bInit = true;
+			auto& tps = _techMap.at(GL16ID(*_current.tech, *_current.pass));
+			cur.init._opProgram = spn::construct(tps.getProgram().get());
+			cur.init._opVAttrID = tps.getVAttrID();
 			// UnifMapをクリア
 			cur.uniMap.clear();
 			// デフォルト値読み込み
 			if(_bDefaultParam) {
-				auto& def = cur.tps->getUniformDefault();
+				auto& def = tps.getUniformDefault();
 				cur.uniMap = def;
 			}
 			// テクスチャインデックスリスト作成
-			GLuint pid = cur.tps->getProgram().cref()->getProgramID();
+			GLuint pid = tps.getProgram().cref()->getProgramID();
 			GLint nUnif;
 			GL.glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
 
@@ -514,10 +515,6 @@ namespace rs {
 	GLEffect::OPID GLEffect::getCurTechID() const {
 		return _current.tech;
 	}
-	void GLEffect::addPreFunc(PreFunc pf) {
-		_current.normal._funcL.push_back(std::move(pf));
-		_current.bNormal = true;
-	}
 	void GLEffect::_exportInitTag() {
 		// もしInitTagが有効ならそれを出力
 		if(_current.bInit) {
@@ -544,17 +541,28 @@ namespace rs {
 				t->cancel();
 		}
 
-		// -------------- NormalTag --------------
-		NormalTag::NormalTag(NormalTag&& t): Tag(std::move(t)), _tokenL(std::move(t._tokenL)), _funcL(std::move(t._funcL)) {}
-		void NormalTag::exec() {
+		// -------------- Tag --------------
+		Tag::Tag(Tag&& t): _funcL(std::move(t._funcL)) {}
+		void Tag::exec() {
 			cancel();
+		}
+		void Tag::cancel() {
+			if(!_funcL.empty()) {
+				for(auto& f : _funcL)
+					f();
+				_funcL.clear();
+			}
+		}
+		void Tag::addPreFunc(PreFunc pf) {
+			_funcL.push_back(std::move(pf));
+		}
+
+		// -------------- NormalTag --------------
+		NormalTag::NormalTag(NormalTag&& t): Tag(std::move(t)), _tokenL(std::move(t._tokenL)) {}
+		void NormalTag::exec() {
+			Tag::exec();
 			for(auto& f : _tokenL)
 				f->exec();
-		}
-		void NormalTag::cancel() {
-			for(auto& f : _funcL)
-				f();
-			_funcL.clear();
 		}
 
 		// -------------- InitTag --------------
@@ -572,8 +580,10 @@ namespace rs {
 			if(_opIb)
 				_opIb->use_begin();
 			GLEC_ChkP(Trap)
+
+			// Programをセットした後にPreFuncを実行
+			Tag::exec();
 		}
-		void InitTag::cancel() {}
 
 		// -------------- DrawCall --------------
 		DrawCall::DrawCall(GLenum mode, GLint first, GLsizei count): _mode(mode), _first(first), _count(count) {}
@@ -708,6 +718,11 @@ namespace rs {
 	}
 	void GLEffect::beginTask() {
 		_task.switchTask();
+		_current.tech = spn::none;
+		_current.pass = spn::none;
+		_current.tps = spn::none;
+		_current.bInit = false;
+		_current.bNormal = false;
 	}
 	void GLEffect::execTask() {
 		_task.exec();
@@ -871,4 +886,7 @@ namespace rs {
 	const UniMap& TPStructR::getUniformDefault() const { return _defaultValue; }
 	const UniIDSet& TPStructR::getUniformEntries() const { return _noDefValue; }
 	const HLProg& TPStructR::getProgram() const { return _prog; }
+	TPStructR::VAttrID TPStructR::getVAttrID() const {
+		return _vAttrID;
+	}
 }
