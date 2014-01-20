@@ -489,6 +489,10 @@ namespace rs {
 				if(typ == GL_SAMPLER_2D)
 					cur.texIndex.insert(std::make_pair(i, curI++));
 			}
+
+			cur.init.addPreFunc([&tps](){
+				tps.applySetting();
+			});
 		}
 	}
 	int GLEffect::getTechID(const std::string& tech) const {
@@ -683,32 +687,41 @@ namespace rs {
 		_current.prio.userP = p;
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, bool b) {
-		return _MakeUniformToken(id, static_cast<int>(b));
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, bool b) {
+		return _MakeUniformToken(pf, id, static_cast<int>(b));
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, int iv) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, int iv) {
 		return std::make_shared<draw::Unif_Int>(id, iv);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, float fv) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, float fv) {
 		return std::make_shared<draw::Unif_Float>(id, fv);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, const spn::Vec3& v) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Vec3& v) {
 		return std::make_shared<draw::Unif_Vec3>(id, v);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, const spn::Vec4& v) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Vec4& v) {
 		return std::make_shared<draw::Unif_Vec4>(id, v);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, const spn::Mat32& v) {
-		return _MakeUniformToken(id, v.convert33());
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat32& v) {
+		return _MakeUniformToken(pf, id, v.convert33());
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, const spn::Mat33& v) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat33& v) {
 		return std::make_shared<draw::Unif_Mat33>(id, v);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, const spn::Mat43& v) {
-		return _MakeUniformToken(id, v.convert44());
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat43& v) {
+		return _MakeUniformToken(pf, id, v.convert44());
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(GLint id, const spn::Mat44& v) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat44& v) {
 		return std::make_shared<draw::Unif_Mat44>(id, v);
+	}
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HTex& hTex) {
+		auto& t = hTex.cref();
+//		auto aID = _current.texIndex.at(id);
+//		t->setActiveID(aID);
+		return t->getDrawToken(pf, id, hTex);
+	}
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HLTex& hlTex) {
+		return _MakeUniformToken(pf, id, hlTex.get());
 	}
 	GLint GLEffect::getUniformID(const std::string& name) const {
 		GLint loc = GL.glGetUniformLocation(_current.tps->getProgram().cref()->getProgramID(), name.c_str());
@@ -732,11 +745,15 @@ namespace rs {
 	}
 
 	namespace {
-		struct Visitor : boost::static_visitor<> {
+		struct Visitor : boost::static_visitor<>, IPreFunc {
 			GLuint		pgID;
 			GLint		uniID;
 			UniMap		result;
+			PreFuncL	funcL;
 
+			void addPreFunc(PreFunc pf) override {
+				funcL.push_back(pf);
+			}
 			bool setKey(const std::string& key) {
 				uniID = GL.glGetUniformLocation(pgID, key.c_str());
 				GLEC_ChkP(Trap)
@@ -746,7 +763,7 @@ namespace rs {
 			template <class T>
 			void _addResult(const T& t) {
 				if(uniID >= 0)
-					result.emplace(uniID, GLEffect::_MakeUniformToken(uniID, t));
+					result.emplace(uniID, GLEffect::_MakeUniformToken(*this, uniID, t));
 			}
 
 			void operator()(const std::vector<float>& v) {
@@ -886,7 +903,6 @@ namespace rs {
 	const UniMap& TPStructR::getUniformDefault() const { return _defaultValue; }
 	const UniIDSet& TPStructR::getUniformEntries() const { return _noDefValue; }
 	const HLProg& TPStructR::getProgram() const { return _prog; }
-	TPStructR::VAttrID TPStructR::getVAttrID() const {
-		return _vAttrID;
-	}
+	TPStructR::VAttrID TPStructR::getVAttrID() const { return _vAttrID; }
+	const PreFuncL& TPStructR::getPreFunc() const { return _preFuncL; }
 }

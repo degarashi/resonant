@@ -413,11 +413,12 @@ namespace rs {
 			OPInCompressedFmt	_format;	//!< 値が無効 = 不定
 			bool				_bReset;
 			PreFunc				_preFunc;
+			Mutex				_mutex;		//!< _reallocate用
 
 			bool _onDeviceReset();
 			void _reallocate();
 			IGLTexture(OPInCompressedFmt fmt, const spn::Size& sz, bool bCube);
-			IGLTexture(IGLTexture& t);
+			IGLTexture(const IGLTexture& t);
 
 		public:
 			IGLTexture(IGLTexture&& t);
@@ -447,12 +448,12 @@ namespace rs {
 
 			bool isCubemap() const;
 			bool operator == (const IGLTexture& t) const;
-			draw::SPToken getDrawToken(IPreFunc& pf, GLint id, HRes hRes) const;
+			draw::SPToken getDrawToken(IPreFunc& pf, GLint id, HRes hRes);
 	};
 	namespace draw {
 		class Texture : public IGLTexture, public Uniform {
 			public:
-				Texture(HRes hRes, GLint id, IGLTexture& t);
+				Texture(HRes hRes, GLint id, const IGLTexture& t);
 				Texture(const Texture&) = delete;
 				virtual ~Texture();
 

@@ -24,9 +24,9 @@ namespace rs {
 		t._bReset = false;
 		t._preFunc = nullptr;
 	}
-	IGLTexture::IGLTexture(IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {
-		t._bReset = false;
-		t._preFunc = std::move(t._preFunc);
+	IGLTexture::IGLTexture(const IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {
+		// PreFuncを持っている状態ではコピー禁止
+		Assert(Trap, !static_cast<bool>(t._preFunc))
 	}
 
 	RUser<IGLTexture> IGLTexture::use() const {
@@ -87,6 +87,7 @@ namespace rs {
 		_coeff = coeff;
 	}
 	void IGLTexture::_reallocate() {
+		UniLock lk(_mutex);
 		onDeviceLost();
 		onDeviceReset();
 	}
@@ -115,6 +116,16 @@ namespace rs {
 	}
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
+	}
+	draw::SPToken IGLTexture::getDrawToken(IPreFunc& pf, GLint id, HRes hRes) {
+		if(_preFunc)
+			pf.addPreFunc(std::move(_preFunc));
+		if(_bReset) {
+			_bReset = false;
+			_reallocate();
+		}
+		draw::SPToken ret = std::make_shared<draw::Texture>(hRes, id, *this);
+		return std::move(ret);
 	}
 
 	// ------------------------- Texture_Mem -------------------------
@@ -232,13 +243,14 @@ namespace rs {
 
 	// ------------------------- draw::Texture -------------------------
 	namespace draw {
-		Texture::Texture(HRes hRes, GLint uid, IGLTexture& t): IGLTexture(t), Uniform(hRes, uid) {}
+		Texture::Texture(HRes hRes, GLint uid, const IGLTexture& t): IGLTexture(t), Uniform(hRes, uid) {}
 		Texture::~Texture() {
 			// IGLTextureのdtorでリソースを開放されないように0にセットしておく
 			_idTex = 0;
 		}
 		void Texture::exec() {
-			auto u = use();
+			// 最後にBindは解除しない
+			use_begin();
 			{
 				// setAnisotropic
 				GLfloat aMax;
@@ -251,8 +263,7 @@ namespace rs {
 				GL.glTexParameteri(_texFlag, GL_TEXTURE_MAG_FILTER, cs_Filter[0][_iLinearMag]);
 				GL.glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
 			}
-			GL.glActiveTexture(_actID);
-			GL.glUniform1i(idUnif, getTextureID());
+			GL.glUniform1i(idUnif, _actID);
 		}
 	}
 

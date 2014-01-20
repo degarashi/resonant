@@ -146,6 +146,10 @@ namespace rs {
 		AssertT(Throw, ib==GL_TRUE, (GLE_ProgramError)(GLuint), _idProg)
 	}
 	GLProgram::~GLProgram() {
+		if(mgr_gl.isInDtor()) {
+			for(auto& p : _shader)
+				p.setNull();
+		}
 		onDeviceLost();
 	}
 	void GLProgram::onDeviceLost() {

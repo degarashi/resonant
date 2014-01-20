@@ -67,6 +67,7 @@ namespace rs {
 				}
 			}
 		}
+		GLM::TerminateDrawThread();
 		std::cout << "DrawThread destructor ended" << std::endl;
 	}
 	// --------------------- MainThread ---------------------

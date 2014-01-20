@@ -89,10 +89,12 @@ namespace rs {
 	//! [UniformID -> Token]
 	using UniMap = std::unordered_map<GLint, draw::SPToken>;
 
+	using PreFuncL = std::vector<PreFunc>;
 	// OpenGLのレンダリング設定
 	using Setting = boost::variant<BoolSettingR, ValueSettingR>;
 	using SettingList = std::vector<Setting>;
 	//! Tech | Pass の分だけ作成
+	//MEMO: デフォルトテクスチャのPreFuncはどっかで事前に呼んで置かないとGPUに画素が転送されない
 	class TPStructR {
 		public:
 			using MacroMap = std::map<std::string, std::string>;
@@ -114,6 +116,7 @@ namespace rs {
 
 			UniIDSet		_noDefValue;	//!< Uniform非デフォルト値エントリIDセット (主にユーザーの入力チェック用)
 			UniMap			_defaultValue;	//!< Uniformデフォルト値と対応するID
+			PreFuncL		_preFuncL;
 			bool			_bInit = false;	//!< lost/resetのチェック用 (Debug)
 
 			// ----------- GLXStructから読んだデータ群 -----------
@@ -138,6 +141,7 @@ namespace rs {
 
 			const UniMap& getUniformDefault() const;
 			const UniIDSet& getUniformEntries() const;
+			const PreFuncL& getPreFunc() const;
 			VAttrID getVAttrID() const;
 
 			const HLProg& getProgram() const;
@@ -180,8 +184,7 @@ namespace rs {
 	}
 	namespace draw {
 		class Tag : public IPreFunc {
-			using FuncL = std::vector<PreFunc>;
-			FuncL		_funcL;
+			PreFuncL		_funcL;
 			protected:
 				Priority64	_priority;
 			public:
@@ -228,6 +231,7 @@ namespace rs {
 				void exec() override;
 		};
 		// ProgramとUniformの初期値をセットするTag
+		// PreFuncとして(TPStructR::applySettingsを追加)
 		// [Program, VStream, IStream, FrameBuff, RenderBuff]
 		class InitTag : public Tag {
 			friend class ::rs::GLEffect;
@@ -360,19 +364,19 @@ namespace rs {
 
 			template <class T>
 			void setUniform(GLint id, const T& t) {
-				if(_current.uniMap.count(id) == 0)
-					_current.uniMap.emplace(id, _MakeUniformToken(id, t));
+				_current.uniMap.emplace(id, _MakeUniformToken(_current.normal, id, t));
 			}
-			static draw::SPToken _MakeUniformToken(GLint id, bool b);
-			static draw::SPToken _MakeUniformToken(GLint id, float fv);
-			static draw::SPToken _MakeUniformToken(GLint id, int iv);
-			static draw::SPToken _MakeUniformToken(GLint id, const spn::Vec3& v);
-			static draw::SPToken _MakeUniformToken(GLint id, const spn::Vec4& v);
-			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat32& m);
-			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat33& m);
-			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat43& m);
-			static draw::SPToken _MakeUniformToken(GLint id, const spn::Mat44& m);
-			static draw::SPToken _MakeUniformToken(GLint id, HTex hTex);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, bool b);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, float fv);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, int iv);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Vec3& v);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Vec4& v);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat32& m);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat33& m);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat43& m);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat44& m);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const HTex& hTex);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const HLTex& hlTex);
 
 			void setUserPriority(Priority p);
 			//! IStreamを使用して描画

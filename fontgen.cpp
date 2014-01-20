@@ -169,7 +169,7 @@ namespace rs {
 		gle->setVDecl(cs_vDecl);
 		GLint id = gle->getUniformID("tDiffuse");
 		for(auto& ds : _drawSet) {
-			gle->setUniform(HLTex(ds.hTex), id);
+			gle->setUniform(id, HLTex(ds.hTex));
 			gle->setVStream(ds.hlVb.get(), 0);
 			gle->setIStream(ds.hlIb.get());
 			gle->drawIndexed(GL_TRIANGLES, ds.nChar*6, 0);
