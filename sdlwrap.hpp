@@ -206,6 +206,18 @@ namespace rs {
 				_data = nullptr;
 			}
 		}
+		template <class T2>
+		SpinInner<SP, T2> castAndMove() {
+			SpinInner<SP, T2> ret(_src, reinterpret_cast<T2*>(_data));
+			_data = nullptr;
+			return std::move(ret);
+		}
+		template <class T2>
+		SpinInner<SP, T2> castAndMoveDeRef() {
+			SpinInner<SP, T2> ret(_src, reinterpret_cast<T2*>(*_data));
+			_data = nullptr;
+			return std::move(ret);
+		}
 	};
 
 	//! 再帰対応のスピンロック
@@ -313,6 +325,101 @@ namespace rs {
 			}
 			void terminate() {
 				SDL_TLSSet(_tlsID, nullptr, nullptr);
+			}
+	};
+	template <class T>
+	class SpinLockP {
+		struct InnerP {
+			SpinLockP&	_s;
+			bool		_bLocked;
+			InnerP(SpinLockP& s): _s(s) {
+				_bLocked = _s._put();
+			}
+			~InnerP() {
+				if(_bLocked)
+					_s._put_wait();
+			}
+		};
+		using Inner = SpinInner<SpinLockP<T>, T>;
+		using CInner = SpinInner<SpinLockP<T>, const T>;
+		template <class T0, class T1>
+		friend class SpinInner;
+
+		TLS<int>		_tlsCount;
+		SDL_threadID	_lockID;
+		int				_lockCount;
+		Mutex			_mutex;
+		T				_data;
+
+		void _unlock() {
+			AssertP(Trap, _lockID == tls_threadID)
+			AssertP(Trap, _lockCount >= 1)
+			if(--_lockCount == 0)
+				_lockID = 0;
+			_mutex.unlock();
+		}
+		template <class I>
+		I _lock(bool bBlock) {
+			if(bBlock)
+				_mutex.lock();
+			if(bBlock || _mutex.try_lock()) {
+				if(_lockID == 0) {
+					_lockCount = 1;
+					_lockID = tls_threadID;
+				} else {
+					AssertP(Trap, _lockID == tls_threadID)
+					++_lockCount;
+				}
+				return I(*this, &_data);
+			}
+			return I(*this, nullptr);
+		}
+		void _put_wait() {
+			_mutex.lock();
+			_lockID = tls_threadID;
+			_lockCount = _tlsCount.get()-1;
+			*_tlsCount = -1;
+
+			int tmp = _lockCount;
+			while(--tmp != 0)
+				_mutex.lock();
+		}
+		bool _put() {
+			// 自スレッドがロックしてたらカウンタを退避して一旦解放
+			if(_mutex.try_lock()) {
+				if(_lockCount > 0) {
+					++_lockCount;
+					*_tlsCount = _lockCount;
+					int tmp = _lockCount;
+					_lockCount = 0;
+					_lockID = 0;
+					while(tmp-- != 0)
+						_mutex.unlock();
+					return true;
+				}
+				_mutex.unlock();
+			}
+			return false;
+		}
+
+		public:
+			SpinLockP(): _lockID(0), _lockCount(0) {
+				_tlsCount = -1;
+			}
+			Inner lock() {
+				return _lock<Inner>(true);
+			}
+			CInner lockC() const {
+				return const_cast<SpinLockP*>(this)->_lock<CInner>(true);
+			}
+			Inner try_lock() {
+				return _lock<Inner>(false);
+			}
+			CInner try_lockC() const {
+				return const_cast<SpinLockP*>(this)->_lock<CInner>(false);
+			}
+			InnerP put() {
+				return InnerP(*this);
 			}
 	};
 
