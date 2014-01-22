@@ -4,51 +4,57 @@
 namespace rs {
 	TLS<IGL*>	tls_GL;
 	void IGL_Draw::stencilFuncFront(int func, int ref, int mask) {
-		GLM::glStencilFuncSeparate(GL_FRONT, func, ref, mask);
+		GLWrap::glStencilFuncSeparate(GL_FRONT, func, ref, mask);
 	}
 	void IGL_Draw::stencilFuncBack(int func, int ref, int mask) {
-		GLM::glStencilFuncSeparate(GL_BACK, func, ref, mask);
+		GLWrap::glStencilFuncSeparate(GL_BACK, func, ref, mask);
 	}
 	void IGL_Draw::stencilOpFront(int sfail, int dpfail, int dppass) {
-		GLM::glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
+		GLWrap::glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
 	}
 	void IGL_Draw::stencilOpBack(int sfail, int dpfail, int dppass) {
-		GLM::glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+		GLWrap::glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
 	}
 	void IGL_Draw::stencilMaskFront(int mask) {
-		GLM::glStencilMaskSeparate(GL_FRONT, mask);
+		GLWrap::glStencilMaskSeparate(GL_FRONT, mask);
 	}
 	void IGL_Draw::stencilMaskBack(int mask) {
-		GLM::glStencilMaskSeparate(GL_BACK, mask);
+		GLWrap::glStencilMaskSeparate(GL_BACK, mask);
 	}
 
 	void IGL_OtherSingle::stencilFuncFront(int func, int ref, int mask) {
-		GLM::s_drawHandler->postExec([=](){
+		auto p = GLW.refShared().put();
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilFuncFront(func, ref, mask);
 		});
 	}
 	void IGL_OtherSingle::stencilFuncBack(int func, int ref, int mask) {
-		GLM::s_drawHandler->postExec([=](){
+		auto p = GLW.refShared().put();
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilFuncBack(func, ref, mask);
 		});
 	}
 	void IGL_OtherSingle::stencilOpFront(int sfail, int dpfail, int dppass) {
-		GLM::s_drawHandler->postExec([=](){
+		auto p = GLW.refShared().put();
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilOpFront(sfail, dpfail, dppass);
 		});
 	}
 	void IGL_OtherSingle::stencilOpBack(int sfail, int dpfail, int dppass) {
-		GLM::s_drawHandler->postExec([=](){
+		auto p = GLW.refShared().put();
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilOpBack(sfail, dpfail, dppass);
 		});
 	}
 	void IGL_OtherSingle::stencilMaskFront(int mask) {
-		GLM::s_drawHandler->postExec([=](){
+		auto p = GLW.refShared().put();
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilMaskFront(mask);
 		});
 	}
 	void IGL_OtherSingle::stencilMaskBack(int mask) {
-		GLM::s_drawHandler->postExec([=](){
+		auto p = GLW.refShared().put();
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilMaskBack(mask);
 		});
 	}
@@ -76,11 +82,12 @@ namespace rs {
 	}
 	// マクロで分岐
  	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
-		typename GLM::t_##name GLM::name = nullptr; \
+		typename GLWrap::t_##name GLWrap::name = nullptr; \
  		ret_type IGL_Draw::name(BOOST_PP_SEQ_ENUM(args)) { \
- 			return GLM::name(BOOST_PP_SEQ_ENUM(argnames)); } \
+ 			return GLWrap::name(BOOST_PP_SEQ_ENUM(argnames)); } \
  		ret_type IGL_OtherSingle::name(BOOST_PP_SEQ_ENUM(args)) { \
-			return CallHandler<ret_type>()(*GLM::s_drawHandler, [=](){ \
+			auto p = GLW.refShared().put(); \
+			return CallHandler<ret_type>()(GLW.getDrawHandler(), [=](){ \
 				return IGL_Draw().name(BOOST_PP_SEQ_ENUM(argnames)); }); }
 
 		#ifndef ANDROID
@@ -94,31 +101,33 @@ namespace rs {
 		#endif
 
 	#undef DEF_GLMETHOD
-	
-	bool GLM::s_bShare = false;
-	IGL_Draw GLM::s_ctxDraw;
-	IGL_OtherSingle GLM::s_ctxSingle;
-	Handler* GLM::s_drawHandler = nullptr;
+	GLWrap::GLWrap(bool bShareEnabled): _bShare(bShareEnabled), _drawHandler(nullptr) {
+		*_pShared.lock() = nullptr;
+	}
 
-	void GLM::SetShareMode(bool bShareEnabled) {
-		s_bShare = bShareEnabled;
-	}
-	void GLM::InitializeMainThread() {
+	void GLWrap::initializeMainThread() {
 		Assert(Trap, !tls_GL.initialized())
-		if(s_bShare)
-			tls_GL = &s_ctxDraw;
+		if(_bShare)
+			tls_GL = &_ctxDraw;
 		else
-			tls_GL = &s_ctxSingle;
+			tls_GL = &_ctxSingle;
 	}
-	void GLM::InitializeDrawThread(Handler& handler) {
+	void GLWrap::initializeDrawThread(Handler& handler) {
 		Assert(Trap, !tls_GL.initialized())
-		s_drawHandler = &handler;
-		tls_GL = &s_ctxDraw;
+		_drawHandler = &handler;
+		tls_GL = &_ctxDraw;
 	}
-	void GLM::TerminateDrawThread() {
+	void GLWrap::terminateDrawThread() {
 		Assert(Trap, tls_GL.initialized())
-		Assert(Trap, s_drawHandler)
+		Assert(Trap, _drawHandler)
 		tls_GL.terminate();
-		s_drawHandler = nullptr;
+		_drawHandler = nullptr;
+	}
+	Handler& GLWrap::getDrawHandler() {
+		AssertP(Trap, _drawHandler)
+		return *_drawHandler;
+	}
+	GLWrap::Shared& GLWrap::refShared() {
+		return _pShared;
 	}
 }

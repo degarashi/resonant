@@ -64,6 +64,7 @@ namespace rs {
 	};
 	//! DrawThreadにOpenGL関数呼び出しを委託
 	struct IGL_OtherSingle : IGL {
+		
 		#ifdef ANDROID
 			#include "android_gl.inc"
 		#elif defined(WIN32)
@@ -84,34 +85,61 @@ namespace rs {
 	extern TLS<IGL*>	tls_GL;
 	#define GL	(*(*::rs::tls_GL))
 
+	#define GLW	(::rs::GLWrap::_ref())
 	class Handler;
 	//! OpenGL APIラッパー
-	struct GLM {
-		static IGL_Draw			s_ctxDraw;
-		static IGL_OtherSingle	s_ctxSingle;
-		static bool				s_bShare;
-		static Handler*			s_drawHandler;
+	class GLWrap : public spn::Singleton<GLWrap> {
+		IGL_Draw			_ctxDraw;
+		IGL_OtherSingle		_ctxSingle;
+		bool				_bShare;
+		Handler*			_drawHandler;
 
-		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
-			using t_##name = ret_type (*)(BOOST_PP_SEQ_ENUM(args)); \
-			static t_##name name;
+		// ---- Context共有データ ----
+		using Shared = SpinLockP<void*>;
+		Shared				_pShared;
 
-		#ifdef ANDROID
-			#include "android_gl.inc"
-		#elif defined(WIN32)
-			#include "mingw_gl.inc"
-		#else
-			#include "linux_gl.inc"
-		#endif
+		public:
+			#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+				using t_##name = ret_type (*)(BOOST_PP_SEQ_ENUM(args)); \
+				static t_##name name;
 
-		#undef DEF_GLMETHOD
+			#ifdef ANDROID
+				#include "android_gl.inc"
+			#elif defined(WIN32)
+				#include "mingw_gl.inc"
+			#else
+				#include "linux_gl.inc"
+			#endif
 
-		static void LoadGLFunc();
-		static bool IsGLFuncLoaded();
-		static void SetShareMode(bool bShareEnabled);
-		static void InitializeMainThread();
-		static void InitializeDrawThread(Handler& handler);
-		static void TerminateDrawThread();
+			#undef DEF_GLMETHOD
+
+		public:
+			GLWrap(bool bShareEnabled);
+			void loadGLFunc();
+			bool isGLFuncLoaded();
+			void initializeMainThread();
+			void initializeDrawThread(Handler& handler);
+			void terminateDrawThread();
+
+			Handler& getDrawHandler();
+			Shared& refShared();
+	};
+	template <class T>
+	struct GLSharedData {
+		GLSharedData() {
+			auto lk = _lock();
+			*lk = new T();
+		}
+		~GLSharedData() {
+			auto lk = _lock();
+			delete reinterpret_cast<T*>(*lk);
+		}
+		decltype(GLW.refShared().lock().castAndMove<T*>()) _lock() {
+			return GLW.refShared().lock().castAndMove<T*>();
+		}
+		decltype(GLW.refShared().lock().castAndMoveDeRef<T>()) lock() {
+			return GLW.refShared().lock().castAndMoveDeRef<T>();
+		}
 	};
 }
 

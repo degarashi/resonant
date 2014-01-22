@@ -16,19 +16,18 @@
 namespace rs {
 	constexpr bool MULTICONTEXT = false;
 	// --------------------- DrawThread ---------------------
-	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, const UPMainProc& mp) {
+	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, IDrawProc* dproc) {
 		Handler mainHandler(mainLooper);
 
 		SPGLContext ctx(std::move(ctx_b));
 		ctx->makeCurrent(w);
 		Handler drawHandler(Looper::GetLooper());
-		GLM::SetShareMode(MULTICONTEXT);
-		GLM::InitializeDrawThread(drawHandler);
-		GLM::LoadGLFunc();
+		GLW.initializeDrawThread(drawHandler);
+		GLW.loadGLFunc();
 		mgr_gl.onDeviceReset();
 		GL.setSwapInterval(0);
 		mainHandler.postArgs(msg::DrawInit());
-		UPDrawProc up(mp->initDraw());
+		UPDrawProc up(dproc);
 
 		bool bLoop = true;
 		do {
@@ -55,7 +54,7 @@ namespace rs {
 			}
 		} while(bLoop && !isInterrupted());
 		std::cout << "DrawThread destructor begun" << std::endl;
-		
+
 		up.reset();
 		// 後片付けフェーズ
 		bLoop = true;
@@ -67,11 +66,11 @@ namespace rs {
 				}
 			}
 		}
-		GLM::TerminateDrawThread();
+		GLW.terminateDrawThread();
 		std::cout << "DrawThread destructor ended" << std::endl;
 	}
 	// --------------------- MainThread ---------------------
-	MainThread::MainThread(MPCreate mcr): _mcr(mcr) {
+	MainThread::MainThread(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr) {
 		auto lk = _info.lock();
 		lk->accumUpd = lk->accumDraw = 0;
 		lk->tmBegin = Clock::now();
@@ -89,6 +88,7 @@ namespace rs {
 			std::swap(ctxD, ctx);
 		}
 
+		UPtr<GLWrap>		glw(new GLWrap(MULTICONTEXT));
 		UPtr<GLRes>		glrP(new GLRes());
 		UPtr<RWMgr>		rwP(new RWMgr());
 		UPtr<AppPath>	appPath(new AppPath(apppath));
@@ -106,7 +106,17 @@ namespace rs {
 		UPtr<SceneMgr>		scP(new SceneMgr());
 		UPtr<SoundMgr>		sndP(new SoundMgr(44100));
 		sndP->makeCurrent();
+		// 描画スレッドを先に初期化
+		DrawThread dth;
+		dth.start(std::ref(getLooper()), std::move(ctxD), w, _dcr());
+		// 描画スレッドの初期化完了を待つ
+		while(auto m = getLooper()->wait()) {
+			if(msg::DrawInit* p = *m)
+				break;
+		}
+		GLW.initializeMainThread();
 
+		// 続いてメインスレッドを初期化
 		using UPHandler = UPtr<Handler>;
 		UPMainProc mp(_mcr(w));
 		UPHandler guiHandler(new Handler(guiLooper, [](){
@@ -115,14 +125,6 @@ namespace rs {
 			SDL_PushEvent(&e);
 		}));
 
-		DrawThread dth;
-		dth.start(std::ref(getLooper()), std::move(ctxD), w, mp);
-		// 描画スレッドの初期化完了を待つ
-		while(auto m = getLooper()->wait()) {
-			if(msg::DrawInit* p = *m)
-				break;
-		}
-		GLM::InitializeMainThread();
 		UPHandler drawHandler(new Handler(dth.getLooper()));
 		guiHandler->postArgs(msg::MainInit());
 
@@ -268,6 +270,7 @@ namespace rs {
 		dth.join();
 		guiHandler->postArgs(msg::QuitReq());
 
+		glw.reset();
 		std::cout << "MainThread ended" << std::endl;
 	}
 
@@ -326,7 +329,7 @@ namespace rs {
 		{nullptr, &GameLoop::_onPause}
 	};
 	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
-	GameLoop::GameLoop(MPCreate mcr): _mcr(mcr), _level(Active) {}
+	GameLoop::GameLoop(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr), _level(Active) {}
 	int GameLoop::run(const char* apppath, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		Window::SetStdGLAttributes(major, minor, depth);
@@ -337,7 +340,7 @@ namespace rs {
 		Looper::Prepare();
 		auto& loop = Looper::GetLooper();
 		// メインスレッドに渡す
-		MainThread mth(_mcr);
+		MainThread mth(_mcr, _dcr);
 		mth.start(std::ref(loop), std::ref(_spWindow), apppath);
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {

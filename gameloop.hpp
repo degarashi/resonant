@@ -92,13 +92,7 @@ namespace rs {
 	};
 	using UPDrawProc = UPtr<IDrawProc>;
 	struct IMainProc {
-		//! ゲームアップデートコールバック
-		/*! メインスレッドから呼ばれる */
-		/*! \return ゲーム終了時にfalseを返す */
 		virtual bool runU() = 0;
-		//! 描画コールバックインタフェースを作成
-		/*! 描画スレッドから呼ばれる */
-		virtual IDrawProc* initDraw() = 0;
 		virtual void onPause() {}
 		virtual void onResume() {}
 		virtual void onStop() {}
@@ -108,11 +102,12 @@ namespace rs {
 	};
 	using UPMainProc = UPtr<IMainProc>;
 	using MPCreate = std::function<IMainProc* (const SPWindow&)>;
+	using DPCreate = std::function<IDrawProc* ()>;
 
 	#define draw_thread (::rs::DrawThread::_ref())
 	//! 描画スレッド
 	class DrawThread : public spn::Singleton<DrawThread>,
-						public ThreadL<void (const SPLooper&, SPGLContext, const SPWindow&, const UPMainProc&)>
+						public ThreadL<void (const SPLooper&, SPGLContext, const SPWindow&, IDrawProc*)>
 	{
 		public:
 			enum class State {
@@ -120,14 +115,14 @@ namespace rs {
 				Drawing
 			};
 		private:
-			using base = ThreadL<void (Looper&, SPGLContext, const SPWindow&, const UPMainProc&)>;
+			using base = ThreadL<void (Looper&, SPGLContext, const SPWindow&, IDrawProc*)>;
 			struct Info {
 				State		state = State::Idle;	//!< 現在の動作状態(描画中か否か)
 				uint64_t	accum = 0;				//!< 描画が終わったフレーム番号
 			};
 			SpinLock<Info>		_info;
 		protected:
-			void runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, const UPMainProc& mp) override;
+			void runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, IDrawProc*) override;
 		public:
 			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
 			auto getInfo() const -> decltype(_info.lockC()) { return _info.lockC(); }
@@ -139,6 +134,7 @@ namespace rs {
 	{
 		using base = ThreadL<void (const SPLooper&,const SPWindow&,const char*)>;
 		MPCreate	_mcr;
+		DPCreate	_dcr;
 
 		struct Info {
 			uint64_t	accumUpd;	//!< アップデート累積カウンタ
@@ -151,7 +147,7 @@ namespace rs {
 		protected:
 			void runL(const SPLooper& guiLooper, const SPWindow& w, const char* apppath) override;
 		public:
-			MainThread(MPCreate mcr);
+			MainThread(MPCreate mcr, DPCreate dcr);
 			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
 			auto getInfo() const -> decltype(_info.lockC()) { return _info.lockC(); }
 	};
@@ -184,11 +180,14 @@ namespace rs {
 
 		using OPHandler = spn::Optional<Handler>;
 		MPCreate	_mcr;
+		DPCreate	_dcr;
 		OPHandler	_handler;
 		Level		_level;
 
 		public:
-			GameLoop(MPCreate mcr);
+			/*!	\param[in] mcr ゲームアップデートコールバック(メインスレッドから呼ばれる, ゲーム終了時にfalseを返す)
+				\param[in] dcr 描画コールバックインタフェースを作成(描画スレッドから呼ばれる) */
+			GameLoop(MPCreate mcr, DPCreate dcr);
 			int run(const char* apppath, spn::To8Str title, int w, int h, uint32_t flag, int major=2, int minor=0, int depth=16);
 	};
 }

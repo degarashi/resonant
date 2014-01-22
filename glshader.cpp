@@ -33,22 +33,22 @@ namespace rs {
 			}
 		}
 	#endif
-	bool GLM::IsGLFuncLoaded() {
+	bool GLWrap::isGLFuncLoaded() {
 		return g_bglfuncInit;
 	}
 	void IGL_Draw::setSwapInterval(int n) {
 		g_setswapinterval(n);
 	}
 	void IGL_OtherSingle::setSwapInterval(int n) {
-		GLM::s_drawHandler->postExec([=](){
+		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().setSwapInterval(n);
 		});
 	}
 
 	// OpenGL関数ロード
  	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
- 		GLM::name = (typename GLM::t_##name) GLGETPROC(name);
-		void GLM::LoadGLFunc() {
+ 		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name);
+		void GLWrap::loadGLFunc() {
 			// 各種API関数
 			#ifndef ANDROID
 				#ifdef ANDROID
