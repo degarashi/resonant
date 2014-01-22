@@ -192,7 +192,9 @@ namespace rs {
 
 		SpinInner(const SpinInner&) = delete;
 		SpinInner& operator = (const SpinInner&) = delete;
-		SpinInner(SpinInner&& n): _src(n._src), _data(n._data) {}
+		SpinInner(SpinInner&& n): _src(n._src), _data(n._data) {
+			n._data = nullptr;
+		}
 		SpinInner(SP& src, T* data): _src(src), _data(data) {}
 		~SpinInner() {
 			unlock();
