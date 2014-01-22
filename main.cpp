@@ -20,97 +20,27 @@ using namespace spn;
 // MainThread と DrawThread 間のデータ置き場
 // リソースハンドルはメインスレッド
 struct Mth_DthData {
-	rs::HLInput hlIk,
+	HLFx		hlFx;
+	HLInput		hlIk,
 				hlIm;
-	rs::HLAct actQuit,
-			actButton,
-			actLeft,
-			actRight,
-			actUp,
-			actDown,
-			actMoveX,
-			actMoveY,
-			actPress;
-	rs::HLCam hlCam;
-	rs::SPWindow spWin;
+	HLAct		actQuit,
+				actButton,
+				actLeft,
+				actRight,
+				actUp,
+				actDown,
+				actMoveX,
+				actMoveY,
+				actPress;
+	HLCam		hlCam;
+	SPWindow	spWin;
 };
+
 #define shared (Mth_Dth::_ref())
-class Mth_Dth : public spn::Singleton<Mth_Dth>, public rs::SpinLock<Mth_DthData> {};
+class Mth_Dth : public spn::Singleton<Mth_Dth>, public GLSharedData<Mth_DthData> {};
 
 class MyDraw : public rs::IDrawProc {
-	rs::HLFx	_hlFx;
-	rs::HLVb 	_hlVb;
-	rs::HLIb 	_hlIb;
-	rs::HLTex 	_hlTex;
-	rs::HLText	_hlText;
-
-	spn::Size	_size;
-	bool		_bPress;
-	GLint		_passView, _passText;
 	public:
-		MyDraw() {
-			_bPress = false;
-			struct TmpV {
-				spn::Vec3 pos;
-				spn::Vec4 tex;
-			};
-			TmpV tmpV[] = {
-				{
-					spn::Vec3{-1,-1,0},
-					spn::Vec4{0,1,0,0}
-				},
-				{
-					spn::Vec3{-1,1,0},
-					spn::Vec4{0,0,0,0}
-				},
-				{
-					spn::Vec3{1,1,0},
-					spn::Vec4{1,0,0,0}
-				},
-				{
-					spn::Vec3{1,-1,0},
-					spn::Vec4{1,1,0,0}
-				}
-			};
-			// インデックス定義
-			GLubyte tmpI[] = {
-				0,1,2,
-				2,3,0
-			};
-			mgr_rw.addUriHandler(rs::SPUriHandler(new rs::UriH_File(u8"/")));
-			_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-			_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(TmpV));
-			_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
-			_hlIb.ref()->initData(tmpI, countof(tmpI));
-			spn::URI uriTex("file", mgr_path.getPath(AppPath::Type::Texture));
-			uriTex <<= "test.png";
-			_hlTex = mgr_gl.loadTexture(uriTex);
-			_hlTex.ref()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
-
-			rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
-			_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nまだ\nゲームは　完成　しないのか？");
-
-			rs::GPUInfo info;
-			info.onDeviceReset();
-			std::cout << info;
-
-			spn::URI uriFx("file", mgr_path.getPath(AppPath::Type::Effect));
-			uriFx <<= "test.glx";
-			_hlFx = mgr_gl.loadEffect(uriFx);
-			auto& pFx = *_hlFx.ref();
-			GLint techID = pFx.getTechID("TheTech");
-			pFx.setTechnique(techID, true);
-
-			_passView = pFx.getPassID("P0");
-			_passText = pFx.getPassID("P1");
-// 			pFx.setUniform(pFx.getUniformID("lowVal"), spn::Vec4{1,2,3,4});
-
-			_size *= 0;
-			auto lk = shared.lock();
-			auto& cd = lk->hlCam.ref();
-			cd.setFOV(spn::DEGtoRAD(60));
-			cd.setZPlane(0.01f, 500.f);
-		}
 		bool runU(uint64_t accum) override {
 			GL.glClearColor(0,0,0.5f,1);
 			GL.glClearDepth(1.0f);
@@ -118,69 +48,10 @@ class MyDraw : public rs::IDrawProc {
 			GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
  			GL.glDepthMask(GL_FALSE);
 
+			std::cout << "KKKKKKKKKKKKK" << std::endl;
 			auto lk = shared.lock();
-			auto& cd = lk->hlCam.ref();
-			auto sz = lk->spWin->getSize();
-			if(sz != _size) {
-				_size = sz;
-				cd.setAspect(float(_size.width)/_size.height);
-				GL.glViewport(0,0,_size.width, _size.height);
-			}
-			auto& fx = *_hlFx.ref();
-			fx.setPass(_passView);
-			GLint id = fx.getUniformID("mTrans");
-
-			auto btn = mgr_input.isKeyPressing(lk->actPress);
-			if(btn ^ _bPress) {
-				lk->hlIm.ref()->setMouseMode((!_bPress) ? rs::MouseMode::Relative : rs::MouseMode::Absolute);
-				_bPress = btn;
-			}
-
-			constexpr float speed = 0.25f;
-			float mvF=0, mvS=0;
-			if(mgr_input.isKeyPressing(lk->actUp))
-				mvF += speed;
-			if(mgr_input.isKeyPressing(lk->actDown))
-				mvF -= speed;
-			if(mgr_input.isKeyPressing(lk->actLeft))
-				mvS -= speed;
-			if(mgr_input.isKeyPressing(lk->actRight))
-				mvS += speed;
-			cd.moveFwd3D(mvF);
-			cd.moveSide3D(mvS);
-			if(_bPress) {
-				float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
-					yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
-				cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
-				cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
-			}
-
-			fx.setUniform(id, cd.getViewProjMatrix().convert44());
-			id = fx.getUniformID("tDiffuse");
-			fx.setUniform(_hlTex, id);
-
-			// 頂点フォーマット定義
-			rs::SPVDecl decl(new rs::VDecl{
-				{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
-				{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
-			});
-			fx.setVDecl(std::move(decl));
-			fx.setVStream(_hlVb.get(), 0);
-			fx.setIStream(_hlIb.get());
-			fx.drawIndexed(GL_TRIANGLES, 6, 0);
-
-			fx.setPass(_passText);
-			id = fx.getUniformID("mText");
-
-			auto fn = [](int x, int y, float r) {
-				float rx = Rcp22Bit(512),
-					ry = Rcp22Bit(384);
-				return Mat33(rx*r,		0,			0,
-							0,			ry*r, 		0,
-							-1.f+x*rx,	1.f-y*ry,	1);
-			};
-			fx.setUniform(id, fn(0,0,1));
- 			_hlText.ref().draw(&fx);
+			auto& fx = *lk->hlFx.ref();
+			fx.execTask();
 			return true;
 		}
 };
@@ -287,46 +158,200 @@ const ObjID TScene::c_id = rep_gobj.RegID("Player");
 
 class MyMain : public rs::IMainProc {
 	Mth_Dth _mth;
+	Size	_size;
+	bool	_bPress;
+
+	// ---- テスト描画用 ----
+	HLVb	_hlVb;
+	HLIb 	_hlIb;
+	HLTex 	_hlTex;
+	HLText	_hlText;
+	GLint	_techID,
+			_passView,
+			_passText;
+
+	void _initInput() {
+		auto lk = shared.lock();
+		lk->hlIk = rs::Keyboard::OpenKeyboard();
+
+		lk->actQuit = mgr_input.addAction("quit");
+		mgr_input.link(lk->actQuit, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_ESCAPE));
+		lk->actButton = mgr_input.addAction("button");
+		mgr_input.link(lk->actButton, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_LSHIFT));
+
+		lk->actLeft = mgr_input.addAction("left");
+		lk->actRight = mgr_input.addAction("right");
+		lk->actUp = mgr_input.addAction("up");
+		lk->actDown = mgr_input.addAction("down");
+		lk->actMoveX = mgr_input.addAction("moveX");
+		lk->actMoveY = mgr_input.addAction("moveY");
+		lk->actPress = mgr_input.addAction("press");
+		mgr_input.link(lk->actLeft, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_A));
+		mgr_input.link(lk->actRight, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_D));
+		mgr_input.link(lk->actUp, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_W));
+		mgr_input.link(lk->actDown, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_S));
+
+		lk->hlIm = rs::Mouse::OpenMouse(0);
+		lk->hlIm.ref()->setMouseMode(rs::MouseMode::Absolute);
+		lk->hlIm.ref()->setDeadZone(0, 1.f, 0.f);
+		lk->hlIm.ref()->setDeadZone(1, 1.f, 0.f);
+		mgr_input.link(lk->actMoveX, rs::InF::AsAxis(lk->hlIm, 0));
+		mgr_input.link(lk->actMoveY, rs::InF::AsAxis(lk->hlIm, 1));
+		mgr_input.link(lk->actPress, rs::InF::AsButton(lk->hlIm, 0));
+
+		_bPress = false;
+	}
+	void _initDraw() {
+		// 頂点定義
+		struct TmpV {
+			Vec3 pos;
+			Vec4 tex;
+		};
+		TmpV tmpV[] = {
+			{
+				Vec3{-1,-1,0},
+				Vec4{0,1,0,0}
+			},
+			{
+				Vec3{-1,1,0},
+				Vec4{0,0,0,0}
+			},
+			{
+				Vec3{1,1,0},
+				Vec4{1,0,0,0}
+			},
+			{
+				Vec3{1,-1,0},
+				Vec4{1,1,0,0}
+			}
+		};
+		// インデックス定義
+		GLubyte tmpI[] = {
+			0,1,2,
+			2,3,0
+		};
+		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+		_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(TmpV));
+		_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+		_hlIb.ref()->initData(tmpI, countof(tmpI));
+
+		// テクスチャ
+		spn::URI uriTex("file", mgr_path.getPath(AppPath::Type::Texture));
+		uriTex <<= "test.png";
+		_hlTex = mgr_gl.loadTexture(uriTex);
+		_hlTex.ref()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
+
+		// テキスト
+		rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
+		_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nまだ\nゲームは　完成　しないのか？");
+	}
+	void _initCam() {
+		auto lk = shared.lock();
+		lk->hlCam = mgr_cam.emplace();
+		rs::CamData& cd = lk->hlCam.ref();
+		cd.setOfs(0,0,-3);
+		cd.setFOV(spn::DEGtoRAD(60));
+		cd.setZPlane(0.01f, 500.f);
+	}
+	void _initEffect() {
+		auto lk = shared.lock();
+		spn::URI uriFx("file", mgr_path.getPath(AppPath::Type::Effect));
+		uriFx <<= "test.glx";
+		lk->hlFx = mgr_gl.loadEffect(uriFx);
+		auto& pFx = *lk->hlFx.ref();
+		_techID = pFx.getTechID("TheTech");
+		pFx.setTechnique(_techID, true);
+
+		_passView = pFx.getPassID("P0");
+		_passText = pFx.getPassID("P1");
+	}
+
 	public:
 		MyMain(const rs::SPWindow& sp) {
+			mgr_rw.addUriHandler(rs::SPUriHandler(new rs::UriH_File(u8"/")));
+			_size *= 0;
 			auto lk = shared.lock();
-			lk->hlIk = rs::Keyboard::OpenKeyboard();
 			lk->spWin = sp;
 
-			lk->actQuit = mgr_input.addAction("quit");
-			mgr_input.link(lk->actQuit, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_ESCAPE));
-			lk->actButton = mgr_input.addAction("button");
-			mgr_input.link(lk->actButton, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_LSHIFT));
+			_initInput();
+			_initDraw();
+			_initCam();
+			_initEffect();
 
-			lk->actLeft = mgr_input.addAction("left");
-			lk->actRight = mgr_input.addAction("right");
-			lk->actUp = mgr_input.addAction("up");
-			lk->actDown = mgr_input.addAction("down");
-			lk->actMoveX = mgr_input.addAction("moveX");
-			lk->actMoveY = mgr_input.addAction("moveY");
-			lk->actPress = mgr_input.addAction("press");
-			mgr_input.link(lk->actLeft, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_A));
-			mgr_input.link(lk->actRight, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_D));
-			mgr_input.link(lk->actUp, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_W));
-			mgr_input.link(lk->actDown, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_S));
-
-			lk->hlIm = rs::Mouse::OpenMouse(0);
-			lk->hlIm.ref()->setMouseMode(rs::MouseMode::Absolute);
-			lk->hlIm.ref()->setDeadZone(0, 1.f, 0.f);
-			lk->hlIm.ref()->setDeadZone(1, 1.f, 0.f);
-			mgr_input.link(lk->actMoveX, rs::InF::AsAxis(lk->hlIm, 0));
-			mgr_input.link(lk->actMoveY, rs::InF::AsAxis(lk->hlIm, 1));
-			mgr_input.link(lk->actPress, rs::InF::AsButton(lk->hlIm, 0));
-
-			lk->hlCam = mgr_cam.emplace();
-			rs::CamData& cd = lk->hlCam.ref();
-			cd.setOfs(0,0,-3);
+			GPUInfo info;
+			info.onDeviceReset();
+			std::cout << info;
 
 			mgr_scene.setPushScene(mgr_gobj.emplace(new TScene()));
 		}
 		bool runU() override {
 			mgr_sound.update();
-			return !mgr_scene.onUpdate();
+			if(mgr_scene.onUpdate())
+				return false;
+
+			auto lk = shared.lock();
+			// 画面のサイズとアスペクト比合わせ
+			auto& cd = lk->hlCam.ref();
+			auto sz = lk->spWin->getSize();
+			if(sz != _size) {
+				_size = sz;
+				cd.setAspect(float(_size.width)/_size.height);
+				GL.glViewport(0,0,_size.width, _size.height);
+			}
+			// カメラ操作
+			auto btn = mgr_input.isKeyPressing(lk->actPress);
+			if(btn ^ _bPress) {
+				lk->hlIm.ref()->setMouseMode((!_bPress) ? rs::MouseMode::Relative : rs::MouseMode::Absolute);
+				_bPress = btn;
+			}
+			constexpr float speed = 0.25f;
+			float mvF=0, mvS=0;
+			if(mgr_input.isKeyPressing(lk->actUp))
+				mvF += speed;
+			if(mgr_input.isKeyPressing(lk->actDown))
+				mvF -= speed;
+			if(mgr_input.isKeyPressing(lk->actLeft))
+				mvS -= speed;
+			if(mgr_input.isKeyPressing(lk->actRight))
+				mvS += speed;
+			cd.moveFwd3D(mvF);
+			cd.moveSide3D(mvS);
+			if(_bPress) {
+				float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
+					yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
+				cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
+				cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
+			}
+
+			// 描画コマンド
+			auto& fx = *lk->hlFx.ref();
+			fx.beginTask();
+
+			fx.setTechnique(_techID, true);
+			fx.setPass(_passView);
+			fx.setUniform(fx.getUniformID("mTrans"), cd.getViewProjMatrix().convert44());
+			fx.setUniform(fx.getUniformID("tDiffuse"), _hlTex);
+			// 頂点フォーマット定義
+			rs::SPVDecl decl(new rs::VDecl{
+				{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
+				{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
+			});
+			fx.setVDecl(std::move(decl));
+			fx.setVStream(_hlVb.get(), 0);
+			fx.setIStream(_hlIb.get());
+			fx.drawIndexed(GL_TRIANGLES, 6, 0);
+			fx.setPass(_passText);
+			auto fn = [](int x, int y, float r) {
+				float rx = Rcp22Bit(512),
+					ry = Rcp22Bit(384);
+				return Mat33(rx*r,		0,			0,
+							0,			ry*r, 		0,
+							-1.f+x*rx,	1.f-y*ry,	1);
+			};
+			fx.setUniform(fx.getUniformID("mText"), fn(0,0,1));
+			_hlText.ref().draw(&fx);
+
+			return true;
 		}
 		void onPause() override {
 			mgr_scene.onPause(); }
@@ -336,12 +361,10 @@ class MyMain : public rs::IMainProc {
 			mgr_scene.onStop(); }
 		void onReStart() override {
 			mgr_scene.onReStart(); }
-		rs::IDrawProc* initDraw() override {
-			return new MyDraw;
-		}
 };
 
 int main(int argc, char **argv) {
-	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); });
+	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); },
+					[](){ return new MyDraw; });
 	return gloop.run(argv[0], "HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE, 2,0,24);
 }
