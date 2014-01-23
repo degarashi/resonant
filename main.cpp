@@ -15,6 +15,9 @@
 #include "scene.hpp"
 #include "sound.hpp"
 
+constexpr int RESOLUTION_X = 1024,
+			RESOLUTION_Y = 768;
+
 using namespace rs;
 using namespace spn;
 // MainThread と DrawThread 間のデータ置き場
@@ -34,6 +37,7 @@ struct Mth_DthData {
 				actPress;
 	HLCam		hlCam;
 	SPWindow	spWin;
+	FPSCounter	fps;
 };
 
 #define shared (Mth_Dth::_ref())
@@ -44,13 +48,13 @@ class MyDraw : public rs::IDrawProc {
 		bool runU(uint64_t accum) override {
 			GL.glClearColor(0,0,0.5f,1);
 			GL.glClearDepth(1.0f);
- 			GL.glDepthMask(GL_TRUE);
+			GL.glDepthMask(GL_TRUE);
 			GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
- 			GL.glDepthMask(GL_FALSE);
+			GL.glDepthMask(GL_FALSE);
 
-			std::cout << "KKKKKKKKKKKKK" << std::endl;
 			auto lk = shared.lock();
 			auto& fx = *lk->hlFx.ref();
+			lk->fps.update();
 			fx.execTask();
 			return true;
 		}
@@ -165,10 +169,12 @@ class MyMain : public rs::IMainProc {
 	HLVb	_hlVb;
 	HLIb 	_hlIb;
 	HLTex 	_hlTex;
-	HLText	_hlText;
-	GLint	_techID,
-			_passView,
-			_passText;
+	std::u32string	_infotext;
+	CCoreID			_charID;
+	HLText			_hlText;
+	GLint			_techID,
+					_passView,
+					_passText;
 
 	void _initInput() {
 		auto lk = shared.lock();
@@ -242,8 +248,19 @@ class MyMain : public rs::IMainProc {
 		_hlTex.ref()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
 
 		// テキスト
-		rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
-		_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nまだ\nゲームは　完成　しないのか？");
+		_charID = mgr_text.makeCoreID("MS Gothic", CCoreID(0, 3, 0, false, 0, CCoreID::SizeType_Point));
+//		rs::CCoreID cid = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 15, CCoreID::CharFlag_AA, false, 1, CCoreID::SizeType_Point));
+//		_hlText = mgr_text.createText(cid, U"おお_ゆうしゃよ\nまだ\nゲームは　完成　しないのか？");
+
+		GPUInfo info;
+		info.onDeviceReset();
+		std::stringstream ss;
+		ss << "Version: " << info.version() << std::endl
+			  << "GLSL Version: " << info.glslVersion() << std::endl
+			  << "Vendor: " << info.vendor() << std::endl
+			  << "Renderer: " << info.renderer() << std::endl
+			  << "DriverVersion: " << info.driverVersion() << std::endl;
+		_infotext = Text::UTFConvertTo32(ss.str());
 	}
 	void _initCam() {
 		auto lk = shared.lock();
@@ -277,10 +294,6 @@ class MyMain : public rs::IMainProc {
 			_initDraw();
 			_initCam();
 			_initEffect();
-
-			GPUInfo info;
-			info.onDeviceReset();
-			std::cout << info;
 
 			mgr_scene.setPushScene(mgr_gobj.emplace(new TScene()));
 		}
@@ -333,22 +346,28 @@ class MyMain : public rs::IMainProc {
 			fx.setUniform(fx.getUniformID("tDiffuse"), _hlTex);
 			// 頂点フォーマット定義
 			rs::SPVDecl decl(new rs::VDecl{
-				{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
-				{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
+				{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)VSem::POSITION},
+				{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)VSem::TEXCOORD0}
 			});
 			fx.setVDecl(std::move(decl));
 			fx.setVStream(_hlVb.get(), 0);
 			fx.setIStream(_hlIb.get());
 			fx.drawIndexed(GL_TRIANGLES, 6, 0);
+
 			fx.setPass(_passText);
 			auto fn = [](int x, int y, float r) {
-				float rx = Rcp22Bit(512),
-					ry = Rcp22Bit(384);
+				float rx = Rcp22Bit(RESOLUTION_X/2),
+					ry = Rcp22Bit(RESOLUTION_Y/2);
 				return Mat33(rx*r,		0,			0,
 							0,			ry*r, 		0,
 							-1.f+x*rx,	1.f-y*ry,	1);
 			};
 			fx.setUniform(fx.getUniformID("mText"), fn(0,0,1));
+
+			int fps = lk->fps.getFPS();
+			std::stringstream ss;
+			ss << "FPS: " << fps;
+			_hlText = mgr_text.createText(_charID, _infotext + Text::UTFConvertTo32(ss.str()).c_str());
 			_hlText.ref().draw(&fx);
 
 			return true;
@@ -362,9 +381,8 @@ class MyMain : public rs::IMainProc {
 		void onReStart() override {
 			mgr_scene.onReStart(); }
 };
-
 int main(int argc, char **argv) {
 	GameLoop gloop([](const rs::SPWindow& sp){ return new MyMain(sp); },
 					[](){ return new MyDraw; });
-	return gloop.run(argv[0], "HelloSDL2", 1024, 768, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE, 2,0,24);
+	return gloop.run(argv[0], "HelloSDL2", RESOLUTION_X, RESOLUTION_Y, SDL_WINDOW_SHOWN, 2,0,24);
 }
