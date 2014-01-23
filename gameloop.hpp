@@ -128,6 +128,17 @@ namespace rs {
 			auto getInfo() const -> decltype(_info.lockC()) { return _info.lockC(); }
 	};
 	#define main_thread (::rs::MainThread::_ref())
+
+	struct FPSCounter {
+		Timepoint	_tmBegin;
+		int			_counter,
+					_fps;
+
+		FPSCounter();
+		void reset();
+		void update();
+		int getFPS() const;
+	};
 	//! メインスレッド
 	class MainThread : public spn::Singleton<MainThread>,
 						public ThreadL<void (const SPLooper&,const SPWindow&,const char*)>
@@ -140,7 +151,6 @@ namespace rs {
 			uint64_t	accumUpd;	//!< アップデート累積カウンタ
 			uint64_t	accumDraw;	//!< 描画フレーム累積カウンタ
 			Timepoint	tmBegin;	//!< ゲーム開始時の時刻
-			int			fps;		//!< FPS値
 		};
 		SpinLock<Info>		_info;
 

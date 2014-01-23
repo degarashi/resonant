@@ -14,7 +14,26 @@
 #include "serialization/chars.hpp"
 
 namespace rs {
-	constexpr bool MULTICONTEXT = false;
+	// --------------------- FPSCounter ---------------------
+	FPSCounter::FPSCounter() {
+		reset();
+	}
+	void FPSCounter::reset() {
+		_counter = _fps = 0;
+		_tmBegin = Clock::now();
+	}
+	void FPSCounter::update() {
+		Timepoint tp = Clock::now();
+		Duration dur = tp - _tmBegin;
+		if(dur >= std::chrono::seconds(1)) {
+			_tmBegin = tp;
+			_fps = _counter;
+			_counter = 0;
+		}
+		++_counter;
+	}
+	int FPSCounter::getFPS() const { return _fps; }
+
 	// --------------------- DrawThread ---------------------
 	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, IDrawProc* dproc) {
 		Handler mainHandler(mainLooper);
@@ -69,12 +88,13 @@ namespace rs {
 		GLW.terminateDrawThread();
 		std::cout << "DrawThread destructor ended" << std::endl;
 	}
+
+	constexpr bool MULTICONTEXT = true;
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr) {
 		auto lk = _info.lock();
 		lk->accumUpd = lk->accumDraw = 0;
 		lk->tmBegin = Clock::now();
-		lk->fps = 0;
 	}
 	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* apppath) {
 		SPGLContext ctx = GLContext::CreateContext(w, false),
@@ -89,9 +109,9 @@ namespace rs {
 		}
 
 		UPtr<GLWrap>		glw(new GLWrap(MULTICONTEXT));
-		UPtr<GLRes>		glrP(new GLRes());
-		UPtr<RWMgr>		rwP(new RWMgr());
-		UPtr<AppPath>	appPath(new AppPath(apppath));
+		UPtr<GLRes>			glrP(new GLRes());
+		UPtr<RWMgr>			rwP(new RWMgr());
+		UPtr<AppPath>		appPath(new AppPath(apppath));
 		std::string pathlist("pathlist_");
 		pathlist += TOOL_PREFIX;
 		appPath->setFromText(mgr_rw.fromFile(pathlist.c_str(), RWops::Read, false));
