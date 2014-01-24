@@ -377,6 +377,8 @@ class MyMain : public rs::IMainProc {
 		void onResume() override {
 			mgr_scene.onResume(); }
 		void onStop() override {
+			auto lk = shared.lock();
+			lk->hlFx.ref()->clearTask();
 			mgr_scene.onStop(); }
 		void onReStart() override {
 			mgr_scene.onReStart(); }
