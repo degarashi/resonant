@@ -267,6 +267,7 @@ namespace rs {
 				// ---- from MainThread ----
 				void switchTask();	// 各フレーム描画コマンドの最初に呼ぶ
 				void addTag(draw::Tag* tag);
+				void clear();
 				// ---- from DrawThread ----
 				void exec();
 				void cancel();
@@ -385,9 +386,10 @@ namespace rs {
 			void draw(GLenum mode, GLint first, GLsizei count);
 
 			// ---- from MainThread ----
-			void beginTask();
+			void clearTask();	//!< バッファを2つともクリア
+			void beginTask();	//!< バッファを切り替えて古いバッファをクリア
 			// ---- from DrawThread ----
-			void execTask();
-			void cancelTask();
+			void execTask();	//!< 描画処理
+			void cancelTask();	//!< 描画はせずPreFuncだけ呼び出す
 	};
 }

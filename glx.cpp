@@ -536,13 +536,23 @@ namespace rs {
 		void Task::addTag(draw::Tag* tag) {
 			_tagL[_swFlag].emplace_back(tag);
 		}
+		void Task::clear() {
+			// 2つのバッファをcancel扱い
+			cancel();
+			_swFlag ^= 1;
+			cancel();
+		}
 		void Task::exec() {
-			for(auto& t : _tagL[_swFlag^1])
+			auto& tagL = _tagL[_swFlag^1];
+			for(auto& t : tagL)
 				t->exec();
+			tagL.clear();
 		}
 		void Task::cancel() {
-			for(auto& t : _tagL[_swFlag^1])
+			auto& tagL = _tagL[_swFlag^1];
+			for(auto& t : tagL)
 				t->cancel();
+			tagL.clear();
 		}
 
 		// -------------- Tag --------------
@@ -736,6 +746,9 @@ namespace rs {
 		_current.tps = spn::none;
 		_current.bInit = false;
 		_current.bNormal = false;
+	}
+	void GLEffect::clearTask() {
+		_task.clear();
 	}
 	void GLEffect::execTask() {
 		_task.exec();
