@@ -136,4 +136,7 @@ namespace rs {
 		auto* self = const_cast<VorbisFile*>(this);
 		return OVEC_P(Trap, ov_pcm_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 	}
+	void VorbisFile::invalidate() {
+		_hlRW.setNull();
+	}
 }

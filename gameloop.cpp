@@ -89,7 +89,7 @@ namespace rs {
 		std::cout << "DrawThread destructor ended" << std::endl;
 	}
 
-	constexpr bool MULTICONTEXT = true;
+	constexpr bool MULTICONTEXT = false;
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr) {
 		auto lk = _info.lock();
@@ -198,18 +198,19 @@ namespace rs {
 							GL.glFlush();
 							// サウンドデバイスのバックアップ
 							boost::archive::binary_oarchive oa(buffer);
- 							oa << mgr_rw;
-							mgr_rw.resetSerializeFlag();
+// 							oa << mgr_rw;
+//							mgr_rw.resetSerializeFlag();
  							SoundMgr* sp = sndP.get();
  							oa << sp;
 							sp->resetSerializeFlag();
+							sp->invalidate();
 							// サウンドを一旦全部停止させておく -> 復元した時に以前再生していたものは処理が継続される
  							sndP.reset(nullptr);
 						}
 						else if(msg::ReStartReq* rr = *m) {
 							// サウンドデバイスの復元
  							boost::archive::binary_iarchive ia(buffer);
-							ia >> mgr_rw;
+//							ia >> mgr_rw;
  							SoundMgr* sp = nullptr;
  							ia >> sp;
  							sndP.reset(sp);

@@ -36,6 +36,7 @@ namespace rs {
 			virtual std::pair<const void*, size_t> getAllData(uint64_t offset) const { Assert(Trap, false); throw 0; }
 			Duration getDuration() const { return _duration; }
 			const AFormatF& getFormat() const { return _format; }
+			virtual void invalidate() {}
 	};
 	using UPABuff = std::unique_ptr<ABuffer>;
 	class ABufMgr : public spn::ResMgrA<UPABuff, ABufMgr> {};
@@ -69,6 +70,7 @@ namespace rs {
 
 			Duration getDuration() const;
 			const AFormatF& getFormat() const;
+			void invalidate();
 	};
 
 	// Waveバッチ再生
@@ -119,6 +121,7 @@ namespace rs {
 			AOggStream(HRW hRW);
 			bool isStreaming() const override;
 			size_t getData(void* dst, uint64_t offset, size_t buffLen) const override;
+			void invalidate() override;
 	};
 	class ASource {
 		private:
@@ -363,6 +366,7 @@ namespace rs {
 
 			void sys_pause();
 			void sys_resume();
+			void invalidate();
 	};
 	class SSrcMgr : public spn::ResMgrA<ASource, SSrcMgr> {};
 	DEF_HANDLE(SSrcMgr, Ss, ASource)
@@ -399,6 +403,7 @@ namespace rs {
 			int getChannels() const;
 			int getIdleChannels() const;
 			int getPlayingChannels() const;
+			void invalidate();
 	};
 	class SGroupMgr : public spn::ResMgrA<AGroup, SGroupMgr> {};
 	DEF_HANDLE(SGroupMgr, Sg, AGroup)
@@ -433,6 +438,7 @@ namespace rs {
 			void resetSerializeFlag();
 			void pauseAllSound();
 			void resumeAllSound();
+			void invalidate();
 	};
 }
 BOOST_CLASS_EXPORT_KEY(rs::ABuffer)

@@ -104,6 +104,10 @@ namespace rs {
 		const AFormatF& af = _hlAb.ref()->getFormat();
 		_offset = af.getBlockSize() * t;
 	}
+	void ABufSub::invalidate() {
+		_hlAb.ref()->invalidate();
+		_hlAb.setNull();
+	}
 
 	// --------------------- AWaveBatch ---------------------
 	struct SDLMem {
@@ -160,6 +164,9 @@ namespace rs {
 		size_t nread = vfile.read(dst, buffLen);
 		_prevOffset = offset + nread;
 		return nread;
+	}
+	void AOggStream::invalidate() {
+		_vfile.invalidate();
 	}
 
 	// --------------------- ASource::Fade ---------------------
@@ -403,6 +410,13 @@ namespace rs {
 			if(!pb)
 				break;
 			_dep.enqueue(*pb);
+		}
+	}
+	void ASource::invalidate() {
+		_hlAb.setNull();
+		if(_opBuf) {
+			_opBuf->invalidate();
+			_opBuf = spn::none;
 		}
 	}
 	// --------------------- ASource::S_Empty ---------------------
@@ -666,6 +680,11 @@ namespace rs {
 	int AGroup::getChannels() const { return static_cast<int>(_source.size()); }
 	int AGroup::getIdleChannels() const { return getChannels() - _nActive; }
 	int AGroup::getPlayingChannels() const { return _nActive; }
+	void AGroup::invalidate() {
+		for(auto& a : _source)
+			a.setNull();
+		_source.clear();
+	}
 
 	// ------------------ SoundMgr ------------------
 	HLAb SoundMgr::loadWaveBatch(HRW hRw) {
@@ -702,5 +721,13 @@ namespace rs {
 	void SoundMgr::resumeAllSound() {
 		for(auto& s : _srcMgr)
 			s.sys_resume();
+	}
+	void SoundMgr::invalidate() {
+		for(auto& a : _buffMgr)
+			a->invalidate();
+		for(auto& a : _srcMgr)
+			a.invalidate();
+		for(auto& a : _sgMgr)
+			a.invalidate();
 	}
 }

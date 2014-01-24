@@ -143,6 +143,9 @@ namespace rs {
 
 			double timeTell() const;
 			int64_t pcmTell() const;
+
+			//! 内包リソースハンドルをリリースせず無効化 (=以後使用不可)
+			void invalidate();
 	};
 }
 BOOST_CLASS_IMPLEMENTATION(rs::SDLAFormat, primitive_type)
