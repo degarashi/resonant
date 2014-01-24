@@ -248,14 +248,13 @@ namespace rs {
 				break;
 			}
 
-			// TODO: ループ早すぎると描画キューにメッセージ溜まりすぎて死ぬ
-
 			// 時間が残っていれば描画
 			// 最大スキップフレームを超過してたら必ず描画
 			auto dur = Clock::now() - tp;
 			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
 				skip = 0;
-				drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw));
+				if(dth.getInfo()->accum == getInfo()->accumDraw)
+					drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw));
 			} else
 				++skip;
 		} while(bLoop && !isInterrupted());
