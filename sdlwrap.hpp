@@ -345,7 +345,7 @@ namespace rs {
 		using Inner = SpinInner<SpinLockP<T>, T>;
 		using CInner = SpinInner<SpinLockP<T>, const T>;
 		template <class T0, class T1>
-		friend class SpinInner;
+		friend struct SpinInner;
 
 		TLS<int>		_tlsCount;
 		SDL_threadID	_lockID;
