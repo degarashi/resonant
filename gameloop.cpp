@@ -125,6 +125,9 @@ namespace rs {
 		UPtr<UpdMgr>		updP(new UpdMgr());
 		UPtr<SceneMgr>		scP(new SceneMgr());
 		UPtr<SoundMgr>		sndP(new SoundMgr(44100));
+		UPtr<UpdRep>		urep(new UpdRep());
+		UPtr<ObjRep>		orep(new ObjRep());
+
 		sndP->makeCurrent();
 		// 描画スレッドを先に初期化
 		DrawThread dth;
@@ -272,6 +275,8 @@ namespace rs {
 
 		mp.reset();
 
+		orep.reset();
+		urep.reset();
 		sndP.reset();
 		scP.reset();
 		updP.reset();

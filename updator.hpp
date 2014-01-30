@@ -20,13 +20,42 @@ namespace rs {
 
 	#define mgr_gobj (::rs::ObjMgr::_ref())
 	class Object;
-	using UPObject = std::unique_ptr<Object>;
-	class ObjMgr : public spn::ResMgrA<UPObject, ObjMgr> {};
+	using UPObject = std::unique_ptr<Object, void (*)(void*)>;	// Alignedメモリ対応の為 デリータ指定
+	//! アクティブゲームオブジェクトの管理
+	class ObjMgr : public spn::ResMgrA<UPObject, ObjMgr> {
+		using base = spn::ResMgrA<UPObject, ObjMgr>;
+		using LHdl = typename base::LHdl;
+
+		template <class T>
+		static void NormalDeleter(void* p) {
+			delete reinterpret_cast<T*>(p);
+		}
+		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う
+		template <class T, class... Ts>
+		LHdl _makeObj(std::false_type, Ts&&... ts) {
+			return base::acquire(std::move(UPObject(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>)));
+		}
+		template <class T, class... Ts>
+		LHdl _makeObj(std::true_type, Ts&&... ts) {
+			return base::acquire(std::move(T::NewUF_Args(std::forward<Ts>(ts)...)));
+		}
+
+		public:
+			// デフォルトのリソース作成関数は無効化
+			void acquire() = delete;
+			void emplace() = delete;
+			// オブジェクトの追加にはこっちを使う
+			template <class T, class... Ts>
+			LHdl makeObj(Ts&&... ar) {
+				return _makeObj<T>(typename spn::NType<alignof(T), 8>::great(), std::forward<Ts>(ar)...);
+			}
+	};
 	DEF_HANDLE(ObjMgr, Gbj, UPObject)
 
 	#define mgr_upd (::rs::UpdMgr::_ref())
 	class UpdChild;
 	using UPUpdCh = std::unique_ptr<UpdChild>;
+	//! アップデートグループの管理
 	class UpdMgr : public spn::ResMgrA<UPUpdCh, UpdMgr> {};
 	DEF_HANDLE(UpdMgr, Upd, UPUpdCh)
 
@@ -123,11 +152,10 @@ namespace rs {
 	};
 
 	ObjTypeID GenerateObjTypeID();
+	const static ObjTypeID InvalidObjID(~0);
 	template <class T>
-	class ObjectIDT : public Object {
-		public:
-			const static ObjTypeID ID;
-			ObjTypeID getTypeID() const override { return ID; }
+	struct ObjectIDT {
+		const static ObjTypeID ID;
 	};
 	template <class T>
 	const ObjTypeID ObjectIDT<T>::ID(GenerateObjTypeID());
@@ -165,22 +193,23 @@ namespace rs {
 	using UpdArray = std::vector<UpdBase*>;
 	using UpdList = std::list<UpdBase*>;
 
-	#define rep_upd (::rs::UpdRep::_refI())
-	class UpdRep : public spn::Singleton<UpdRep>, public SHandleMap<GroupID, HUpd>, public IDMap<GroupName, GroupID> {
-		public: static UpdRep& _refI(); };
-	#define rep_gobj (::rs::ObjRep::_refI())
-	class ObjRep : public spn::Singleton<ObjRep>, public WHandleMap<ObjID, WGbj>, public IDMap<ObjName, ObjID> {
-		public: static ObjRep& _refI(); };
+	// スクリプト対応のために型とではなく文字列とIDを関連付け
+	// オブジェクトグループとIDの関連付け
+	#define rep_upd (::rs::UpdRep::_ref())
+	class UpdRep : public spn::Singleton<UpdRep>, public SHandleMap<std::string, HUpd> {};
+	// オブジェクトハンドルとIDの関連付け
+	#define rep_gobj (::rs::ObjRep::_ref())
+	class ObjRep : public spn::Singleton<ObjRep>, public WHandleMap<std::string, WGbj> {};
 
 	//! UpdBase(Child)の集合体
 	class UpdChild {
 		UpdList		_child;			//!< このクラスがOwnershipを持つポインタリスト
 		int			_nGroup = 0;	//!< 子要素にグループが幾つあるか
-		GroupID		_id;
+		std::string	_name;
 
 		public:
-			UpdChild(GroupID id = UpdRep::InvalidID);
-			GroupID getID() const;
+			UpdChild(const std::string& name = std::string());
+			const std::string& getName() const;
 			void addObj(UpdBase* upd);
 			//! このリストから外し、メモリも開放する UpdGroupから呼ぶ
 			void remObjs(const UpdArray& ar);
@@ -218,11 +247,10 @@ namespace rs {
 			//! オブジェクト又はグループを追加
 			void addObj(UpdBase* upd);
 			//! オブジェクトをラップして追加
-			void addObj(Priority prio, Object* obj);
 			void addObj(Priority prio, HGbj hGbj);
 			//! オブジェクト又はグループを削除(メモリ解放)
 			void remObj(UpdBase* upd);
-			GroupID getGroupID() const;
+			const std::string& getGroupName() const;
 			//! 特定の優先度範囲のオブジェクトを処理
 			void proc(Priority prioBegin, Priority prioEnd, const IUpdProc* p) override;
 			void proc(const IUpdProc* p) override;
@@ -262,36 +290,33 @@ namespace rs {
 	/*! UpdatableなオブジェクトやDrawableなオブジェクトはこれから派生して作る
 		Sceneと共用 */
 	template <class T>
-	class ObjectT : public ObjectIDT<T> {
+	class ObjectT : public Object, public ObjectIDT<T> {
 		protected:
-			using StateID = uint32_t;
-			constexpr static int InvalidStateID = ~0;
-			class State {
-				StateID _stateID;
-
-				public:
-					State(StateID id): _stateID(id) {}
-					virtual ~State() {}
-					StateID getID() const { return _stateID; }
-
-					virtual void onUpdate(T& self) {}
-					virtual Variant recvMsg(T& self, const std::string& msg, Variant arg) { return Variant(); }
-					virtual void onEnter(T& self, StateID prevID) {}
-					virtual void onExit(T& self, StateID nextID) {}
-					virtual void onHitEnter(T& self, HGbj hGbj) {}
-					virtual void onHit(T& self, HGbj hGbj, int n) {}
-					virtual void onHitExit(T& self, WGbj whGbj, int n) {}
-					// --------- Scene用メソッド ---------
-					virtual void onDraw(T& self) {}
-					virtual void onDown(T& self, ObjTypeID prevID, const Variant& arg) {}
-					virtual void onPause(T& self) {}
-					virtual void onStop(T& self) {}
-					virtual void onResume(T& self) {}
-					virtual void onReStart(T& self) {}
+			struct State {
+				virtual ~State() {}
+				virtual ObjTypeID getStateID() const = 0;
+				virtual void onUpdate(T& self) {}
+				virtual Variant recvMsg(T& self, const std::string& msg, Variant arg) { return Variant(); }
+				virtual void onEnter(T& self, ObjTypeID prevID) {}
+				virtual void onExit(T& self, ObjTypeID nextID) {}
+				virtual void onHitEnter(T& self, HGbj hGbj) {}
+				virtual void onHit(T& self, HGbj hGbj, int n) {}
+				virtual void onHitExit(T& self, WGbj whGbj, int n) {}
+				// --------- Scene用メソッド ---------
+				virtual void onDraw(T& self) {}
+				virtual void onDown(T& self, ObjTypeID prevID, const Variant& arg) {}
+				virtual void onPause(T& self) {}
+				virtual void onStop(T& self) {}
+				virtual void onResume(T& self) {}
+				virtual void onReStart(T& self) {}
+			};
+			template <class ST>
+			struct StateT : State, ObjectIDT<ST> {
+				ObjTypeID getStateID() const override { return ObjectIDT<ST>::ID; }
 			};
 			using FPState = FlagPtr<State>;
 
-			static State _nullState;
+			static StateT<void> _nullState;
 			static FPState getNullState() {
 				return useState(&_nullState);
 			}
@@ -316,6 +341,7 @@ namespace rs {
 			void setNullState() {
 				setStateUse(&_nullState);
 			}
+			ObjTypeID getTypeID() const override { return ObjectIDT<T>::ID; }
 
 			ObjectT(Priority prio=0): _state(FPState(&_nullState, false)) {}
 			T& getRef() { return *reinterpret_cast<T*>(this); }
@@ -332,12 +358,12 @@ namespace rs {
 			void _doSwitchState() {
 				if(_bSwState) {
 					_bSwState = false;
-					StateID prevID = InvalidStateID;
+					ObjTypeID prevID = InvalidObjID;
 					// 現在のステートのonExitを呼ぶ
 					if(_state.get()) {
-						StateID nextID = (_nextState.get()) ? _nextState->getID() : InvalidStateID;
+						ObjTypeID nextID = (_nextState.get()) ? _nextState->getStateID() : InvalidObjID;
 						_state->onExit(getRef(), nextID);
-						prevID = _state->getID();
+						prevID = _state->getStateID();
 					}
 					_state.swap(_nextState);
 					_nextState.reset();
@@ -389,5 +415,5 @@ namespace rs {
 			}
 	};
 	template <class T>
-	typename ObjectT<T>::State ObjectT<T>::_nullState(0);
+	typename ObjectT<T>::template StateT<void> ObjectT<T>::_nullState;
 }

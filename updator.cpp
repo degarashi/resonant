@@ -16,14 +16,6 @@ namespace rs {
 		_msgMap.insert(std::make_pair(msg, id));
 		return id;
 	}
-	UpdRep& UpdRep::_refI() {
-		static UpdRep s_rep;
-		return s_rep;
-	}
-	ObjRep& ObjRep::_refI() {
-		static ObjRep s_rep;
-		return s_rep;
-	}
 
 	// -------------------- UpdBase --------------------
 	UpdBase::UpdBase() {}
@@ -68,7 +60,7 @@ namespace rs {
 	}
 
 	// -------------------- UpdChild --------------------
-	UpdChild::UpdChild(GroupID id): _id(id) {}
+	UpdChild::UpdChild(const std::string& name): _name(name) {}
 	UpdGroup* UpdChild::findGroup(GroupID id) const {
 		if(_nGroup > 0) {
 			for(auto* p : _child) {
@@ -79,7 +71,7 @@ namespace rs {
 		}
 		return nullptr;
 	}
-	GroupID UpdChild::getID() const { return _id; }
+	const std::string& UpdChild::getName() const { return _name; }
 	void UpdChild::addObj(UpdBase* upd) {
 		if(upd->isNode())
 			++_nGroup;
@@ -131,13 +123,10 @@ namespace rs {
 	}
 	UpdGroup::UpdGroup(Priority prio, HUpd hUpd): UpdBase(prio), _child(hUpd) {}
 	UpdGroup::UpdGroup(Priority prio): _child(
-		UpdMgr::_ref().acquire(UPUpdCh(new UpdChild(UpdRep::InvalidID)))
+		UpdMgr::_ref().acquire(UPUpdCh(new UpdChild()))
 	) {}
 	void UpdGroup::clear() {
 		_child.get().ref()->clear();
-	}
-	void UpdGroup::addObj(Priority prio, Object* obj) {
-		addObj(prio, ObjMgr::_ref().acquire(UPObject(obj)).get());
 	}
 	void UpdGroup::addObj(Priority prio, HGbj hGbj) {
 		addObj(new UpdProxy(prio, hGbj));
@@ -150,7 +139,7 @@ namespace rs {
 		if(std::find(_remObj.begin(), _remObj.end(), upd) == _remObj.end())
 			_remObj.push_back(upd);
 	}
-	GroupID UpdGroup::getGroupID() const { return _child.get().cref()->getID(); }
+	const std::string& UpdGroup::getGroupName() const { return _child.get().cref()->getName(); }
 	void UpdGroup::setIdle(int nFrame) {
 		_idleCount = nFrame;
 	}
