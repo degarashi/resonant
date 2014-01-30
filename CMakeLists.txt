@@ -53,7 +53,8 @@ file(GLOB HEADERS "./*.hpp")
 install(FILES ${HEADERS} DESTINATION include/resonant)
 
 if(NOT DEFINED ARCHITECTURE)
-	set(SRC_FILE ${SRC_FILE} main.cpp)
+	aux_source_directory(test/ SRC_FILE2)
+	set(SRC_FILE ${SRC_FILE} main.cpp ${SRC_FILE2})
 	if(${WIN32})
 		add_definitions(-Dmain=SDL_main)
 		set(LINK_LIBS resonant boomstick spinner mingw32 SDL2_image SDL2main SDL2
