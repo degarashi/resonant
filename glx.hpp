@@ -367,6 +367,12 @@ namespace rs {
 			void setUniform(GLint id, const T& t) {
 				_current.uniMap.emplace(id, _MakeUniformToken(_current.normal, id, t));
 			}
+			template <int M, int N>
+			void setUniform(GLint id, const spn::MatT<M,N,true>& m) {
+				spn::MatT<M,N,false> tmp;
+				m.convert(tmp);
+				setUniform(id, tmp);
+			}
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, bool b);
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, float fv);
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, int iv);
