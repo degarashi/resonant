@@ -59,7 +59,7 @@ namespace rs {
 	}
 	HLFx GLRes::loadEffect(const spn::URI& uri) {
 		HLRW hlRW = mgr_rw.fromURI(uri, RWops::Read, true);
-		AdaptSDL as(hlRW);
+		AdaptSDL as(hlRW.get());
 		LHdl lh = _common(uri.plainUri_utf8(), [&](){ return UPResource(new GLEffect(as)); });
 		return Cast<UPEffect>(std::move(lh));
 	}
