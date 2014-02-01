@@ -4,7 +4,7 @@
 namespace rs {
 	#define mgr_scene (::rs::SceneMgr::_ref())
 	class SceneMgr : public spn::Singleton<SceneMgr> {
-		using StStack = std::stack<HLGbj>;
+		using StStack = std::vector<HLGbj>;
 		StStack		_scene;
 		bool		_scOp = false;		//!< SceneOpが有効か
 		int			_scNPop;
@@ -15,7 +15,9 @@ namespace rs {
 
 		public:
 			bool isEmpty() const;
+			//! getScene(0)と同義
 			HGbj getTop() const;
+			HGbj getScene(int n) const;
 			void setPushScene(HGbj hSc, bool bPop=false);
 			void setPopScene(int nPop, const Variant& arg=Variant());
 			//! フレーム更新のタイミングで呼ぶ

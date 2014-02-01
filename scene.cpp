@@ -3,13 +3,16 @@
 namespace rs {
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
 	HGbj SceneMgr::getTop() const {
-		if(_scene.empty())
-			return HGbj();
-		return _scene.top();
+		return getScene(0);
+	}
+	HGbj SceneMgr::getScene(int n) const {
+		if(_scene.size() > n)
+			return _scene.at(_scene.size()-1-n);
+		return HGbj();
 	}
 	void SceneMgr::setPushScene(HGbj hSc, bool bPop) {
 		if(_scene.empty())
-			_scene.push(HLGbj(hSc));
+			_scene.push_back(HLGbj(hSc));
 		else {
 			_scNext = HLGbj(hSc);
 			_scNPop = bPop ? 1 : 0;
@@ -24,22 +27,22 @@ namespace rs {
 		_scOp = true;
 	}
 	void SceneMgr::_doSceneOp() {
-		if(!_scOp && _scene.top().ref()->isDead()) {
+		if(!_scOp && _scene.back().ref()->isDead()) {
 			// Sceneがdestroyされていて、かつSceneOpが無ければpop(1)とする
 			setPopScene(1);
 		}
 		while(_scOp) {
 			// Update中に指示されたScene操作タスクを実行
-			ObjTypeID id = _scene.top().ref()->getTypeID();
+			ObjTypeID id = _scene.back().ref()->getTypeID();
 
 			int nPop = std::min(_scNPop, static_cast<int>(_scene.size()));
 			_scNPop = 0;
 			while(--nPop >= 0) {
-				auto& sc = _scene.top().ref();
+				auto& sc = _scene.back().ref();
 				sc->destroy();
 				sc->onUpdate();			// nullステートへ移行させる
 				sc->onDestroy();
-				_scene.pop();
+				_scene.pop_back();
 			}
 			// Sceneスタックが空ならここで終わり
 			if(_scene.empty())
@@ -48,10 +51,10 @@ namespace rs {
 			_scOp = false;
 			// 直後に積むシーンがあればそれを積む
 			if(_scNext.valid())
-				_scene.push(_scNext);
+				_scene.push_back(_scNext);
 			else {
 				// 降りた先のシーンに戻り値を渡す
-				_scene.top().ref()->onDown(id, _scArg);
+				_scene.back().ref()->onDown(id, _scArg);
 				_scArg = Variant();
 			}
 		}
@@ -60,19 +63,19 @@ namespace rs {
 		if(_scene.empty())
 			return true;
 
-		_scene.top().ref()->onUpdate();
+		_scene.back().ref()->onUpdate();
 		// SceneOpがあれば処理
 		_doSceneOp();
 		// スタックが空だったらtrue = 終了の合図 を返す
 		return _scene.empty();
 	}
 	void SceneMgr::onDraw() {
-		_scene.top().ref()->onDraw();
+		_scene.back().ref()->onDraw();
 		// DrawフェーズでのSceneOpは許可されない
 		AssertP(Trap, !_scOp)
 	}
 	#define DEF_ADAPTOR(name) void SceneMgr::name() { \
-		_scene.top().ref()->name(); }
+		_scene.front().ref()->name(); }
 	DEF_ADAPTOR(onPause)
 	DEF_ADAPTOR(onStop)
 	DEF_ADAPTOR(onResume)
