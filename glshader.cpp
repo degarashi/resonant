@@ -77,7 +77,7 @@ namespace rs {
 		// エラーが無かったか確認
 		GLint compiled;
 		GL.glGetShaderiv(_idSh, GL_COMPILE_STATUS, &compiled);
-		AssertT(Throw, compiled==GL_TRUE, (GLE_ShaderError)(const std::string&)(GLuint), ss, _idSh)
+		AssertT(Trap, compiled==GL_TRUE, (GLE_ShaderError)(const std::string&)(GLuint), ss, _idSh)
 	}
 
 	GLShader::GLShader() {}
@@ -143,7 +143,7 @@ namespace rs {
 		// エラーが無いかチェック
 		int ib;
 		GL.glGetProgramiv(_idProg, GL_LINK_STATUS, &ib);
-		AssertT(Throw, ib==GL_TRUE, (GLE_ProgramError)(GLuint), _idProg)
+		AssertT(Trap, ib==GL_TRUE, (GLE_ProgramError)(GLuint), _idProg)
 	}
 	GLProgram::~GLProgram() {
 		if(mgr_gl.isInDtor()) {

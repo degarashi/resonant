@@ -249,6 +249,7 @@ namespace rs {
 				template <class ST>
 				void _extractBlocks(std::vector<const ST*>& dst, const ST* attr, const NameMap<ST> (GLXStruct::*mfunc)) const {
 					for(auto itr=attr->derive.rbegin() ; itr!=attr->derive.rend() ; itr++) {
+						Assert(Trap, (_glx.*mfunc).count(*itr)==1)
 						auto* der = &(_glx.*mfunc).at(*itr);
 						_extractBlocks(dst, der, mfunc);
 					}
@@ -268,8 +269,10 @@ namespace rs {
 							if(blk.type == blockID) {
 								if(!blk.bAdd)
 									tmp.clear();
-								for(auto& name : blk.name)
+								for(auto& name : blk.name) {
+									Assert(Trap, (_glx.*mfunc).count(name)==1)
 									tmp.push_back(&(_glx.*mfunc).at(name));
+								}
 							}
 						}
 					}
@@ -460,9 +463,10 @@ namespace rs {
 		if(!cur.pass || *cur.pass != passID) {
 			cur.pass = passID;
 			GL16ID id(*cur.tech, *cur.pass);
+			Assert(Trap, _techMap.count(id)==1)
 			cur.tps = _techMap.at(id);
 			cur.bInit = true;
-			auto& tps = _techMap.at(GL16ID(*_current.tech, *_current.pass));
+			auto& tps = *cur.tps;
 			cur.init._opProgram = spn::construct(tps.getProgram().get());
 			cur.init._opVAttrID = tps.getVAttrID();
 			// UnifMapをクリア
@@ -834,6 +838,7 @@ namespace rs {
 			_unifL = dupl.exportEntries<UnifStruct,UnifEntry>(GLBlocktype_::uniformT, &GLXStruct::uniM);
 			OutputS(ss, _unifL);
 
+			Assert(Trap, gs.shM.count(shp->shName)==1)
 			const ShStruct& s = gs.shM.at(shp->shName);
 			// シェーダー引数の型チェック
 			// ユーザー引数はグローバル変数として用意
