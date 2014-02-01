@@ -5,16 +5,24 @@ namespace rs {
 		static ObjID s_id(0);
 		return s_id++;
 	}
-	GMessage::MsgMap GMessage::_msgMap;
-	GMessageID GMessage::_msgIDCur = 0;
-
-	GMessageID GMessage::getMsgID(const GMessageStr& msg) {
-		auto itr = _msgMap.find(msg);
-		if(itr != _msgMap.end())
+	GMessage& GMessage::Ref() {
+		static GMessage m;
+		return m;
+	}
+	GMessageID GMessage::RegMsgID(const GMessageStr& msg) {
+		GMessage& m = Ref();
+		auto itr = m._msgMap.find(msg);
+		if(itr != m._msgMap.end())
 			return itr->second;
-		auto id = _msgIDCur++;
-		_msgMap.insert(std::make_pair(msg, id));
+		auto id = m._msgIDCur++;
+		m._msgMap.insert(std::make_pair(msg, id));
 		return id;
+	}
+	GMessageID GMessage::GetMsgID(const GMessageStr& msg) {
+		GMessage& m = Ref();
+		auto itr = m._msgMap.find(msg);
+		Assert(Trap, itr != m._msgMap.end())
+		return itr->second;
 	}
 
 	// -------------------- UpdBase --------------------
@@ -55,7 +63,7 @@ namespace rs {
 		if(p->isDead())
 			destroy();
 	}
-	Variant UpdProxy::recvMsg(const std::string& msg, const Variant& arg) {
+	Variant UpdProxy::recvMsg(GMessageID msg, const Variant& arg) {
 		return _hlGbj.get().ref()->recvMsg(msg, arg);
 	}
 
@@ -199,10 +207,10 @@ namespace rs {
 		for(auto ent : _child.get().ref()->getList())
 			ent->proc(p);
 	}
-	Variant UpdGroup::recvMsg(const std::string& msg, const Variant& arg) {
+	Variant UpdGroup::recvMsg(GMessageID msg, const Variant& arg) {
 		for(auto ent : _child.get().ref()->getList())
 			ent->recvMsg(msg, arg);
-		return Variant();
+		return boost::blank();
 	}
 	HLUpd UpdGroup::clone() const {
 		// UpdProxyは複製, UpdGroupは参照コピー

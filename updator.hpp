@@ -61,8 +61,8 @@ namespace rs {
 
 	class GVec;
 	class GMap;
-	using Variant = boost::variant<boost::blank, int32_t, float, GMessageStr, GVec*, GMap*,
-									HGbj, HUpd>;
+	using Variant = boost::variant<boost::blank, int32_t, float, GMessageStr,
+							std::shared_ptr<GVec>, std::shared_ptr<GMap>, HGbj, HUpd>;
 	class GVec : public std::vector<Variant> {
 		using std::vector<Variant>::vector;
 	};
@@ -70,10 +70,11 @@ namespace rs {
 		using std::unordered_map<std::string, Variant>::unordered_map;
 	};
 
+	// スクリプトからメッセージ文字列を受け取ったらGMessage::GetMsgID()
 	class GMessage {
 		using MsgMap = std::unordered_map<GMessageStr, GMessageID>;
-		static MsgMap		_msgMap;
-		static GMessageID	_msgIDCur;
+		MsgMap		_msgMap;
+		GMessageID	_msgIDCur = 0;
 
 		public:
 			//! 遅延メッセージエントリ
@@ -86,12 +87,10 @@ namespace rs {
 				Packet(GMessageID id, const Variant& args): msgID(id), arg(args) {}
 				Packet(GMessageID id, Variant&& args): msgID(id), arg(args) {}
 				Packet(Packet&& p) { swap(p); }
-				template <class R, class P>
-				Packet(std::chrono::duration<R,P> delay, GMessageID id, const Variant& args): Packet(id, args) {
+				Packet(Duration delay, GMessageID id, const Variant& args): Packet(id, args) {
 					tmSend = Clock::now() + delay;
 				}
-				template <class C, class D>
-				Packet(std::chrono::time_point<C,D> when, GMessageID id, const Variant& args): Packet(id, args) {
+				Packet(Timepoint when, GMessageID id, const Variant& args): Packet(id, args) {
 					tmSend = when;
 				}
 				void swap(Packet& p) noexcept {
@@ -101,8 +100,12 @@ namespace rs {
 				}
 			};
 			using Queue = std::list<Packet>;
-			//! メッセージIDの登録。既に同じ物が登録されている場合はそれを返す
-			static GMessageID getMsgID(const GMessageStr& msg);
+
+			static GMessage& Ref();
+			//! メッセージIDの登録。同じメッセージを登録するとエラー
+			static GMessageID RegMsgID(const GMessageStr& msg);
+			//! メッセージIDの取得。存在しないメッセージを指定するとエラー
+			static GMessageID GetMsgID(const GMessageStr& msg);
 	};
 
 	//! GameObj - UpdBase 共通基底
@@ -113,7 +116,7 @@ namespace rs {
 			bool isDead() const { return _bDestroy; }
 			virtual void destroy() { _bDestroy = true; }
 			bool onUpdateUpd();
-			virtual Variant recvMsg(const GMessageStr& msg, const Variant& arg) { return boost::blank(); }
+			virtual Variant recvMsg(GMessageID id, const Variant& arg=boost::blank()) { return boost::blank(); }
 			//! 各Objが実装するアップデート処理
 			virtual void onUpdate() = 0;
 			virtual void onDestroy() {}
@@ -255,7 +258,7 @@ namespace rs {
 			void proc(Priority prioBegin, Priority prioEnd, const IUpdProc* p) override;
 			void proc(const IUpdProc* p) override;
 			//! グループ内のオブジェクト全てに配信
-			Variant recvMsg(const std::string& msg, const Variant& arg) override;
+			Variant recvMsg(GMessageID msg, const Variant& arg) override;
 			//! 名前を新たに付加してグループ複製
 			/*! 下層のグループは複製されず参照カウントを加算 */
 			HLUpd clone() const;
@@ -283,7 +286,7 @@ namespace rs {
 			// ----------- 以下はGobjのアダプタメソッド -----------
 			void onUpdate() override;
 			void onDestroy() override;
-			Variant recvMsg(const std::string& msg, const Variant& arg) override;
+			Variant recvMsg(GMessageID msg, const Variant& arg) override;
 	};
 
 	//! オブジェクト基底
@@ -296,7 +299,7 @@ namespace rs {
 				virtual ~State() {}
 				virtual ObjTypeID getStateID() const = 0;
 				virtual void onUpdate(T& self) {}
-				virtual Variant recvMsg(T& self, const std::string& msg, Variant arg) { return Variant(); }
+				virtual Variant recvMsg(T& self, GMessageID msg, Variant arg) { return boost::blank(); }
 				virtual void onEnter(T& self, ObjTypeID prevID) {}
 				virtual void onExit(T& self, ObjTypeID nextID) {}
 				virtual void onHitEnter(T& self, HGbj hGbj) {}
@@ -408,7 +411,7 @@ namespace rs {
 				_state->onHitExit(getRef(), wGbj, n);
 				_doSwitchState();
 			}
-			Variant recvMsg(const std::string& msg, const Variant& arg) override final {
+			Variant recvMsg(GMessageID msg, const Variant& arg) override final {
 				Variant ret(_state->recvMsg(getRef(), msg, arg));
 				_doSwitchState();
 				return std::move(ret);
