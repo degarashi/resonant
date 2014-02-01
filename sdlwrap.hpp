@@ -47,6 +47,10 @@ namespace rs {
 		SDLInitializer(uint32_t flag);
 		~SDLInitializer();
 	};
+	struct IMGInitializer {
+		IMGInitializer(uint32_t flag);
+		~IMGInitializer();
+	};
 
 	struct SDLErrorI {
 		static const char* Get();

@@ -10,6 +10,13 @@ namespace rs {
 	SDLInitializer::~SDLInitializer() {
 		SDL_Quit();
 	}
+	// -------------------- IMGInitializer --------------------
+	IMGInitializer::IMGInitializer(uint32_t flag) {
+		IMG_Init(flag);
+	}
+	IMGInitializer::~IMGInitializer() {
+		IMG_Quit();
+	}
 	// -------------------- SDLError --------------------
 	const char* SDLErrorI::Get() { return SDL_GetError(); }
 	void SDLErrorI::Reset() { SDL_ClearError(); }

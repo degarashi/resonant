@@ -357,6 +357,8 @@ namespace rs {
 	GameLoop::GameLoop(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr), _level(Active) {}
 	int GameLoop::run(const char* apppath, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
+		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
+
 		Window::SetStdGLAttributes(major, minor, depth);
 		SPWindow _spWindow = Window::Create(title.moveTo(), w, h, flag);
 		rs::SDLMouse::SetWindow(_spWindow->getWindow());
