@@ -6,31 +6,58 @@
 #include "camera.hpp"
 #include "input.hpp"
 
+// ------------------------------ MyDraw ------------------------------
+bool MyDraw::runU(uint64_t accum) {
+	GL.glClearColor(0,0,0.1f,1);
+	GL.glClearDepth(1.0f);
+	GL.glDepthMask(GL_TRUE);
+	GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	GL.glDepthMask(GL_FALSE);
+
+	auto lk = shared.lock();
+	auto& fx = *lk->hlFx.ref();
+	lk->fps.update();
+	fx.execTask();
+	return true;
+}
+
+// ------------------------------ MyMain ------------------------------
 void MyMain::_initInput() {
+	// キーバインディング
 	auto lk = shared.lock();
 	lk->hlIk = rs::Keyboard::OpenKeyboard();
-
+	lk->hlIm = rs::Mouse::OpenMouse(0);
+	auto& mouse = *lk->hlIm.ref();
+	mouse.setMouseMode(rs::MouseMode::Absolute);
+	mouse.setDeadZone(0, 1.f, 0.f);
+	mouse.setDeadZone(1, 1.f, 0.f);
+	// quit[Esc]							アプリケーション終了
 	lk->actQuit = mgr_input.addAction("quit");
 	mgr_input.link(lk->actQuit, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_ESCAPE));
-	lk->actButton = mgr_input.addAction("button");
-	mgr_input.link(lk->actButton, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_LSHIFT));
-
+	// reset-scene[R]						シーンリセット
+	lk->actReset = mgr_input.addAction("reset");
+	mgr_input.link(lk->actReset, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_LSHIFT));
+	// playsound[Q]							音楽再生
+	lk->actPlay = mgr_input.addAction("play");
+	mgr_input.link(lk->actPlay, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_Q));
+	// stopsound[E]							音楽停止
+	lk->actStop = mgr_input.addAction("stop");
+	mgr_input.link(lk->actStop, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_E));
+	// left, right, up, down [A,D,W,S]		カメラ移動
 	lk->actLeft = mgr_input.addAction("left");
 	lk->actRight = mgr_input.addAction("right");
 	lk->actUp = mgr_input.addAction("up");
 	lk->actDown = mgr_input.addAction("down");
-	lk->actMoveX = mgr_input.addAction("moveX");
-	lk->actMoveY = mgr_input.addAction("moveY");
-	lk->actPress = mgr_input.addAction("press");
 	mgr_input.link(lk->actLeft, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_A));
 	mgr_input.link(lk->actRight, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_D));
 	mgr_input.link(lk->actUp, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_W));
 	mgr_input.link(lk->actDown, rs::InF::AsButton(lk->hlIk, SDL_SCANCODE_S));
+	// rotate-camera[MouseX,Y]				カメラ向き変更
+	lk->actMoveX = mgr_input.addAction("moveX");
+	lk->actMoveY = mgr_input.addAction("moveY");
+	// rotate-switch[MouseLeft]				カメラ回転切り替え
+	lk->actPress = mgr_input.addAction("press");
 
-	lk->hlIm = rs::Mouse::OpenMouse(0);
-	lk->hlIm.ref()->setMouseMode(rs::MouseMode::Absolute);
-	lk->hlIm.ref()->setDeadZone(0, 1.f, 0.f);
-	lk->hlIm.ref()->setDeadZone(1, 1.f, 0.f);
 	mgr_input.link(lk->actMoveX, rs::InF::AsAxis(lk->hlIm, 0));
 	mgr_input.link(lk->actMoveY, rs::InF::AsAxis(lk->hlIm, 1));
 	mgr_input.link(lk->actPress, rs::InF::AsButton(lk->hlIm, 0));
@@ -75,12 +102,14 @@ void MyMain::_initDraw() {
 
 	// テクスチャ
 	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
-	uriTex <<= "test.png";
+	uriTex <<= "brick.jpg";
 	_hlTex = mgr_gl.loadTexture(uriTex);
-	_hlTex.ref()->setFilter(rs::IGLTexture::MipmapLinear, true,true);
+	rs::IGLTexture& tex = *_hlTex.ref();
+	tex.setFilter(rs::IGLTexture::MipmapLinear, true,true);
+	tex.setAnisotropicCoeff(16.f);
 
 	// テキスト
-	_charID = mgr_text.makeCoreID("MS Gothic", rs::CCoreID(0, 3, 0, false, 0, rs::CCoreID::SizeType_Point));
+	_charID = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
 
 	rs::GPUInfo info;
 	info.onDeviceReset();
@@ -128,10 +157,13 @@ MyMain::MyMain(const rs::SPWindow& sp) {
 }
 bool MyMain::runU() {
 	mgr_sound.update();
+	// 描画コマンド
+	auto lk = shared.lock();
+	rs::GLEffect& fx = *lk->hlFx.ref();
+	fx.beginTask();
 	if(mgr_scene.onUpdate())
 		return false;
 
-	auto lk = shared.lock();
 	// 画面のサイズとアスペクト比合わせ
 	auto& cd = lk->hlCam.ref();
 	auto sz = lk->spWin->getSize();
@@ -164,24 +196,19 @@ bool MyMain::runU() {
 		cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
 		cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
 	}
-
-	// 描画コマンド
-	auto& fx = *lk->hlFx.ref();
-	fx.beginTask();
-
 	fx.setTechnique(_techID, true);
-	fx.setPass(_passView);
-	fx.setUniform(fx.getUniformID("mTrans"), cd.getViewProjMatrix().convert44());
-	fx.setUniform(fx.getUniformID("tDiffuse"), _hlTex);
+// 	fx.setPass(_passView);
+// 	fx.setUniform(fx.getUniformID("mTrans"), cd.getViewProjMatrix().convert44());
+// 	fx.setUniform(fx.getUniformID("tDiffuse"), _hlTex);
 	// 頂点フォーマット定義
-	rs::SPVDecl decl(new rs::VDecl{
-		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
-		{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
-	});
-	fx.setVDecl(std::move(decl));
-	fx.setVStream(_hlVb.get(), 0);
-	fx.setIStream(_hlIb.get());
-	fx.drawIndexed(GL_TRIANGLES, 6, 0);
+// 	rs::SPVDecl decl(new rs::VDecl{
+// 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
+// 		{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
+// 	});
+// 	fx.setVDecl(std::move(decl));
+// 	fx.setVStream(_hlVb.get(), 0);
+// 	fx.setIStream(_hlIb.get());
+// 	fx.drawIndexed(GL_TRIANGLES, 6, 0);
 
 	fx.setPass(_passText);
 	auto tsz = _size;
@@ -196,7 +223,10 @@ bool MyMain::runU() {
 
 	int fps = lk->fps.getFPS();
 	std::stringstream ss;
-	ss << "FPS: " << fps;
+	ss << "FPS: " << fps << std::endl;
+	rs::Object& obj = *mgr_scene.getScene(0).ref();
+	auto var = obj.recvMsg(MSG_GetStatus);
+	ss << "Status: " << boost::get<rs::GMessageStr>(var) << std::endl;
 	_hlText = mgr_text.createText(_charID, _infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
 	_hlText.ref().draw(&fx);
 

@@ -15,10 +15,6 @@
 #include "sound.hpp"
 #include "font.hpp"
 
-namespace rs {
-	class GLEffect;
-}
-
 // MainThread と DrawThread 間のデータ置き場
 // リソースハンドルはメインスレッド
 struct Mth_DthData {
@@ -26,14 +22,16 @@ struct Mth_DthData {
 	rs::HLInput	hlIk,
 				hlIm;
 	rs::HLAct	actQuit,
-				actButton,
 				actLeft,
 				actRight,
 				actUp,
 				actDown,
 				actMoveX,
 				actMoveY,
-				actPress;
+				actPress,
+				actReset,
+				actPlay,
+				actStop;
 	rs::HLCam	hlCam;
 	rs::SPWindow	spWin;
 	rs::FPSCounter	fps;
@@ -43,19 +41,7 @@ class Mth_Dth : public spn::Singleton<Mth_Dth>, public rs::GLSharedData<Mth_DthD
 
 class MyDraw : public rs::IDrawProc {
 	public:
-		bool runU(uint64_t accum) override {
-			GL.glClearColor(0,0,0.5f,1);
-			GL.glClearDepth(1.0f);
-			GL.glDepthMask(GL_TRUE);
-			GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-			GL.glDepthMask(GL_FALSE);
-
-			auto lk = shared.lock();
-			auto& fx = *lk->hlFx.ref();
-			lk->fps.update();
-			fx.execTask();
-			return true;
-		}
+		bool runU(uint64_t accum) override;
 };
 
 class Cube : public spn::Pose3D {
@@ -81,16 +67,19 @@ class CubeObj : public rs::ObjectT<CubeObj>, public spn::CheckAlign<16, CubeObj>
 		void onDestroy() override;
 };
 
-class TScene2 : public rs::Scene<TScene2> {
-	class MySt : public StateT<MySt> {
-		public:
-			void onUpdate(TScene2& self) override;
-	};
-	public:
-		TScene2();
-		~TScene2();
-};
+extern spn::Optional<Cube>		g_cube;
+// class TScene2 : public rs::Scene<TScene2> {
+// 	class MySt : public StateT<MySt> {
+// 		public:
+// 			void onUpdate(TScene2& self) override;
+// 	};
+// 	public:
+// 		TScene2();
+// 		~TScene2();
+// };
 
+extern const rs::GMessageID MSG_CallFunc;
+extern const rs::GMessageID MSG_GetStatus;
 class TScene : public rs::Scene<TScene> {
 	rs::HLAb	_hlAb;
 	rs::HLSg	_hlSg;
@@ -103,7 +92,16 @@ class TScene : public rs::Scene<TScene> {
 			void onResume(TScene& self) override;
 			void onStop(TScene& self) override;
 			void onReStart(TScene& self) override;
+			rs::Variant recvMsg(TScene& self, rs::GMessageID msg, rs::Variant arg) override;
+			static void CheckQuit();
 	};
+	class MySt_Play : public StateT<MySt_Play> {
+		public:
+			void onEnter(TScene& self, rs::ObjTypeID prevID) override;
+			void onUpdate(TScene& self) override;
+			rs::Variant recvMsg(TScene& self, rs::GMessageID msg, rs::Variant arg) override;
+	};
+	void _drawCube();
 	public:
 		TScene();
 		~TScene();
