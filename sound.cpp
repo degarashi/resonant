@@ -107,6 +107,7 @@ namespace rs {
 	void ABufSub::invalidate() {
 		_hlAb.ref()->invalidate();
 		_hlAb.setNull();
+		_abuff.reset();
 	}
 
 	// --------------------- AWaveBatch ---------------------
@@ -413,6 +414,7 @@ namespace rs {
 		}
 	}
 	void ASource::invalidate() {
+		stop();
 		_hlAb.setNull();
 		if(_opBuf) {
 			_opBuf->invalidate();
