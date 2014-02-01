@@ -199,7 +199,7 @@ namespace rs {
 	#define GLEC_P(act, ...)			GLEC(act, __VA_ARGS__)
 	#define GLEC_ChkP(act)				GLEC_Chk(act)
 #else
-    #define GLEC_P(act, func, ...)		::spn::EChk_pass([&](){GL.func(__VA_ARGS__)})
+    #define GLEC_P(act, func, ...)		::spn::EChk_pass([&](){GL.func(__VA_ARGS__);})
 	#define GLEC_ChkP(act)
 #endif
 
