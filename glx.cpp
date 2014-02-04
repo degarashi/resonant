@@ -460,7 +460,7 @@ namespace rs {
 		// TechIDをセットせずにPassIDをセットするのは禁止
 		AssertT(Trap, _current.tech, (GLE_Error)(const char*), "tech is not selected")
 		auto& cur = _current;
-		if(!cur.pass || *cur.pass != passID) {
+//		if(!cur.pass || *cur.pass != passID) {
 			cur.pass = passID;
 			GL16ID id(*cur.tech, *cur.pass);
 			Assert(Trap, _techMap.count(id)==1)
@@ -468,6 +468,7 @@ namespace rs {
 			cur.bInit = true;
 			auto& tps = *cur.tps;
 			cur.init._opProgram = spn::construct(tps.getProgram().get());
+			Assert(Trap, cur.init._opProgram)
 			cur.init._opVAttrID = tps.getVAttrID();
 			// UnifMapをクリア
 			cur.uniMap.clear();
@@ -497,7 +498,7 @@ namespace rs {
 			cur.init.addPreFunc([&tps](){
 				tps.applySetting();
 			});
-		}
+//		}
 	}
 	int GLEffect::getTechID(const std::string& tech) const {
 		int nT = _techName.size();
