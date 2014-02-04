@@ -1,9 +1,8 @@
 #include "gameloop.hpp"
 
 namespace rs {
-	AppPath::AppPath(const char* apppath):_pbApp(apppath), _pbAppDir(_pbApp) {
+	AppPath::AppPath(const std::string& apppath): _pbApp(apppath), _pbAppDir(_pbApp) {
 		Assert(Trap, _pbApp.isAbsolute())
-		_pbAppDir.popBack();
 	}
 	void AppPath::setFromText(HRW hRW) {
 		RWops& ops = hRW.ref();

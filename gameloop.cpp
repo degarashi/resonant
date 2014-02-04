@@ -96,7 +96,7 @@ namespace rs {
 		lk->accumUpd = lk->accumDraw = 0;
 		lk->tmBegin = Clock::now();
 	}
-	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* apppath) {
+	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* pathfile) {
 		SPGLContext ctx = GLContext::CreateContext(w, false),
 					ctxD;
 		if(MULTICONTEXT) {
@@ -107,14 +107,11 @@ namespace rs {
 			ctx->makeCurrent();
 			std::swap(ctxD, ctx);
 		}
-
 		UPtr<GLWrap>		glw(new GLWrap(MULTICONTEXT));
 		UPtr<GLRes>			glrP(new GLRes());
 		UPtr<RWMgr>			rwP(new RWMgr());
-		UPtr<AppPath>		appPath(new AppPath(apppath));
-		std::string pathlist("pathlist_");
-		pathlist += TOOL_PREFIX;
-		appPath->setFromText(mgr_rw.fromFile(pathlist.c_str(), RWops::Read, false));
+		UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
+		appPath->setFromText(mgr_rw.fromFile(pathfile, RWops::Read, false));
 		UPtr<FontFamily>	fontP(new FontFamily());
 		fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
 		UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
@@ -127,7 +124,6 @@ namespace rs {
 		UPtr<SoundMgr>		sndP(new SoundMgr(44100));
 		UPtr<UpdRep>		urep(new UpdRep());
 		UPtr<ObjRep>		orep(new ObjRep());
-
 		sndP->makeCurrent();
 		// 描画スレッドを先に初期化
 		DrawThread dth;
@@ -355,7 +351,7 @@ namespace rs {
 	};
 	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
 	GameLoop::GameLoop(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr), _level(Active) {}
-	int GameLoop::run(const char* apppath, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
+	int GameLoop::run(const char* pathfile, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
@@ -368,7 +364,7 @@ namespace rs {
 		auto& loop = Looper::GetLooper();
 		// メインスレッドに渡す
 		MainThread mth(_mcr, _dcr);
-		mth.start(std::ref(loop), std::ref(_spWindow), apppath);
+		mth.start(std::ref(loop), std::ref(_spWindow), pathfile);
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
 			if(msg::MainInit* p = *msg)
