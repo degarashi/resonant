@@ -12,7 +12,7 @@ namespace rs {
 		int i=0;
 		char tmp[256];
 		int wcur = 0;
-		while(ptr != ptrE) {
+		while(ptr < ptrE) {
 			char c = *ptr++;
 			if(c == '\n') {
 				if(wcur == 0)
