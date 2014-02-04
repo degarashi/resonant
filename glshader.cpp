@@ -9,12 +9,12 @@ namespace rs {
 	namespace {
 		bool g_bglfuncInit = false;
 	}
+	#define GLGETPROC(name) SDL_GL_GetProcAddress(#name)
 	#if defined(_WIN32)
 		namespace {
 			using SetSwapInterval_t = bool APIENTRY (*)(int);
 			SetSwapInterval_t g_setswapinterval = nullptr;
 		}
-		#define GLGETPROC(name) wglGetProcAddress((LPCSTR)#name)
 		void LoadGLAux() {
 			g_setswapinterval = (SetSwapInterval_t)wglGetProcAddress("wglSwapIntervalEXT");
 		}
@@ -23,7 +23,6 @@ namespace rs {
 			using SetSwapInterval_t = void APIENTRY (*)(int);
 			SetSwapInterval_t g_setswapinterval = nullptr;
 		}
-		#define GLGETPROC(name) glXGetProcAddress((const GLubyte*)#name)
 		void LoadGLAux() {
 			// EXTかSGIのどちらかが存在する事を期待
 			try {
@@ -46,8 +45,11 @@ namespace rs {
 	}
 
 	// OpenGL関数ロード
+	#define GLDEFINE(...)
  	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
- 		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name);
+		GLWrap::name = nullptr; \
+ 		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
+		Assert(Warn, GLWrap::name != nullptr, "could not load OpenGL function: %1%", #name)
 		void GLWrap::loadGLFunc() {
 			// 各種API関数
 			#ifndef ANDROID
@@ -64,6 +66,7 @@ namespace rs {
 			g_bglfuncInit = true;
 		}
 	#undef DEF_GLMETHOD
+	#undef GLDEFINE
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {
 		_idSh = GL.glCreateShader(_flag);

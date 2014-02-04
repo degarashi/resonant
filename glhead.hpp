@@ -16,12 +16,18 @@
 	#include "glext.h"
 	#include "glxext.h"
 #endif
+#if defined(WIN32)
+	#include <GL/glcorearb.h>
+	#include "glext.h"
+#endif
+
 #ifndef ANDROID
 	#include "glext.h"
 #endif
 
 namespace rs {
 	struct IGL {
+		#define GLDEFINE(...)
 		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
 			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) = 0;
 
@@ -34,6 +40,7 @@ namespace rs {
 		#endif
 
 		#undef DEF_GLMETHOD
+		#undef GLDEFINE
 		virtual void setSwapInterval(int n) = 0;
 		virtual void stencilFuncFront(int func, int ref, int mask) = 0;
 		virtual void stencilFuncBack(int func, int ref, int mask) = 0;
@@ -44,6 +51,7 @@ namespace rs {
 	};
 	//! 直でOpenGL関数を呼ぶ
 	struct IGL_Draw : IGL {
+		#define GLDEFINE(...)
 		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
 			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) override;
 
@@ -54,6 +62,7 @@ namespace rs {
 		#else
 			#include "linux_gl.inc"
 		#endif
+
 		void setSwapInterval(int n) override;
 		void stencilFuncFront(int func, int ref, int mask)  override;
 		void stencilFuncBack(int func, int ref, int mask)  override;
@@ -74,6 +83,8 @@ namespace rs {
 		#endif
 		
 		#undef DEF_GLMETHOD
+		#undef GLDEFINE
+
 		void setSwapInterval(int n) override;
 		void stencilFuncFront(int func, int ref, int mask)  override;
 		void stencilFuncBack(int func, int ref, int mask)  override;
@@ -99,6 +110,7 @@ namespace rs {
 		Shared				_pShared;
 
 		public:
+			#define GLDEFINE(...)
 			#define DEF_GLMETHOD(ret_type, name, args, argnames) \
 				using t_##name = ret_type (*)(BOOST_PP_SEQ_ENUM(args)); \
 				static t_##name name;
@@ -112,7 +124,7 @@ namespace rs {
 			#endif
 
 			#undef DEF_GLMETHOD
-
+			#undef GLDEFINE
 		public:
 			GLWrap(bool bShareEnabled);
 			void loadGLFunc();

@@ -81,6 +81,7 @@ namespace rs {
 		};
 	}
 	// マクロで分岐
+	#define GLDEFINE(...)
  	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
 		typename GLWrap::t_##name GLWrap::name = nullptr; \
  		ret_type IGL_Draw::name(BOOST_PP_SEQ_ENUM(args)) { \
@@ -101,6 +102,7 @@ namespace rs {
 		#endif
 
 	#undef DEF_GLMETHOD
+	#undef GLDEFINE
 	GLWrap::GLWrap(bool bShareEnabled): _bShare(bShareEnabled), _drawHandler(nullptr) {
 		*_pShared.lock() = nullptr;
 	}
