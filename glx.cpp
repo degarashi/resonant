@@ -527,36 +527,66 @@ namespace rs {
 		// もしInitTagが有効ならそれを出力
 		if(_current.bInit) {
 			_current.bInit = false;
-			_task.addTag(new draw::InitTag(std::move(_current.init)));
+			_task.pushTag(new draw::InitTag(std::move(_current.init)));
 		}
 	}
+
 	namespace draw {
 		// -------------- Task --------------
-		Task::Task(): _swFlag(0) {}
-		void Task::switchTask() {
-			_swFlag ^= 1;
-			_tagL[_swFlag].clear();
+		Task::Task(): _curWrite(0), _curRead(0) {}
+		Task::UPTagL& Task::refWriteEnt() {
+			UniLock lk(_mutex);
+			return _entry[_curWrite % NUM_ENTRY];
 		}
-		void Task::addTag(draw::Tag* tag) {
-			_tagL[_swFlag].emplace_back(tag);
+		Task::UPTagL& Task::refReadEnt() {
+			UniLock lk(_mutex);
+			return _entry[_curRead % NUM_ENTRY];
+		}
+		void Task::pushTag(Tag* tag) {
+			// DThとアクセスするエントリが違うからemplace_back中の同期をとらなくて良い
+			refWriteEnt().emplace_back(tag);
+		}
+		void Task::beginTask() {
+			UniLock lk(_mutex);
+			// 読み込みカーソルが追いついてない時は追いつくまで待つ
+			auto diff = _curWrite - _curRead;
+			Assert(Trap, diff >= 0)
+			while(diff >= NUM_ENTRY) {
+				_cond.wait(lk);
+				diff = _curWrite - _curRead;
+				Assert(Trap, diff >= 0)
+			}
+			refWriteEnt().clear();
+		}
+		void Task::endTask() {
+			GL.glFinish();
+			UniLock lk(_mutex);
+			++_curWrite;
 		}
 		void Task::clear() {
-			// 2つのバッファをcancel扱い
-			cancel();
-			_swFlag ^= 1;
-			cancel();
+			UniLock lk(_mutex);
+			while(_curWrite > _curRead) {
+				execTask(false);
+				++_curRead;
+			}
+			GL.glFinish();
+			_curWrite = _curRead = 0;
 		}
-		void Task::exec() {
-			auto& tagL = _tagL[_swFlag^1];
-			for(auto& t : tagL)
-				t->exec();
-			tagL.clear();
-		}
-		void Task::cancel() {
-			auto& tagL = _tagL[_swFlag^1];
-			for(auto& t : tagL)
-				t->cancel();
-			tagL.clear();
+		void Task::execTask(bool bSkip) {
+			spn::Optional<UniLock> lk(_mutex);
+			auto diff = _curWrite - _curRead;
+			Assert(Trap, diff >= 0)
+			if(diff > 0) {
+				lk = spn::none;
+				void (Tag::*func)() = (bSkip) ? &Tag::cancel : &Tag::exec;
+				// MThとアクセスするエントリが違うから同期をとらなくて良い
+				for(auto& ent : refReadEnt())
+					((*ent).*func)();
+				GL.glFlush();
+				lk = spn::construct(std::ref(_mutex));
+				++_curRead;
+				_cond.signal();
+			}
 		}
 
 		// -------------- Tag --------------
@@ -686,7 +716,7 @@ namespace rs {
 		Assert(Trap, _exportUniform())
 		// NormalTagにDrawCallTokenを加えた後に出力
 		_current.normal._tokenL.emplace_back(new draw::DrawCall(mode, first, count));
-		_task.addTag(new draw::NormalTag(std::move(_current.normal)));
+		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
 		_current.bNormal = false;
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offset) {
@@ -694,7 +724,7 @@ namespace rs {
 		_exportInitTag();
 		Assert(Trap, _exportUniform())
 		_current.normal._tokenL.emplace_back(new draw::DrawCallI(mode, sz, count, offset));
-		_task.addTag(new draw::NormalTag(std::move(_current.normal)));
+		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
 		_current.bNormal = false;
 	}
 	void GLEffect::setUserPriority(Priority p) {
@@ -744,21 +774,21 @@ namespace rs {
 		return loc;
 	}
 	void GLEffect::beginTask() {
-		_task.switchTask();
+		_task.beginTask();
 		_current.tech = spn::none;
 		_current.pass = spn::none;
 		_current.tps = spn::none;
 		_current.bInit = false;
 		_current.bNormal = false;
 	}
+	void GLEffect::endTask() {
+		_task.endTask();
+	}
 	void GLEffect::clearTask() {
 		_task.clear();
 	}
-	void GLEffect::execTask() {
-		_task.exec();
-	}
-	void GLEffect::cancelTask() {
-		_task.cancel();
+	void GLEffect::execTask(bool bSkip) {
+		_task.execTask(bSkip);
 	}
 
 	namespace {

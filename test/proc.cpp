@@ -17,7 +17,7 @@ bool MyDraw::runU(uint64_t accum) {
 	auto lk = shared.lock();
 	auto& fx = *lk->hlFx.ref();
 	lk->fps.update();
-	fx.execTask();
+	fx.execTask(false);
 	return true;
 }
 
@@ -197,24 +197,12 @@ bool MyMain::runU() {
 		cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
 	}
 	fx.setTechnique(_techID, true);
-// 	fx.setPass(_passView);
-// 	fx.setUniform(fx.getUniformID("mTrans"), cd.getViewProjMatrix().convert44());
-// 	fx.setUniform(fx.getUniformID("tDiffuse"), _hlTex);
-	// 頂点フォーマット定義
-// 	rs::SPVDecl decl(new rs::VDecl{
-// 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
-// 		{0,12, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TEXCOORD0}
-// 	});
-// 	fx.setVDecl(std::move(decl));
-// 	fx.setVStream(_hlVb.get(), 0);
-// 	fx.setIStream(_hlIb.get());
-// 	fx.drawIndexed(GL_TRIANGLES, 6, 0);
 
 	fx.setPass(_passText);
 	auto tsz = _size;
 	auto fn = [tsz](int x, int y, float r) {
 		float rx = spn::Rcp22Bit(tsz.width/2),
-			ry = spn::Rcp22Bit(tsz.height/2);
+			  ry = spn::Rcp22Bit(tsz.height/2);
 		return spn::Mat33(rx*r,		0,			0,
 						0,			ry*r, 		0,
 						-1.f+x*rx,	1.f-y*ry,	1);
@@ -230,6 +218,7 @@ bool MyMain::runU() {
 	_hlText = mgr_text.createText(_charID, _infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
 	_hlText.ref().draw(&fx);
 
+	fx.endTask();
 	return true;
 }
 void MyMain::onPause() {

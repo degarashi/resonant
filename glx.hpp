@@ -256,21 +256,26 @@ namespace rs {
 		};
 
 		class Task {
-			using TagL = std::vector<UPTag>;
-			TagL	_tagL[2];	// ダブルバッファ
-			int		_swFlag;
+			constexpr static int NUM_ENTRY = 3;
+			//! 描画エントリのリングバッファ
+			using UPTagL = std::vector<UPTag>;
+			UPTagL	_entry[NUM_ENTRY];
+			//! 読み書きカーソル位置
+			uint32_t	_curWrite, _curRead;
+			Mutex		_mutex;
+			CondV		_cond;
 
-			void _sortTag();
-
+			UPTagL& refWriteEnt();
+			UPTagL& refReadEnt();
 			public:
 				Task();
-				// ---- from MainThread ----
-				void switchTask();	// 各フレーム描画コマンドの最初に呼ぶ
-				void addTag(draw::Tag* tag);
+				// -------------- from MainThread --------------
+				void pushTag(Tag* tag);
+				void beginTask();
+				void endTask();
 				void clear();
-				// ---- from DrawThread ----
-				void exec();
-				void cancel();
+				// -------------- from DrawThread --------------
+				void execTask(bool bSkip);
 		};
 	}
 
@@ -392,10 +397,14 @@ namespace rs {
 			void draw(GLenum mode, GLint first, GLsizei count);
 
 			// ---- from MainThread ----
-			void clearTask();	//!< バッファを2つともクリア
-			void beginTask();	//!< バッファを切り替えて古いバッファをクリア
+			//! バッファを2つともクリア(主にスリープ時)
+			void clearTask();
+			//! バッファを切り替えて古いバッファをクリア
+			/*! まだDrawThreadが描画を終えてない場合はブロック */
+			void beginTask();
+			//! OpenGLコマンドをFlushする
+			void endTask();
 			// ---- from DrawThread ----
-			void execTask();	//!< 描画処理
-			void cancelTask();	//!< 描画はせずPreFuncだけ呼び出す
+			void execTask(bool bSkip);
 	};
 }
