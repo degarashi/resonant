@@ -16,7 +16,7 @@ namespace rs {
 			SetSwapInterval_t g_setswapinterval = nullptr;
 		}
 		void LoadGLAux() {
-			g_setswapinterval = (SetSwapInterval_t)wglGetProcAddress("wglSwapIntervalEXT");
+			g_setswapinterval = (SetSwapInterval_t)GLGETPROC(wglSwapIntervalEXT);
 		}
 	#else
 		namespace {
