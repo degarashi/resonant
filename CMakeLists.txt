@@ -1,19 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(resonant)
 
-# set(WIN32 TRUE)
-# unset(UNIX)
-#set(SSE_LEVEL 2)
-set(SOUND_API openal)
-# set(UNIX TRUE)
-# unset(WIN32)
-# set(ARCHITECTURE x86)
-# set(SOUND_API opensl)
-
 include(spinner/CMakeCommon.txt require)
 include(spinner/CMakeCompiler.txt require)
 add_definitions(-DTOOL_PREFIX="${TOOL_PREFIX}")
-
 if(SOUND_API STREQUAL "openal")
 	message(STATUS "using OpenAL...")
 	set(LIBSRC_FILE ${LIBSRC_FILE} sound_depAL.cpp)
