@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(resonant)
 
+# Linux: BUILD_TYPE = Linux
+# MinGW: BUILD_TYPE = MinGW
+# Android:	BUILD_TYPE = AndroidX86 or AndroidArm
+include("spinner/${BUILD_TYPE}.cmake" require)
 include(spinner/CMakeCommon.txt require)
-include(spinner/CMakeCompiler.txt require)
+
 add_definitions(-DTOOL_PREFIX="${TOOL_PREFIX}")
 if(SOUND_API STREQUAL "openal")
 	message(STATUS "using OpenAL...")
