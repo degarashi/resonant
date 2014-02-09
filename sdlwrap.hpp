@@ -85,7 +85,9 @@ namespace rs {
 	using SDLError = ErrorT<SDLErrorI>;
 	using IMGError = ErrorT<IMGErrorI>;
 
-	extern SDL_threadID thread_local tls_threadID;
+	template <class T>
+	class TLS;
+	extern TLS<SDL_threadID> tls_threadID;
 	//! 実行環境に関する情報を取得
 	class Spec : public spn::Singleton<Spec> {
 		public:
@@ -226,60 +228,6 @@ namespace rs {
 		}
 	};
 
-	//! 再帰対応のスピンロック
-	template <class T>
-	class SpinLock {
-		using Inner = SpinInner<SpinLock<T>, T>;
-		using CInner = SpinInner<SpinLock<T>, const T>;
-		friend Inner;
-		friend CInner;
-
-		SDL_atomic_t	_atmLock,
-						_atmCount;
-		void _unlock() {
-			if(SDL_AtomicDecRef(&_atmCount) == SDL_TRUE)
-				SDL_AtomicSet(&_atmLock, 0);
-		}
-
-		T	_data;
-		template <class I>
-		I _lock(bool bBlock) {
-			do {
-				bool bSuccess = false;
-				if(SDL_AtomicCAS(&_atmLock, 0, tls_threadID) == SDL_TRUE)
-					bSuccess = true;
-				else if(SDL_AtomicGet(&_atmLock) == tls_threadID) {
-					// 同じスレッドからのロック
-					bSuccess = true;
-				}
-
-				if(bSuccess) {
-					// ロック成功
-					SDL_AtomicAdd(&_atmCount, 1);
-					return I(*this, &_data);
-				}
-			} while(bBlock);
-			return I(*this, nullptr);
-		}
-
-		public:
-			SpinLock() {
-				SDL_AtomicSet(&_atmLock, 0);
-				SDL_AtomicSet(&_atmCount, 0);
-			}
-			Inner lock() {
-				return _lock<Inner>(true);
-			}
-			CInner lockC() const {
-				return const_cast<SpinLock*>(this)->_lock<CInner>(true);
-			}
-			Inner try_lock() {
-				return _lock<Inner>(false);
-			}
-			CInner try_lockC() const {
-				return const_cast<SpinLock*>(this)->_lock<CInner>(false);
-			}
-	};
 	//! thread local storage (with SDL)
 	template <class T>
 	class TLS {
@@ -333,6 +281,60 @@ namespace rs {
 				SDL_TLSSet(_tlsID, nullptr, nullptr);
 			}
 	};
+	//! 再帰対応のスピンロック
+	template <class T>
+	class SpinLock {
+		using Inner = SpinInner<SpinLock<T>, T>;
+		using CInner = SpinInner<SpinLock<T>, const T>;
+		friend Inner;
+		friend CInner;
+
+		SDL_atomic_t	_atmLock,
+						_atmCount;
+		void _unlock() {
+			if(SDL_AtomicDecRef(&_atmCount) == SDL_TRUE)
+				SDL_AtomicSet(&_atmLock, 0);
+		}
+
+		T	_data;
+		template <class I>
+		I _lock(bool bBlock) {
+			do {
+				bool bSuccess = false;
+				if(SDL_AtomicCAS(&_atmLock, 0, *tls_threadID) == SDL_TRUE)
+					bSuccess = true;
+				else if(SDL_AtomicGet(&_atmLock) == *tls_threadID) {
+					// 同じスレッドからのロック
+					bSuccess = true;
+				}
+
+				if(bSuccess) {
+					// ロック成功
+					SDL_AtomicAdd(&_atmCount, 1);
+					return I(*this, &_data);
+				}
+			} while(bBlock);
+			return I(*this, nullptr);
+		}
+
+		public:
+			SpinLock() {
+				SDL_AtomicSet(&_atmLock, 0);
+				SDL_AtomicSet(&_atmCount, 0);
+			}
+			Inner lock() {
+				return _lock<Inner>(true);
+			}
+			CInner lockC() const {
+				return const_cast<SpinLock*>(this)->_lock<CInner>(true);
+			}
+			Inner try_lock() {
+				return _lock<Inner>(false);
+			}
+			CInner try_lockC() const {
+				return const_cast<SpinLock*>(this)->_lock<CInner>(false);
+			}
+	};
 	template <class T>
 	class SpinLockP {
 		struct InnerP {
@@ -358,7 +360,7 @@ namespace rs {
 		T				_data;
 
 		void _unlock() {
-			AssertP(Trap, _lockID == tls_threadID)
+			AssertP(Trap, _lockID == *tls_threadID)
 			AssertP(Trap, _lockCount >= 1)
 			if(--_lockCount == 0)
 				_lockID = 0;
@@ -371,9 +373,9 @@ namespace rs {
 			if(bBlock || _mutex.try_lock()) {
 				if(_lockID == 0) {
 					_lockCount = 1;
-					_lockID = tls_threadID;
+					_lockID = *tls_threadID;
 				} else {
-					AssertP(Trap, _lockID == tls_threadID)
+					AssertP(Trap, _lockID == *tls_threadID)
 					++_lockCount;
 				}
 				return I(*this, &_data);
@@ -382,7 +384,7 @@ namespace rs {
 		}
 		void _put_wait() {
 			_mutex.lock();
-			_lockID = tls_threadID;
+			_lockID = *tls_threadID;
 			_lockCount = _tlsCount.get()-1;
 			*_tlsCount = -1;
 

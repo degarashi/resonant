@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace rs {
-	SDL_threadID thread_local tls_threadID(~0);
+	TLS<SDL_threadID> tls_threadID(~0);
 	// -------------------- SDLInitializer --------------------
 	SDLInitializer::SDLInitializer(uint32_t flag) {
 		SDL_Init(flag);

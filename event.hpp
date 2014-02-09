@@ -13,7 +13,7 @@
 #include "clock.hpp"
 
 namespace rs {
-	extern SDL_threadID thread_local tls_threadID;
+	extern TLS<SDL_threadID> tls_threadID;
 
 	using Exec = std::function<void ()>;
 	class Handler;
