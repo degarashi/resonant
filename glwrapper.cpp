@@ -82,7 +82,7 @@ namespace rs {
 	}
 	// マクロで分岐
 	#define GLDEFINE(...)
- 	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+ 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		typename GLWrap::t_##name GLWrap::name = nullptr; \
  		ret_type IGL_Draw::name(BOOST_PP_SEQ_ENUM(args)) { \
  			return GLWrap::name(BOOST_PP_SEQ_ENUM(argnames)); } \

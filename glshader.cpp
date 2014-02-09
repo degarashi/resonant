@@ -9,7 +9,7 @@ namespace rs {
 	namespace {
 		bool g_bglfuncInit = false;
 	}
-	#define GLGETPROC(name) SDL_GL_GetProcAddress(#name)
+	#define GLGETPROC(name) SDL_GL_GetProcAddress(BOOST_PP_STRINGIZE(name))
 	#if defined(_WIN32)
 		namespace {
 			using SetSwapInterval_t = bool APIENTRY (*)(int);
@@ -45,10 +45,13 @@ namespace rs {
 	}
 
 	// OpenGL関数ロード
+	// FuncNameで読み込めなければFuncNameARBとFuncNameEXTで試す
 	#define GLDEFINE(...)
- 	#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+ 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		GLWrap::name = nullptr; \
  		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
+		if(GLWrap::name == nullptr) GLWrap::name = (typename GLWrap::t_##name)GLGETPROC(BOOST_PP_CAT(name,ARB)); \
+		if(GLWrap::name == nullptr) GLWrap::name = (typename GLWrap::t_##name)GLGETPROC(BOOST_PP_CAT(name,EXT)); \
 		Assert(Warn, GLWrap::name != nullptr, "could not load OpenGL function: %1%", #name)
 		void GLWrap::loadGLFunc() {
 			// 各種API関数

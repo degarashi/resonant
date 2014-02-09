@@ -28,7 +28,7 @@
 namespace rs {
 	struct IGL {
 		#define GLDEFINE(...)
-		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+		#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) = 0;
 
 		#ifdef ANDROID
@@ -52,7 +52,7 @@ namespace rs {
 	//! 直でOpenGL関数を呼ぶ
 	struct IGL_Draw : IGL {
 		#define GLDEFINE(...)
-		#define DEF_GLMETHOD(ret_type, name, args, argnames) \
+		#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) override;
 
 		#ifdef ANDROID
@@ -97,6 +97,11 @@ namespace rs {
 	#define GL	(*(*::rs::tls_GL))
 
 	#define GLW	(::rs::GLWrap::_ref())
+	#ifdef WIN32
+		#define STDCALL __attribute__((stdcall))
+	#else
+		#define STDCALL
+	#endif
 	class Handler;
 	//! OpenGL APIラッパー
 	class GLWrap : public spn::Singleton<GLWrap> {
@@ -111,8 +116,8 @@ namespace rs {
 
 		public:
 			#define GLDEFINE(...)
-			#define DEF_GLMETHOD(ret_type, name, args, argnames) \
-				using t_##name = ret_type (*)(BOOST_PP_SEQ_ENUM(args)); \
+			#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
+				using t_##name = ret_type STDCALL(*)(BOOST_PP_SEQ_ENUM(args)); \
 				static t_##name name;
 
 			#ifdef ANDROID
@@ -136,6 +141,7 @@ namespace rs {
 			Handler& getDrawHandler();
 			Shared& refShared();
 	};
+	#undef STDCALL
 	template <class T>
 	struct GLSharedData {
 		GLSharedData() {
