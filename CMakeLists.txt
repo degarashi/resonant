@@ -39,15 +39,12 @@ else()
 	include_directories(/usr/local/include/SDL2
 						/usr/local/include/freetype2)
 endif()
-# MinGWビルド時に不具合が起こるため、framepointerは有りにしておく
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 set(LIBSRC_FILE ${LIBSRC_FILE} glwrapper.cpp apppath.cpp scene.cpp updator.cpp printevent.cpp camera.cpp glerror.cpp gameloop.cpp font_ft_dep.cpp ftwrap.cpp fontgen.cpp font_common.cpp gltexture.cpp sdlw_surface.cpp glresource.cpp gpu.cpp glx_parse2.cpp glx_parse.cpp glx.cpp glx_output.cpp glshader.cpp glframebuffer.cpp glformat.cpp glbuffer.cpp adaptsdl.cpp sound.cpp acommon.cpp sdlw_rwops.cpp vorbisfile.cpp looper.cpp sdltouchpad.cpp sdlmouse.cpp sdlkeyboard.cpp sdljoypad.cpp input.cpp sdlw_glctx.cpp sdlw_window.cpp sdlw.cpp sdlw_mutex.cpp sdlw_spec.cpp)
 add_library(resonant STATIC ${LIBSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
 file(GLOB HEADERS "./*.hpp")
 install(FILES ${HEADERS} DESTINATION include/resonant)
-
 if(NOT DEFINED ARCHITECTURE)
 	aux_source_directory(test/ SRC_FILE2)
 	set(SRC_FILE ${SRC_FILE} main.cpp ${SRC_FILE2})

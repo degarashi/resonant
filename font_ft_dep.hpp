@@ -1,8 +1,8 @@
 //! FontCache - FreeTypeを使った実装
 #pragma once
+#include "spinner/dir.hpp"
 #include "font_base.hpp"
 #include "ftwrap.hpp"
-#include "spinner/dir.hpp"
 
 namespace rs {
 	#define mgr_font reinterpret_cast<::rs::FontFamily&>(::rs::FontFamily::_ref())

@@ -1,8 +1,8 @@
 #pragma once
 #include "serialization/chars.hpp"
+#include "spinner/abstbuff.hpp"
 #include "event.hpp"
 #include "sdlwrap.hpp"
-#include "spinner/abstbuff.hpp"
 #include "clock.hpp"
 
 namespace rs {

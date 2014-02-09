@@ -1,4 +1,7 @@
 #pragma once
+#ifdef WIN32
+	#include <intrin.h>
+#endif
 #include "spinner/size.hpp"
 #include "glresource.hpp"
 
