@@ -3,3 +3,18 @@
 	表示にはOpenGLを使用。カメラ制御、モデル表示、姿勢制御などを実装予定。
 
 <例のごとく開発途中なので実用性はありません>
+
+依存ライブラリ:
+Spinner
+Boomstick
+Boost-1.55.0(boost_regex, boost_serialization, boost_system)
+SDL2(libSDL2-2.0)
+SDL2_image(libSDL2_image-2.0)
+FreeType2(libfreetype)
+OggVorbis(libogg, libvorbis, libvorbisfile)
+LibPng(libpng)
+LibJpeg(libjpeg)
+ZLib(zlib)
+
+OpenAL(libopenal)
+	Androidビルド時はOpenSL
