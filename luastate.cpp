@@ -151,30 +151,8 @@ void LuaState::loadLibraries() {
 	luaL_openlibs(getLS());
 }
 
-namespace {
-	struct Visitor : boost::static_visitor<> {
-		lua_State* _ls;
-		Visitor(lua_State* ls): _ls(ls) {}
-		void operator()(boost::blank b) const { lua_pushnil(_ls); }
-		void operator()(bool b) const { lua_pushboolean(_ls, b); }
-		void operator()(const char* c) const { lua_pushstring(_ls, c); }
-		void operator()(lua_Integer i) const { lua_pushinteger(_ls, i); }
-		void operator()(lua_Unsigned i) const { lua_pushinteger(_ls, i); }
-		void operator()(float f) const { lua_pushnumber(_ls, f); }
-		void operator()(double d) const { lua_pushnumber(_ls, d); }
-		void operator()(const SPLua& ls) {}
-		void operator()(void* ud) { lua_pushlightuserdata(_ls, ud); }
-		void operator()(lua_CFunction f) { lua_pushcclosure(_ls, f, 0); }
-		void operator()(const std::string& s) const { lua_pushlstring(_ls, s.c_str(), s.length()); }
-		void operator()(const LCTable& tbl) const {
-// 			LuaState lso(_ls);
-// 			tbl.pushValue(lso);
-		}
-	};
-}
 void LuaState::push(const LCValue& v) {
-	Visitor visitor(getLS());
-	boost::apply_visitor(visitor, v);
+	v.push(getLS());
 }
 void LuaState::pushValue(int idx) {
 	lua_pushvalue(getLS(), idx);
@@ -371,70 +349,106 @@ bool LuaState::status() const {
 	_checkError(res);
 	return res != 0;
 }
-void LuaState::_checkType(int idx, Type typ) const {
-	Type t = type(idx);
+void LuaState::_checkType(int idx, LuaType typ) const {
+	LuaType t = type(idx);
 	if(t != typ)
 		throw EType(typeName(t), typeName(typ));
 }
+void LuaState::_CheckType(lua_State* ls, int idx, LuaType typ) {
+	LuaType t = SType(ls, idx);
+	if(t != typ)
+		throw EType(STypeName(ls, t), STypeName(ls, typ));
+}
 bool LuaState::toBoolean(int idx) const {
-	_checkType(idx, Type::Boolean);
-	return lua_toboolean(getLS(), idx) != 0;
+	return ToBoolean(getLS(), idx);
+}
+bool LuaState::ToBoolean(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::Boolean);
+	return lua_toboolean(ls, idx) != 0;
 }
 lua_CFunction LuaState::toCFunction(int idx) const {
-	_checkType(idx, Type::Function);
-	return lua_tocfunction(getLS(), idx);
+	return ToCFunction(getLS(), idx);
+}
+lua_CFunction LuaState::ToCFunction(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::Function);
+	return lua_tocfunction(ls, idx);
 }
 lua_Integer LuaState::toInteger(int idx) const {
-	_checkType(idx, Type::Number);
-	return lua_tointeger(getLS(), idx);
+	return ToInteger(getLS(), idx);
+}
+lua_Integer LuaState::ToInteger(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::Number);
+	return lua_tointeger(ls, idx);
 }
 std::pair<const char*, size_t> LuaState::toString(int idx) const {
-	_checkType(idx, Type::String);
+	return ToString(getLS(), idx);
+}
+std::pair<const char*, size_t> LuaState::ToString(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::String);
 	size_t len;
-	const char* str = lua_tolstring(getLS(), idx, &len);
+	const char* str = lua_tolstring(ls, idx, &len);
 	return std::make_pair(str, len);
 }
 lua_Number LuaState::toNumber(int idx) const {
-	_checkType(idx, Type::Number);
-	return lua_tonumber(getLS(), idx);
+	return ToNumber(getLS(), idx);
+}
+lua_Number LuaState::ToNumber(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::Number);
+	return lua_tonumber(ls, idx);
 }
 const void* LuaState::toPointer(int idx) const {
-	return lua_topointer(getLS(), idx);
+	return ToPointer(getLS(), idx);
+}
+const void* LuaState::ToPointer(lua_State* ls, int idx) {
+	return lua_topointer(ls, idx);
 }
 SPLua LuaState::toThread(int idx) const {
-	_checkType(idx, Type::Thread);
+	_checkType(idx, LuaType::Thread);
 	return SPLua(new LuaState(lua_tothread(getLS(), idx)));
 }
 lua_Unsigned LuaState::toUnsigned(int idx) const {
-	_checkType(idx, Type::Number);
-	return lua_tounsignedx(getLS(), idx, nullptr);
+	return ToUnsigned(getLS(), idx);
+}
+lua_Unsigned LuaState::ToUnsigned(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::Number);
+	return lua_tounsignedx(ls, idx, nullptr);
 }
 void* LuaState::toUserData(int idx) const {
+	return ToUserData(getLS(), idx);
+}
+void* LuaState::ToUserData(lua_State* ls, int idx) {
 	try {
-		_checkType(idx, Type::Userdata);
+		_CheckType(ls, idx, LuaType::Userdata);
 	} catch(const EType& e) {
-		_checkType(idx, Type::LightUserdata);
+		_CheckType(ls, idx, LuaType::LightUserdata);
 	}
-	return lua_touserdata(getLS(), idx);
+	return lua_touserdata(ls, idx);
 }
 
-LuaState::Type LuaState::type(int idx) const {
-	int typ = lua_type(getLS(), idx);
-	switch(typ) {
-		case LUA_TNIL: return Type::Nil;
-		case LUA_TNUMBER: return Type::Number;
-		case LUA_TBOOLEAN: return Type::Boolean;
-		case LUA_TSTRING: return Type::String;
-		case LUA_TTABLE: return Type::Table;
-		case LUA_TFUNCTION: return Type::Function;
-		case LUA_TUSERDATA: return Type::Userdata;
-		case LUA_TTHREAD: return Type::Thread;
-		case LUA_TLIGHTUSERDATA: return Type::LightUserdata;
-	}
-	return Type::None;
+LuaType LuaState::type(int idx) const {
+	return SType(getLS(), idx);
 }
-const char* LuaState::typeName(Type typ) const {
-	return lua_typename(getLS(), static_cast<int>(typ));
+LuaType LuaState::SType(lua_State* ls, int idx) {
+	int typ = lua_type(ls, idx);
+	switch(typ) {
+		case LUA_TNIL: return LuaType::Nil;
+		case LUA_TNUMBER: return LuaType::Number;
+		case LUA_TBOOLEAN: return LuaType::Boolean;
+		case LUA_TSTRING: return LuaType::String;
+		case LUA_TTABLE: return LuaType::Table;
+		case LUA_TFUNCTION: return LuaType::Function;
+		case LUA_TUSERDATA: return LuaType::Userdata;
+		case LUA_TTHREAD: return LuaType::Thread;
+		case LUA_TLIGHTUSERDATA: return LuaType::LightUserdata;
+	}
+	return LuaType::None;
+}
+
+const char* LuaState::typeName(LuaType typ) const {
+	return STypeName(getLS(), typ);
+}
+const char* LuaState::STypeName(lua_State* ls, LuaType typ) {
+	return lua_typename(ls, static_cast<int>(typ));
 }
 const lua_Number* LuaState::version() const {
 	return lua_version(getLS());
@@ -457,8 +471,11 @@ SPLua LuaState::getMainLS() {
 	return shared_from_this();
 }
 void LuaState::_checkError(int code) const {
+	_CheckError(getLS(), code);
+}
+void LuaState::_CheckError(lua_State* ls, int code) {
 	if(code != LUA_OK) {
-		const char* msg = toString(-1).first;
+		const char* msg = ToString(ls, -1).first;
 		switch(code) {
 			case LUA_ERRRUN:
 				throw ERun(msg);
