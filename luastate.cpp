@@ -26,88 +26,137 @@ const int LuaState::ENT_ID = 1,
 spn::FreeList<int> LuaState::s_index(std::numeric_limits<int>::max(), 1);
 void LuaState::Nothing(lua_State* ls) {}
 void LuaState::Delete(lua_State* ls) {
+	// これが呼ばれる時は依存するスレッドなどが全て削除された時なので直接lua_closeを呼ぶ
 	lua_close(ls);
 }
+LuaState::Deleter LuaState::_MakeDeleter(int id) {
+	return [id](lua_State* ls) {
+		LuaState lsc(ls);
+		_Decrement_ID(lsc, id);
+	};
+}
+void LuaState::_LoadThreadTable(LuaState& lsc) {
+	// テーブルが存在しない場合は作成
+	lsc.getGlobal(cs_fromId);
+	lsc.getGlobal(cs_fromThread);
+	if(!lsc.isTable(-1)) {
+		lsc.pop(2);
+
+		lsc.newTable();
+		lsc.pushValue(-1);
+		lsc.setGlobal(cs_fromId);
+
+		lsc.newTable();
+		lsc.pushValue(-1);
+		lsc.setGlobal(cs_fromThread);
+	}
+}
+void LuaState::_Increment(LuaState& lsc, std::function<void (LuaState&)> cb) {
+	int top = lsc.getTop();
+
+	_LoadThreadTable(lsc);
+	cb(lsc);
+	// [fromId][fromThread][123]
+	lsc.getField(-1, ENT_NREF);
+	int nRef = lsc.toInteger(-1);
+	lsc.setField(-2, ENT_NREF, ++nRef);
+
+	lsc.setTop(top);
+}
+void LuaState::_Increment_ID(LuaState& lsc, int id) {
+	_Increment(lsc, [id](LuaState& lsc){ lsc.getField(-2, id); });
+}
+void LuaState::_Increment_Th(LuaState& lsc) {
+	int pos = lsc.getTop();
+	_Increment(lsc, [pos](LuaState& lsc){
+		lsc.pushValue(pos);
+		lsc.getTable(-2);
+	});
+	lsc.pop(1);
+}
+void LuaState::_Decrement_ID(LuaState& lsc, int id) {
+	_Decrement(lsc, [id](LuaState& lsc){ lsc.getField(-2, id); });
+}
+void LuaState::_Decrement_Th(LuaState& lsc) {
+	int pos = lsc.getTop();
+	_Decrement(lsc, [pos](LuaState& lsc){
+		lsc.pushValue(pos);
+		lsc.getTable(-2);
+	});
+	lsc.pop(1);
+}
+void LuaState::_Decrement(LuaState& lsc, std::function<void (LuaState&)> cb) {
+	int top = lsc.getTop();
+
+	_LoadThreadTable(lsc);
+	cb(lsc);
+	// [fromId][fromThread][123]
+	lsc.getField(-1, ENT_NREF);
+	int nRef = lsc.toInteger(-1);
+	if(--nRef == 0) {
+		// エントリを消去
+		lsc.getField(-2, ENT_ID);
+		lsc.push(LuaNil());
+		// [fromId][fromThread][123][nRef][ID][Nil]
+		lsc.setTable(-6);
+		// [fromId][fromThread][123][nRef]
+		lsc.getField(-2, ENT_THREAD);
+		lsc.push(LuaNil());
+		// [fromId][fromThread][123][nRef][Thread][Nil]
+		lsc.setTable(-5);
+	} else {
+		// デクリメントした値を代入
+		lsc.setField(-2, ENT_NREF, nRef);
+	}
+
+	lsc.setTop(top);
+}
+SPILua LuaState::_RegisterNewThread(LuaState& lsc, int id) {
+	int top = lsc.getTop();
+
+	_LoadThreadTable(lsc);
+	// G[id] = {1=Id, 2=Thread, 3=NRef}
+	lsc.newTable();
+	lsc.setField(-1, ENT_ID, id);
+	lua_State* nls = lua_newthread(lsc.getLS());
+	lsc.push(ENT_THREAD);
+	lsc.pushValue(-2);
+	// [fromId][fromThread][123][Thread][ENT_THREAD][Thread]
+	lsc.setTable(-4);
+	// [fromId][fromThread][123][Thread]
+	lsc.setField(-2, ENT_NREF, 1);
+
+	// FromId
+	lsc.push(id);
+	lsc.pushValue(-3);
+	// [fromId][fromThread][123][Thread][id][123]
+	lsc.setTable(-6);
+
+	// FromThread
+	lsc.pushValue(-1);
+	lsc.pushValue(-3);
+	// [fromId][fromThread][123][Thread][Thread][123]
+	lsc.setTable(-5);
+
+	lsc.setTop(top);
+	return SPILua(nls, _MakeDeleter(id));
+}
+
 LuaState::LuaState(const SPLua& spLua) {
 	int id = s_index.get();
 	_id = id;
 
-	int top = spLua->getTop();
-	spLua->getGlobal(cs_fromId);
-	spLua->getGlobal(cs_fromThread);
-	if(!spLua->isTable(-1)) {
-		spLua->pop(2);
-
-		spLua->newTable();
-		spLua->pushValue(-1);
-		spLua->setGlobal(cs_fromId);
-
-		spLua->newTable();
-		spLua->pushValue(-1);
-		spLua->setGlobal(cs_fromThread);
-	}
-	auto fnDel = [id](lua_State* ls) {
-		LuaState lsc(ls);
-		int top = lsc.getTop();
-		lsc.getGlobal(cs_fromId);
-		lsc.getField(-1, id);
-		// [fromId][123]
-		lsc.getField(-1, int(ENT_NREF));
-		// [fromId][123][nRef]
-		int nRef = lsc.toInteger(-1);
-		if(--nRef == 0) {
-			lsc.pop(1);
-			// [fromId][123]
-			lsc.setField(-2, id, boost::blank());
-			lsc.getGlobal(cs_fromThread);
-			// [fromId][123][fromThread]
-			lsc.getField(-2, ENT_THREAD);
-			lsc.push(boost::blank());
-			// [fromId][123][fromThread][Thread][nil]
-			lsc.setTable(-3);
-		} else
-			lsc.setField(-2, id, nRef);
-		lsc.setTop(top);
-	};
-	// G[id] = {1=Id, 2=Thread, 3=NRef}
-	spLua->newTable();
-	spLua->setField(-1, ENT_ID, id);
-	spLua->push(ENT_THREAD);
-	lua_State* nls = lua_newthread(spLua->getLS());
-	_lua = SPILua(nls, fnDel);
-	_base = spLua->getMainLS();
-	spLua->setTable(-3);
-	spLua->setField(-1, ENT_NREF, 1);
-
-	// [fromId][fromThread][Thread][123]
-	// FromId
-	spLua->push(id);
-	spLua->pushValue(-2);
-	// [fromId][fromThread][Thread][123][id][123]
-	spLua->setTable(-6);
-
-	// FromThread
-	spLua->pushValue(-2);
-	spLua->pushValue(-2);
-	// [fromId][fromThread][Thread][123][Thread][123]
-	spLua->setTable(-5);
-
-	spLua->setTop(top);
+	_base = spLua->getMainLS_SP();
+	_RegisterNewThread(*spLua, _id);
 }
 LuaState::LuaState(lua_State* ls, _TagThread) {
 	LuaState lsc(ls);
 	int top = lsc.getTop();
 
 	// 参照カウンタのインクリメント
-	lsc.getGlobal(cs_fromThread);
 	lsc.pushSelf();
-	lsc.getTable(-1);
-	// [fromThread][123]
-	lsc.getField(-1, ENT_NREF);
-	int nRef = lsc.toInteger(-1);
-	lsc.pop(1);
-	lsc.setField(-1, ENT_NREF, ++nRef);
-
+	_Increment_Th(lsc);
+	// メインスレッドのポインタを取得、参照カウンタをインクリメント
 	lsc.getGlobal(cs_mainThread);
 	void* pMain = lsc.toUserData(-1);
 	_base = reinterpret_cast<LuaState*>(pMain)->shared_from_this();
@@ -121,8 +170,12 @@ LuaState::LuaState(lua_State* ls):
 	_lua(ls, Nothing) {}
 LuaState::LuaState(lua_Alloc f, void* ud) {
 	_lua = SPILua(f ? lua_newstate(f, ud) : luaL_newstate(), Delete);
+	// メインスレッドの登録
 	push(static_cast<void*>(this));
 	setGlobal(cs_mainThread);
+	// スレッドリストにも加える
+	_id = s_index.get();
+	_RegisterNewThread(*this, _id);
 }
 LuaState::LuaState(LuaState&& ls): _base(std::move(ls._base)), _lua(std::move(ls._lua)) {}
 void LuaState::load(const std::string& fname) {
@@ -303,7 +356,7 @@ void LuaState::replace(int idx) {
 	lua_replace(getLS(), idx);
 }
 bool LuaState::resume(const SPLua& from, int narg) {
-	SPLua mls(getMainLS());
+	SPLua mls(getMainLS_SP());
 	lua_State *ls0 = mls->getLS(),
 				*ls1 = getLS();
 	if(ls0 == ls1)
@@ -402,9 +455,12 @@ const void* LuaState::toPointer(int idx) const {
 const void* LuaState::ToPointer(lua_State* ls, int idx) {
 	return lua_topointer(ls, idx);
 }
+SPLua LuaState::ToThread(lua_State* ls, int idx) {
+	_CheckType(ls, idx, LuaType::Thread);
+	return SPLua(new LuaState(lua_tothread(ls, idx), TagThread));
+}
 SPLua LuaState::toThread(int idx) const {
-	_checkType(idx, LuaType::Thread);
-	return SPLua(new LuaState(lua_tothread(getLS(), idx)));
+	return ToThread(getLS(), idx);
 }
 lua_Unsigned LuaState::toUnsigned(int idx) const {
 	return ToUnsigned(getLS(), idx);
@@ -424,24 +480,58 @@ void* LuaState::ToUserData(lua_State* ls, int idx) {
 	}
 	return lua_touserdata(ls, idx);
 }
-
+LCTable LuaState::ToTable(lua_State* ls, int idx) {
+	LCTable tbl;
+	lua_pushnil(ls);
+	while(lua_next(ls, idx) != 0) {
+		// key=-2 value=-1
+		tbl.emplace(SPLCValue(new LCValue(ToLCValue(ls, -2))),
+					SPLCValue(new LCValue(ToLCValue(ls, -1))));
+	}
+	return std::move(tbl);
+}
+LCTable LuaState::toTable(int idx) const {
+	return ToTable(getLS(), idx);
+}
+namespace {
+	const std::function<LCValue (lua_State* ls, int idx)> c_toLCValue[LUA_NUMTAGS+1] = {
+		[](lua_State* ls, int idx){ return LCValue(boost::blank()); },
+		[](lua_State* ls, int idx){ return LCValue(LuaNil()); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToBoolean(ls,idx)); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToUserData(ls,idx)); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToNumber(ls,idx)); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToString(ls,idx).first); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToTable(ls,idx)); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToCFunction(ls,idx)); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToUserData(ls,idx)); },
+		[](lua_State* ls, int idx){ return LCValue(LuaState::ToThread(ls,idx)); }
+	};
+	const LuaType c_toLType[LUA_NUMTAGS+1] = {
+		LuaType::None,
+		LuaType::Nil,
+		LuaType::Boolean,
+		LuaType::LightUserdata,
+		LuaType::Number,
+		LuaType::String,
+		LuaType::Table,
+		LuaType::Function,
+		LuaType::Userdata,
+		LuaType::Thread
+	};
+}
+LCValue LuaState::ToLCValue(lua_State* ls, int idx) {
+	int typ = lua_type(ls, idx);
+	return c_toLCValue[typ+1](ls, idx);
+}
+LCValue LuaState::toLCValue(int idx) const {
+	return ToLCValue(getLS(), idx);
+}
 LuaType LuaState::type(int idx) const {
 	return SType(getLS(), idx);
 }
 LuaType LuaState::SType(lua_State* ls, int idx) {
 	int typ = lua_type(ls, idx);
-	switch(typ) {
-		case LUA_TNIL: return LuaType::Nil;
-		case LUA_TNUMBER: return LuaType::Number;
-		case LUA_TBOOLEAN: return LuaType::Boolean;
-		case LUA_TSTRING: return LuaType::String;
-		case LUA_TTABLE: return LuaType::Table;
-		case LUA_TFUNCTION: return LuaType::Function;
-		case LUA_TUSERDATA: return LuaType::Userdata;
-		case LUA_TTHREAD: return LuaType::Thread;
-		case LUA_TLIGHTUSERDATA: return LuaType::LightUserdata;
-	}
-	return LuaType::None;
+	return c_toLType[typ+1];
 }
 
 const char* LuaState::typeName(LuaType typ) const {
@@ -465,9 +555,12 @@ int LuaState::yieldk(int nresults, int ctx, lua_CFunction k) {
 lua_State* LuaState::getLS() const {
 	return _lua.get();
 }
-SPLua LuaState::getMainLS() {
+SPLua LuaState::getLS_SP() {
+	return shared_from_this();
+}
+SPLua LuaState::getMainLS_SP() {
 	if(_base)
-		return _base->getMainLS();
+		return _base->getMainLS_SP();
 	return shared_from_this();
 }
 void LuaState::_checkError(int code) const {
@@ -494,9 +587,8 @@ void LuaState::_CheckError(lua_State* ls, int code) {
 std::ostream& operator << (std::ostream& os, const LuaState& ls) {
 	// スタックの値を表示する
 	int n = ls.getTop();
-	for(int i=1 ; i<=n ; i++) {
-
-	}
+	for(int i=1 ; i<=n ; i++)
+		os << "[" << i << "]: " << ls.toLCValue(i) << std::endl;
 	return os;
 }
 

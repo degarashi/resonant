@@ -2,47 +2,20 @@
 #include <sstream>
 #include <limits>
 
-// void LCTable::pushValue(LuaState& ls) const {
-// 	ls.newTable();
-// 	for(auto& ent : *this)
-// 		ls.setField(-1, *ent.first, *ent.second);
-// }
-// LValue::LValue(const SPLua& spLua, int idx):_spLua(spLua) {
-// }
-// namespace {
-// 	struct Printer : boost::static_visitor<> {
-// 		static std::stringstream ss;
-//
-// 		Printer() {
-// 			ss.str("");
-// 			ss.clear();
-// 		}
-// 		void operator()(boost::blank) {
-// 			ss << "(none)"; }
-// 		template <class T>
-// 		void operator()(const T& t) const {
-// 			ss << t; }
-// 		void operator()(const SPLua& sp) const {
-// 			ss << "(LuaState: " << std::hex << sp.get() << std::dec << ")"; }
-// 		void operator()(const void* p) const {
-// 			ss << "(Ptr: " << std::hex << p << std::dec << ")"; }
-// 	};
-// 	std::stringstream Printer::ss;
-// }
-// std::ostream& operator << (std::ostream& os, const LCValue& lcv) {
-// 	return os;
-// }
-// std::ostream& operator << (std::ostream& os, const LCTable& lct) {
-// 	return os;
-// }
-
 // ------------------- LCValue -------------------
-void LCV<boost::blank>::operator()(lua_State* ls, boost::blank t) const {
-	lua_pushnil(ls); }
+void LCV<boost::blank>::operator()(lua_State* ls, boost::blank) const {
+	assert(false); }
 std::ostream& LCV<boost::blank>::operator()(std::ostream& os, boost::blank) const {
 	return os << "(none)"; }
 LuaType LCV<boost::blank>::operator()() const {
 	return LuaType::None; }
+
+void LCV<LuaNil>::operator()(lua_State* ls, LuaNil) const {
+	lua_pushnil(ls); }
+std::ostream& LCV<LuaNil>::operator()(std::ostream& os, LuaNil) const {
+	return os << "(nil)"; }
+LuaType LCV<LuaNil>::operator()() const {
+	return LuaType::Nil; }
 
 void LCV<bool>::operator()(lua_State* ls, bool b) const {
 	lua_pushboolean(ls, b); }
@@ -109,8 +82,11 @@ LuaType LCV<lua_CFunction>::operator()() const {
 	return LuaType::Function; }
 
 void LCV<LCTable>::operator()(lua_State* ls, const LCTable& t) const {
-// 	LuaState lso(_ls);
-// 	tbl.pushValue(lso);
+	LuaState lsc(ls);
+	lsc.newTable(0, t.size());
+	for(auto& ent : t) {
+		lsc.setField(-1, *ent.first, *ent.second);
+	}
 }
 std::ostream& LCV<LCTable>::operator()(std::ostream& os, const LCTable& t) const {
 	return os << "(table)" << std::hex << reinterpret_cast<uintptr_t>(&t); }
@@ -152,3 +128,122 @@ std::ostream& LCValue::print(std::ostream& os) const {
 std::ostream& operator << (std::ostream& os, const LCValue& lcv) {
 	return lcv.print(os);
 }
+// ------------------- LV_Global -------------------
+const std::string LV_Global::cs_entry("CS_ENTRY");
+spn::FreeList<int> LV_Global::s_index(std::numeric_limits<int>::max(), 1);
+LV_Global::LV_Global(lua_State* ls) {
+	// 
+	
+}
+LV_Global::LV_Global(const SPLua& sp, const LCValue& lcv) {
+	lcv.push(sp->getLS());
+	_init(sp);
+}
+LV_Global::LV_Global(const SPLua& sp) {
+	_init(sp);
+}
+LV_Global::LV_Global(const LV_Global& lv) {
+	lv._prepareValue();
+	_init(lv._lua);
+}
+LV_Global::LV_Global(LV_Global&& lv): _lua(std::move(lv._lua)), _id(lv._id) {}
+LV_Global::~LV_Global() {
+	if(_lua) {
+		// エントリの削除
+		_lua->getGlobal(cs_entry);
+		_lua->setField(-1, _id, LuaNil());
+		_lua->pop(1);
+		s_index.put(_id);
+	}
+}
+void LV_Global::_init(const SPLua& sp) {
+	_lua = sp;
+	_id = s_index.get();
+	_setValue();
+}
+void LV_Global::_setValue() {
+	// エントリの登録
+	_lua->getGlobal(cs_entry);
+	_lua->push(_id);
+	_lua->pushValue(-3);
+	// [Value][Entry][id][Value]
+	_lua->setTable(-3);
+	_lua->pop(2);
+}
+
+int LV_Global::_prepareValue() const {
+	_lua->getGlobal(cs_entry);
+	_lua->getField(-1, _id);
+	// [Entry][Value]
+	_lua->remove(-2);
+	return _lua->getTop();
+}
+int LV_Global::_prepareValue(lua_State* ls) const {
+	lua_State* mls = _lua->getLS();
+	if(mls != ls) {
+		_prepareValue();
+		lua_xmove(mls, ls, 1);
+	}
+	return lua_gettop(ls);
+}
+void LV_Global::_cleanValue() const {
+	_lua->pop(1);
+}
+void LV_Global::_cleanValue(lua_State* ls) const {
+	lua_pop(ls, 1);
+}
+lua_State* LV_Global::getLS() const {
+	return _lua->getLS();
+}
+
+// ------------------- LV_Stack -------------------
+LV_Stack::LV_Stack(lua_State* ls) {
+	_init(ls);
+}
+LV_Stack::LV_Stack(lua_State* ls, const LCValue& lcv) {
+	lcv.push(ls);
+	_init(ls);
+}
+LV_Stack::~LV_Stack() {
+	assert(lua_gettop(_ls) == _pos);
+	lua_pop(_ls, 1);
+}
+void LV_Stack::_init(lua_State* ls) {
+	_ls = ls;
+	_pos = lua_gettop(_ls);
+}
+void LV_Stack::_setValue() {
+	lua_replace(_ls, _pos);
+}
+LV_Stack& LV_Stack::operator = (const LCValue& lcv) {
+	lcv.push(_ls);
+	lua_replace(_ls, _pos);
+	return *this;
+}
+LV_Stack& LV_Stack::operator = (lua_State* ls) {
+	if(ls != _ls) {
+		lua_pushthread(ls);
+		lua_xmove(ls, _ls, 1);
+	} else
+		lua_pushthread(_ls);
+	_setValue();
+	return *this;
+}
+
+int LV_Stack::_prepareValue() const {
+	return _pos;
+}
+int LV_Stack::_prepareValue(lua_State* ls) const {
+	lua_pushvalue(_ls, _pos);
+	if(_ls != ls)
+		lua_xmove(_ls, ls, 1);
+	return lua_gettop(ls);
+}
+void LV_Stack::_cleanValue() const {}
+void LV_Stack::_cleanValue(lua_State* ls) const {
+	lua_pop(ls, 1);
+}
+lua_State* LV_Stack::getLS() const {
+	return _ls;
+}
+

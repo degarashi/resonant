@@ -11,10 +11,10 @@
 #include <memory>
 #include <vector>
 #include <stack>
-#include "spinner/type.hpp"
 
 class LuaState;
 using SPLua = std::shared_ptr<LuaState>;
+using WPLua = std::weak_ptr<LuaState>;
 using SPILua = std::shared_ptr<lua_State>;
 class LCValue;
 using SPLCValue = std::shared_ptr<LCValue>;
@@ -25,9 +25,9 @@ class LCTable : public std::unordered_map<SPLCValue, SPLCValue> {
 		friend std::ostream& operator << (std::ostream&, const LCTable&);
 };
 std::ostream& operator << (std::ostream& os, const LCTable& lct);
-
+struct LuaNil {};
 using SPLCTable = std::shared_ptr<LCTable>;
-using LCVar = boost::variant<boost::blank, bool, const char*, lua_Integer, lua_Unsigned, lua_Number, SPLua, void*, lua_CFunction, const std::string&, std::string, LCTable>;
+using LCVar = boost::variant<boost::blank, LuaNil, bool, const char*, lua_Integer, lua_Unsigned, lua_Number, SPLua, void*, lua_CFunction, const std::string&, std::string, LCTable>;
 
 enum class LuaType {
 	None,
@@ -49,6 +49,7 @@ struct LCV;
 	std::ostream& operator()(std::ostream& os, typ t) const; \
 	LuaType operator()() const; };
 DEF_LCV(boost::blank, boost::blank)
+DEF_LCV(LuaNil, LuaNil)
 DEF_LCV(bool, bool)
 DEF_LCV(const char*, const char*)
 DEF_LCV(std::string, const std::string&)
@@ -71,6 +72,7 @@ class LCValue : public LCVar {
 		LCValue(T&& t): LCVar(std::move(t)) {}
 		LCValue(float fv): LCVar(lua_Number(fv)) {}
 		LCValue(double dv): LCVar(lua_Number(dv)) {}
+		LCValue(LCValue&& lcv): LCVar(reinterpret_cast<LCVar&&>(lcv)) {}
 		void push(lua_State* ls) const;
 		std::ostream& print(std::ostream& os) const;
 		LuaType type() const;
@@ -158,7 +160,18 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		static void _CheckType(lua_State* ls, int idx, LuaType typ);
 		void _checkType(int idx, LuaType typ) const;
 
-		struct _TagThread {} TagThread;
+		using Deleter = std::function<void (lua_State*)>;
+		static Deleter _MakeDeleter(int id);
+
+		static struct _TagThread {} TagThread;
+		static SPILua _RegisterNewThread(LuaState& lsc, int id);
+		static void _LoadThreadTable(LuaState& lsc);
+		static void _Increment(LuaState& lsc, std::function<void (LuaState&)> cb);
+		static void _Increment_ID(LuaState& lsc, int id);
+		static void _Increment_Th(LuaState& lsc);
+		static void _Decrement(LuaState& lsc, std::function<void (LuaState&)> cb);
+		static void _Decrement_ID(LuaState& lsc, int id);
+		static void _Decrement_Th(LuaState& lsc);
 		//! NewThread初期化
 		LuaState(const SPLua& spLua);
 		//! スレッド共有初期化
@@ -265,6 +278,7 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		static lua_Unsigned ToUnsigned(lua_State* ls, int idx);
 		static void* ToUserData(lua_State* ls, int idx);
 		static SPLua ToThread(lua_State* ls, int idx);
+		static LCTable ToTable(lua_State* ls, int idx);
 		static LCValue ToLCValue(lua_State* ls, int idx);
 
 		#define DEF_TOVALUE(func) static decltype(func(nullptr,0)) ToValue(lua_State* ls, int idx, decltype(func(nullptr,0))*) { \
@@ -293,6 +307,7 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		lua_Unsigned toUnsigned(int idx) const;
 		void* toUserData(int idx) const;
 		SPLua toThread(int idx) const;
+		LCTable toTable(int idx) const;
 		LCValue toLCValue(int idx) const;
 
 		template <class R>
@@ -310,9 +325,196 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		int yieldk(int nresults, int ctx, lua_CFunction k);
 
 		lua_State* getLS() const;
-		SPLua getMainLS();
+		SPLua getLS_SP();
+		SPLua getMainLS_SP();
 		friend std::ostream& operator << (std::ostream& os, const LuaState&);
 };
 using SPLua = std::shared_ptr<LuaState>;
 std::ostream& operator << (std::ostream& os, const LuaState& ls);
 
+template <class T>
+class LValue;
+class LV_Global {
+	const static std::string	cs_entry;
+	static spn::FreeList<int>		s_index;
+	SPLua		_lua;
+	int			_id;
+
+	void _init(const SPLua& sp);
+	protected:
+		// 代入する値をスタックの先頭に置いた状態で呼ぶ
+		void _setValue();
+		// 当該値をスタックに置く
+		int _prepareValue() const;
+		int _prepareValue(lua_State* ls) const;
+		void _cleanValue() const;
+		void _cleanValue(lua_State* ls) const;
+	public:
+		LV_Global(lua_State* ls);
+		// スタックトップの値を管理対象とする
+		LV_Global(const SPLua& sp);
+		// 引数の値を管理対象とする
+		LV_Global(const SPLua& sp, const LCValue& lcv);
+		template <class LV>
+		LV_Global(const SPLua& sp, const LValue<LV>& lv) {
+			lv.prepareValue(sp->getLS());
+			_init(sp);
+		}
+		LV_Global(const LV_Global& lv);
+		LV_Global(LV_Global&& lv);
+		~LV_Global();
+
+		template <class LV>
+		LV_Global& operator = (const LValue<LV>& lcv) {
+			lua_State* ls = _lua->getLS();
+			lcv.prepareValue(ls);
+			return *this;
+		}
+		template <class T2>
+		LV_Global& operator = (T2&& t) {
+			_lua->getGlobal(cs_entry);
+			_lua->push(_id);
+			_lua->push(std::forward<T2>(t));
+			_lua->setTable(-3);
+			_lua->pop(1);
+			return *this;
+		}
+		// lua_State*をゲットする関数
+		lua_State* getLS() const;
+};
+class LV_Stack {
+	lua_State*	_ls;
+	int			_pos;
+
+	protected:
+		void _setValue();
+		void _init(lua_State* ls);
+		int _prepareValue() const;
+		int _prepareValue(lua_State* ls) const;
+		void _cleanValue() const;
+		void _cleanValue(lua_State* ls) const;
+	public:
+		LV_Stack(lua_State* ls);
+		LV_Stack(lua_State* ls, const LCValue& lcv);
+		template <class LV>
+		LV_Stack(lua_State* ls, const LValue<LV>& lv) {
+			lv.prepareValue(_ls);
+			_init(ls);
+		}
+		LV_Stack(const LV_Stack& lv) = default;
+		~LV_Stack();
+
+		template <class LV>
+		LV_Stack& operator = (const LValue<LV>& lcv) {
+			lcv.prepareValue(_ls);
+			lua_replace(_ls, _pos);
+			return *this;
+		}
+		LV_Stack& operator = (const LCValue& lcv);
+		LV_Stack& operator = (lua_State* ls);
+
+		lua_State* getLS() const;
+};
+
+//! LuaState内部に値を保持する
+template <class T>
+class LValue : public T {
+	struct VPop {
+		const LValue& self;
+		int			index;
+		VPop(const LValue& s): self(s) {
+			index = s._prepareValue();
+		}
+		operator int () const {
+			return index;
+		}
+		~VPop() {
+			self._cleanValue();
+		}
+	};
+	public:
+		using T::T;
+		LValue(const LValue& lv): T(lv) {}
+		LValue(LValue&& lv): T(std::move(lv)) {}
+
+		LValue& operator = (const LCValue& lcv) {
+			lcv.push(T::getLS());
+			T::_setValue();
+			return *this;
+		}
+		template <class LV>
+		LValue& operator = (const LValue<LV>& lv) {
+			return reinterpret_cast<LValue&>(T::operator =(lv));
+		}
+		LValue& operator = (LValue&& lv) {
+			return reinterpret_cast<LValue&>(static_cast<T&>(*this) = std::move(lv));
+		}
+		template <class T2>
+		LValue& operator = (T2&& t) {
+			static_cast<T&>(*this) = std::forward<T2>(t);
+			return *this;
+		}
+		LCValue operator * () const {
+			int idx = T::_prepareValue();
+			LCValue ret(LuaState::ToLCValue(T::getLS(), idx));
+			T::_cleanValue();
+			return std::move(ret);
+		}
+		template <class LV, class CB>
+		LValue<LV> refValue(CB cb) {
+			lua_State* ls = T::getLS();
+			int idx = T::_prepareValue();	// push Table
+			cb(ls);							// push Key
+			lua_gettable(ls, idx);
+			T::_cleanValue();
+			return LValue<LV>(ls);
+		}
+		template <class LV>
+		LValue<LV_Global> operator [](const LValue<LV>& lv) {
+			return refValue<LV_Global>([&lv](lua_State* ls){ lv._prepareValue(ls); });
+		}
+		LValue<LV_Global> operator [](const LCValue& lcv) {
+			return refValue<LV_Global>([&lcv](lua_State* ls){ lcv.push(ls); });
+		}
+		template <class LV>
+		LValue<LV_Stack> refStack(const LValue<LV>& lv) {
+			return refValue<LV_Stack>([&lv](lua_State* ls){ lv._prepareValue(ls); });
+		}
+		LValue<LV_Stack> refStack(const LCValue& lcv) {
+			return refValue<LV_Stack>([&lcv](lua_State* ls){ lcv.push(ls); });
+		}
+		template <class... Ret, class... Args>
+		void operator()(std::tuple<Ret...>& dst, Args&&... args) {
+			LuaState lsc(T::getLS());
+			T::prepareValue();
+			// 引数をスタックに積む
+			lsc.pushArgs(std::forward<Args>(args)...);
+			lsc.call(sizeof...(Args), sizeof...(Ret));
+			// 戻り値をtupleにセットする
+			lsc.popValues(dst);
+		}
+
+		// --- convert function ---
+		#define DEF_FUNC(func, name) decltype(LuaState::func(nullptr, 0)) name() const { \
+			return LuaState::func(T::getLS(), VPop(*this)); }
+		DEF_FUNC(ToBoolean, toBoolean)
+		DEF_FUNC(ToInteger, toInteger)
+		DEF_FUNC(ToNumber, toNumber)
+		DEF_FUNC(ToUnsigned, toUnsigned)
+		DEF_FUNC(ToUserData, toUserData)
+		DEF_FUNC(ToString, toString)
+		DEF_FUNC(ToLCValue, toLCValue)
+		DEF_FUNC(ToThread, toThread)
+		#undef DEF_FUNC
+
+		const void* toPointer() const {
+			return lua_topointer(T::getLS(), VPop(*this));
+		}
+		template <class R>
+		R toValue() const {
+			return LuaState::ToValue<R>(T::getLS(), VPop(*this));
+		}
+		LuaType type() const {
+			return LuaState::SType(T::getLS(), VPop(*this));
+		}
+};
