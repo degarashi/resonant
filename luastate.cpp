@@ -207,6 +207,9 @@ void LuaState::loadLibraries() {
 void LuaState::push(const LCValue& v) {
 	v.push(getLS());
 }
+void LuaState::pushCClosure(lua_CFunction func, int nvalue) {
+	lua_pushcclosure(getLS(), func, nvalue);
+}
 void LuaState::pushValue(int idx) {
 	lua_pushvalue(getLS(), idx);
 }
@@ -415,101 +418,42 @@ void LuaState::_CheckType(lua_State* ls, int idx, LuaType typ) {
 		throw EType(STypeName(ls, t), STypeName(ls, typ));
 }
 bool LuaState::toBoolean(int idx) const {
-	return ToBoolean(getLS(), idx);
-}
-bool LuaState::ToBoolean(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::Boolean);
-	return lua_toboolean(ls, idx) != 0;
+	return LCV<bool>()(idx, getLS());
 }
 lua_CFunction LuaState::toCFunction(int idx) const {
-	return ToCFunction(getLS(), idx);
-}
-lua_CFunction LuaState::ToCFunction(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::Function);
-	return lua_tocfunction(ls, idx);
+	return LCV<lua_CFunction>()(idx, getLS());
 }
 lua_Integer LuaState::toInteger(int idx) const {
-	return ToInteger(getLS(), idx);
+	return LCV<lua_Integer>()(idx, getLS());
 }
-lua_Integer LuaState::ToInteger(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::Number);
-	return lua_tointeger(ls, idx);
-}
-std::pair<const char*, size_t> LuaState::toString(int idx) const {
-	return ToString(getLS(), idx);
-}
-std::pair<const char*, size_t> LuaState::ToString(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::String);
-	size_t len;
-	const char* str = lua_tolstring(ls, idx, &len);
-	return std::make_pair(str, len);
+std::string LuaState::toString(int idx) const {
+	return LCV<std::string>()(idx, getLS());
 }
 lua_Number LuaState::toNumber(int idx) const {
-	return ToNumber(getLS(), idx);
-}
-lua_Number LuaState::ToNumber(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::Number);
-	return lua_tonumber(ls, idx);
+	return LCV<lua_Number>()(idx, getLS());
 }
 const void* LuaState::toPointer(int idx) const {
-	return ToPointer(getLS(), idx);
-}
-const void* LuaState::ToPointer(lua_State* ls, int idx) {
-	return lua_topointer(ls, idx);
-}
-SPLua LuaState::ToThread(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::Thread);
-	return SPLua(new LuaState(lua_tothread(ls, idx), TagThread));
+	return lua_topointer(getLS(), idx);
 }
 SPLua LuaState::toThread(int idx) const {
-	return ToThread(getLS(), idx);
+	return LCV<SPLua>()(idx, getLS());
 }
 lua_Unsigned LuaState::toUnsigned(int idx) const {
-	return ToUnsigned(getLS(), idx);
-}
-lua_Unsigned LuaState::ToUnsigned(lua_State* ls, int idx) {
-	_CheckType(ls, idx, LuaType::Number);
-	return lua_tounsignedx(ls, idx, nullptr);
+	return LCV<lua_Unsigned>()(idx, getLS());
 }
 void* LuaState::toUserData(int idx) const {
-	return ToUserData(getLS(), idx);
-}
-void* LuaState::ToUserData(lua_State* ls, int idx) {
-	try {
-		_CheckType(ls, idx, LuaType::Userdata);
-	} catch(const EType& e) {
-		_CheckType(ls, idx, LuaType::LightUserdata);
-	}
-	return lua_touserdata(ls, idx);
-}
-LCTable LuaState::ToTable(lua_State* ls, int idx) {
-	LCTable tbl;
-	lua_pushnil(ls);
-	while(lua_next(ls, idx) != 0) {
-		// key=-2 value=-1
-		tbl.emplace(SPLCValue(new LCValue(ToLCValue(ls, -2))),
-					SPLCValue(new LCValue(ToLCValue(ls, -1))));
-	}
-	return std::move(tbl);
+	return LCV<void*>()(idx, getLS());
 }
 LCTable LuaState::toTable(int idx) const {
-	return ToTable(getLS(), idx);
+	return LCV<LCTable>()(idx, getLS());
+}
+
+LCValue LuaState::toLCValue(int idx) const {
+	return LCV<LCValue>()(idx, getLS());
 }
 namespace {
-	const std::function<LCValue (lua_State* ls, int idx)> c_toLCValue[LUA_NUMTAGS+1] = {
-		[](lua_State* ls, int idx){ return LCValue(boost::blank()); },
-		[](lua_State* ls, int idx){ return LCValue(LuaNil()); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToBoolean(ls,idx)); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToUserData(ls,idx)); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToNumber(ls,idx)); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToString(ls,idx).first); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToTable(ls,idx)); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToCFunction(ls,idx)); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToUserData(ls,idx)); },
-		[](lua_State* ls, int idx){ return LCValue(LuaState::ToThread(ls,idx)); }
-	};
 	const LuaType c_toLType[LUA_NUMTAGS+1] = {
-		LuaType::None,
+		LuaType::LNone,
 		LuaType::Nil,
 		LuaType::Boolean,
 		LuaType::LightUserdata,
@@ -520,13 +464,6 @@ namespace {
 		LuaType::Userdata,
 		LuaType::Thread
 	};
-}
-LCValue LuaState::ToLCValue(lua_State* ls, int idx) {
-	int typ = lua_type(ls, idx);
-	return c_toLCValue[typ+1](ls, idx);
-}
-LCValue LuaState::toLCValue(int idx) const {
-	return ToLCValue(getLS(), idx);
 }
 LuaType LuaState::type(int idx) const {
 	return SType(getLS(), idx);
@@ -577,7 +514,7 @@ void LuaState::_checkError(int code) const {
 }
 void LuaState::_CheckError(lua_State* ls, int code) {
 	if(code != LUA_OK) {
-		const char* msg = ToString(ls, -1).first;
+		const char* msg = LCV<const char*>()(-1, ls);
 		switch(code) {
 			case LUA_ERRRUN:
 				throw ERun(msg);

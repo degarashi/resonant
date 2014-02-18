@@ -27,7 +27,7 @@ using SPLCTable = std::shared_ptr<LCTable>;
 using LCVar = boost::variant<boost::blank, LuaNil, bool, const char*, lua_Integer, lua_Unsigned, lua_Number, SPLua, void*, lua_CFunction, const std::string&, std::string, LCTable>;
 
 enum class LuaType {
-	None,
+	LNone,		//!< NoneだとX11のマクロと衝突する為
 	Nil,
 	Number,
 	Boolean,
@@ -39,10 +39,12 @@ enum class LuaType {
 	LightUserdata
 };
 
+// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
 template <class T>
 struct LCV;
 #define DEF_LCV(rtyp, typ) template <> struct LCV<rtyp> { \
 	void operator()(lua_State* ls, typ t) const; \
+	rtyp operator()(int idx, lua_State* ls) const; \
 	std::ostream& operator()(std::ostream& os, typ t) const; \
 	LuaType operator()() const; };
 DEF_LCV(boost::blank, boost::blank)
@@ -71,6 +73,9 @@ class LCValue : public LCVar {
 		LCValue(float fv): LCVar(lua_Number(fv)) {}
 		LCValue(double dv): LCVar(lua_Number(dv)) {}
 		LCValue(LCValue&& lcv): LCVar(reinterpret_cast<LCVar&&>(lcv)) {}
+		LCValue(const std::string& str): LCVar(str) {}
+		LCValue(int iv): LCVar(lua_Integer(iv)) {}
+		LCValue(unsigned int iv): LCVar(lua_Unsigned(iv)) {}
 		void push(lua_State* ls) const;
 		std::ostream& print(std::ostream& os) const;
 		LuaType type() const;
@@ -80,6 +85,8 @@ std::ostream& operator << (std::ostream& os, const LCValue& lcv);
 
 //! lua_Stateの単純なラッパークラス
 class LuaState : public std::enable_shared_from_this<LuaState> {
+	template <class T>
+	friend struct LCV;
 	public:
 		enum class CMP {
 			Equal = LUA_OPEQ,
@@ -184,6 +191,7 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 
 		void load(const std::string& fname);
 		void push(const LCValue& v);
+		void pushCClosure(lua_CFunction func, int nvalue);
 		template <class A, class... Args>
 		void pushArgs(A&& a, Args&&... args) {
 			push(std::forward<A>(a));
@@ -266,40 +274,11 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		void setUservalue(int idx);
 		bool status() const;
 
-		// --- convert function (static) ---
-		static bool ToBoolean(lua_State* ls, int idx);
-		static lua_CFunction ToCFunction(lua_State* ls, int idx);
-		static lua_Integer ToInteger(lua_State* ls, int idx);
-		static std::pair<const char*, size_t> ToString(lua_State* ls, int idx);
-		static lua_Number ToNumber(lua_State* ls, int idx);
-		static const void* ToPointer(lua_State* ls, int idx);
-		static lua_Unsigned ToUnsigned(lua_State* ls, int idx);
-		static void* ToUserData(lua_State* ls, int idx);
-		static SPLua ToThread(lua_State* ls, int idx);
-		static LCTable ToTable(lua_State* ls, int idx);
-		static LCValue ToLCValue(lua_State* ls, int idx);
-
-		#define DEF_TOVALUE(func) static decltype(func(nullptr,0)) ToValue(lua_State* ls, int idx, decltype(func(nullptr,0))*) { \
-			return func(ls, idx); }
-		DEF_TOVALUE(ToBoolean)
-		DEF_TOVALUE(ToInteger)
-		DEF_TOVALUE(ToNumber)
-		DEF_TOVALUE(ToUnsigned)
-		DEF_TOVALUE(ToCFunction)
-		DEF_TOVALUE(ToUserData)
-		DEF_TOVALUE(ToLCValue)
-		#undef DEF_TOVALUE
-
-		template <class R>
-		R ToValue(lua_State* ls, int idx) {
-			return ToValue(ls, idx, (R*)nullptr);
-		}
-
 		// --- convert function ---
 		bool toBoolean(int idx) const;
 		lua_CFunction toCFunction(int idx) const;
 		lua_Integer toInteger(int idx) const;
-		std::pair<const char*, size_t> toString(int idx) const;
+		std::string toString(int idx) const;
 		lua_Number toNumber(int idx) const;
 		const void* toPointer(int idx) const;
 		lua_Unsigned toUnsigned(int idx) const;
@@ -310,7 +289,7 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 
 		template <class R>
 		R toValue(int idx) const {
-			return ToValue(getLS(), idx, (R*)nullptr);
+			return LCV<R>()(idx, getLS());
 		}
 
 		LuaType type(int idx) const;
@@ -507,16 +486,16 @@ class LValue : public T {
 		}
 
 		// --- convert function ---
-		#define DEF_FUNC(func, name) decltype(LuaState::func(nullptr, 0)) name() const { \
-			return LuaState::func(T::getLS(), VPop(*this)); }
-		DEF_FUNC(ToBoolean, toBoolean)
-		DEF_FUNC(ToInteger, toInteger)
-		DEF_FUNC(ToNumber, toNumber)
-		DEF_FUNC(ToUnsigned, toUnsigned)
-		DEF_FUNC(ToUserData, toUserData)
-		DEF_FUNC(ToString, toString)
-		DEF_FUNC(ToLCValue, toLCValue)
-		DEF_FUNC(ToThread, toThread)
+		#define DEF_FUNC(typ, name) typ name() const { \
+			return LCV<typ>()(VPop(*this), T::getLS()); }
+		DEF_FUNC(bool, toBoolean)
+		DEF_FUNC(lua_Integer, toInteger)
+		DEF_FUNC(lua_Number, toNumber)
+		DEF_FUNC(lua_Unsigned, toUnsigned)
+		DEF_FUNC(void*, toUserData)
+		DEF_FUNC(const char*, toString)
+		DEF_FUNC(LCValue, toLCValue)
+		DEF_FUNC(SPLua, toThread)
 		#undef DEF_FUNC
 
 		template <class IDX>
@@ -542,7 +521,7 @@ class LValue : public T {
 		}
 		template <class R>
 		R toValue() const {
-			return LuaState::ToValue<R>(T::getLS(), VPop(*this));
+			return LCV<T>()(VPop(*this), T::getLS());
 		}
 		LuaType type() const {
 			return LuaState::SType(T::getLS(), VPop(*this));
