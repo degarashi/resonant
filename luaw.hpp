@@ -10,7 +10,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <stack>
 
 class LuaState;
 using SPLua = std::shared_ptr<LuaState>;
@@ -21,8 +20,6 @@ using SPLCValue = std::shared_ptr<LCValue>;
 class LCTable : public std::unordered_map<SPLCValue, SPLCValue> {
 	public:
 		using std::unordered_map<SPLCValue, SPLCValue>::unordered_map;
-		void pushValue(LuaState& ls) const;
-		friend std::ostream& operator << (std::ostream&, const LCTable&);
 };
 std::ostream& operator << (std::ostream& os, const LCTable& lct);
 struct LuaNil {};
@@ -60,6 +57,7 @@ DEF_LCV(SPLua, const SPLua&)
 DEF_LCV(void*, const void*)
 DEF_LCV(lua_CFunction, lua_CFunction)
 DEF_LCV(LCTable, const LCTable&)
+DEF_LCV(LCValue, const LCValue&)
 #undef DEF_LCV
 
 class LCValue : public LCVar {
@@ -327,6 +325,7 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		lua_State* getLS() const;
 		SPLua getLS_SP();
 		SPLua getMainLS_SP();
+		static SPLua GetMainLS_SP(lua_State* ls);
 		friend std::ostream& operator << (std::ostream& os, const LuaState&);
 };
 using SPLua = std::shared_ptr<LuaState>;
@@ -334,9 +333,31 @@ std::ostream& operator << (std::ostream& os, const LuaState& ls);
 
 template <class T>
 class LValue;
+// LValue[], *LValueの時だけ生成される中間クラス
+template <class LV, class IDX>
+class LV_Inter {
+	LValue<LV>&		_src;
+	const IDX&		_index;
+	public:
+		LV_Inter(LValue<LV>& src, const IDX& index): _src(src), _index(index) {}
+		LV_Inter(const LV_Inter&) = delete;
+		LV_Inter(LV_Inter&& lv): _src(lv._src), _index(lv._index) {}
+
+		void prepareValue(lua_State* ls) const {
+			_src.prepareAt(ls, _index);
+		}
+		template <class VAL>
+		LV_Inter& operator = (VAL&& v) {
+			_src.setField(_index, std::forward<VAL>(v));
+			return *this;
+		}
+		lua_State* getLS() {
+			return _src.getLS();
+		}
+};
 class LV_Global {
 	const static std::string	cs_entry;
-	static spn::FreeList<int>		s_index;
+	static spn::FreeList<int>	s_index;
 	SPLua		_lua;
 	int			_id;
 
@@ -396,9 +417,15 @@ class LV_Stack {
 	public:
 		LV_Stack(lua_State* ls);
 		LV_Stack(lua_State* ls, const LCValue& lcv);
+		template <class LV, class IDX>
+		LV_Stack(LV_Inter<LV,IDX>&& lv) {
+			lua_State* ls = lv.getLS();
+			lv.prepareValue(ls);
+			_init(ls);
+		}
 		template <class LV>
 		LV_Stack(lua_State* ls, const LValue<LV>& lv) {
-			lv.prepareValue(_ls);
+			lv.prepareValue(ls);
 			_init(ls);
 		}
 		LV_Stack(const LV_Stack& lv) = default;
@@ -416,6 +443,14 @@ class LV_Stack {
 		lua_State* getLS() const;
 };
 
+template <class T>
+struct LValue_LCVT {
+	using type = T;
+};
+template <int N>
+struct LValue_LCVT<char [N]> {
+	using type = const char*;
+};
 //! LuaState内部に値を保持する
 template <class T>
 class LValue : public T {
@@ -436,7 +471,6 @@ class LValue : public T {
 		using T::T;
 		LValue(const LValue& lv): T(lv) {}
 		LValue(LValue&& lv): T(std::move(lv)) {}
-
 		LValue& operator = (const LCValue& lcv) {
 			lcv.push(T::getLS());
 			T::_setValue();
@@ -454,34 +488,12 @@ class LValue : public T {
 			static_cast<T&>(*this) = std::forward<T2>(t);
 			return *this;
 		}
-		LCValue operator * () const {
-			int idx = T::_prepareValue();
-			LCValue ret(LuaState::ToLCValue(T::getLS(), idx));
-			T::_cleanValue();
-			return std::move(ret);
-		}
-		template <class LV, class CB>
-		LValue<LV> refValue(CB cb) {
-			lua_State* ls = T::getLS();
-			int idx = T::_prepareValue();	// push Table
-			cb(ls);							// push Key
-			lua_gettable(ls, idx);
-			T::_cleanValue();
-			return LValue<LV>(ls);
-		}
 		template <class LV>
-		LValue<LV_Global> operator [](const LValue<LV>& lv) {
-			return refValue<LV_Global>([&lv](lua_State* ls){ lv._prepareValue(ls); });
+		LV_Inter<T, LValue<LV>> operator [](const LValue<LV>& lv) {
+			return LV_Inter<T, LValue<LV>>(*this, lv);
 		}
-		LValue<LV_Global> operator [](const LCValue& lcv) {
-			return refValue<LV_Global>([&lcv](lua_State* ls){ lcv.push(ls); });
-		}
-		template <class LV>
-		LValue<LV_Stack> refStack(const LValue<LV>& lv) {
-			return refValue<LV_Stack>([&lv](lua_State* ls){ lv._prepareValue(ls); });
-		}
-		LValue<LV_Stack> refStack(const LCValue& lcv) {
-			return refValue<LV_Stack>([&lcv](lua_State* ls){ lcv.push(ls); });
+		LV_Inter<T, LCValue> operator [](const LCValue& lcv) {
+			return LV_Inter<T, LCValue>(*this, lcv);
 		}
 		template <class... Ret, class... Args>
 		void operator()(std::tuple<Ret...>& dst, Args&&... args) {
@@ -507,6 +519,24 @@ class LValue : public T {
 		DEF_FUNC(ToThread, toThread)
 		#undef DEF_FUNC
 
+		template <class IDX>
+		void prepareAt(lua_State* ls, const IDX& idx) const {
+			T::_prepareValue(ls);
+			idx.push(ls);
+			lua_gettable(ls, -2);
+			lua_remove(ls, -2);
+		}
+		template <class IDX, class VAL>
+		void setField(const IDX& idx, const VAL& val) {
+			lua_State* ls = T::getLS();
+			int n = T::_prepareValue();
+			n = lua_absindex(ls, n);
+			LCV<typename LValue_LCVT<IDX>::type>()(ls, idx);
+			LCV<typename LValue_LCVT<VAL>::type>()(ls, val);
+			lua_settable(ls, n);
+			T::_cleanValue();
+		}
+
 		const void* toPointer() const {
 			return lua_topointer(T::getLS(), VPop(*this));
 		}
@@ -518,3 +548,6 @@ class LValue : public T {
 			return LuaState::SType(T::getLS(), VPop(*this));
 		}
 };
+using LValueS = LValue<LV_Stack>;
+using LValueG = LValue<LV_Global>;
+

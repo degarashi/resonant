@@ -214,7 +214,9 @@ void LuaState::pop(int n) {
 	lua_pop(getLS(), n);
 }
 int LuaState::absIndex(int idx) const {
-	return lua_absindex(getLS(), idx);
+	idx = lua_absindex(getLS(), idx);
+	assert(idx >= 0);
+	return idx;
 }
 void LuaState::arith(OP op) {
 	lua_arith(getLS(), static_cast<int>(op));
@@ -562,6 +564,13 @@ SPLua LuaState::getMainLS_SP() {
 	if(_base)
 		return _base->getMainLS_SP();
 	return shared_from_this();
+}
+SPLua LuaState::GetMainLS_SP(lua_State* ls) {
+	lua_getglobal(ls, cs_mainThread.c_str());
+	void* ptr = lua_touserdata(ls, -1);
+	SPLua sp = reinterpret_cast<LuaState*>(ptr)->shared_from_this();
+	lua_pop(ls, 1);
+	return std::move(sp);
 }
 void LuaState::_checkError(int code) const {
 	_CheckError(getLS(), code);

@@ -2,85 +2,91 @@
 #include <sstream>
 #include <limits>
 
+std::ostream& operator << (std::ostream& os, const LCTable& lct) {
+	return LCV<LCTable>()(os, lct);
+}
 // ------------------- LCValue -------------------
+// --- LCV<boost::blank> = LUA_TNONE
 void LCV<boost::blank>::operator()(lua_State* ls, boost::blank) const {
 	assert(false); }
 std::ostream& LCV<boost::blank>::operator()(std::ostream& os, boost::blank) const {
 	return os << "(none)"; }
 LuaType LCV<boost::blank>::operator()() const {
 	return LuaType::None; }
-
+// --- LCV<LuaNil> = LUA_TNIL
 void LCV<LuaNil>::operator()(lua_State* ls, LuaNil) const {
 	lua_pushnil(ls); }
 std::ostream& LCV<LuaNil>::operator()(std::ostream& os, LuaNil) const {
 	return os << "(nil)"; }
 LuaType LCV<LuaNil>::operator()() const {
 	return LuaType::Nil; }
-
+// --- LCV<bool> = LUA_TBOOL
 void LCV<bool>::operator()(lua_State* ls, bool b) const {
 	lua_pushboolean(ls, b); }
 std::ostream& LCV<bool>::operator()(std::ostream& os, bool b) const {
 	return os << std::boolalpha << b; }
 LuaType LCV<bool>::operator()() const {
 	return LuaType::Boolean; }
-
+// --- LCV<const char*> = LUA_TSTRING
 void LCV<const char*>::operator()(lua_State* ls, const char* c) const {
 	lua_pushstring(ls, c); }
 std::ostream& LCV<const char*>::operator()(std::ostream& os, const char* c) const {
 	return os << c; }
 LuaType LCV<const char*>::operator()() const {
 	return LuaType::String; }
-
+// --- LCV<std::string> = LUA_TSTRING
 void LCV<std::string>::operator()(lua_State* ls, const std::string& s) const {
 	lua_pushlstring(ls, s.c_str(), s.length()); }
 std::ostream& LCV<std::string>::operator()(std::ostream& os, const std::string& s) const {
 	return os << s; }
 LuaType LCV<std::string>::operator()() const {
 	return LuaType::String; }
-
+// --- LCV<lua_Integer> = LUA_TNUMBER
 void LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {
 	lua_pushinteger(ls, i); }
 std::ostream& LCV<lua_Integer>::operator()(std::ostream& os, lua_Integer i) const {
 	return os << i; }
 LuaType LCV<lua_Integer>::operator()() const {
 	return LuaType::Number; }
-
+// --- LCV<lua_Unsigned> = LUA_TNUMBER
 void LCV<lua_Unsigned>::operator()(lua_State* ls, lua_Unsigned i) const {
 	lua_pushunsigned(ls, i); }
 std::ostream& LCV<lua_Unsigned>::operator()(std::ostream& os, lua_Unsigned i) const {
 	return os << i; }
 LuaType LCV<lua_Unsigned>::operator()() const {
 	return LuaType::Number; }
-
+// --- LCV<lua_Number> = LUA_TNUMBER
 void LCV<lua_Number>::operator()(lua_State* ls, lua_Number f) const {
 	lua_pushnumber(ls, f); }
 std::ostream& LCV<lua_Number>::operator()(std::ostream& os, lua_Number f) const {
 	return os << f; }
 LuaType LCV<lua_Number>::operator()() const {
 	return LuaType::Number; }
-
+// --- LCV<SPLua> = LUA_TTHREAD
 void LCV<SPLua>::operator()(lua_State* ls, const SPLua& sp) const {
+	sp->pushSelf();
+	lua_xmove(sp->getLS(), ls, 1);
 }
 std::ostream& LCV<SPLua>::operator()(std::ostream& os, const SPLua& sp) const {
 	return os;
 }
 LuaType LCV<SPLua>::operator()() const {
 	return LuaType::Thread; }
-
+// --- LCV<void*> = LUA_TLIGHTUSERDATA
 void LCV<void*>::operator()(lua_State* ls, const void* ud) const {
 	lua_pushlightuserdata(ls, const_cast<void*>(ud)); }
 std::ostream& LCV<void*>::operator()(std::ostream& os, const void* ud) const {
 	return os << "(userdata)" << std::hex << ud; }
 LuaType LCV<void*>::operator()() const {
 	return LuaType::LightUserdata; }
-
+// --- LCV<lua_CFunction> = LUA_TFUNCTION
 void LCV<lua_CFunction>::operator()(lua_State* ls, lua_CFunction f) const {
 	lua_pushcclosure(ls, f, 0); }
 std::ostream& LCV<lua_CFunction>::operator()(std::ostream& os, lua_CFunction f) const {
 	return os << "(function)" << std::hex << reinterpret_cast<uintptr_t>(f); }
 LuaType LCV<lua_CFunction>::operator()() const {
 	return LuaType::Function; }
-
+// --- LCV<LCTable> = LUA_TTABLE
 void LCV<LCTable>::operator()(lua_State* ls, const LCTable& t) const {
 	LuaState lsc(ls);
 	lsc.newTable(0, t.size());
@@ -92,6 +98,13 @@ std::ostream& LCV<LCTable>::operator()(std::ostream& os, const LCTable& t) const
 	return os << "(table)" << std::hex << reinterpret_cast<uintptr_t>(&t); }
 LuaType LCV<LCTable>::operator()() const {
 	return LuaType::Table; }
+// --- LCV<LCValue> = LUA_T?? 該当なし
+void LCV<LCValue>::operator()(lua_State* ls, const LCValue& lcv) const {
+	lcv.push(ls); }
+std::ostream& LCV<LCValue>::operator()(std::ostream& os, const LCValue& lcv) const {
+	return os << lcv; }
+LuaType LCV<LCValue>::operator()() const {
+	return LuaType::None; }
 
 namespace {
 	struct Visitor : boost::static_visitor<> {
@@ -132,8 +145,7 @@ std::ostream& operator << (std::ostream& os, const LCValue& lcv) {
 const std::string LV_Global::cs_entry("CS_ENTRY");
 spn::FreeList<int> LV_Global::s_index(std::numeric_limits<int>::max(), 1);
 LV_Global::LV_Global(lua_State* ls) {
-	// 
-	
+	_init(LuaState::GetMainLS_SP(ls));
 }
 LV_Global::LV_Global(const SPLua& sp, const LCValue& lcv) {
 	lcv.push(sp->getLS());
@@ -164,6 +176,12 @@ void LV_Global::_init(const SPLua& sp) {
 void LV_Global::_setValue() {
 	// エントリの登録
 	_lua->getGlobal(cs_entry);
+	if(_lua->type(-1) != LuaType::Table) {
+		_lua->pop(1);
+		_lua->newTable();
+		_lua->pushValue(-1);
+		_lua->setGlobal(cs_entry);
+	}
 	_lua->push(_id);
 	_lua->pushValue(-3);
 	// [Value][Entry][id][Value]
@@ -179,11 +197,10 @@ int LV_Global::_prepareValue() const {
 	return _lua->getTop();
 }
 int LV_Global::_prepareValue(lua_State* ls) const {
+	_prepareValue();
 	lua_State* mls = _lua->getLS();
-	if(mls != ls) {
-		_prepareValue();
+	if(mls != ls)
 		lua_xmove(mls, ls, 1);
-	}
 	return lua_gettop(ls);
 }
 void LV_Global::_cleanValue() const {
