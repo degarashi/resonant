@@ -530,3 +530,63 @@ class LValue : public T {
 using LValueS = LValue<LV_Stack>;
 using LValueG = LValue<LV_Global>;
 
+template <class... Ts0>
+struct FuncCall {
+	template <class RT, class... Args, class... Ts1>
+	static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
+		return func(std::forward<Ts1>(ts1)...);
+	}
+};
+template <class Ts0A, class... Ts0>
+struct FuncCall<Ts0A, Ts0...> {
+	template <class RT, class... Args, class... Ts1>
+	static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
+		return FuncCall<Ts0...>::proc(ls, idx+1, func, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls));
+	}
+};
+
+//! Luaに返す値の数を型から特定する
+template <class T>
+struct RetSize {
+	constexpr static int size = 1;
+	static int proc(lua_State* ls, const T& t) {
+		LCV<T>()(ls, t);
+		return size;
+	}
+};
+template <class... Ts>
+struct RetSize<std::tuple<Ts...>> {
+	constexpr static int size = sizeof...(Ts);
+	static int proc(lua_State* ls, const std::tuple<Ts...>& t) {
+		LCV<std::tuple<Ts...>>()(ls, t);
+		return size;
+	}
+};
+template <>
+struct RetSize<void> {
+	constexpr static int size = 0;
+	static int proc(lua_State* ls) {
+		return size;
+	}
+};
+//! LuaへC++のクラスをインポート、管理する
+class LuaImport {
+	public:
+		template <class RT, class... Args>
+		static int RegisterFunction2(lua_State* ls) {
+			// 関数ポインタを取り出す (型情報はテンプレートで渡してある)
+			lua_pushvalue(ls, lua_upvalueindex(1));
+			using F = RT (*)(Args...);
+			F f = reinterpret_cast<F>(lua_touserdata(ls, -1));
+			lua_pop(ls, 1);
+			// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
+			return RetSize<RT>::proc(ls, FuncCall<Args...>::proc(ls, -sizeof...(Args), f));
+		}
+		//! グローバル関数の登録
+		template <class RT, class... Ts>
+		static void RegisterFunction(LuaState& lsc, const char* name, RT (*func)(Ts...)) {
+			lsc.push(reinterpret_cast<void*>(func));
+			lsc.pushCClosure(&RegisterFunction2<RT, Ts...>, 1);
+			lsc.setGlobal(name);
+		}
+};
