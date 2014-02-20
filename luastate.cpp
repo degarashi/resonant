@@ -187,12 +187,14 @@ void LuaState::load(const std::string& fname) {
 	ifs.seekg(0, std::ios::beg);
 
 	// メモリに一括読み込み
-	std::vector<char> buff(pos + 1);
-	ifs.read(buff.data(), pos);
+	std::string buff;
+	buff.resize(pos);
+	ifs.read(&buff[0], pos);
 	ifs.close();
-	buff.back() = '\0';
-
-	int res = luaL_loadstring(getLS(), buff.data());
+	loadFromString(buff);
+}
+void LuaState::loadFromString(const std::string& code) {
+	int res = luaL_loadstring(getLS(), code.data());
 	_checkError(res);
 	// Loadされたチャンクを実行
 	call(0,0);

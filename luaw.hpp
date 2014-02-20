@@ -190,6 +190,7 @@ class LuaState : public std::enable_shared_from_this<LuaState> {
 		LuaState(lua_State* ls);
 
 		void load(const std::string& fname);
+		void loadFromString(const std::string& code);
 		void push(const LCValue& v);
 		void pushCClosure(lua_CFunction func, int nvalue);
 		template <class A, class... Args>
@@ -532,6 +533,10 @@ using LValueG = LValue<LV_Global>;
 
 template <class... Ts0>
 struct FuncCall {
+	template <class T, class RT, class... Args, class... Ts1>
+	static RT procMethod(lua_State* ls, T* ptr, int idx, RT (T::*func)(Args...), Ts1&&... ts1) {
+		return (ptr->*func)(std::forward<Ts1>(ts1)...);
+	}
 	template <class RT, class... Args, class... Ts1>
 	static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
 		return func(std::forward<Ts1>(ts1)...);
@@ -539,6 +544,10 @@ struct FuncCall {
 };
 template <class Ts0A, class... Ts0>
 struct FuncCall<Ts0A, Ts0...> {
+	template <class T, class RT, class... Args, class... Ts1>
+	static RT procMethod(lua_State* ls, T* ptr, int idx, RT (T::*func)(Args...), Ts1&&... ts1) {
+		return FuncCall<Ts0...>::procMethod(ls, ptr, idx+1, func, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls));
+	}
 	template <class RT, class... Args, class... Ts1>
 	static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
 		return FuncCall<Ts0...>::proc(ls, idx+1, func, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls));
@@ -569,16 +578,134 @@ struct RetSize<void> {
 		return size;
 	}
 };
+#define DEF_LUAIMPORT(Class, ...) \
+	static const char* GetLuaName(); \
+	static void ExportLua(LuaState& lsc);
+#define DEF_REGMEMBER(n, clazz, elem)	LuaImport::RegisterMember(lsc, #elem, &clazz::elem);
+#define DEF_LUAIMPLEMENT(clazz, seq_member, seq_method)	\
+	const char* clazz::GetLuaName() { return #clazz; } \
+	void clazz::ExportLua(LuaState& lsc) { \
+		LuaImport::MakeLua(GetLuaName(), lsc); \
+		lsc.newTable(); \
+		BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_member) \
+		lsc.pushValue(-1); \
+		lsc.newTable(); \
+		BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_method) \
+	}
+
+// メンバ変数の時はtrue, それ以外はfalseを返す
+template <class T>
+struct IsMember {
+	using type = std::false_type;
+	constexpr static int value = 0;
+};
+template <class V, class T>
+struct IsMember<V T::*> {
+	using type = std::true_type;
+	constexpr static int value = 1;
+};
+
 //! LuaへC++のクラスをインポート、管理する
 class LuaImport {
+	template <class PTR>
+	static PTR _GetUD(lua_State* ls, int idx) {
+		void** ud = reinterpret_cast<void**>(LCV<void*>()(idx, ls));
+		return *reinterpret_cast<PTR*>(ud);
+	}
+	template <class V, class T>
+	using PMember = V T::*;
+	template <class RT, class T, class... Args>
+	using PMethod = RT (T::*)(Args...);
+	template <class V, class T>
+	static PMember<V,T> GetMember(lua_State* ls, int idx) {
+		return _GetUD<PMember<V,T>>(ls, idx);
+	}
+	template <class RT, class T, class... Args>
+	static PMethod<RT,T,Args...> GetMethod(lua_State* ls, int idx) {
+		return _GetUD<PMethod<RT,T,Args...>>(ls, idx);
+	}
+	// クラスの変数、関数ポインタは4byteでない可能性があるのでuserdataとして格納する
+	template <class PTR>
+	static void _SetUD(lua_State* ls, PTR ptr) {
+		void* ud = lua_newuserdata(ls, sizeof(PTR));
+		std::memcpy(ud, *reinterpret_cast<void**>(ptr), sizeof(PTR));
+	}
+	template <class T, class V>
+	static void SetMember(lua_State* ls, V T::*member) {
+		_SetUD(ls, &member);
+	}
+	template <class T, class RT, class... Args>
+	static void SetMethod(lua_State* ls, RT (T::*method)(Args...)) {
+		_SetUD(ls, &method);
+	}
 	public:
+		//! 事前にClass_valueR, Class_valueW, Class_func, Class_Newを定義した状態で呼ぶ
+		static void MakeLua(const char* name, LuaState& lsc);
+		//! lscにFuncTableを積んだ状態で呼ぶ
+		template <class RT, class T, class... Ts>
+		static void RegisterMember(LuaState& lsc, const char* name, RT (T::*func)(Ts...)) {
+			lsc.push(name);
+			SetMethod(lsc.getLS(), func);
+			lsc.pushCClosure(&CallMethod<RT,T,Ts...>, 1);
+			lsc.setTable(-3);
+		}
+		template <class RT, class T, class... Ts>
+		static void RegisterMember(LuaState& lsc, const char* name, RT (T::*func)(Ts...) const) {
+			RegisterMember(lsc, name, (RT (T::*)(Ts...))func);
+		}
+		//! lscにReadTable, WriteTableを積んだ状態で呼ぶ
+		template <class T, class V>
+		static void RegisterMember(LuaState& lsc, const char* name, V T::*member) {
+			// ReadValue関数の登録
+			lsc.push(name);
+			SetMember(lsc.getLS(), member);
+			lsc.pushCClosure(&ReadValue<T,V>, 1);
+			lsc.setTable(-4);
+			// WriteValue関数の登録
+			lsc.push(name);
+			SetMember(lsc.getLS(), member);
+			lsc.pushCClosure(&WriteValue<T,V>, 1);
+			lsc.setTable(-3);
+		}
+		template <class T, class V>
+		static int ReadValue(lua_State* ls) {
+			// up[1]	変数ポインタ
+			// [1]		クラスポインタ
+			using VPtr = V T::*;
+			const T* src = reinterpret_cast<const T*>(LCV<void*>()(1, ls));
+			VPtr vp = GetMember<VPtr>(ls, lua_upvalueindex(1));
+			LCV<V>()(ls, src->*vp);
+			return 1;
+		}
+		template <class T, class V>
+		static int WriteValue(lua_State* ls) {
+			// up[1]	変数ポインタ
+			// [1]		クラスポインタ
+			// [2]		セットする値
+			using VPtr = V T::*;
+			const T* dst = reinterpret_cast<const T*>(LCV<void*>()(1, ls));
+			VPtr ptr = GetMember<VPtr>(ls, lua_upvalueindex(1));
+			(dst->*ptr) = LCV<V>()(2, ls);
+			return 0;
+		}
+		template <class RT, class T, class... Args>
+		static int CallMethod(lua_State* ls) {
+			// up[1]	関数ポインタ
+			// [1]		クラスポインタ
+			// [2以降]	引数
+			using F = RT (T::*)(Args...);
+			void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
+			F f = *reinterpret_cast<F*>(&tmp);
+			T* ptr = reinterpret_cast<T*>(LCV<void*>()(1, ls));
+			return RetSize<RT>::proc(ls, FuncCall<Args...>::procMethod(ls, ptr, -sizeof...(Args), f));
+		}
 		template <class RT, class... Args>
-		static int RegisterFunction2(lua_State* ls) {
-			// 関数ポインタを取り出す (型情報はテンプレートで渡してある)
-			lua_pushvalue(ls, lua_upvalueindex(1));
+		static int CallFunction(lua_State* ls) {
+			// up[1]	関数ポインタ
+			// [1]		クラスポインタ
+			// [2以降]	引数
 			using F = RT (*)(Args...);
-			F f = reinterpret_cast<F>(lua_touserdata(ls, -1));
-			lua_pop(ls, 1);
+			F f = reinterpret_cast<F>(lua_touserdata(ls, lua_upvalueindex(1)));
 			// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
 			return RetSize<RT>::proc(ls, FuncCall<Args...>::proc(ls, -sizeof...(Args), f));
 		}
@@ -586,7 +713,15 @@ class LuaImport {
 		template <class RT, class... Ts>
 		static void RegisterFunction(LuaState& lsc, const char* name, RT (*func)(Ts...)) {
 			lsc.push(reinterpret_cast<void*>(func));
-			lsc.pushCClosure(&RegisterFunction2<RT, Ts...>, 1);
+			lsc.pushCClosure(&CallFunction<RT, Ts...>, 1);
 			lsc.setGlobal(name);
 		}
+		//! クラスの登録(登録名はクラスから取得)
+		template <class T>
+		static void RegisterClass(LuaState& lsc) {
+			lsc.newTable();
+			lsc.setGlobal(T::GetLuaName());
+			T::ExportLua(lsc);
+		}
 };
+
