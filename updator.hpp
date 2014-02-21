@@ -130,6 +130,7 @@ namespace rs {
 			Circle
 		};
 		public:
+			virtual const char* getLuaName() const { return "Object"; }
 			//! 描画セッティング等をチェックして適切なタグを出力
 			virtual void getDTag(DTagCollect& dst) const {}
 			//! 描画タグに記載がしてある類の描画セッティングをする
