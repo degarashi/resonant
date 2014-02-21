@@ -78,6 +78,8 @@ namespace rs {
 		LuaType operator()() const {
 			return LCV<SH>()(); }
 	};
+	template <>
+	struct LCV<float> : LCV<lua_Number> {};
 
 	// Userdata(Handle)をスタックの一番上に積んだ上で呼ぶ
 	void SetHandleMT(LuaState& lsc, const char* name);
@@ -104,7 +106,7 @@ namespace rs {
 				SetMT(ls, t.cref(), nullptr);
 		}
 		spn::SHandleT<T> operator()(int idx, lua_State* ls) const {
-			return  LCV<spn::SHandle>()(idx, ls); }
+			return  spn::SHandleT<T>::FromSHandle(LCV<spn::SHandle>()(idx, ls)); }
 		std::ostream& operator()(std::ostream& os, const spn::SHandleT<T>& t) const {
 			return LCV<spn::SHandle>()(os, static_cast<spn::SHandle>(t)); }
 		LuaType operator()() const {
@@ -581,6 +583,7 @@ namespace rs {
 	using LValueS = LValue<LV_Stack>;
 	using LValueG = LValue<LV_Global>;
 
+	//! Luaから引数を変換取得して関数を呼ぶ
 	template <class... Ts0>
 	struct FuncCall {
 		template <class CB, class... Ts1>
@@ -676,7 +679,7 @@ namespace rs {
 		template <class PTR>
 		static void _SetUD(lua_State* ls, PTR ptr) {
 			void* ud = lua_newuserdata(ls, sizeof(PTR));
-			std::memcpy(ud, *reinterpret_cast<void**>(&ptr), sizeof(PTR));
+			std::memcpy(ud, reinterpret_cast<void**>(&ptr), sizeof(PTR));
 		}
 		template <class T, class V>
 		static void SetMember(lua_State* ls, V T::*member) {
@@ -687,6 +690,7 @@ namespace rs {
 			_SetUD(ls, method);
 		}
 		public:
+			//! クラステーブルの構築
 			//! 事前にClass_valueR, Class_valueW, Class_func, Class_Newを定義した状態で呼ぶ
 			static void MakeLua(const char* name, LuaState& lsc);
 			//! lscにFuncTableを積んだ状態で呼ぶ
@@ -702,40 +706,41 @@ namespace rs {
 				RegisterMember(lsc, name, (RT (T::*)(Ts...))func);
 			}
 			//! lscにReadTable, WriteTableを積んだ状態で呼ぶ
-			template <class T, class V>
+			template <class V, class T>
 			static void RegisterMember(LuaState& lsc, const char* name, V T::*member) {
 				// ReadValue関数の登録
 				lsc.push(name);
 				SetMember(lsc.getLS(), member);
-				lsc.pushCClosure(&ReadValue<T,V>, 1);
+				lsc.pushCClosure(&ReadValue<V,T>, 1);
 				lsc.setTable(-4);
 				// WriteValue関数の登録
 				lsc.push(name);
 				SetMember(lsc.getLS(), member);
-				lsc.pushCClosure(&WriteValue<T,V>, 1);
+				lsc.pushCClosure(&WriteValue<V,T>, 1);
 				lsc.setTable(-3);
 			}
-			template <class T, class V>
+			//! luaスタックから変数ポインタとクラスを取り出しメンバ変数を読み込む
+			template <class V, class T>
 			static int ReadValue(lua_State* ls) {
 				// up[1]	変数ポインタ
 				// [1]		クラスポインタ
-				using VPtr = V T::*;
 				const T* src = reinterpret_cast<const T*>(LCV<void*>()(1, ls));
-				VPtr vp = GetMember<VPtr>(ls, lua_upvalueindex(1));
+				auto vp = GetMember<V,T>(ls, lua_upvalueindex(1));
 				LCV<V>()(ls, src->*vp);
 				return 1;
 			}
-			template <class T, class V>
+			//! luaスタックから変数ポインタとクラスと値を取り出しメンバ変数に書き込む
+			template <class V, class T>
 			static int WriteValue(lua_State* ls) {
 				// up[1]	変数ポインタ
 				// [1]		クラスポインタ
 				// [2]		セットする値
-				using VPtr = V T::*;
-				const T* dst = reinterpret_cast<const T*>(LCV<void*>()(1, ls));
-				VPtr ptr = GetMember<VPtr>(ls, lua_upvalueindex(1));
+				T* dst = reinterpret_cast<T*>(LCV<void*>()(1, ls));
+				auto ptr = GetMember<V,T>(ls, lua_upvalueindex(1));
 				(dst->*ptr) = LCV<V>()(2, ls);
 				return 0;
 			}
+			//! luaスタックから関数ポインタとクラス、引数を取り出しクラスのメンバ関数を呼ぶ
 			template <class RT, class T, class... Args>
 			static int CallMethod(lua_State* ls) {
 				// up[1]	関数ポインタ
@@ -743,25 +748,30 @@ namespace rs {
 				// [2以降]	引数
 				using F = RT (T::*)(Args...);
 				void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
-				F* f = *reinterpret_cast<F**>(&tmp);
+				F f = *reinterpret_cast<F*>(tmp);
 				T* ptr = reinterpret_cast<T*>(LCV<void*>()(1, ls));
-				return RetSize<RT>::proc(ls, FuncCall<Args...>::procMethod(ls, ptr, -sizeof...(Args), *f));
+				return RetSize<RT>::proc(ls, FuncCall<Args...>::procMethod(ls, ptr, 2, f));
 			}
+			//! luaスタックから関数ポインタと引数を取り出しcall
 			template <class RT, class... Args>
 			static int CallFunction(lua_State* ls) {
 				// up[1]	関数ポインタ
-				// [1]		クラスポインタ
-				// [2以降]	引数
+				// [1以降]	引数
 				using F = RT (*)(Args...);
 				F f = reinterpret_cast<F>(lua_touserdata(ls, lua_upvalueindex(1)));
 				// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
-				return RetSize<RT>::proc(ls, FuncCall<Args...>::proc(ls, -sizeof...(Args), f));
+				return RetSize<RT>::proc(ls, FuncCall<Args...>::proc(ls, 1, f));
+			}
+			//! staticな関数をスタックへpush
+			template <class RT, class... Ts>
+			static void PushFunction(LuaState& lsc, RT (*func)(Ts...)) {
+				lsc.push(reinterpret_cast<void*>(func));
+				lsc.pushCClosure(&CallFunction<RT, Ts...>, 1);
 			}
 			//! グローバル関数の登録
 			template <class RT, class... Ts>
 			static void RegisterFunction(LuaState& lsc, const char* name, RT (*func)(Ts...)) {
-				lsc.push(reinterpret_cast<void*>(func));
-				lsc.pushCClosure(&CallFunction<RT, Ts...>, 1);
+				PushFunction(lsc, func);
 				lsc.setGlobal(name);
 			}
 			//! クラスの登録(登録名はクラスから取得)
@@ -771,6 +781,7 @@ namespace rs {
 				lsc.setGlobal(T::GetLuaName());
 				T::ExportLua(lsc);
 			}
+			//! オブジェクトハンドルの基本関数を登録
 			static void RegisterHandleFunc(LuaState& lsc);
 	};
 }

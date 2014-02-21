@@ -5,6 +5,7 @@
 #include <boost/regex.hpp>
 
 namespace rs {
+	using spn::SHandle;
 	namespace {
 		const std::string cs_base("\
 			local _mt = { \
@@ -103,8 +104,9 @@ namespace rs {
 	}
 	SHandle LCV<SHandle>::operator()(int idx, lua_State* ls) const {
 		// userdata or nil
-		// リソース番号のチェック
-		return SHandle();
+		LuaState lsc(ls);
+		if(lsc.type(idx) == LuaType::Nil)
+			return SHandle();
 		return *reinterpret_cast<SHandle*>(LCV<void*>()(idx, ls));
 	}
 	std::ostream& LCV<SHandle>::operator()(std::ostream& os, SHandle h) const {
@@ -114,14 +116,6 @@ namespace rs {
 		return LuaType::Userdata;
 	}
 
-	// Gobjをプッシュする時にオブジェクトに適したメタテーブルを付加
-	// ハンドル汎用ルーチンではハンドル値の変換しかしてくれない
-	// Gobjの時だけ特別扱いでobj->getLuaName()なんかして名前を取得
-	// オブジェクトの作成？
-	//		Luaから
-	//			ClassT.New(args...)
-	//		C++から
-	//			HLGbj mgr_gobj.makeObj<T>(args...);
 	//	アップデータの登録
 	//		シーンツリーの管理はスクリプトがメイン
 	//		HGroup = createGroup("")

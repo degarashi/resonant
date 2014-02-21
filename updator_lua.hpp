@@ -13,10 +13,10 @@ namespace rs {
 			lsc.push(rs::ReleaseObj); \
 			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _gc))); \
 			lsc.newTable(); \
+			lsc.newTable(); \
 			BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_member) \
-			lsc.pushValue(-1); \
-			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _valueR))); \
 			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _valueW))); \
+			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _valueR))); \
 			lsc.newTable(); \
 			BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_method) \
 			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _func))); \
