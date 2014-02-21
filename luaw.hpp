@@ -658,6 +658,13 @@ namespace rs {
 
 	//! LuaへC++のクラスをインポート、管理する
 	class LuaImport {
+		//! ハンドルオブジェクトの基本メソッド
+		struct LuaHandleBase {
+			static void RegisterFuncs(LuaState& lsc);
+			static lua_Unsigned HandleId(spn::SHandle sh);
+			static lua_Integer NumRef(spn::SHandle sh);
+		};
+
 		template <class PTR>
 		static PTR _GetUD(lua_State* ls, int idx) {
 			void** ud = reinterpret_cast<void**>(LCV<void*>()(idx, ls));

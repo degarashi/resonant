@@ -11,9 +11,9 @@ namespace rs {
 			local _mt = { \
 				__index = function(tbl, key) \
 					local r = [[CLASS]]_valueR[key] \
-					if r then \
-						return r(tbl) \
-					end \
+					if r then return r(tbl) end \
+					r = LuaHandleBase[key] \
+					if r then return r(tbl) end \
 					return [[CLASS]]_func[key] \
 				end, \
 				__newindex = function(tbl, key, value) \
@@ -27,7 +27,8 @@ namespace rs {
 			[[CLASS]] = { \
 				_mt = _mt, \
 				New = function(...) \
-					return [[CLASS]]_New(...) \
+					local h = [[CLASS]]_New(...) \
+					return RegHandle(h.handleId, h) \
 				end \
 			}");
 		//! リソースハンドルの登録・削除関数
@@ -44,7 +45,31 @@ namespace rs {
 			function RegHandle(id, ud) \
 				handleTable[id] = ud \
 				return ud \
+			end \
+			function DeleteHandle(ud) \
+				for k,v in pairs(handleTable) do \
+					if v == ud then \
+						handleTable[k] = nil \
+					end \
+				end \
 			end");
+	}
+
+	lua_Unsigned LuaImport::LuaHandleBase::HandleId(SHandle sh) {
+		return sh.getValue(); }
+	lua_Integer LuaImport::LuaHandleBase::NumRef(SHandle sh) {
+		return sh.count(); }
+	void LuaImport::LuaHandleBase::RegisterFuncs(LuaState& lsc) {
+		lsc.newTable();
+
+		lsc.push("handleId");
+		LuaImport::PushFunction(lsc, &LuaHandleBase::HandleId);
+		lsc.setTable(-3);
+		lsc.push("numRef");
+		LuaImport::PushFunction(lsc, &LuaHandleBase::NumRef);
+		lsc.setTable(-3);
+
+		lsc.setGlobal("LuaHandleBase");
 	}
 
 	int ReleaseObj(lua_State* ls) {
@@ -64,6 +89,7 @@ namespace rs {
 	}
 	void LuaImport::RegisterHandleFunc(LuaState& lsc) {
 		lsc.loadFromString(cs_gbase);
+		LuaHandleBase::RegisterFuncs(lsc);
 	}
 	void LuaImport::MakeLua(const char* name, LuaState& lsc) {
 		boost::regex re("\\[\\[CLASS\\]\\]");
