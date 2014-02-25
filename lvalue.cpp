@@ -148,16 +148,20 @@ namespace rs {
 	}
 	LCTable LCV<LCTable>::operator()(int idx, lua_State* ls) const {
 		LuaState::_CheckType(ls, idx, LuaType::Table);
-		LCV<LCTable> cnv;
+		LuaState lsc(ls);
 		LCTable tbl;
-		lua_pushnil(ls);
-		while(lua_next(ls, idx) != 0) {
+		idx = lsc.absIndex(idx);
+		lsc.push(LuaNil());
+		while(lsc.next(idx) != 0) {
 			// key=-2 value=-1
-			tbl.emplace(SPLCValue(new LCValue(cnv(-2, ls))),
-						SPLCValue(new LCValue(cnv(-1, ls))));
+			tbl.emplace(SPLCValue(new LCValue(lsc.toLCValue(-2))),
+						SPLCValue(new LCValue(lsc.toLCValue(-1))));
+			// valueは取り除きkeyはlua_nextのために保持
+			lsc.pop(1);
 		}
 		return std::move(tbl);
 	}
+	//TODO: アドレスを出力しても他のテーブルの区別がつかずあまり意味がないので改善する
 	std::ostream& LCV<LCTable>::operator()(std::ostream& os, const LCTable& t) const {
 		return os << "(table)" << std::hex << reinterpret_cast<uintptr_t>(&t); }
 	LuaType LCV<LCTable>::operator()() const {

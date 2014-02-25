@@ -8,19 +8,22 @@ namespace rs {
 		const char* clazz::getLuaName() const { return clazz::GetLuaName(); } \
 		const char* clazz::GetLuaName() { return #clazz; } \
 		void clazz::ExportLua(rs::LuaState& lsc) { \
+			lsc.getGlobal(rs::luaNS::DerivedHandle); \
+			lsc.getGlobal(rs::luaNS::ObjectBase); \
+			lsc.call(1,1); \
+			lsc.push(rs::luaNS::objBase::_New); \
 			lsc.push(rs::MakeObj<BOOST_PP_SEQ_ENUM((clazz)seq_ctor)>); \
-			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _New))); \
-			lsc.push(rs::ReleaseObj); \
-			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _gc))); \
-			lsc.newTable(); \
-			lsc.newTable(); \
+			lsc.setTable(-3); \
+			\
+			lsc.getField(-1, rs::luaNS::objBase::ValueR); \
+			lsc.getField(-2, rs::luaNS::objBase::ValueW); \
 			BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_member) \
-			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _valueW))); \
-			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _valueR))); \
-			lsc.newTable(); \
+			lsc.pop(2); \
+			\
+			lsc.getField(-1, rs::luaNS::objBase::Func); \
 			BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_method) \
-			lsc.setGlobal(BOOST_PP_STRINGIZE(BOOST_PP_CAT(clazz, _func))); \
-			rs::LuaImport::MakeLua(clazz::GetLuaName(), lsc); \
+			lsc.pop(2); \
+			lsc.setGlobal(#clazz); \
 		}
 
 	int ReleaseObj(lua_State* ls);
@@ -33,8 +36,7 @@ namespace rs {
 		LCV<HLGbj>()(ls, hlGbj);
 
 		// Userdataへのメタテーブル設定はC++からでしか行えないので、ここでする
-		LuaState lsc(ls);
-		SetHandleMT(lsc, T::GetLuaName());
+		SetHandleMT(ls);
 		return 1;
 	}
 }

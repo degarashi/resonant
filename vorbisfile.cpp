@@ -133,7 +133,6 @@ namespace rs {
 		return OVEC_P(Trap, ov_time_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 	}
 	int64_t VorbisFile::pcmTell() const {
-		auto* self = const_cast<VorbisFile*>(this);
 		return OVEC_P(Trap, ov_pcm_tell, const_cast<OggVorbis_File*>(&this->_ovf));
 	}
 	void VorbisFile::invalidate() {

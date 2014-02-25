@@ -6,70 +6,67 @@
 
 namespace rs {
 	using spn::SHandle;
-	namespace {
-		const std::string cs_base("\
-			local _mt = { \
-				__index = function(tbl, key) \
-					local r = [[CLASS]]_valueR[key] \
-					if r then return r(tbl) end \
-					r = LuaHandleBase[key] \
-					if r then return r(tbl) end \
-					return [[CLASS]]_func[key] \
-				end, \
-				__newindex = function(tbl, key, value) \
-					local r = [[CLASS]]_valueW[key] \
-					if r then \
-						r(tbl, value) \
-					end \
-				end, \
-				__gc = [[CLASS]]_gc\
-			} \
-			[[CLASS]] = { \
-				_mt = _mt, \
-				New = function(...) \
-					local h = [[CLASS]]_New(...) \
-					return RegHandle(h.handleId, h) \
-				end \
-			}");
-		//! リソースハンドルの登録・削除関数
-		//! 事前にDeleteHandleを定義しておく
-		const std::string cs_gbase("\
-			local handleTable = {} \
-			local handle_mt = { __gc = DeleteHandle } \
-			setmetatable(handleTable, { \
-				__mode = \"v\" \
-			}) \
-			function HasHandle(id) \
-				return handleTable[id] \
-			end \
-			function RegHandle(id, ud) \
-				handleTable[id] = ud \
-				return ud \
-			end \
-			function DeleteHandle(ud) \
-				for k,v in pairs(handleTable) do \
-					if v == ud then \
-						handleTable[k] = nil \
-					end \
-				end \
-			end");
+	namespace luaNS {
+		const std::string GetHandle("GetHandle"),
+						DeleteHandle("DeleteHandle"),
+						ObjectBase("ObjectBase"),
+						DerivedHandle("DerivedHandle");
+		namespace objBase {
+			const std::string ValueR("_valueR"),
+								ValueW("_valueW"),
+								Func("_func"),
+								UdataMT("_udata_mt"),
+								MT("_mt"),
+								_New("_New");
+			namespace valueR {
+				const std::string HandleId("handleId"),
+									NumRef("numRef");
+			}
+		}
 	}
-
-	lua_Unsigned LuaImport::LuaHandleBase::HandleId(SHandle sh) {
+	namespace {
+		void DecrementHandle(SHandle sh) {
+			sh.release();
+		}
+	}
+	lua_Unsigned LuaImport::HandleId(SHandle sh) {
 		return sh.getValue(); }
-	lua_Integer LuaImport::LuaHandleBase::NumRef(SHandle sh) {
+	lua_Integer LuaImport::NumRef(SHandle sh) {
 		return sh.count(); }
-	void LuaImport::LuaHandleBase::RegisterFuncs(LuaState& lsc) {
+
+	// オブジェクトハンドルの基本メソッド定義
+	void LuaImport::RegisterObjectBase(LuaState& lsc) {
 		lsc.newTable();
 
-		lsc.push("handleId");
-		LuaImport::PushFunction(lsc, &LuaHandleBase::HandleId);
+		// ValueRの初期化
+		lsc.push(luaNS::objBase::ValueR);
+		lsc.newTable();
+		lsc.push(luaNS::objBase::valueR::HandleId);
+		LuaImport::PushFunction(lsc, &HandleId);
 		lsc.setTable(-3);
-		lsc.push("numRef");
-		LuaImport::PushFunction(lsc, &LuaHandleBase::NumRef);
+		lsc.push(luaNS::objBase::valueR::NumRef);
+		LuaImport::PushFunction(lsc, &NumRef);
+		lsc.setTable(-3);
+		lsc.setTable(-3);
+		// ValueWの初期化
+		lsc.push(luaNS::objBase::ValueW);
+		lsc.newTable();
+		lsc.setTable(-3);
+		// Funcの初期化
+		lsc.newTable();
+		lsc.push(luaNS::objBase::Func);
 		lsc.setTable(-3);
 
-		lsc.setGlobal("LuaHandleBase");
+		// C++リソースハンドル用メタテーブル
+		lsc.push(luaNS::objBase::UdataMT);
+		lsc.newTable();
+		lsc.push("__gc");
+		LuaImport::PushFunction(lsc, DecrementHandle);
+		lsc.setTable(-3);
+		lsc.setTable(-3);
+
+		lsc.setGlobal(luaNS::ObjectBase);
+		lsc.load("/home/slice/projects/resonant/base.lua");
 	}
 
 	int ReleaseObj(lua_State* ls) {
@@ -78,26 +75,16 @@ namespace rs {
 		spn::ResMgrBase::Release(sh);
 		return 0;
 	}
-	void SetHandleMT(lua_State* ls, const char* name) {
+	void SetHandleMT(lua_State* ls) {
 		LuaState lsc(ls);
-		SetHandleMT(lsc, name); }
-	void SetHandleMT(LuaState& lsc, const char* name) {
-		lsc.getGlobal(name);
-		lsc.getField(-1, "_mt");
+		SetHandleMT(lsc);
+	}
+	void SetHandleMT(LuaState& lsc) {
+		lsc.getGlobal(luaNS::ObjectBase);
+		lsc.getField(-1, luaNS::objBase::UdataMT);
 		lsc.setMetatable(-3);
 		lsc.pop(1);
 	}
-	void LuaImport::RegisterHandleFunc(LuaState& lsc) {
-		lsc.loadFromString(cs_gbase);
-		LuaHandleBase::RegisterFuncs(lsc);
-	}
-	void LuaImport::MakeLua(const char* name, LuaState& lsc) {
-		boost::regex re("\\[\\[CLASS\\]\\]");
-		// [[CLASS]] -> name
-		std::string str = boost::regex_replace(cs_base, re, name);
-		lsc.loadFromString(str);
-	}
-	using spn::SHandle;
 	// ------------------- LCValue -------------------
 	void LCV<SHandle>::operator()(lua_State* ls, SHandle h) const {
 		// nullハンドルチェック
@@ -105,27 +92,14 @@ namespace rs {
 			// nilをpushする
 			LCV<LuaNil>()(ls, LuaNil());
 		} else {
-			// Luaのハンドルテーブルで既存のハンドルがないかチェック
+			// ハンドルをインクリメント
+			spn::ResMgrBase::Increment(h);
+			// Luaのハンドルテーブルからオブジェクトの実体を取得
 			LuaState lsc(ls);
-			lsc.getGlobal("HasHandle");
+			lsc.getGlobal(luaNS::GetHandle);
 			lsc.push(h.getValue());
 			lsc.call(1,1);
-			bool bHasHandle = lsc.type(-1) == LuaType::Userdata;
-			if(bHasHandle) {
-				// 既に登録してあったのでそのまま使う
-			} else {
-				// ハンドルをインクリメント
-				spn::ResMgrBase::Increment(h);
-				// エントリを作成
-				lsc.pop(1);
-				lsc.getGlobal("RegHandle");
-				lsc.push(h.getValue());
-				// LightUserdataは個別のメタテーブルを持てないのでUserdataを使う
-				SHandle& sh = *reinterpret_cast<SHandle*>(lsc.newUserData(sizeof(SHandle)));
-				sh = h;
-				lsc.call(2,1);
-			}
-			std::cout << lsc;
+			AssertP(Trap, lsc.type(-1) == LuaType::Table)
 		}
 	}
 	SHandle LCV<SHandle>::operator()(int idx, lua_State* ls) const {

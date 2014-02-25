@@ -1,4 +1,5 @@
 #include "luaw.hpp"
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <limits>

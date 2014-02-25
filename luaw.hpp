@@ -82,18 +82,17 @@ namespace rs {
 	struct LCV<float> : LCV<lua_Number> {};
 
 	// Userdata(Handle)をスタックの一番上に積んだ上で呼ぶ
-	void SetHandleMT(LuaState& lsc, const char* name);
-	void SetHandleMT(lua_State* ls, const char* name);
+	void SetHandleMT(LuaState& lsc);
+	void SetHandleMT(lua_State* ls);
 
 	// LuaImportに登録してあるクラスだったらmetatableを設定
 	template <class T>
 	void SetMT(lua_State* ls, T& t, decltype(std::declval<T>().getLuaName())*) {
-		// クラスの内部変数に依存しないのでdeclvalでメソッドを呼ぶ
-		SetHandleMT(ls, t.getLuaName());
+		SetHandleMT(ls);
 	}
 	template <class T>
 	void SetMT(lua_State* ls, T& t, decltype(std::declval<T>()->getLuaName())*) {
-		SetHandleMT(ls, t->getLuaName());
+		SetHandleMT(ls);
 	}
 	template <class T>
 	inline void SetMT(lua_State* ls, T& t, ...) {}
@@ -619,23 +618,27 @@ namespace rs {
 	template <class T>
 	struct RetSize {
 		constexpr static int size = 1;
-		static int proc(lua_State* ls, const T& t) {
-			LCV<T>()(ls, t);
+		template <class CB>
+		static int proc(lua_State* ls, CB cb) {
+			LCV<T>()(ls, cb());
 			return size;
 		}
 	};
 	template <class... Ts>
 	struct RetSize<std::tuple<Ts...>> {
 		constexpr static int size = sizeof...(Ts);
-		static int proc(lua_State* ls, const std::tuple<Ts...>& t) {
-			LCV<std::tuple<Ts...>>()(ls, t);
+		template <class CB>
+		static int proc(lua_State* ls, CB cb) {
+			LCV<std::tuple<Ts...>>()(ls, cb());
 			return size;
 		}
 	};
 	template <>
 	struct RetSize<void> {
 		constexpr static int size = 0;
-		static int proc(lua_State* ls) {
+		template <class CB>
+		static int proc(lua_State* ls, CB cb) {
+			cb();
 			return size;
 		}
 	};
@@ -656,14 +659,30 @@ namespace rs {
 		constexpr static int value = 1;
 	};
 
+	namespace luaNS {
+		extern const std::string GetHandle,
+								DeleteHandle,
+								ObjectBase,
+								DerivedHandle;
+		namespace objBase {
+			extern const std::string ValueR,
+									ValueW,
+									Func,
+									UdataMT,
+									MT,
+									_New;
+			namespace valueR {
+				extern const std::string HandleId,
+										NumRef;
+			}
+		}
+	}
+
 	//! LuaへC++のクラスをインポート、管理する
 	class LuaImport {
 		//! ハンドルオブジェクトの基本メソッド
-		struct LuaHandleBase {
-			static void RegisterFuncs(LuaState& lsc);
-			static lua_Unsigned HandleId(spn::SHandle sh);
-			static lua_Integer NumRef(spn::SHandle sh);
-		};
+		static lua_Unsigned HandleId(spn::SHandle sh);
+		static lua_Integer NumRef(spn::SHandle sh);
 
 		template <class PTR>
 		static PTR _GetUD(lua_State* ls, int idx) {
@@ -697,9 +716,6 @@ namespace rs {
 			_SetUD(ls, method);
 		}
 		public:
-			//! クラステーブルの構築
-			//! 事前にClass_valueR, Class_valueW, Class_func, Class_Newを定義した状態で呼ぶ
-			static void MakeLua(const char* name, LuaState& lsc);
 			//! lscにFuncTableを積んだ状態で呼ぶ
 			template <class RT, class T, class... Ts>
 			static void RegisterMember(LuaState& lsc, const char* name, RT (T::*func)(Ts...)) {
@@ -730,7 +746,7 @@ namespace rs {
 			template <class V, class T>
 			static int ReadValue(lua_State* ls) {
 				// up[1]	変数ポインタ
-				// [1]		クラスポインタ
+				// [1]		クラスポインタ(userdata)
 				const T* src = reinterpret_cast<const T*>(LCV<void*>()(1, ls));
 				auto vp = GetMember<V,T>(ls, lua_upvalueindex(1));
 				LCV<V>()(ls, src->*vp);
@@ -740,7 +756,7 @@ namespace rs {
 			template <class V, class T>
 			static int WriteValue(lua_State* ls) {
 				// up[1]	変数ポインタ
-				// [1]		クラスポインタ
+				// [1]		クラスポインタ(userdata)
 				// [2]		セットする値
 				T* dst = reinterpret_cast<T*>(LCV<void*>()(1, ls));
 				auto ptr = GetMember<V,T>(ls, lua_upvalueindex(1));
@@ -751,13 +767,13 @@ namespace rs {
 			template <class RT, class T, class... Args>
 			static int CallMethod(lua_State* ls) {
 				// up[1]	関数ポインタ
-				// [1]		クラスポインタ
+				// [1]		クラスポインタ(userdata)
 				// [2以降]	引数
 				using F = RT (T::*)(Args...);
 				void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
 				F f = *reinterpret_cast<F*>(tmp);
 				T* ptr = reinterpret_cast<T*>(LCV<void*>()(1, ls));
-				return RetSize<RT>::proc(ls, FuncCall<Args...>::procMethod(ls, ptr, 2, f));
+				return RetSize<RT>::proc(ls, [ls,ptr,f]() { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
 			}
 			//! luaスタックから関数ポインタと引数を取り出しcall
 			template <class RT, class... Args>
@@ -767,7 +783,7 @@ namespace rs {
 				using F = RT (*)(Args...);
 				F f = reinterpret_cast<F>(lua_touserdata(ls, lua_upvalueindex(1)));
 				// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
-				return RetSize<RT>::proc(ls, FuncCall<Args...>::proc(ls, 1, f));
+				return RetSize<RT>::proc(ls, [ls,f](){ return FuncCall<Args...>::proc(ls, 1, f); });
 			}
 			//! staticな関数をスタックへpush
 			template <class RT, class... Ts>
@@ -784,12 +800,9 @@ namespace rs {
 			//! クラスの登録(登録名はクラスから取得)
 			template <class T>
 			static void RegisterClass(LuaState& lsc) {
-				lsc.newTable();
-				lsc.setGlobal(T::GetLuaName());
 				T::ExportLua(lsc);
 			}
-			//! オブジェクトハンドルの基本関数を登録
-			static void RegisterHandleFunc(LuaState& lsc);
+			static void RegisterObjectBase(LuaState& lsc);
 	};
 }
 
