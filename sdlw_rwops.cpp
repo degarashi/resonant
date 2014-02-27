@@ -1,15 +1,58 @@
 #include "sdlwrap.hpp"
 
 namespace rs {
+	// --------------------- RWE_Error ---------------------
+	RWops::RWE_Error::RWE_Error(const std::string& title): std::runtime_error("") {}
+	void RWops::RWE_Error::setMessage(const std::string& msg) {
+		std::stringstream ss;
+		ss << "RWops - " << _title << std::endl << msg;
+		reinterpret_cast<std::runtime_error&>(*this) = std::runtime_error(ss.str());
+	}
+	// --------------------- RWE_File ---------------------
+	RWops::RWE_File::RWE_File(const std::string& path): RWE_Error("can't open file"), _path(path) {
+		setMessage(path);
+	}
+	// --------------------- RWE_OutOfRange ---------------------
+	RWops::RWE_OutOfRange::RWE_OutOfRange(int64_t pos, int64_t size): RWE_Error("file pointer out of range"), _pos(pos), _size(size) {
+		std::stringstream ss;
+		ss << "file length: " << size << std::endl;
+		ss << "current: " << pos << std::endl;
+		setMessage(ss.str());
+	}
+	// --------------------- RWE_Permission ---------------------
+	RWops::RWE_Permission::RWE_Permission(Access have, Access tr): RWE_Error("invalid permission"), _have(have), _try(tr) {
+		std::stringstream ss;
+		ss << "permission: "<< std::endl;
+		ss << "(having): " << std::hex << have << std::endl;
+		ss << "(needed): " << std::hex << tr << std::endl;
+		setMessage(ss.str());
+	}
+	// --------------------- RWE_Memory ---------------------
+	RWops::RWE_Memory::RWE_Memory(size_t size): RWE_Error("can't allocate memory"), _size(size) {
+		std::stringstream ss;
+		ss << "size: " << size;
+		setMessage(ss.str());
+	}
+	// --------------------- RWE_NullMemory ---------------------
+	RWops::RWE_NullMemory::RWE_NullMemory(): RWE_Error("null memory pointer detected") {
+		setMessage("");
+	}
+	
 	RWops RWops::FromConstMem(const void* mem, size_t size, Callback* cb) {
-		return RWops(SDL_RWFromConstMem(mem,size),
+		AssertT(Trap, mem, (RWE_NullMemory))
+		SDL_RWops* ops = SDL_RWFromConstMem(mem,size);
+		SDLEC_Chk(Throw)
+		return RWops(ops,
 					Type::ConstMem,
 					Read,
 					ExtBuff{const_cast<void*>(mem),size},
 					cb);
 	}
 	RWops RWops::FromMem(void* mem, size_t size, Callback* cb) {
-		return RWops(SDL_RWFromMem(mem,size),
+		AssertT(Trap, mem, (RWE_NullMemory))
+		SDL_RWops* ops = SDL_RWFromMem(mem,size);
+		SDLEC_Chk(Throw)
+		return RWops(ops,
 					Type::Mem,
 					Read|Write,
 					ExtBuff{mem,size},
@@ -20,6 +63,7 @@ namespace rs {
 		str = spn::PathBlock::RemoveDriveLetter(str, str + path.length());
 		std::string mode = ReadModeStr(access);
 		SDL_RWops* ops = SDL_RWFromFile(str, mode.c_str());
+		SDLEC_Chk(Throw)
 		return RWops(ops,
 					Type::File,
 					access,
@@ -27,7 +71,7 @@ namespace rs {
 					nullptr);
 	}
 	RWops RWops::FromURI(SDL_RWops* ops, const spn::URI& uri, int access) {
-		AssertP(Trap, ops)
+		AssertT(Trap, ops, (RWE_File)(const std::string&), uri.plain_utf8())
 		return RWops(ops,
 					Type::File,
 					access,
@@ -35,14 +79,18 @@ namespace rs {
 					nullptr);
 	}
 	RWops RWops::_FromVector(spn::ByteBuff&& buff, Callback* cb, std::false_type) {
-		return RWops(SDL_RWFromMem(&buff[0], buff.size()),
+		SDL_RWops* ops = SDL_RWFromMem(&buff[0], buff.size());
+		SDLEC_Chk(Throw)
+		return RWops(ops,
 					Type::Vector,
 					Read|Write,
 					std::move(buff),
 					cb);
 	}
 	RWops RWops::_FromVector(spn::ByteBuff&& buff, Callback* cb, std::true_type) {
-		return RWops(SDL_RWFromConstMem(&buff[0], buff.size()),
+		SDL_RWops* ops = SDL_RWFromConstMem(&buff[0], buff.size());
+		SDLEC_Chk(Throw)
+		return RWops(ops,
 					Type::ConstVector,
 					Read,
 					std::move(buff),
@@ -155,7 +203,9 @@ namespace rs {
 		return boost::apply_visitor(Visitor(*this), _data);
 	}
 	int64_t RWops::seek(int64_t offset, Hence hence) {
-		return SDL_RWseek(_ops, offset, hence);
+		auto res = SDL_RWseek(_ops, offset, hence);
+		AssertT(Trap, res>=0, (RWE_OutOfRange)(int64_t)(Hence)(int64_t), offset, hence, tell())
+		return res;
 	}
 	int64_t RWops::tell() const {
 		return SDL_RWtell(_ops);
@@ -239,7 +289,7 @@ namespace rs {
 	HLRW RWMgr::fromURI(const spn::URI& uri, int access, bool bNoShared) {
 		if(auto handler = getUriHandler(uri, access))
 			return (*handler)->loadURI(uri, access, bNoShared);
-		return HLRW();
+		AssertT(Throw, false, (RWops::RWE_File)(const std::string&), uri.plain_utf8())
 	}
 	HLRW RWMgr::fromFile(const std::string& path, int access, bool bNoShared) {
 		if(bNoShared)

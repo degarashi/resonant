@@ -741,6 +741,43 @@ namespace rs {
                     AssertP(Trap, false, "this object cannot serialize")
                 }
 			};
+
+			//! RWopsエラー基底
+			struct RWE_Error : std::runtime_error {
+				const std::string	_title;
+
+				RWE_Error(const std::string& title);
+				void setMessage(const std::string& msg);
+			};
+			//! ファイル開けないエラー
+			struct RWE_File : RWE_Error {
+				const std::string	_path;
+
+				RWE_File(const std::string& path);
+			};
+			//! 範囲外アクセス
+			struct RWE_OutOfRange : RWE_Error {
+				const int64_t	_pos, _size;
+
+				RWE_OutOfRange(int64_t pos, int64_t size);
+			};
+			//! アクセス権限違反(読み取り専用ファイルに書き込みなど)
+			struct RWE_Permission : RWE_Error {
+				const Access	_have, _try;
+
+				RWE_Permission(Access have, Access tr);
+			};
+			//! メモリ確保エラー
+			struct RWE_Memory : RWE_Error {
+				const size_t	_size;
+
+				RWE_Memory(size_t size);
+			};
+			//! ぬるぽ指定
+			struct RWE_NullMemory : RWE_Error {
+				RWE_NullMemory();
+			};
+
 		private:
 			using Data = boost::variant<boost::blank, std::string, spn::URI, ExtBuff, spn::ByteBuff>;
 			SDL_RWops*	_ops;
@@ -755,7 +792,7 @@ namespace rs {
             void _deserializeFromMember();
 			void _clear();
 			friend class boost::serialization::access;
-            BOOST_SERIALIZATION_SPLIT_MEMBER();
+			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			template <class Archive>
 			void save(Archive& ar, const unsigned int) const {
                 ar & _access;
@@ -782,13 +819,14 @@ namespace rs {
                 int64_t pos;
                 ar & _access & _type & _data & pos & _endCB;
                 _deserializeFromType(pos);
-            }
+			}
 
             void _deserializeFromType(int64_t pos);
 			friend spn::ResWrap<RWops, spn::String<std::string>>;
 			RWops() = default;
 			template <class T>
 			RWops(SDL_RWops* ops, Type type, int access, T&& data, Callback* cb=nullptr) {
+				AssertT(Trap, ops, (RWE_Error)(const std::string&), "unknown error")
 				_ops = ops;
 				_type = type;
 				_access = access;
