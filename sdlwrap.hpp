@@ -870,7 +870,7 @@ namespace rs {
 			LHdl fromConstMem(const void* p, int size, typename RWops::Callback* cb=nullptr);
 			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
 	};
-	DEF_HANDLE(RWMgr, RW, RWops)
+	DEF_NHANDLE(RWMgr, RW, RWops, RWops)
 	struct UriHandler {
 		virtual bool canLoad(const spn::URI& uri, int access) const = 0;
 		virtual HLRW loadURI(const spn::URI& uri, int access, bool bNoShared) = 0;

@@ -30,7 +30,7 @@ namespace rs {
 
 	#define mgr_pointer ::rs::PointerMgr::_ref()
 	class PointerMgr : public spn::ResMgrA<TPos2D, PointerMgr> {};
-	DEF_HANDLE(PointerMgr, Ptr, TPos2D)
+	DEF_AHANDLE(PointerMgr, Ptr, TPos2D, TPos2D)
 	using PtrNS = spn::noseq_list<HLPtr>;
 
 	struct IRecvPointer {
@@ -91,5 +91,5 @@ namespace rs {
 	#define mgr_inputb (::rs::InputMgrBase::_ref())
 	#define mgr_input reinterpret_cast<::rs::InputMgr&>(::rs::InputMgrBase::_ref())
 	class InputMgrBase : public spn::ResMgrA<UPInput, InputMgrBase> {};
-	DEF_HANDLE(InputMgrBase, Input, UPInput)
+	DEF_AHANDLE(InputMgrBase, Input, UPInput, UPInput)
 }

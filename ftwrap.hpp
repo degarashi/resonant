@@ -80,5 +80,5 @@ namespace rs {
 			//! メモリまたはファイルシステム上のフォントファイルから読み込む
 			LHdl newFace(rs::HRW hRW, int index);
 	};
-	DEF_HANDLE(FTLibrary, FT, FTFace)
+	DEF_AHANDLE(FTLibrary, FT, FTFace, FTFace)
 }

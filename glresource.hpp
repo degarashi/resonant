@@ -185,16 +185,16 @@ namespace rs {
 			LHdl _common(const std::string& key, std::function<UPResource()> cb);
 			GLFBufferTmp& getTmpFramebuffer() const;
 	};
-	DEF_HANDLE(GLRes, Res, UPResource)
-	DEF_HANDLE(GLRes, Tex, UPTexture)
-	DEF_HANDLE(GLRes, Vb, UPVBuffer)
-	DEF_HANDLE(GLRes, Ib, UPIBuffer)
-	DEF_HANDLE(GLRes, Buff, UPBuffer)
-	DEF_HANDLE(GLRes, Prog, UPProg)
-	DEF_HANDLE(GLRes, Sh, UPShader)
-	DEF_HANDLE(GLRes, Fx, UPEffect)
-	DEF_HANDLE(GLRes, Fb, UPFBuffer)
-	DEF_HANDLE(GLRes, Rb, UPRBuffer)
+	DEF_NHANDLE_PROP(GLRes, Res, UPResource, UPResource, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Tex, UPResource, UPTexture, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Vb, UPResource, UPVBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Ib, UPResource, UPIBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Buff, UPResource, UPBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Prog, UPResource, UPProg, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Sh, UPResource, UPShader, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Fx, UPResource, UPEffect, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Fb, UPResource, UPFBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Rb, UPResource, UPRBuffer, std::allocator, std::string)
 
 	using Priority = uint32_t;
 	using Priority64 = uint64_t;

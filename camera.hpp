@@ -93,5 +93,5 @@ namespace rs {
 	};
 	#define mgr_cam (::rs::CameraMgr::_ref())
 	class CameraMgr : public spn::ResMgrA<CamData, CameraMgr, spn::Alloc16> {};
-	DEF_HANDLE(CameraMgr, Cam, CamData)
+	DEF_AHANDLE_PROP(CameraMgr, Cam, CamData, CamData, spn::Alloc16)
 }

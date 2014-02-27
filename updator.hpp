@@ -50,14 +50,14 @@ namespace rs {
 				return _makeObj<T>(typename spn::NType<alignof(T), 8>::great(), std::forward<Ts>(ar)...);
 			}
 	};
-	DEF_HANDLE(ObjMgr, Gbj, UPObject)
+	DEF_AHANDLE(ObjMgr, Gbj, UPObject, UPObject)
 
 	#define mgr_upd (::rs::UpdMgr::_ref())
 	class UpdChild;
 	using UPUpdCh = std::unique_ptr<UpdChild>;
 	//! アップデートグループの管理
 	class UpdMgr : public spn::ResMgrA<UPUpdCh, UpdMgr> {};
-	DEF_HANDLE(UpdMgr, Upd, UPUpdCh)
+	DEF_AHANDLE(UpdMgr, Upd, UPUpdCh, UPUpdCh)
 
 	class GVec;
 	class GMap;
