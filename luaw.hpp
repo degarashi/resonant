@@ -13,6 +13,12 @@
 #include "spinner/resmgr.hpp"
 
 namespace rs {
+	class RWops;
+	class RWMgr;
+	DEF_NHANDLE(rs::RWMgr, RW, rs::RWops, rs::RWops)
+}
+
+namespace rs {
 	template <class T>
 	T& DeclVal() { return *(reinterpret_cast<T*>(0)); }
 	class LuaState;
@@ -232,6 +238,17 @@ namespace rs {
 			//! スレッド共有初期化
 			LuaState(lua_State* ls, _TagThread);
 
+			//! RWopsに対するLua用のリーダークラス
+			struct Reader {
+				RWops&			ops;
+				int64_t			size;
+				spn::ByteBuff	buff;
+
+				Reader(HRW hRW);
+				static const char* Proc(lua_State* ls, void* data, size_t* size);
+				static void Read(lua_State* ls, HRW hRW, const char* chunkName, const char* mode);
+			};
+
 		public:
 			LuaState(lua_Alloc f=nullptr, void* ud=nullptr);
 			LuaState(const LuaState&) = delete;
@@ -239,8 +256,13 @@ namespace rs {
 			LuaState(const SPILua& ls);
 			LuaState(lua_State* ls);
 
-			void load(const std::string& fname);
-			void loadFromString(const std::string& code);
+			void load(HRW hRW, const char* chunkName=nullptr, const char* mode=cs_defaultmode, bool bExec=true);
+			const static char* cs_defaultmode;
+			//! ソースコードを読み取り、チャンクをスタックトップに積む
+			/*! \param[in] bExec チャンクを実行するか */
+			void loadFromSource(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
+			//! コンパイル済みバイナリを読み取り、チャンクをスタックトップに積む
+			void loadFromBinary(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
 			void push(const LCValue& v);
 			void pushCClosure(lua_CFunction func, int nvalue);
 			template <class A, class... Args>
@@ -289,6 +311,7 @@ namespace rs {
 			void getField(int idx, const LCValue& key);
 			void getGlobal(const LCValue& key);
 			void getTable(int idx);
+			const char* getUpvalue(int idx, int n);
 			int getTop() const;
 			void getUserValue(int idx);
 			void insert(int idx);
@@ -324,6 +347,9 @@ namespace rs {
 			void setTable(int idx);
 			void setTop(int idx);
 			void setUservalue(int idx);
+			const char* setUpvalue(int funcidx, int n);
+			void* upvalueId(int funcidx, int n);
+			void upvalueJoin(int funcidx0, int n0, int funcidx1, int n1);
 			bool status() const;
 
 			// --- convert function ---

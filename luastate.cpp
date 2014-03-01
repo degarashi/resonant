@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include "sdlwrap.hpp"
 
 namespace rs {
 	// ----------------- LuaState::Exceptions -----------------
@@ -179,27 +180,50 @@ namespace rs {
 		_id = s_index.get();
 		_RegisterNewThread(*this, _id);
 	}
-	LuaState::LuaState(LuaState&& ls): _base(std::move(ls._base)), _lua(std::move(ls._lua)) {}
-	void LuaState::load(const std::string& fname) {
-		std::ifstream ifs(fname, std::ios::binary|std::ios::in);
-		if(!ifs.is_open())
-			throw std::runtime_error("file not found");
-		ifs.seekg(0, std::ios::end);
-		int pos = ifs.tellg();
-		ifs.seekg(0, std::ios::beg);
-
-		// メモリに一括読み込み
-		std::string buff;
-		buff.resize(pos);
-		ifs.read(&buff[0], pos);
-		ifs.close();
-		loadFromString(buff);
+	LuaState::Reader::Reader(HRW hRW): ops(hRW.ref()), size(ops.size()) {}
+	void LuaState::Reader::Read(lua_State* ls, HRW hRW, const char* chunkName, const char* mode) {
+		Reader reader(hRW);
+		int res = lua_load(ls, &Reader::Proc, &reader, (chunkName ? chunkName : ""), mode);
+		LuaState::_CheckError(ls, res);
 	}
-	void LuaState::loadFromString(const std::string& code) {
-		int res = luaL_loadstring(getLS(), code.data());
-		_checkError(res);
-		// Loadされたチャンクを実行
-		call(0,0);
+	const char* LuaState::Reader::Proc(lua_State* ls, void* data, size_t* size) {
+		auto* self = reinterpret_cast<Reader*>(data);
+		auto remain = self->size;
+		if(remain > 0) {
+			constexpr decltype(remain) BLOCKSIZE = 2048,
+										MAX_BLOCK = 4;
+			int nb, blocksize;
+			if(remain <= BLOCKSIZE) {
+				nb = 1;
+				blocksize = *size = remain;
+				self->size = 0;
+			} else {
+				nb = std::min(MAX_BLOCK, remain / BLOCKSIZE);
+				blocksize = BLOCKSIZE;
+				*size = BLOCKSIZE * nb;
+				self->size -= *size;
+			}
+			self->buff.resize(*size);
+			self->ops.read(self->buff.data(), blocksize, nb);
+			return reinterpret_cast<const char*>(self->buff.data());
+		}
+		*size = 0;
+		return nullptr;
+	}
+	const char* LuaState::cs_defaultmode = "bt";
+	LuaState::LuaState(LuaState&& ls): _base(std::move(ls._base)), _lua(std::move(ls._lua)) {}
+	void LuaState::load(HRW hRW, const char* chunkName, const char* mode, bool bExec) {
+		Reader::Read(getLS(), hRW, chunkName, mode);
+		if(bExec) {
+			// Loadされたチャンクを実行
+			call(0,0);
+		}
+	}
+	void LuaState::loadFromSource(HRW hRW, const char* chunkName, bool bExec) {
+		load(hRW, chunkName, "t", bExec);
+	}
+	void LuaState::loadFromBinary(HRW hRW, const char* chunkName, bool bExec) {
+		load(hRW, chunkName, "b", bExec);
 	}
 	void LuaState::pushSelf() {
 		lua_pushthread(getLS());
@@ -277,6 +301,9 @@ namespace rs {
 		// [Global][key]
 		getTable(-2);
 		remove(-2);
+	}
+	const char* LuaState::getUpvalue(int idx, int n) {
+		return lua_getupvalue(getLS(), idx, n);
 	}
 	void LuaState::getTable(int idx) {
 		lua_gettable(getLS(), idx);
@@ -408,6 +435,15 @@ namespace rs {
 	}
 	void LuaState::setUservalue(int idx) {
 		lua_setuservalue(getLS(), idx);
+	}
+	const char* LuaState::setUpvalue(int funcidx, int n) {
+		return lua_setupvalue(getLS(), funcidx, n);
+	}
+	void* LuaState::upvalueId(int funcidx, int n) {
+		return lua_upvalueid(getLS(), funcidx, n);
+	}
+	void LuaState::upvalueJoin(int funcidx0, int n0, int funcidx1, int n1) {
+		lua_upvaluejoin(getLS(), funcidx0, n0, funcidx1, n1);
 	}
 	bool LuaState::status() const {
 		int res = lua_status(getLS());
