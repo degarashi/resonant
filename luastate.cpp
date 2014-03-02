@@ -500,26 +500,12 @@ namespace rs {
 	LCValue LuaState::toLCValue(int idx) const {
 		return LCV<LCValue>()(idx, getLS());
 	}
-	namespace {
-		const LuaType c_toLType[LUA_NUMTAGS+1] = {
-			LuaType::LNone,
-			LuaType::Nil,
-			LuaType::Boolean,
-			LuaType::LightUserdata,
-			LuaType::Number,
-			LuaType::String,
-			LuaType::Table,
-			LuaType::Function,
-			LuaType::Userdata,
-			LuaType::Thread
-		};
-	}
 	LuaType LuaState::type(int idx) const {
 		return SType(getLS(), idx);
 	}
 	LuaType LuaState::SType(lua_State* ls, int idx) {
 		int typ = lua_type(ls, idx);
-		return c_toLType[typ+1];
+		return static_cast<LuaType>(typ);
 	}
 
 	const char* LuaState::typeName(LuaType typ) const {
@@ -527,7 +513,7 @@ namespace rs {
 	}
 	const char* LuaState::STypeName(lua_State* ls, LuaType typ) {
 		return lua_typename(ls,
-				static_cast<int>(typ)-1);	// インデックスが1ズレてるので補正
+				static_cast<int>(typ));
 	}
 	const lua_Number* LuaState::version() const {
 		return lua_version(getLS());

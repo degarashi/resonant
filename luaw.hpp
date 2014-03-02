@@ -37,16 +37,16 @@ namespace rs {
 	using LCVar = boost::variant<boost::blank, LuaNil, bool, const char*, lua_Integer, lua_Unsigned, lua_Number, SPLua, void*, lua_CFunction, const std::string&, std::string, LCTable>;
 
 	enum class LuaType {
-		LNone,		//!< NoneだとX11のマクロと衝突する為
-		Nil,
-		Number,
-		Boolean,
-		String,
-		Table,
-		Function,
-		Userdata,
-		Thread,
-		LightUserdata
+		LNone = LUA_TNONE,	//!< NoneだとX11のマクロと衝突する為
+		Nil = LUA_TNIL,
+		Number = LUA_TNUMBER,
+		Boolean = LUA_TBOOLEAN,
+		String = LUA_TSTRING,
+		Table = LUA_TTABLE,
+		Function = LUA_TFUNCTION,
+		Userdata = LUA_TUSERDATA,
+		Thread = LUA_TTHREAD,
+		LightUserdata = LUA_TLIGHTUSERDATA
 	};
 
 	// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
