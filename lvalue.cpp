@@ -146,6 +146,7 @@ namespace rs {
 			lsc.setField(-1, *ent.first, *ent.second);
 		}
 	}
+	//TODO: 循環参照問題に対処する -> (topointer比較)
 	LCTable LCV<LCTable>::operator()(int idx, lua_State* ls) const {
 		LuaState::_CheckType(ls, idx, LuaType::Table);
 		LuaState lsc(ls);
@@ -162,6 +163,7 @@ namespace rs {
 		return std::move(tbl);
 	}
 	//TODO: アドレスを出力しても他のテーブルの区別がつかずあまり意味がないので改善する
+	// 出力階層の制限方法?
 	std::ostream& LCV<LCTable>::operator()(std::ostream& os, const LCTable& t) const {
 		return os << "(table)" << std::hex << reinterpret_cast<uintptr_t>(&t); }
 	LuaType LCV<LCTable>::operator()() const {

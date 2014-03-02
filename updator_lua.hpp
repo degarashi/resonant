@@ -22,22 +22,29 @@ namespace rs {
 			\
 			lsc.getField(-1, rs::luaNS::objBase::Func); \
 			BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER, clazz, seq_method) \
-			lsc.pop(2); \
+			lsc.pop(1); \
 			lsc.setGlobal(#clazz); \
 		}
 
-	int ReleaseObj(lua_State* ls);
+	//! (LuaのClassT::New()から呼ばれる)オブジェクトのリソースハンドルを作成&メタテーブルの設定
 	template <class T, class... Ts>
 	int MakeObj(lua_State* ls) {
 		auto fn = [](Ts&&... ts) {
 			return mgr_gobj.makeObj<T>(std::forward<Ts>(ts)...);
 		};
 		HLGbj hlGbj = FuncCall<Ts...>::callCB(fn, ls, -sizeof...(Ts));
-		LCV<HLGbj>()(ls, hlGbj);
 
+		using spn::SHandle;
+		LuaState lsc(ls);
+		// LightUserdataは個別のメタテーブルを持てないのでUserdataを使う
+		SHandle& sh = *reinterpret_cast<SHandle*>(lsc.newUserData(sizeof(SHandle)));
+		sh = hlGbj.get();
+		// ハンドルが開放されてしまわないようにハンドル値だけリセットする
+		hlGbj.setNull();
 		// Userdataへのメタテーブル設定はC++からでしか行えないので、ここでする
-		SetHandleMT(ls);
-		return 1;
+		SetHandleMT(lsc);
+		lsc.push(sh.getValue());
+		return 2;
 	}
 }
 

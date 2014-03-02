@@ -3,7 +3,15 @@
 #define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 #include <boost/regex.hpp>
+#include "sdlwrap.hpp"
+#include <cstring>
 
+/*	Luaハンドル仕様：
+	object = {
+		udata = (Userdata)
+		...(ユーザーのデータ色々)
+	}
+*/
 namespace rs {
 	using spn::SHandle;
 	namespace luaNS {
@@ -66,15 +74,54 @@ namespace rs {
 		lsc.setTable(-3);
 
 		lsc.setGlobal(luaNS::ObjectBase);
-		lsc.load("/home/slice/projects/resonant/base.lua");
+		HLRW hlRW = mgr_rw.fromFile("/home/slice/projects/resonant/base.lua", RWops::Access::Read, true);
+		lsc.loadFromSource(hlRW, "base.lua", true);
+	}
+	void LuaImport::LoadClass(LuaState& lsc, const std::string& name, HRW hRW) {
+		lsc.newTable();
+		lsc.getGlobal("MT_G");
+		lsc.setMetatable(-1);
+		// スタックに積むが、まだ実行はしない
+		lsc.load(hRW, "LuaImport::LoadClass", "bt", false);
+		// _ENVをクラステーブルに置き換えてからチャンクを実行
+		// グローバル変数に代入しようとしたらクラスのstatic変数として扱う
+		lsc.pushValue(-2);
+		lsc.setUpvalue(-2, 1);
+		// [NewClassSrc][Chunk]
+		lsc.call(0,0);
+		// クラステーブルの中の関数について、upvalueを独自のものに差し替える
+		lsc.getGlobal("MakeStaticValueMT");
+		lsc.pushValue(1);
+		lsc.call(1,1);
+		// [NewClassSrc][StaticMT]
+		lsc.push(LuaNil());
+		while(lsc.next(1) != 0) {
+			if(lsc.type(4) == LuaType::Function) {
+				for(int i=1;;i++) {
+					const char* c = lsc.getUpvalue(4, i);
+					if(!c)
+						break;
+					if(!std::strcmp(c, "_ENV")) {
+						lsc.pushValue(2);
+						lsc.setUpvalue(4,i);
+						lsc.pop(1);
+						break;
+					}
+					lsc.pop(1);
+				}
+			}
+			lsc.pop(1);
+		}
+		// [NewClassSrc]
+		lsc.getGlobal("MakeFSMachine");
+		lsc.pushValue(1);
+		// [NewClassSrc][Func(DerivedClass)][NewClassSrc]
+		lsc.call(1,1);
+		lsc.setGlobal(name);
+		lsc.pop(2);
+		return;
 	}
 
-	int ReleaseObj(lua_State* ls) {
-		// ハンドルをデクリメント
-		auto& sh = *reinterpret_cast<spn::SHandle*>(LCV<void*>()(-1,ls));
-		spn::ResMgrBase::Release(sh);
-		return 0;
-	}
 	void SetHandleMT(lua_State* ls) {
 		LuaState lsc(ls);
 		SetHandleMT(lsc);
@@ -115,7 +162,6 @@ namespace rs {
 	LuaType LCV<SHandle>::operator()() const {
 		return LuaType::Userdata;
 	}
-
 	//	アップデータの登録
 	//		シーンツリーの管理はスクリプトがメイン
 	//		HGroup = createGroup("")
@@ -124,7 +170,5 @@ namespace rs {
 	//		HGroup.rem(hGroup)
 	//		Luaから
 	//		C++から
-	//	描画の登録
-	//		ベースクラスが管理する(Luaからはベースクラスのメソッドを通して制御)
 }
 

@@ -452,13 +452,19 @@ namespace rs {
 	}
 	void LuaState::_checkType(int idx, LuaType typ) const {
 		LuaType t = type(idx);
-		if(t != typ)
-			throw EType(typeName(t), typeName(typ));
+		if(t != typ) {
+			std::string tmp0(typeName(t)),
+						tmp1(typeName(typ));
+			throw EType(tmp0.c_str(), tmp1.c_str());
+		}
 	}
 	void LuaState::_CheckType(lua_State* ls, int idx, LuaType typ) {
 		LuaType t = SType(ls, idx);
-		if(t != typ)
-			throw EType(STypeName(ls, t), STypeName(ls, typ));
+		if(t != typ) {
+			std::string tmp0(STypeName(ls, t)),
+						tmp1(STypeName(ls, typ));
+			throw EType(tmp0.c_str(), tmp1.c_str());
+		}
 	}
 	bool LuaState::toBoolean(int idx) const {
 		return LCV<bool>()(idx, getLS());
@@ -520,7 +526,8 @@ namespace rs {
 		return STypeName(getLS(), typ);
 	}
 	const char* LuaState::STypeName(lua_State* ls, LuaType typ) {
-		return lua_typename(ls, static_cast<int>(typ));
+		return lua_typename(ls,
+				static_cast<int>(typ)-1);	// インデックスが1ズレてるので補正
 	}
 	const lua_Number* LuaState::version() const {
 		return lua_version(getLS());

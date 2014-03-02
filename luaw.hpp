@@ -825,10 +825,14 @@ namespace rs {
 			}
 			//! クラスの登録(登録名はクラスから取得)
 			template <class T>
-			static void RegisterClass(LuaState& lsc) {
+			static void RegisterBaseClass(LuaState& lsc) {
 				T::ExportLua(lsc);
 			}
 			static void RegisterObjectBase(LuaState& lsc);
+			//! ベースオブジェクトを使った派生クラスの読み込み
+			/*! 1クラス1ファイルの対応
+				ベースクラスの名前はファイルに記載 */
+			static void LoadClass(LuaState& lsc, const std::string& name, HRW hRW);
 	};
 }
 
