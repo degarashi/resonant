@@ -36,9 +36,9 @@ namespace rs {
 
 		using spn::SHandle;
 		LuaState lsc(ls);
-		// LightUserdataは個別のメタテーブルを持てないのでUserdataを使う
-		SHandle& sh = *reinterpret_cast<SHandle*>(lsc.newUserData(sizeof(SHandle)));
-		sh = hlGbj.get();
+		// LightUserdataでハンドル値を保持
+		SHandle sh = hlGbj.get();
+		lsc.push(reinterpret_cast<void*>(sh.getValue()));
 		// ハンドルが開放されてしまわないようにハンドル値だけリセットする
 		hlGbj.setNull();
 		// Userdataへのメタテーブル設定はC++からでしか行えないので、ここでする

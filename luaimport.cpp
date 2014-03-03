@@ -62,7 +62,7 @@ namespace rs {
 	}
 	SHandle LuaImport::GetHandle::getHandle(lua_State* ls, int idx) const {
 		lua_getfield(ls, idx, luaNS::Udata.c_str());
-		SHandle ret = *reinterpret_cast<SHandle*>(LCV<void*>()(-1, ls));
+		SHandle ret(reinterpret_cast<uintptr_t>(LCV<void*>()(-1, ls)));
 		lua_pop(ls, 1);
 		return ret;
 	}
@@ -162,7 +162,8 @@ namespace rs {
 			LuaState lsc(ls);
 			lsc.getGlobal(luaNS::GetHandle);
 			lsc.push(h.getValue());
-			lsc.call(1,1);
+			lsc.push(reinterpret_cast<void*>(h.getValue()));
+			lsc.call(2,1);
 			AssertP(Trap, lsc.type(-1) == LuaType::Table)
 		}
 	}
