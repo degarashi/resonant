@@ -32,6 +32,7 @@ function GetHandle(id)
 		__newindex = sub,
 		__gc = DecrementHandle
 	})
+	IncrementHandle(sub)
 	handleId2Obj[id] = h
 	return h
 end
@@ -60,25 +61,20 @@ function DerivedHandle(base)
 		_mt = {
 			__index = function(tbl, key)
 				local r = _r[key]
-				if r~=nil then return r(tbl.udata) end
-				r = _f[key]
-				if r~=nil then
-					return function(tbl, ...)
-							print(type(tbl.udata))
-							return r(tbl.udata, ...)
-						end
-				end
+				if r~=nil then return r(tbl) end
+				return _f[key]
 			end,
 			__newindex = function(tbl, key, val)
 				local r = _w[key]
 				if r~=nil then
-					r(tbl.udata, value)
+					r(tbl, value)
 				end
 				rawset(tbl, key, val)
 			end
 		},
 		_New = false -- 後で定義する用のダミー
 	}
+	-- selfにはtableを指定する
 	function object.Construct(self, ...)
 		local ud,id = object._New(...)
 		assert(not handleId2ObjSub[id])
@@ -242,9 +238,6 @@ function MakeFSMachine(src)
 end
 
 function Test()
--- 	local obj = myobj.New()
--- 	RS.PrintValue("Name", obj.func)
 	local obj = myobj.New()
-	RS.PrintValue("", obj:func( true))
+	RS.PrintValue("", type(obj:func(obj)))
 end
-

@@ -3,7 +3,7 @@
 #include "luaw.hpp"
 
 namespace rs {
-#define DEF_REGMEMBER(n, clazz, elem)	 rs::LuaImport::RegisterMember(lsc, BOOST_PP_STRINGIZE(elem), &clazz::elem);
+#define DEF_REGMEMBER(n, clazz, elem)	 rs::LuaImport::RegisterMember<rs::LuaImport::GetHandle>(lsc, BOOST_PP_STRINGIZE(elem), &clazz::elem);
 #define DEF_LUAIMPLEMENT(clazz, seq_member, seq_method, seq_ctor)	\
 		const char* clazz::getLuaName() const { return clazz::GetLuaName(); } \
 		const char* clazz::GetLuaName() { return #clazz; } \
@@ -42,7 +42,6 @@ namespace rs {
 		// ハンドルが開放されてしまわないようにハンドル値だけリセットする
 		hlGbj.setNull();
 		// Userdataへのメタテーブル設定はC++からでしか行えないので、ここでする
-		SetHandleMT(lsc);
 		lsc.push(sh.getValue());
 		return 2;
 	}

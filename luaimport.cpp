@@ -15,10 +15,13 @@
 namespace rs {
 	using spn::SHandle;
 	namespace luaNS {
+		const std::string Udata("udata");
 		const std::string GetHandle("GetHandle"),
 						DeleteHandle("DeleteHandle"),
 						ObjectBase("ObjectBase"),
-						DerivedHandle("DerivedHandle");
+						DerivedHandle("DerivedHandle"),
+						MakeStaticValueMT("MakeStaticValueMT"),
+						MakeFSMachine("MakeFSMachine");
 		namespace objBase {
 			const std::string ValueR("_valueR"),
 								ValueW("_valueW"),
@@ -33,8 +36,16 @@ namespace rs {
 		}
 	}
 	namespace {
-		void DecrementHandle(SHandle sh) {
+		// Userdata(Handle)をスタックの一番上に積んだ上で呼ぶ
+		int IncrementHandle(lua_State* ls) {
+			SHandle sh = LCV<SHandle>()(1, ls);
+			spn::ResMgrBase::Increment(sh);
+			return 0;
+		}
+		int DecrementHandle(lua_State* ls) {
+			SHandle sh = LCV<SHandle>()(1, ls);
 			sh.release();
+			return 0;
 		}
 	}
 	lua_Unsigned LuaImport::HandleId(SHandle sh) {
@@ -42,6 +53,19 @@ namespace rs {
 	lua_Integer LuaImport::NumRef(SHandle sh) {
 		return sh.count(); }
 
+	void* LuaImport::GetPtr::operator()(lua_State* ls, int idx) const {
+		return LCV<void*>()(idx, ls);
+	}
+	void* LuaImport::GetHandle::operator()(lua_State* ls, int idx) const {
+		SHandle sh = getHandle(ls, idx);
+		return spn::ResMgrBase::GetPtr(sh);
+	}
+	SHandle LuaImport::GetHandle::getHandle(lua_State* ls, int idx) const {
+		lua_getfield(ls, idx, luaNS::Udata.c_str());
+		SHandle ret = *reinterpret_cast<SHandle*>(LCV<void*>()(-1, ls));
+		lua_pop(ls, 1);
+		return ret;
+	}
 	// オブジェクトハンドルの基本メソッド定義
 	void LuaImport::RegisterObjectBase(LuaState& lsc) {
 		lsc.newTable();
@@ -69,9 +93,14 @@ namespace rs {
 		lsc.push(luaNS::objBase::UdataMT);
 		lsc.newTable();
 		lsc.push("__gc");
-		LuaImport::PushFunction(lsc, DecrementHandle);
+		lsc.pushCClosure(DecrementHandle, 0);
 		lsc.setTable(-3);
 		lsc.setTable(-3);
+
+		lsc.pushCClosure(IncrementHandle, 0);
+		lsc.setGlobal("IncrementHandle");
+		lsc.pushCClosure(DecrementHandle, 0);
+		lsc.setGlobal("DecrementHandle");
 
 		lsc.setGlobal(luaNS::ObjectBase);
 		HLRW hlRW = mgr_rw.fromFile("/home/slice/projects/resonant/base.lua", RWops::Access::Read, true);
@@ -90,7 +119,7 @@ namespace rs {
 		// [NewClassSrc][Chunk]
 		lsc.call(0,0);
 		// クラステーブルの中の関数について、upvalueを独自のものに差し替える
-		lsc.getGlobal("MakeStaticValueMT");
+		lsc.getGlobal(luaNS::MakeStaticValueMT);
 		lsc.pushValue(1);
 		lsc.call(1,1);
 		// [NewClassSrc][StaticMT]
@@ -113,7 +142,7 @@ namespace rs {
 			lsc.pop(1);
 		}
 		// [NewClassSrc]
-		lsc.getGlobal("MakeFSMachine");
+		lsc.getGlobal(luaNS::MakeFSMachine);
 		lsc.pushValue(1);
 		// [NewClassSrc][Func(DerivedClass)][NewClassSrc]
 		lsc.call(1,1);
@@ -122,16 +151,6 @@ namespace rs {
 		return;
 	}
 
-	void SetHandleMT(lua_State* ls) {
-		LuaState lsc(ls);
-		SetHandleMT(lsc);
-	}
-	void SetHandleMT(LuaState& lsc) {
-		lsc.getGlobal(luaNS::ObjectBase);
-		lsc.getField(-1, luaNS::objBase::UdataMT);
-		lsc.setMetatable(-3);
-		lsc.pop(1);
-	}
 	// ------------------- LCValue -------------------
 	void LCV<SHandle>::operator()(lua_State* ls, SHandle h) const {
 		// nullハンドルチェック
@@ -139,8 +158,6 @@ namespace rs {
 			// nilをpushする
 			LCV<LuaNil>()(ls, LuaNil());
 		} else {
-			// ハンドルをインクリメント
-			spn::ResMgrBase::Increment(h);
 			// Luaのハンドルテーブルからオブジェクトの実体を取得
 			LuaState lsc(ls);
 			lsc.getGlobal(luaNS::GetHandle);
@@ -154,7 +171,7 @@ namespace rs {
 		LuaState lsc(ls);
 		if(lsc.type(idx) == LuaType::Nil)
 			return SHandle();
-		return *reinterpret_cast<SHandle*>(LCV<void*>()(idx, ls));
+		return LuaImport::GetHandle().getHandle(ls, -1);
 	}
 	std::ostream& LCV<SHandle>::operator()(std::ostream& os, SHandle h) const {
 		return os << "(Handle)" << std::hex << "0x" << h.getValue();
