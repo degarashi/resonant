@@ -5,7 +5,6 @@ project(resonant)
 # MinGW: BUILD_TYPE = MinGW
 # Android:	BUILD_TYPE = AndroidX86 or AndroidArm
 include("spinner/${BUILD_TYPE}.cmake" require)
-include(spinner/Common.cmake require)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-function")
 
 add_definitions(-DTOOL_PREFIX="${TOOL_PREFIX}")
@@ -23,7 +22,9 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/spinner
 					${PROJECT_SOURCE_DIR}/boomstick
-					${CMAKE_INSTALL_PREFIX}/include)
+					${CMAKE_INSTALL_PREFIX}/include
+					${CMAKE_INSTALL_PREFIX}/include/SDL
+					${CMAKE_INSTALL_PREFIX}/include/lua)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib_${TOOL_PREFIX})
 if(DEFINED ARCHITECTURE)
 	add_definitions(-DGL_GLEXT_PROTOTYPES -DUSE_OPENGLES2)
@@ -54,7 +55,7 @@ if(NOT DEFINED ARCHITECTURE)
 		set(LINK_LIBS resonant boomstick spinner mingw32 SDL2_image SDL2main SDL2
 			freetype opengl32 OpenAL32 vorbisfile vorbis ogg boost_system boost_regex boost_serialization png z)
 	else()
-		set(LINK_LIBS resonant boomstick spinner SDL2_image SDL2 freetype vorbisfile ogg boost_system boost_regex boost_serialization GL openal)
+		set(LINK_LIBS resonant boomstick spinner SDL2_image SDL2 freetype vorbisfile ogg boost_system boost_regex boost_serialization GL openal dl)
 	endif()
 	set(LINK_LIBS ${LINK_LIBS} lua)
 	add_executable(rse_test ${SRC_FILE})

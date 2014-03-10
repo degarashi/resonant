@@ -3,11 +3,10 @@
 namespace rs {
 	size_t VorbisFile::ReadOGC(void* ptr, size_t blocksize, size_t nmblock, void* datasource) {
 		auto* ops = reinterpret_cast<SDL_RWops*>(datasource);
-		Sint64 fpos = SDL_RWseek(ops, 0, RW_SEEK_CUR);
-		Sint64 fsize = SDL_RWseek(ops, 0, RW_SEEK_END);
+		auto fpos = SDL_RWseek(ops, 0, RW_SEEK_CUR);
+		auto fsize = SDL_RWseek(ops, 0, RW_SEEK_END);
 		SDL_RWseek(ops, fpos, RW_SEEK_SET);
-
-		size_t nblock = std::min((fsize-fpos)/blocksize, Sint64(nmblock));
+		size_t nblock = std::min((fsize-fpos)/blocksize, nmblock);
 		return SDL_RWread(ops, ptr, blocksize, nblock);
 	}
 	int VorbisFile::SeekOGC(void* datasource, ogg_int64_t offset, int whence) {

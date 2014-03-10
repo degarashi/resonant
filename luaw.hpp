@@ -72,6 +72,10 @@ namespace rs {
 	DEF_LCV(LCValue, const LCValue&)
 	DEF_LCV(spn::SHandle, spn::SHandle)
 #undef DEF_LCV
+	#if __x86_64__ || _LP64
+		template <>
+		struct LCV<int> : LCV<lua_Integer> {};
+	#endif
 	template <class T>
 	struct LCV<spn::HdlLock<T>> {
 		using SH = decltype(std::declval<spn::HdlLock<T>>().get());
