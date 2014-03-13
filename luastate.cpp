@@ -478,6 +478,14 @@ namespace rs {
 	std::string LuaState::toString(int idx) const {
 		return LCV<std::string>()(idx, getLS());
 	}
+	std::string LuaState::cnvString(int idx) {
+		getGlobal(luaNS::ToString);
+		pushValue(idx);
+		call(1,1);
+		std::string ret = toString(idx);
+		pop(1);
+		return std::move(ret);
+	}
 	lua_Number LuaState::toNumber(int idx) const {
 		return LCV<lua_Number>()(idx, getLS());
 	}

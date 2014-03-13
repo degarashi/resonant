@@ -343,6 +343,7 @@ namespace rs {
 			lua_CFunction toCFunction(int idx) const;
 			lua_Integer toInteger(int idx) const;
 			std::string toString(int idx) const;
+			std::string cnvString(int idx);
 			lua_Number toNumber(int idx) const;
 			const void* toPointer(int idx) const;
 			lua_Unsigned toUnsigned(int idx) const;
@@ -672,7 +673,8 @@ namespace rs {
 	};
 
 	namespace luaNS {
-		extern const std::string Udata;
+		extern const std::string Udata,
+								ToString;
 		extern const std::string GetHandle,
 								DeleteHandle,
 								ObjectBase,

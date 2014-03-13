@@ -15,7 +15,8 @@
 namespace rs {
 	using spn::SHandle;
 	namespace luaNS {
-		const std::string Udata("udata");
+		const std::string Udata("udata"),
+						ToString("tostring");
 		const std::string GetHandle("GetHandle"),
 						DeleteHandle("DeleteHandle"),
 						ObjectBase("ObjectBase"),
