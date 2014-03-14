@@ -473,7 +473,11 @@ namespace rs {
 				stat = (ths->isInterrupted()) ? Interrupted_End : Finished;
 			} catch(...) {
 				Assert(Warn, false, "thread is finished unexpectedly")
+#ifdef NO_EXCEPTION_PTR
+				ths->_bException = true;
+#else
 				ths->_eptr = std::current_exception();
+#endif
 				stat = Error_End;
 			}
 			SDL_AtomicSet(&ths->_atmStat, stat);
@@ -488,7 +492,11 @@ namespace rs {
 			_condC = _condP = nullptr;
 		}
 		protected:
-			std::exception_ptr	_eptr;
+#ifdef NO_EXCEPTION_PTR
+			bool	_bException = false;
+#else
+			std::exception_ptr	_eptr = nullptr;
+#endif
 			virtual RET run(Args...) = 0;
 		public:
 			_Thread(_Thread&& th): _atmInt(std::move(th._atmInt)), _thread(th._thread), _holder(std::move(th._holder)),
@@ -499,7 +507,7 @@ namespace rs {
 			}
 			_Thread(const _Thread& t) = delete;
 			_Thread& operator = (const _Thread& t) = delete;
-			_Thread(): _thread(nullptr), _eptr(nullptr) {
+			_Thread(): _thread(nullptr) {
 				_condC = SDL_CreateCond();
 				_condP = SDL_CreateCond();
 				// 中断フラグに0をセット
@@ -583,8 +591,16 @@ namespace rs {
 			void getResult() {
 				// まだスレッドが終了して無い時の為にjoinを呼ぶ
 				join();
+				rethrowIfException();
+			}
+			void rethrowIfException() {
+#ifdef NO_EXCEPTION_PTR
+				if(_bException)
+					throw std::runtime_error("exception catched in thread");
+#else
 				if(_eptr)
 					std::rethrow_exception(_eptr);
+#endif
 			}
 	};
 	template <class SIG>
@@ -603,8 +619,7 @@ namespace rs {
 			RET&& getResult() {
 				// まだスレッドが終了して無い時の為にjoinを呼ぶ
 				base_type::join();
-				if(base_type::_eptr)
-					std::rethrow_exception(base_type::_eptr);
+				base_type::rethrowIfException();
 				return std::move(*_retVal);
 			}
 	};
@@ -621,8 +636,7 @@ namespace rs {
 			void getResult() {
 				// まだスレッドが終了して無い時の為にjoinを呼ぶ
 				base_type::join();
-				if(base_type::_eptr)
-					std::rethrow_exception(base_type::_eptr);
+				base_type::rethrowIfException();
 			}
 	};
 
