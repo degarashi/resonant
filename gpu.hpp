@@ -3,6 +3,8 @@
 #include <unordered_set>
 
 namespace rs {
+	// OpenGLES2では同期オブジェクトが無いのでGPUTimeは無効
+#ifndef USE_OPENGLES2
 	//! フレームレート表示
 	/*! 毎フレームテキストハンドルを作り直す */
 	class GPUTime : public IGLResource {
@@ -20,6 +22,7 @@ namespace rs {
 			void onDeviceLost() override;
 			void onDeviceReset() override;
 	};
+#endif
 	//! GPUの情報表示
 	class GPUInfo : public IGLResource {
 		struct Version {

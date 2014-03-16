@@ -91,7 +91,7 @@ namespace rs {
 			os << c << endl;
 		return os;
 	}
-
+#ifndef USE_OPENGLES2
 	// ----------------------- GPUTime -----------------------
 	GPUTime::GPUTime(): _idQuery{0,0}, _idSync{nullptr,nullptr}, _cursor(0), _prevTime(0) {}
 	GPUTime::~GPUTime() {
@@ -140,4 +140,5 @@ namespace rs {
 			_prevTime = 0;
 		}
 	}
+#endif
 }
