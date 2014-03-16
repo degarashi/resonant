@@ -13,8 +13,18 @@ namespace rs {
 		setMessage(path);
 	}
 	// --------------------- RWE_OutOfRange ---------------------
-	RWops::RWE_OutOfRange::RWE_OutOfRange(int64_t pos, int64_t size): RWE_Error("file pointer out of range"), _pos(pos), _size(size) {
+	RWops::RWE_OutOfRange::RWE_OutOfRange(int64_t pos, Hence hence, int64_t size): RWE_Error("file pointer out of range"), _hence(hence), _pos(pos), _size(size) {
 		std::stringstream ss;
+		ss << "position: ";
+		switch(_hence) {
+			case Hence::Begin:
+				ss << "Begin"; break;
+			case Hence::Current:
+				ss << "Current"; break;
+			default:
+				ss << "End";
+		}
+		ss << std::endl;
 		ss << "file length: " << size << std::endl;
 		ss << "current: " << pos << std::endl;
 		setMessage(ss.str());

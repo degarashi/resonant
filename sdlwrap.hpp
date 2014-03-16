@@ -771,9 +771,10 @@ namespace rs {
 			};
 			//! 範囲外アクセス
 			struct RWE_OutOfRange : RWE_Error {
+				const Hence		_hence;
 				const int64_t	_pos, _size;
 
-				RWE_OutOfRange(int64_t pos, int64_t size);
+				RWE_OutOfRange(int64_t pos, Hence hence, int64_t size);
 			};
 			//! アクセス権限違反(読み取り専用ファイルに書き込みなど)
 			struct RWE_Permission : RWE_Error {
