@@ -20,7 +20,11 @@ namespace rs {
 		}
 	#else
 		namespace {
-			using SetSwapInterval_t = void APIENTRY (*)(int);
+			#ifdef __ANDROID__
+				using SetSwapInterval_t = void GL_APIENTRY (*)(int);
+			#else
+				using SetSwapInterval_t = void APIENTRY (*)(int);
+			#endif
 			SetSwapInterval_t g_setswapinterval = nullptr;
 		}
 		void LoadGLAux() {
