@@ -66,7 +66,7 @@ namespace rs {
 						lk->accum = p->id;
 					}
 				}
-				if(msg::QuitReq* q = *m) {
+				if(static_cast<msg::QuitReq*>(*m)) {
 					bLoop = false;
 					break;
 				}
@@ -79,7 +79,7 @@ namespace rs {
 		bLoop = true;
 		while(bLoop && !isInterrupted()) {
 			while(auto m = getLooper()->wait()) {
-				if(msg::QuitReq* p = *m) {
+				if(static_cast<msg::QuitReq*>(*m)) {
 					bLoop = false;
 					break;
 				}
@@ -130,7 +130,7 @@ namespace rs {
 		dth.start(std::ref(getLooper()), std::move(ctxD), w, _dcr());
 		// 描画スレッドの初期化完了を待つ
 		while(auto m = getLooper()->wait()) {
-			if(msg::DrawInit* p = *m)
+			if(static_cast<msg::DrawInit*>(*m))
 				break;
 		}
 		GLW.initializeMainThread();
@@ -173,7 +173,7 @@ namespace rs {
 			}
 			// 何かメッセージが来てたら処理する
 			while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
-				if(msg::PauseReq* pr = *m) {
+				if(static_cast<msg::PauseReq*>(*m)) {
 					mgr_sound.pauseAllSound();
 					// ユーザーに通知(Pause)
 					mp->onPause();
@@ -185,12 +185,12 @@ namespace rs {
 
 						// Resumeメッセージが来るまでwaitループ
 						OPMessage m = getLooper()->wait();
-						if(msg::ResumeReq* rr = *m) {
+						if(static_cast<msg::ResumeReq*>(*m)) {
 							mgr_sound.resumeAllSound();
 							// ユーザーに通知(Resume)
 							mp->onResume();
 							break;
-						} else if(msg::StopReq* sr = *m) {
+						} else if(static_cast<msg::StopReq*>(*m)) {
 							mp->onStop();
 							// OpenGLリソースの解放
 							mgr_gl.onDeviceLost();
@@ -206,7 +206,7 @@ namespace rs {
 							// サウンドを一旦全部停止させておく -> 復元した時に以前再生していたものは処理が継続される
  							sndP.reset(nullptr);
 						}
-						else if(msg::ReStartReq* rr = *m) {
+						else if(static_cast<msg::ReStartReq*>(*m)) {
 							// サウンドデバイスの復元
  							boost::archive::binary_iarchive ia(buffer);
 //							ia >> mgr_rw;
@@ -367,7 +367,7 @@ namespace rs {
 		mth.start(std::ref(loop), std::ref(_spWindow), pathfile);
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
-			if(msg::MainInit* p = *msg)
+			if(static_cast<msg::MainInit*>(*msg))
 				break;
 		}
 		_handler = Handler(mth.getLooper());
@@ -378,7 +378,7 @@ namespace rs {
 			if(e.type == EVID_SIGNAL) {
 				// 自作スレッドのキューにメッセージがある
 				while(OPMessage m = loop->peek(std::chrono::seconds(0))) {
-					if(msg::QuitReq* p = *m) {
+					if(static_cast<msg::QuitReq*>(*m)) {
 						e.type = SDL_QUIT;
 						e.quit.timestamp = 0;
 						SDL_PushEvent(&e);
