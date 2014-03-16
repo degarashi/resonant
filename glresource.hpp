@@ -567,13 +567,13 @@ namespace rs {
 
 	//! デバッグ用テクスチャ模様生成インタフェース
 	struct ITDGen {
-		virtual GLenum getFormat() const = 0;
+		virtual uint32_t getFormat() const = 0;
 		virtual bool isSingle() const = 0;
 		virtual spn::ByteBuff generate(const spn::Size& size, CubeFace face=CubeFace::PositiveX) const = 0;
 	};
 	using UPTDGen = std::unique_ptr<ITDGen>;
 	#define DEF_DEBUGGEN \
-		GLenum getFormat() const override; \
+		uint32_t getFormat() const override; \
 		bool isSingle() const override; \
 		spn::ByteBuff generate(const spn::Size& size, CubeFace face) const override;
 
@@ -609,24 +609,6 @@ namespace rs {
 		public:
 			Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube);
 			void onDeviceReset() override;
-	};
-
-	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
-	class GLFBufferTmp {
-		GLuint _idFb;
-
-		static void _Attach(GLenum flag, GLuint rb);
-		public:
-			GLFBufferTmp(GLuint idFb);
-			void attachColor(int n, GLuint rb);
-			void attachDepth(GLuint rb);
-			void attachStencil(GLuint rb);
-			void attachDS(GLuint rb);
-			GLuint getBufferID() const;
-
-			RUser<GLFBufferTmp> use() const;
-			void use_begin() const;
-			void use_end() const;
 	};
 
 	//! OpenGL: RenderBufferObjectインタフェース
@@ -676,14 +658,21 @@ namespace rs {
 
 	class GLFBufferCore {
 		public:
-			// 今はOpenGL ES2 しか考えてないのでCOLOR_ATTACHMENTは0番Only
 			enum AttID {
 				COLOR0,
+#ifndef USE_OPENGLES2
+				COLOR1,
+				COLOR2,
+				COLOR3,
+#endif
 				DEPTH,
 				STENCIL,
-				NUM_ATTACHMENT
+				NUM_ATTACHMENT,
+				DEPTH_STENCIL = NUM_ATTACHMENT
 			};
 			static GLenum _AttIDtoGL(AttID att);
+			void _attachRenderbuffer(AttID aId, GLuint rb);
+			void _attachTexture(AttID aId, GLuint tb);
 			// attachは受け付けるがハンドルを格納するだけであり、実際OpenGLにセットされるのはDTh
 		protected:
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
@@ -698,6 +687,17 @@ namespace rs {
 			void use_begin() const;
 			void use_end() const;
 	};
+	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
+	class GLFBufferTmp : public GLFBufferCore {
+		static void _Attach(GLenum flag, GLuint rb);
+		public:
+			GLFBufferTmp(GLuint idFb);
+			void attach(AttID att, GLuint rb);
+			void use_end() const;
+
+			RUser<GLFBufferTmp> use() const;
+	};
+
 	namespace draw {
 		// 毎回GLでAttachする
 		class FrameBuff : public GLFBufferCore, public Token {
@@ -718,7 +718,7 @@ namespace rs {
 	//! OpenGL: FrameBufferObjectインタフェース
 	class GLFBuffer : public GLFBufferCore, public IGLResource {
 		// GLuintは内部処理用 = RenderbufferのID
-		Res	_attachment[AttID::NUM_ATTACHMENT] = {boost::none, boost::none, boost::none};
+		Res	_attachment[AttID::NUM_ATTACHMENT];
 
 		public:
 			GLFBuffer();

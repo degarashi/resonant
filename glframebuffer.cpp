@@ -33,9 +33,10 @@ namespace rs {
 	const GLRBuffer::F_LOST GLRBuffer::cs_onLost[] = {
 		Nothing,		// NONE
 		Nothing,		// CLEAR
+#ifndef USE_OPENGLES2
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto fbi = fb.use();
-			fb.attachColor(0, rb._idRbo);
+			fb.attach(GLFBufferTmp::COLOR0, rb._idRbo);
 			GLFormat::OPInfo op = GLFormat::QueryInfo(rb._fmt.get());
 			int texSize;
 			if(op) {
@@ -53,10 +54,12 @@ namespace rs {
 						rb._buffFmt = GL_UNSIGNED_SHORT;
 						texSize = sizeof(GLushort);
 						break;
+				#ifndef USE_OPENGLES2
 					case GLFormat::DepthStencil:	// GL_DEPTH24_STENCIL8
 						rb._buffFmt = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
 						texSize = sizeof(GLuint);
 						break;
+				#endif
 					case GLFormat::Stencil:			// GL_STENCIL_INDEX8
 						rb._buffFmt = GL_UNSIGNED_BYTE;
 						texSize = sizeof(GLubyte);
@@ -67,6 +70,11 @@ namespace rs {
 			GL.glReadPixels(0, 0, rb._width, rb._height, rb._fmt.get(), rb._buffFmt.get(), &buff[0]);
 			rb._restoreInfo = std::move(buff);
 		}
+#else
+		// OpenGL ES2ではDepth, StencilフォーマットのRenderBuffer読み取りは出来ない
+		// Colorフォーマットだったら一応可能だがRenderBufferに書き戻すのが手間なのであとで対応
+		Nothing
+#endif
 	};
 
 	const GLRBuffer::F_LOST GLRBuffer::cs_onReset[] = {
@@ -75,16 +83,21 @@ namespace rs {
 			const spn::Vec4& c = boost::get<spn::Vec4>(rb._restoreInfo);
 			GL.glClearColor(c.x, c.y, c.z, c.w);
 			auto fbi = fb.use();
-			fb.attachColor(0, rb._idRbo);
+			fb.attach(GLFBuffer::COLOR0, rb._idRbo);
 			GL.glClear(GL_COLOR_BUFFER_BIT);
 		},
+// OpenGL ES2ではglDrawPixelsが使えないので、ひとまず無効化
+#ifndef USE_OPENGLES2
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto& buff = boost::get<spn::ByteBuff>(rb._restoreInfo);
 			auto fbi = fb.use();
-			fb.attachColor(0, rb._idRbo);
+			fb.attach(GLFBuffer::COLOR0, rb._idRbo);
 			GL.glDrawPixels(0,0, rb._fmt.get(), rb._buffFmt, &buff[0]);
 			rb._restoreInfo = boost::none;
 		}
+#else
+		Nothing
+#endif
 	};
 
 	RUser<GLRBuffer> GLRBuffer::use() const {
@@ -108,36 +121,19 @@ namespace rs {
 	}
 
 	// ------------------------- GLFBufferTmp -------------------------
-	GLFBufferTmp::GLFBufferTmp(GLuint idFb): _idFb(idFb) {}
+	GLFBufferTmp::GLFBufferTmp(GLuint idFb): GLFBufferCore(idFb) {}
 	RUser<GLFBufferTmp> GLFBufferTmp::use() const {
 		return RUser<GLFBufferTmp>(*this);
 	}
-	void GLFBufferTmp::use_begin() const {
-		GL.glBindFramebuffer(GL_FRAMEBUFFER, _idFb);
-	}
 	void GLFBufferTmp::use_end() const {
-		constexpr GLenum ids[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3,
-									GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT};
-		for(auto id : ids)
-			GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, id, GL_RENDERBUFFER, 0);
+		for(int i=0 ; i<NUM_ATTACHMENT ; i++)
+			const_cast<GLFBufferTmp*>(this)->_attachRenderbuffer(static_cast<AttID>(i), 0);
 	}
-	void GLFBufferTmp::attachColor(int n, GLuint rb) {
-		_Attach(GL_COLOR_ATTACHMENT0+n, rb);
-	}
-	void GLFBufferTmp::attachDepth(GLuint rb) {
-		_Attach(GL_DEPTH_ATTACHMENT, rb);
-	}
-	void GLFBufferTmp::attachStencil(GLuint rb) {
-		_Attach(GL_STENCIL_ATTACHMENT, rb);
-	}
-	void GLFBufferTmp::attachDS(GLuint rb) {
-		_Attach(GL_DEPTH_STENCIL_ATTACHMENT, rb);
-	}
-	void GLFBufferTmp::_Attach(GLenum flag, GLuint rb) {
-		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, flag, GL_RENDERBUFFER, rb);
-	}
-	GLuint GLFBufferTmp::getBufferID() const {
-		return _idFb;
+	void GLFBufferTmp::attach(AttID att, GLuint rb) {
+#ifdef USE_OPENGLES2
+		AssertP(Trap, att != AttID::DEPTH_STENCIL)
+#endif
+		_attachRenderbuffer(att, rb);
 	}
 
 	// ------------------------- GLFBufferCore -------------------------
@@ -145,11 +141,16 @@ namespace rs {
 	RUser<GLFBufferCore> GLFBufferCore::use() const {
 		return RUser<GLFBufferCore>(*this);
 	}
+	void GLFBufferCore::_attachRenderbuffer(AttID aId, GLuint rb) {
+		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_RENDERBUFFER, rb);
+	}
+	void GLFBufferCore::_attachTexture(AttID aId, GLuint tb) {
+		GL.glFramebufferTexture2D(GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_TEXTURE_2D, tb, 0);
+	}
 	void GLFBufferCore::use_begin() const {
 		GL.glBindFramebuffer(GL_FRAMEBUFFER, _idFbo);
 		GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		Assert(Trap, e != GL_FRAMEBUFFER_COMPLETE);
-		GLEC_Chk(Trap)
 	}
 	void GLFBufferCore::use_end() const {
 		GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -230,12 +231,11 @@ namespace rs {
 		}
 	}
 	GLenum GLFBufferCore::_AttIDtoGL(AttID att) {
-		constexpr GLenum c_fbAtt[GLFBuffer::NUM_ATTACHMENT] = {
-			GL_COLOR_ATTACHMENT0,
-			GL_DEPTH_ATTACHMENT,
-			GL_STENCIL_ATTACHMENT
-		};
-		return c_fbAtt[att];
+		if(att < AttID::DEPTH)
+			return static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + static_cast<int>(att));
+		if(att == AttID::DEPTH)
+			return GL_DEPTH_ATTACHMENT;
+		return GL_STENCIL_ATTACHMENT;
 	}
 
 	void GLFBuffer::onDeviceLost() {

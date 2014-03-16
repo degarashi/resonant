@@ -68,7 +68,8 @@ namespace rs {
 		return level >= MipmapNear;
 	}
 	void IGLTexture::save(const std::string& path) {
-		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(GL_RGBA8, GL_UNSIGNED_BYTE);
+		auto saveFmt = GL_RGBA;
+		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(saveFmt, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
 		#ifndef USE_OPENGLES2
 			{
@@ -77,7 +78,7 @@ namespace rs {
 				GL.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
 			}
 		#else
-			AssertMsg(Trap, false, "not implemented yet");
+			Assert(Trap, false, "not implemented yet");
 		#endif
 		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, SDL_PIXELFORMAT_ARGB8888);
 		auto hlRW = mgr_rw.fromFile(path, RWops::Write, true);
@@ -151,9 +152,9 @@ namespace rs {
 				//	OpenGL ES2ではglTexImage2Dが実装されていないのでFramebufferにセットしてglReadPixelsで取得
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
 				auto u = tmp.use();
-				tmp.attachColor(0, _idTex);
+				tmp.attach(GLFBuffer::COLOR0, _idTex);
 				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.toBase, info.toType, &_buff->operator[](0));
-				tmp.attachColor(0, 0);
+				tmp.attach(GLFBuffer::COLOR0, 0);
 	#else
 				auto u = use();
 				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.toBase, info.toType, &_buff->operator[](0));
@@ -357,10 +358,10 @@ namespace rs {
 	}
 
 	// ------------------------- Texture_Debug -------------------------
-	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube): IGLTexture(gen->getFormat(), size, bCube), _gen(gen) {}
+	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube): IGLTexture(GLFormat::QuerySDLtoGL(gen->getFormat())->type, size, bCube), _gen(gen) {}
 	void Texture_Debug::onDeviceReset() {
 		if(_onDeviceReset()) {
-			GLenum fmt = getFormat();
+			GLenum fmt = GLFormat::QuerySDLtoGL(this->_gen->getFormat())->type;
 			auto size = getSize();
 			auto u = use();
 			if(isCubemap()) {
@@ -397,7 +398,7 @@ namespace rs {
 	TDChecker::TDChecker(const spn::Vec4& col0, const spn::Vec4& col1, int nDivW, int nDivH):
 		_col{col0,col1}, _nDivW(nDivW), _nDivH(nDivH)
 	{}
-	GLenum TDChecker::getFormat() const { return GL_RGBA8; }
+	uint32_t TDChecker::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDChecker::isSingle() const { return true; }
 	spn::ByteBuff TDChecker::generate(const spn::Size& size, CubeFace face) const {
 		GLubyte pack[2][4];
@@ -426,7 +427,7 @@ namespace rs {
 	}
 	// ------------------------- TDCChecker -------------------------
 	TDCChecker::TDCChecker(int nDivW, int nDivH): _nDivW(nDivW), _nDivH(nDivH) {}
-	GLenum TDCChecker::getFormat() const { return GL_RGBA8; }
+	uint32_t TDCChecker::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDCChecker::isSingle() const { return true; }
 	spn::ByteBuff TDCChecker::generate(const spn::Size& size, CubeFace face) const {
 		const static GLubyte tex[] = {
@@ -444,7 +445,7 @@ namespace rs {
 	TDBorder::TDBorder(const spn::Vec4&, const spn::Vec4&) {
 		Assert(Trap, false, "not implemented yet")
 	}
-	GLenum TDBorder::getFormat() const { return GL_RGBA8; }
+	uint32_t TDBorder::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDBorder::isSingle() const { return true; }
 	spn::ByteBuff TDBorder::generate(const spn::Size& size, CubeFace face) const {
 		Assert(Trap, false, "not implemented yet") throw 0;

@@ -15,7 +15,8 @@ namespace rs {
 	}
 	void CharPlane::_addCacheTex() {
 		// OpenGLテクスチャ確保
-		HLTex hlTex = mgr_gl.createTexture(_sfcSize, GL_RGBA8, true, true);	// DeviceLost時: 内容のリストア有りで初期化
+		// MEMO: 環境によってはGL_RGBAが32bitでないかもしれないので対策が必要
+		HLTex hlTex = mgr_gl.createTexture(_sfcSize, GL_RGBA, true, true);	// DeviceLost時: 内容のリストア有りで初期化
 		HTex hTex = hlTex.get();
 		_plane.push_back(std::move(hlTex));
 		// Lane登録
