@@ -2,13 +2,31 @@
 // 一旦右側のフォーマットに変換してからs_SDLtoGL.find(format)とする
 const static std::pair<uint32_t, uint32_t> c_SDLtoSDLGL[] = {
 	{SDL_PIXELFORMAT_BGR24, SDL_PIXELFORMAT_RGB24},
-	{SDL_PIXELFORMAT_BGRA8888, SDL_PIXELFORMAT_RGBA8888},
 	{SDL_PIXELFORMAT_BGR888, SDL_PIXELFORMAT_RGB24},
+	{SDL_PIXELFORMAT_RGB888, SDL_PIXELFORMAT_RGB24},
 	{SDL_PIXELFORMAT_BGRA8888, SDL_PIXELFORMAT_RGBA8888},
-	{SDL_PIXELFORMAT_RGB888, SDL_PIXELFORMAT_RGB24}
+	{SDL_PIXELFORMAT_ARGB8888, SDL_PIXELFORMAT_RGBA8888}
 };
 // (GLフォーマット型, 保存する時のType, 1画素に使うType数, BaseFormatにする場合の型, 対応するSDLの型(ない場合はUNKNOWN))
 const static GLFormatDesc c_GLFormatList[] = {
+	{GL_RGB, GL_UNSIGNED_BYTE, 3, GL_RGB, SDL_PIXELFORMAT_RGB24},
+	{GL_RGBA, GL_UNSIGNED_BYTE, 4, GL_RGBA, SDL_PIXELFORMAT_RGBA8888},
+	{GL_DEPTH_COMPONENT16, GL_UNSIGNED_SHORT, 1, GL_DEPTH_COMPONENT, SDL_PIXELFORMAT_R16},
+	{GL_DEPTH_COMPONENT, GL_FLOAT, 1, GL_DEPTH_COMPONENT, SDL_PIXELFORMAT_R32F},
+	{GL_STENCIL_INDEX8, GL_UNSIGNED_BYTE, 1, GL_STENCIL_INDEX, SDL_PIXELFORMAT_R8},
+	{GL_RGBA4, GL_UNSIGNED_SHORT_4_4_4_4, 1, GL_RGBA, SDL_PIXELFORMAT_RGBA4444},
+	{GL_RGB5_A1, GL_UNSIGNED_SHORT_5_5_5_1, 1, GL_RGBA, SDL_PIXELFORMAT_RGBA5551},
+#ifdef USE_OPENGLES2
+	{GL_ALPHA, GL_UNSIGNED_BYTE, 1, GL_ALPHA, SDL_PIXELFORMAT_R8},
+	{GL_LUMINANCE, GL_FLOAT, 1, GL_LUMINANCE, SDL_PIXELFORMAT_R32F},
+	{GL_LUMINANCE_ALPHA, GL_FLOAT, 1, GL_LUMINANCE_ALPHA, SDL_PIXELFORMAT_R32F},
+	{GL_RGB565, GL_UNSIGNED_SHORT_5_6_5, 1, GL_RGB, SDL_PIXELFORMAT_RGB565},
+#else
+	{GL_RED, GL_UNSIGNED_BYTE, 1, GL_RED, SDL_PIXELFORMAT_R8},
+	{GL_RG, GL_UNSIGNED_BYTE, 2, GL_RG, SDL_PIXELFORMAT_RG88},
+	{GL_BGR, GL_UNSIGNED_BYTE, 3, GL_BGR, SDL_PIXELFORMAT_BGR24},
+	{GL_BGRA, GL_UNSIGNED_BYTE, 4, GL_BGRA, SDL_PIXELFORMAT_BGRA8888},
+	{GL_DEPTH_STENCIL, GL_FLOAT, 2, GL_DEPTH_STENCIL, SDL_PIXELFORMAT_RG3232F},
 	{GL_R8, GL_UNSIGNED_BYTE, 1, GL_RED, SDL_PIXELFORMAT_R8},
 	{GL_R8_SNORM, GL_BYTE, 1, GL_RED, SDL_PIXELFORMAT_UNKNOWN},
 	{GL_R16, GL_UNSIGNED_SHORT, 1, GL_RED, SDL_PIXELFORMAT_R16},
@@ -26,8 +44,6 @@ const static GLFormatDesc c_GLFormatList[] = {
 	{GL_RGB12, GL_UNSIGNED_BYTE, 3, GL_RGB, SDL_PIXELFORMAT_RGB24},
 	{GL_RGB16_SNORM, GL_SHORT, 3, GL_RGB, SDL_PIXELFORMAT_UNKNOWN},
 	{GL_RGBA2, GL_UNSIGNED_SHORT_4_4_4_4, 1, GL_RGBA, SDL_PIXELFORMAT_RGBA4444},
-	{GL_RGBA4, GL_UNSIGNED_SHORT_4_4_4_4, 1, GL_RGBA, SDL_PIXELFORMAT_RGBA4444},
-	{GL_RGB5_A1, GL_UNSIGNED_SHORT_5_5_5_1, 1, GL_RGBA, SDL_PIXELFORMAT_RGBA5551},
 	{GL_RGBA8, GL_UNSIGNED_BYTE, 4, GL_RGBA, SDL_PIXELFORMAT_RGBA8888},
 	{GL_RGBA8_SNORM, GL_BYTE, 4, GL_RGBA, SDL_PIXELFORMAT_UNKNOWN},
 	{GL_RGB10_A2, GL_UNSIGNED_INT_10_10_10_2, 1, GL_RGBA, SDL_PIXELFORMAT_RGBA1010102},
@@ -70,33 +86,33 @@ const static GLFormatDesc c_GLFormatList[] = {
 	{GL_RGBA16UI, GL_UNSIGNED_SHORT, 4, GL_RGBA, SDL_PIXELFORMAT_RGBA16161616},
 	{GL_RGBA32I, GL_INT, 4, GL_RGBA, SDL_PIXELFORMAT_UNKNOWN},
 	{GL_RGBA32UI, GL_UNSIGNED_INT, 4, GL_RGBA, SDL_PIXELFORMAT_RGBA32323232},
-	{GL_DEPTH_COMPONENT16, GL_UNSIGNED_SHORT, 1, GL_DEPTH_COMPONENT, SDL_PIXELFORMAT_R16},
 	{GL_DEPTH_COMPONENT24, GL_UNSIGNED_INT, 1, GL_DEPTH_COMPONENT, SDL_PIXELFORMAT_R32},
 	{GL_DEPTH_COMPONENT32, GL_UNSIGNED_INT, 1, GL_DEPTH_COMPONENT, SDL_PIXELFORMAT_R32},
 	{GL_DEPTH_COMPONENT32F, GL_FLOAT, 1, GL_DEPTH_COMPONENT, SDL_PIXELFORMAT_R32F},
 	{GL_STENCIL_INDEX4, GL_UNSIGNED_BYTE, 1, GL_STENCIL_INDEX, SDL_PIXELFORMAT_R8},
-	{GL_STENCIL_INDEX8, GL_UNSIGNED_BYTE, 1, GL_STENCIL_INDEX, SDL_PIXELFORMAT_R8},
 	{GL_STENCIL_INDEX16, GL_UNSIGNED_SHORT, 1, GL_STENCIL_INDEX, SDL_PIXELFORMAT_R16},
 	{GL_DEPTH24_STENCIL8, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, 1, GL_DEPTH_STENCIL, SDL_PIXELFORMAT_UNKNOWN}
+#endif
 };
 
 // (Typeフラグ, 要素のバイトサイズ)
 const static std::pair<GLenum, size_t> c_GLTypeList[] = {
 	{GL_UNSIGNED_BYTE, sizeof(GLubyte)},
+	{GL_UNSIGNED_SHORT_5_6_5, sizeof(GLushort)},
+	{GL_UNSIGNED_SHORT_4_4_4_4, sizeof(GLushort)},
+	{GL_UNSIGNED_SHORT_5_5_5_1, sizeof(GLushort)},
+#ifndef USE_OPENGLES2
 	{GL_BYTE, sizeof(GLbyte)},
+	{GL_UNSIGNED_BYTE_3_3_2, sizeof(GLubyte)},
+	{GL_UNSIGNED_BYTE_2_3_3_REV, sizeof(GLubyte)},
+	{GL_UNSIGNED_SHORT_5_6_5_REV, sizeof(GLushort)},
+	{GL_UNSIGNED_SHORT_4_4_4_4_REV, sizeof(GLushort)},
 	{GL_UNSIGNED_SHORT, sizeof(GLushort)},
 	{GL_SHORT, sizeof(GLshort)},
 	{GL_UNSIGNED_INT, sizeof(GLuint)},
 	{GL_INT, sizeof(GLint)},
 	{GL_HALF_FLOAT, sizeof(GLshort)},
 	{GL_FLOAT, sizeof(GLfloat)},
-	{GL_UNSIGNED_BYTE_3_3_2, sizeof(GLubyte)},
-	{GL_UNSIGNED_BYTE_2_3_3_REV, sizeof(GLubyte)},
-	{GL_UNSIGNED_SHORT_5_6_5, sizeof(GLushort)},
-	{GL_UNSIGNED_SHORT_5_6_5_REV, sizeof(GLushort)},
-	{GL_UNSIGNED_SHORT_4_4_4_4, sizeof(GLushort)},
-	{GL_UNSIGNED_SHORT_4_4_4_4_REV, sizeof(GLushort)},
-	{GL_UNSIGNED_SHORT_5_5_5_1, sizeof(GLushort)},
 	{GL_UNSIGNED_SHORT_1_5_5_5_REV, sizeof(GLushort)},
 	{GL_UNSIGNED_INT_8_8_8_8, sizeof(GLuint)},
 	{GL_UNSIGNED_INT_8_8_8_8_REV, sizeof(GLuint)},
@@ -106,6 +122,7 @@ const static std::pair<GLenum, size_t> c_GLTypeList[] = {
 	{GL_UNSIGNED_INT_10F_11F_11F_REV, sizeof(GLuint)},
 	{GL_UNSIGNED_INT_5_9_9_9_REV, sizeof(GLuint)},
 	{GL_FLOAT_32_UNSIGNED_INT_24_8_REV, sizeof(GLuint)}
+#endif
 };
 
 const static std::pair<GLenum, GLSLFormatDesc> c_GLSLTypeList[] = {
@@ -113,18 +130,10 @@ const static std::pair<GLenum, GLSLFormatDesc> c_GLSLTypeList[] = {
 	{GL_FLOAT_VEC2, {GLSLType::FloatT, MakeDim(2), false, false}},
 	{GL_FLOAT_VEC3, {GLSLType::FloatT, MakeDim(3), false, false}},
 	{GL_FLOAT_VEC4, {GLSLType::FloatT, MakeDim(4), false, false}},
-	{GL_DOUBLE, {GLSLType::DoubleT, MakeDim(1), false, false}},
-	{GL_DOUBLE_VEC2, {GLSLType::DoubleT, MakeDim(2), false, false}},
-	{GL_DOUBLE_VEC3, {GLSLType::DoubleT, MakeDim(3), false, false}},
-	{GL_DOUBLE_VEC4, {GLSLType::DoubleT, MakeDim(4), false, false}},
 	{GL_INT, {GLSLType::IntT, MakeDim(1), false, false}},
 	{GL_INT_VEC2, {GLSLType::IntT, MakeDim(2), false, false}},
 	{GL_INT_VEC3, {GLSLType::IntT, MakeDim(3), false, false}},
 	{GL_INT_VEC4, {GLSLType::IntT, MakeDim(4), false, false}},
-	{GL_UNSIGNED_INT, {GLSLType::IntT, MakeDim(1), true, false}},
-	{GL_UNSIGNED_INT_VEC2, {GLSLType::IntT, MakeDim(2), true, false}},
-	{GL_UNSIGNED_INT_VEC3, {GLSLType::IntT, MakeDim(3), true, false}},
-	{GL_UNSIGNED_INT_VEC4, {GLSLType::IntT, MakeDim(4), true, false}},
 	{GL_BOOL, {GLSLType::BoolT, MakeDim(1), false, false}},
 	{GL_BOOL_VEC2, {GLSLType::BoolT, MakeDim(2), false, false}},
 	{GL_BOOL_VEC3, {GLSLType::BoolT, MakeDim(3), false, false}},
@@ -132,6 +141,17 @@ const static std::pair<GLenum, GLSLFormatDesc> c_GLSLTypeList[] = {
 	{GL_FLOAT_MAT2, {GLSLType::MatrixT, MakeDim(2,2), false, false}},
 	{GL_FLOAT_MAT3, {GLSLType::MatrixT, MakeDim(3,3), false, false}},
 	{GL_FLOAT_MAT4, {GLSLType::MatrixT, MakeDim(4,4), false, false}},
+	{GL_SAMPLER_2D, {GLSLType::TextureT, MakeDim(2), false, false}},
+	{GL_SAMPLER_CUBE, {GLSLType::TextureT, MakeDim(2), false, true}},
+#ifndef USE_OPENGLES2
+	{GL_DOUBLE, {GLSLType::DoubleT, MakeDim(1), false, false}},
+	{GL_DOUBLE_VEC2, {GLSLType::DoubleT, MakeDim(2), false, false}},
+	{GL_DOUBLE_VEC3, {GLSLType::DoubleT, MakeDim(3), false, false}},
+	{GL_DOUBLE_VEC4, {GLSLType::DoubleT, MakeDim(4), false, false}},
+	{GL_UNSIGNED_INT, {GLSLType::IntT, MakeDim(1), true, false}},
+	{GL_UNSIGNED_INT_VEC2, {GLSLType::IntT, MakeDim(2), true, false}},
+	{GL_UNSIGNED_INT_VEC3, {GLSLType::IntT, MakeDim(3), true, false}},
+	{GL_UNSIGNED_INT_VEC4, {GLSLType::IntT, MakeDim(4), true, false}},
 	{GL_FLOAT_MAT2x3, {GLSLType::MatrixT, MakeDim(2,3), false, false}},
 	{GL_FLOAT_MAT2x4, {GLSLType::MatrixT, MakeDim(2,4), false, false}},
 	{GL_FLOAT_MAT3x2, {GLSLType::MatrixT, MakeDim(3,2), false, false}},
@@ -148,9 +168,7 @@ const static std::pair<GLenum, GLSLFormatDesc> c_GLSLTypeList[] = {
 	{GL_DOUBLE_MAT4x2, {GLSLType::DMatrixT, MakeDim(4,2), false, false}},
 	{GL_DOUBLE_MAT4x3, {GLSLType::DMatrixT, MakeDim(4,3), false, false}},
 	{GL_SAMPLER_1D, {GLSLType::TextureT, MakeDim(1), false, false}},
-	{GL_SAMPLER_2D, {GLSLType::TextureT, MakeDim(2), false, false}},
 	{GL_SAMPLER_3D, {GLSLType::TextureT, MakeDim(3), false, false}},
-	{GL_SAMPLER_CUBE, {GLSLType::TextureT, MakeDim(2), false, true}},
 	{GL_SAMPLER_1D_SHADOW, {GLSLType::TextureT, MakeDim(1), false, false}},
 	{GL_SAMPLER_2D_SHADOW, {GLSLType::TextureT, MakeDim(2), false, false}},
 	{GL_SAMPLER_1D_ARRAY, {GLSLType::TextureT, MakeDim(1), false, false}},
@@ -183,4 +201,5 @@ const static std::pair<GLenum, GLSLFormatDesc> c_GLSLTypeList[] = {
 	{GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY, {GLSLType::IntTextureT, MakeDim(2), true, false}},
 	{GL_UNSIGNED_INT_SAMPLER_BUFFER, {GLSLType::IntTextureT, MakeDim(1), true, false}},
 	{GL_UNSIGNED_INT_SAMPLER_2D_RECT, {GLSLType::IntTextureT, MakeDim(2), true, false}}
+#endif
 };
