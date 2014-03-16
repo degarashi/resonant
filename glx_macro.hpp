@@ -8,7 +8,12 @@
 #define SEQ_INOUT (in)(out)(inout)
 #define SEQ_BLOCK (attribute)(varying)(uniform)(const)
 
-#define SEQ_GLSETTING ((linewidth,glLineWidth,float))((frontface,glFrontFace,unsigned))((cullface,glCullFace,unsigned))((depthrange,glDepthRange,float,float))((viewport,glViewport,float,float,float,float))\
+#ifdef USE_OPENGLES2
+	#define GLDEPTHRANGE glDepthRangef
+#else
+	#define GLDEPTHRANGE glDepthRange
+#endif
+#define SEQ_GLSETTING ((linewidth,glLineWidth,float))((frontface,glFrontFace,unsigned))((cullface,glCullFace,unsigned))((depthrange,GLDEPTHRANGE,float,float))((viewport,glViewport,float,float,float,float))\
 		((scissor,glScissor,float,float,float,float))((samplecoverage,glSampleCoverage,float,bool))((stencilfunc,glStencilFunc,unsigned,float,unsigned))((stencilfuncfront,stencilFuncFront,unsigned,float,unsigned))\
 		((stencilfuncback,stencilFuncBack,unsigned,float,unsigned))((stencilop,glStencilOp,unsigned,unsigned,unsigned))((stencilopfront,stencilOpFront,unsigned,unsigned,unsigned))((stencilopback,stencilOpBack,unsigned,unsigned,unsigned))\
 		((depthfunc,glDepthFunc,unsigned))((blendeq,glBlendEquation,unsigned))((blendeqca,glBlendEquationSeparate,unsigned,unsigned))((blendfunc,glBlendFunc,unsigned,unsigned))\
