@@ -6,7 +6,7 @@ namespace rs {
 		auto fpos = SDL_RWseek(ops, 0, RW_SEEK_CUR);
 		auto fsize = SDL_RWseek(ops, 0, RW_SEEK_END);
 		SDL_RWseek(ops, fpos, RW_SEEK_SET);
-		size_t nblock = std::min((fsize-fpos)/blocksize, nmblock);
+		size_t nblock = std::min((fsize-fpos)/static_cast<decltype(fpos)>(blocksize), static_cast<decltype(fpos)>(nmblock));
 		return SDL_RWread(ops, ptr, blocksize, nblock);
 	}
 	int VorbisFile::SeekOGC(void* datasource, ogg_int64_t offset, int whence) {

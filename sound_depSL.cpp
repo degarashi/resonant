@@ -24,11 +24,11 @@ namespace rs {
 			DEF_ERROR_PAIR(SL_RESULT_CONTROL_LOST)
 		};
 	}
-	void SLError::Reset(){}
-	const char* SLError::GetAPIName() {
+	void SLError::reset() const {}
+	const char* SLError::getAPIName() {
 		return "OpenSL";
 	}
-	const char* SLError::ErrorDesc(SLresult result) {
+	const char* SLError::errorDesc(SLresult result) {
 		if(result != SL_RESULT_SUCCESS) {
 			for(auto& p : c_slerror) {
 				if(p.first == result)
@@ -253,6 +253,7 @@ namespace rs {
 		SLEC_M(Trap, _engineItf, CreateOutputMix, &_outmix.refObj(), 0, nullptr, nullptr);
 		_outmix.realize(false);
 	}
+	int SoundMgr_depSL::getRate() const { return _outFormat.freq; }
 	void SoundMgr_depSL::printVersions(std::ostream& os) {
 		SLresult result;
 		SLuint32 num;

@@ -13,9 +13,9 @@
 #endif
 namespace rs {
 	struct SLError {
-		static const char* ErrorDesc(SLresult result);
+		static const char* errorDesc(SLresult result);
 		void reset() const;
-		const char* getAPIName() const;
+		static const char* getAPIName();
 	};
 	std::string GetIIDString(const SLInterfaceID& iid);
 
@@ -125,6 +125,7 @@ namespace rs {
 		public:
 			SoundMgr_depSL(int rate);
 			SoundMgr_depSL(const SoundMgr_depSL&) = delete;
+			int getRate() const;
 
 			void printVersions(std::ostream& os);
 			SLEngineItf	getEngineItf() const;
