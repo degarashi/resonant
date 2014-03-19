@@ -265,12 +265,14 @@ namespace rs {
 			template <class... Ret>
 			void popValues(std::tuple<Ret...>& dst) {
 				using CT = spn::CType<Ret...>;
-				popValues2<CT, 0>(dst, getTop());
+				popValues2<CT, sizeof...(Ret)-1>(dst, -1, typename spn::NType<0, sizeof...(Ret)>::less());
 			}
-			template <class TUP, class CT, int N>
-			void popValues2(TUP& dst, int nTop) {
-				std::get<N>(dst) = toValue<typename CT::template At<N>::type>(nTop-N-1);
-				popValues2<CT, N+1>(dst, nTop);
+			template <class CT, int N, class TUP>
+			void popValues2(TUP& dst, int pos, std::false_type) {}
+			template <class CT, int N, class TUP>
+			void popValues2(TUP& dst, int pos, std::true_type) {
+				std::get<N>(dst) = toValue<typename CT::template At<N>::type>(pos);
+				popValues2<CT, N-1>(dst, pos-1, typename spn::NType<0, N-1>::less_eq());
 			}
 			void pushValue(int idx);
 			void pop(int n=1);
@@ -542,12 +544,18 @@ namespace rs {
 			template <class... Ret, class... Args>
 			void operator()(std::tuple<Ret...>& dst, Args&&... args) {
 				LuaState lsc(T::getLS());
-				T::prepareValue();
+				T::_prepareValue();
 				// 引数をスタックに積む
 				lsc.pushArgs(std::forward<Args>(args)...);
 				lsc.call(sizeof...(Args), sizeof...(Ret));
 				// 戻り値をtupleにセットする
 				lsc.popValues(dst);
+			}
+			template <class... Ret, class... Args>
+			std::tuple<Ret...> call(Args&&... args) {
+				std::tuple<Ret...> ret;
+				this->operator()(ret, std::forward<Args>(args)...);
+				return std::move(ret);
 			}
 
 			// --- convert function ---

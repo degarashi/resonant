@@ -317,6 +317,7 @@ namespace rs {
 	void LV_Stack::_init(lua_State* ls) {
 		_ls = ls;
 		_pos = lua_gettop(_ls);
+		Assert(Trap, _pos > 0)
 	}
 	void LV_Stack::_setValue() {
 		lua_replace(_ls, _pos);
