@@ -482,7 +482,7 @@ namespace rs {
 		getGlobal(luaNS::ToString);
 		pushValue(idx);
 		call(1,1);
-		std::string ret = toString(idx);
+		std::string ret = toString(-1);
 		pop(1);
 		return std::move(ret);
 	}
@@ -501,12 +501,12 @@ namespace rs {
 	void* LuaState::toUserData(int idx) const {
 		return LCV<void*>()(idx, getLS());
 	}
-	LCTable LuaState::toTable(int idx) const {
-		return LCV<LCTable>()(idx, getLS());
+	LCTable LuaState::toTable(int idx, LPointerSP* spm) const {
+		return LCV<LCTable>()(idx, getLS(), spm);
 	}
 
-	LCValue LuaState::toLCValue(int idx) const {
-		return LCV<LCValue>()(idx, getLS());
+	LCValue LuaState::toLCValue(int idx, LPointerSP* spm) const {
+		return LCV<LCValue>()(idx, getLS(), spm);
 	}
 	LuaType LuaState::type(int idx) const {
 		return SType(getLS(), idx);

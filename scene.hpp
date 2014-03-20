@@ -1,5 +1,6 @@
 #pragma once
 #include "updator.hpp"
+#include "luaimport.hpp"
 
 namespace rs {
 	#define mgr_scene (::rs::SceneMgr::_ref())
@@ -56,4 +57,8 @@ namespace rs {
 			DEF_ADAPTOR(onReStart)
 			#undef DEF_ADAPTOR
 	};
+	class U_Scene : public Scene<U_Scene> {};
 }
+DEF_LUAIMPORT(SceneMgr)
+DEF_LUAIMPORT(U_Scene)
+

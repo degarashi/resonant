@@ -1,4 +1,5 @@
-package.path = package.path .. ";/home/slice/projects/resonant/?.lua"
+-- TODO: あとで絶対パスを直す
+package.path = package.path .. ";/home/degarashi/projects/resonant/?.lua"
 require("sysfunc")
 
 -- グローバル変数は全てここに含める
@@ -50,7 +51,6 @@ function DeleteHandle(ud)
 	handleId2ObjSub[id] = nil
 end
 
-
 -- ObjectBaseは事前にC++で定義しておく
 -- オブジェクトハンドルの継承 => オブジェクトベースの定義
 -- これにLuaで記述された各種メソッドを足したものがオブジェクト
@@ -82,6 +82,13 @@ function DerivedHandle(base)
 		},
 		_New = false -- 後で定義する用のダミー
 	}
+	-- ポインタからオブジェクトを構築
+	--[[ \param[in] ptr(light userdata) ]]
+	function object.ConstructPtr(ptr)
+		local ret = {pointer = ptr}
+		setmetatable(ret, object._mt)
+		return ret
+	end
 	-- selfにはtableを指定する
 	function object.Construct(self, ...)
 		local ud,id = object._New(...)
@@ -127,6 +134,16 @@ local makeDerivedTableMT = function(base)
 	}
 end
 
+function DerivedState(base, init)
+	local state = init
+	state._base = base
+	setmetatable(state, {
+		__index = base,
+		__newindex = base
+	})
+	return state
+end
+
 local nilbase = {
 	Ctor = function(self) end
 }
@@ -161,8 +178,9 @@ function DerivedClass(base, init)
 		object.Ctor(obj, ...)
 		return obj
 	end
-
-	setmetatable(object, {
+	-- もし継承先クラスがすでにメタテーブルを持っていたらそれを上乗せ
+	local srcMT = getmetatable(object)
+	local mt = {
 		__index = function(tbl, key)
 			return base[key]
 		end,
@@ -174,41 +192,12 @@ function DerivedClass(base, init)
 			end
 			rawset(tbl, key, value)
 		end
-	})
-	return object
-end
-
--- クラスファイルを読む時にセットする
-MT_G = {
-	__index = _G,
-	__newindex = function(tbl, key, val)
-		rawset(tbl, key, val)
-	end
-}
--- クラスファイルを読んだ後にすり替えるメタテーブルを生成
-function MakeStaticValueMT(cls)
-	local mt = {
-		__index = function(tbl, key)
-			-- static変数、global変数の順で調べる
-			local v = cls[key]
-			if v ~= nil then
-				return v
-			end
-			return _G[key]
-		end,
-		__newindex = function(tbl, key, val)
-			-- static変数だけ調べて、既にエントリがあればそれを上書き
-			local v = cls[key]
-			if v ~= nil then
-				cls[key] = val
-			end
-			-- 該当なしなら何も書き込まない
-			print("invalid data write: key=" .. key .. ", value=" .. val)
-		end
 	}
-	local ret = {}
-	setmetatable(ret, mt)
-	return ret
+	if srcMT ~= nil then
+		mt = MakeDerivedMT(srcMT, mt)
+	end
+	setmetatable(object, mt)
+	return object
 end
 
 -- ステート遷移ベースクラス
@@ -264,6 +253,8 @@ FSMachine = DerivedClass(nil, {
 	-- 全てのメッセージは先頭引数がself, lc(ステートローカル領域)
 	-- OnEnter (prevState(string))
 	-- OnExit (nextState(string))
+	-- OnCollisionEnd (obj(object), nFrame(number))
+	-- OnCollision (obj(object), nFrame(number))
 
 	-- \param[in] msg(string)	メッセージ名
 	-- \return (bool)受信応答, 任意の戻り値...
@@ -329,10 +320,30 @@ function MakeDerivedMT(first, second)
 	}
 end
 function MakeFSMachine(src)
-	local ret = DerivedClass(FSMachine, src)
-	local mt = MakeDerivedMT(FSMachine._mt, _ENV[src.BaseClass]._mt)
-	setmetatable(ret, mt)
-	return ret
+	return  DerivedClass(FSMachine, src)
+end
+
+--[[	クラス定義ファイルを読む前にこの関数でUpValueにセットする
+		(クラス定義ファイル中でグローバル関数を読んだ場合への対処) ]]
+-- System = システム関数テーブル
+-- Global = 明示的なグローバル変数テーブル
+local global,system = Global,System
+local print = print
+local GTbl = _G
+function MakePreENV(base)
+	setmetatable(base, {
+		__index = function(tbl, key)
+			if key == "System" then
+				return system
+			elseif key == "Global" then
+				return global
+			end
+			return GTbl[key]
+		end,
+		__newindex = function(tbl, key, val)
+			rawset(tbl, key, val)
+		end
+	})
 end
 
 function Test()

@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include "spinner/resmgr.hpp"
+#include "luaimport.hpp"
 
 namespace rs {
 	class RWops;
@@ -52,9 +53,10 @@ namespace rs {
 	// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
 	template <class T>
 	struct LCV;
+	using LPointerSP = std::unordered_map<const void*, SPLCValue>;
 #define DEF_LCV(rtyp, typ) template <> struct LCV<rtyp> { \
 		void operator()(lua_State* ls, typ t) const; \
-		rtyp operator()(int idx, lua_State* ls) const; \
+		rtyp operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const; \
 		std::ostream& operator()(std::ostream& os, typ t) const; \
 		LuaType operator()() const; };
 	DEF_LCV(boost::blank, boost::blank)
@@ -112,6 +114,8 @@ namespace rs {
 			LCValue(T* t): LCVar(t) {}
 			template <class T>
 			LCValue(T&& t): LCVar(std::move(t)) {}
+			LCValue& operator = (const LCValue& lcv);
+			LCValue& operator = (LCValue&& lcv);
 			LCValue(float fv): LCVar(lua_Number(fv)) {}
 			LCValue(double dv): LCVar(lua_Number(dv)) {}
 			LCValue(LCValue&& lcv): LCVar(reinterpret_cast<LCVar&&>(lcv)) {}
@@ -351,8 +355,8 @@ namespace rs {
 			lua_Unsigned toUnsigned(int idx) const;
 			void* toUserData(int idx) const;
 			SPLua toThread(int idx) const;
-			LCTable toTable(int idx) const;
-			LCValue toLCValue(int idx) const;
+			LCTable toTable(int idx, LPointerSP* spm=nullptr) const;
+			LCValue toLCValue(int idx, LPointerSP* spm=nullptr) const;
 
 			template <class R>
 			R toValue(int idx) const {
@@ -663,10 +667,6 @@ namespace rs {
 			return size;
 		}
 	};
-#define DEF_LUAIMPORT(Class, ...) \
-		virtual const char* getLuaName() const; \
-		static const char* GetLuaName(); \
-		static void ExportLua(rs::LuaState& lsc);
 
 	// メンバ変数の時はtrue, それ以外はfalseを返す
 	template <class T>
@@ -682,13 +682,14 @@ namespace rs {
 
 	namespace luaNS {
 		extern const std::string Udata,
+								Pointer,
 								ToString;
 		extern const std::string GetHandle,
 								DeleteHandle,
 								ObjectBase,
 								DerivedHandle,
 								MakeFSMachine,
-								MakeStaticValueMT;
+								MakePreENV;
 		namespace objBase {
 			extern const std::string ValueR,
 									ValueW,
@@ -702,7 +703,9 @@ namespace rs {
 			}
 		}
 	}
-
+}
+DEF_LUAIMPORT_BASE
+namespace rs {
 	//! LuaへC++のクラスをインポート、管理する
 	class LuaImport {
 		//! ハンドルオブジェクトの基本メソッド
@@ -751,7 +754,7 @@ namespace rs {
 			}
 			template <class GET, class RT, class T, class... Ts>
 			static void RegisterMember(LuaState& lsc, const char* name, RT (T::*func)(Ts...) const) {
-				RegisterMember(lsc, name, (RT (T::*)(Ts...))func);
+				RegisterMember<GET>(lsc, name, (RT (T::*)(Ts...))func);
 			}
 			//! lscにReadTable, WriteTableを積んだ状態で呼ぶ
 			template <class GET, class V, class T>
@@ -829,16 +832,31 @@ namespace rs {
 				PushFunction(lsc, func);
 				lsc.setGlobal(name);
 			}
-			//! クラスの登録(登録名はクラスから取得)
+			//! C++クラスの登録(登録名はクラスから取得)
 			template <class T>
 			static void RegisterBaseClass(LuaState& lsc) {
-				T::ExportLua(lsc);
+				lua::LuaExport(lsc, static_cast<T*>(nullptr));
 			}
+			//! C++クラス登録基盤を初期化
 			static void RegisterObjectBase(LuaState& lsc);
 			//! ベースオブジェクトを使った派生クラスの読み込み
 			/*! 1クラス1ファイルの対応
 				ベースクラスの名前はファイルに記載 */
 			static void LoadClass(LuaState& lsc, const std::string& name, HRW hRW);
+			//! 固有オブジェクトのインポート
+			/*! ポインタ指定でLuaにクラスを取り込む
+				リソースマネージャやシステムクラス用 */
+			template <class T>
+			static void ImportClass(LuaState& lsc, const std::string& name, T* ptr) {
+				auto* dummy = static_cast<T*>(nullptr);
+				lua::LuaExport(lsc, dummy);
+				lsc.getGlobal(lua::LuaName(dummy));
+				lsc.getField(-1, "ConstructPtr");
+				lsc.push(static_cast<void*>(ptr));
+				lsc.call(1,1);
+				lsc.setGlobal(name);
+				lsc.pop(1);
+			}
 	};
 }
 

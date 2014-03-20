@@ -10,7 +10,7 @@ namespace rs {
 	// --- LCV<boost::blank> = LUA_TNONE
 	void LCV<boost::blank>::operator()(lua_State* ls, boost::blank) const {
 		assert(false); }
-	boost::blank LCV<boost::blank>::operator()(int idx, lua_State* ls) const {
+	boost::blank LCV<boost::blank>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		assert(false); }
 	std::ostream& LCV<boost::blank>::operator()(std::ostream& os, boost::blank) const {
 		return os << "(none)"; }
@@ -20,7 +20,7 @@ namespace rs {
 	// --- LCV<LuaNil> = LUA_TNIL
 	void LCV<LuaNil>::operator()(lua_State* ls, LuaNil) const {
 		lua_pushnil(ls); }
-	LuaNil LCV<LuaNil>::operator()(int idx, lua_State* ls) const {
+	LuaNil LCV<LuaNil>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Nil);
 		return LuaNil(); }
 	std::ostream& LCV<LuaNil>::operator()(std::ostream& os, LuaNil) const {
@@ -31,7 +31,7 @@ namespace rs {
 	// --- LCV<bool> = LUA_TBOOL
 	void LCV<bool>::operator()(lua_State* ls, bool b) const {
 		lua_pushboolean(ls, b); }
-	bool LCV<bool>::operator()(int idx, lua_State* ls) const {
+	bool LCV<bool>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Boolean);
 		return lua_toboolean(ls, idx) != 0; }
 	std::ostream& LCV<bool>::operator()(std::ostream& os, bool b) const {
@@ -42,7 +42,7 @@ namespace rs {
 	// --- LCV<const char*> = LUA_TSTRING
 	void LCV<const char*>::operator()(lua_State* ls, const char* c) const {
 		lua_pushstring(ls, c); }
-	const char* LCV<const char*>::operator()(int idx, lua_State* ls) const {
+	const char* LCV<const char*>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::String);
 		return lua_tostring(ls, idx); }
 	std::ostream& LCV<const char*>::operator()(std::ostream& os, const char* c) const {
@@ -53,7 +53,7 @@ namespace rs {
 	// --- LCV<std::string> = LUA_TSTRING
 	void LCV<std::string>::operator()(lua_State* ls, const std::string& s) const {
 		lua_pushlstring(ls, s.c_str(), s.length()); }
-	std::string LCV<std::string>::operator()(int idx, lua_State* ls) const {
+	std::string LCV<std::string>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::String);
 		size_t len;
 		const char* c =lua_tolstring(ls, idx, &len);
@@ -66,7 +66,7 @@ namespace rs {
 	// --- LCV<lua_Integer> = LUA_TNUMBER
 	void LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {
 		lua_pushinteger(ls, i); }
-	lua_Integer LCV<lua_Integer>::operator()(int idx, lua_State* ls) const {
+	lua_Integer LCV<lua_Integer>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tointeger(ls, idx); }
 	std::ostream& LCV<lua_Integer>::operator()(std::ostream& os, lua_Integer i) const {
@@ -77,7 +77,7 @@ namespace rs {
 	// --- LCV<lua_Unsigned> = LUA_TNUMBER
 	void LCV<lua_Unsigned>::operator()(lua_State* ls, lua_Unsigned i) const {
 		lua_pushunsigned(ls, i); }
-	lua_Unsigned LCV<lua_Unsigned>::operator()(int idx, lua_State* ls) const {
+	lua_Unsigned LCV<lua_Unsigned>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tounsigned(ls, idx); }
 	std::ostream& LCV<lua_Unsigned>::operator()(std::ostream& os, lua_Unsigned i) const {
@@ -88,7 +88,7 @@ namespace rs {
 	// --- LCV<lua_Number> = LUA_TNUMBER
 	void LCV<lua_Number>::operator()(lua_State* ls, lua_Number f) const {
 		lua_pushnumber(ls, f); }
-	lua_Number LCV<lua_Number>::operator()(int idx, lua_State* ls) const {
+	lua_Number LCV<lua_Number>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tonumber(ls, idx); }
 	std::ostream& LCV<lua_Number>::operator()(std::ostream& os, lua_Number f) const {
@@ -101,7 +101,7 @@ namespace rs {
 		sp->pushSelf();
 		lua_xmove(sp->getLS(), ls, 1);
 	}
-	SPLua LCV<SPLua>::operator()(int idx, lua_State* ls) const {
+	SPLua LCV<SPLua>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Thread);
 		return SPLua(new LuaState(lua_tothread(ls, idx), LuaState::TagThread));
 	}
@@ -114,7 +114,7 @@ namespace rs {
 	// --- LCV<void*> = LUA_TLIGHTUSERDATA
 	void LCV<void*>::operator()(lua_State* ls, const void* ud) const {
 		lua_pushlightuserdata(ls, const_cast<void*>(ud)); }
-	void* LCV<void*>::operator()(int idx, lua_State* ls) const {
+	void* LCV<void*>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		try {
 			LuaState::_CheckType(ls, idx, LuaType::Userdata);
 		} catch(const LuaState::EType& e) {
@@ -129,7 +129,7 @@ namespace rs {
 	// --- LCV<lua_CFunction> = LUA_TFUNCTION
 	void LCV<lua_CFunction>::operator()(lua_State* ls, lua_CFunction f) const {
 		lua_pushcclosure(ls, f, 0); }
-	lua_CFunction LCV<lua_CFunction>::operator()(int idx, lua_State* ls) const {
+	lua_CFunction LCV<lua_CFunction>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Function);
 		return lua_tocfunction(ls, idx);
 	}
@@ -146,17 +146,28 @@ namespace rs {
 			lsc.setField(-1, *ent.first, *ent.second);
 		}
 	}
-	//TODO: 循環参照問題に対処する -> (topointer比較)
-	LCTable LCV<LCTable>::operator()(int idx, lua_State* ls) const {
+	LCTable LCV<LCTable>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		spn::Optional<LPointerSP> opSet;
+		if(!spm) {
+			opSet = spn::construct();
+			spm = &(*opSet);
+		}
 		LuaState::_CheckType(ls, idx, LuaType::Table);
 		LuaState lsc(ls);
 		LCTable tbl;
 		idx = lsc.absIndex(idx);
 		lsc.push(LuaNil());
 		while(lsc.next(idx) != 0) {
-			// key=-2 value=-1
-			tbl.emplace(SPLCValue(new LCValue(lsc.toLCValue(-2))),
-						SPLCValue(new LCValue(lsc.toLCValue(-1))));
+			const void* ptr = lsc.toPointer(-1);
+			auto itr = spm->find(ptr);
+			if(itr == spm->end()) {
+				SPLCValue sp(new LCValue(LuaNil()));
+				// 循環参照対策で先にエントリを作っておく
+				spm->emplace(ptr, sp);
+				*(*spm)[ptr] = lsc.toLCValue(-1, spm);
+				// key=-2 value=-1
+				tbl.emplace(SPLCValue(new LCValue(lsc.toLCValue(-2, spm))), sp);
+			}
 			// valueは取り除きkeyはlua_nextのために保持
 			lsc.pop(1);
 		}
@@ -171,24 +182,24 @@ namespace rs {
 
 	// --- LCV<LCValue> = LUA_T?? 該当なし
 	namespace {
-		const std::function<LCValue (lua_State* ls, int idx)> c_toLCValue[LUA_NUMTAGS+1] = {
-			[](lua_State* ls, int idx){ return LCValue(boost::blank()); },
-			[](lua_State* ls, int idx){ return LCValue(LuaNil()); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<bool>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<void*>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<lua_Number>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<const char*>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<LCTable>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<lua_CFunction>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<void*>()(idx,ls)); },
-			[](lua_State* ls, int idx){ return LCValue(LCV<SPLua>()(idx,ls)); }
+		const std::function<LCValue (lua_State* ls, int idx, LPointerSP* spm)> c_toLCValue[LUA_NUMTAGS+1] = {
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(boost::blank()); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LuaNil()); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<bool>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<void*>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<lua_Number>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<const char*>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<LCTable>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<lua_CFunction>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<void*>()(idx,ls,spm)); },
+			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<SPLua>()(idx,ls,spm)); }
 		};
 	}
 	void LCV<LCValue>::operator()(lua_State* ls, const LCValue& lcv) const {
 		lcv.push(ls); }
-	LCValue LCV<LCValue>::operator()(int idx, lua_State* ls) const {
+	LCValue LCV<LCValue>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		int typ = lua_type(ls, idx);
-		return c_toLCValue[typ+1](ls, idx);
+		return c_toLCValue[typ+1](ls, idx, spm);
 	}
 	std::ostream& LCV<LCValue>::operator()(std::ostream& os, const LCValue& lcv) const {
 		return os << lcv; }
@@ -216,6 +227,16 @@ namespace rs {
 			std::ostream& operator()(const T& t) const {
 				return LCV<T>()(_os, t); }
 		};
+	}
+	LCValue& LCValue::operator = (const LCValue& lcv) {
+		this->~LCValue();
+		new(this) LCValue(static_cast<const LCVar&>(lcv));
+		return *this;
+	}
+	LCValue& LCValue::operator = (LCValue&& lcv) {
+		this->~LCValue();
+		new(this) LCValue(std::move(lcv));
+		return *this;
 	}
 	void LCValue::push(lua_State* ls) const {
 		Visitor visitor(ls);
