@@ -3,6 +3,9 @@
 #include <limits>
 
 namespace rs {
+	bool LuaNil::operator == (LuaNil) const {
+		return true;
+	}
 	std::ostream& operator << (std::ostream& os, const LCTable& lct) {
 		return LCV<LCTable>()(os, lct);
 	}
@@ -63,37 +66,37 @@ namespace rs {
 	LuaType LCV<std::string>::operator()() const {
 		return LuaType::String; }
 
-	// --- LCV<lua_Integer> = LUA_TNUMBER
-	void LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {
+	// --- LCV<Int_MainT> = LUA_TNUMBER
+	void LCV<Int_MainT>::operator()(lua_State* ls, Int_MainT i) const {
 		lua_pushinteger(ls, i); }
-	lua_Integer LCV<lua_Integer>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	Int_MainT LCV<Int_MainT>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tointeger(ls, idx); }
-	std::ostream& LCV<lua_Integer>::operator()(std::ostream& os, lua_Integer i) const {
+	std::ostream& LCV<Int_MainT>::operator()(std::ostream& os, Int_MainT i) const {
 		return os << i; }
-	LuaType LCV<lua_Integer>::operator()() const {
+	LuaType LCV<Int_MainT>::operator()() const {
 		return LuaType::Number; }
 
-	// --- LCV<lua_Unsigned> = LUA_TNUMBER
-	void LCV<lua_Unsigned>::operator()(lua_State* ls, lua_Unsigned i) const {
+	// --- LCV<UInt_MainT> = LUA_TNUMBER
+	void LCV<UInt_MainT>::operator()(lua_State* ls, UInt_MainT i) const {
 		lua_pushunsigned(ls, i); }
-	lua_Unsigned LCV<lua_Unsigned>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	UInt_MainT LCV<UInt_MainT>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tounsigned(ls, idx); }
-	std::ostream& LCV<lua_Unsigned>::operator()(std::ostream& os, lua_Unsigned i) const {
+	std::ostream& LCV<UInt_MainT>::operator()(std::ostream& os, UInt_MainT i) const {
 		return os << i; }
-	LuaType LCV<lua_Unsigned>::operator()() const {
+	LuaType LCV<UInt_MainT>::operator()() const {
 		return LuaType::Number; }
 
-	// --- LCV<lua_Number> = LUA_TNUMBER
-	void LCV<lua_Number>::operator()(lua_State* ls, lua_Number f) const {
+	// --- LCV<double> = LUA_TNUMBER
+	void LCV<double>::operator()(lua_State* ls, double f) const {
 		lua_pushnumber(ls, f); }
-	lua_Number LCV<lua_Number>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	double LCV<double>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tonumber(ls, idx); }
-	std::ostream& LCV<lua_Number>::operator()(std::ostream& os, lua_Number f) const {
+	std::ostream& LCV<double>::operator()(std::ostream& os, double f) const {
 		return os << f; }
-	LuaType LCV<lua_Number>::operator()() const {
+	LuaType LCV<double>::operator()() const {
 		return LuaType::Number; }
 
 	// --- LCV<SPLua> = LUA_TTHREAD
@@ -143,44 +146,43 @@ namespace rs {
 		LuaState lsc(ls);
 		lsc.newTable(0, t.size());
 		for(auto& ent : t) {
-			lsc.setField(-1, *ent.first, *ent.second);
+			lsc.setField(-1, ent.first, ent.second);
 		}
 	}
-	LCTable LCV<LCTable>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	SPLCTable LCV<LCTable>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		LuaState::_CheckType(ls, idx, LuaType::Table);
+
 		spn::Optional<LPointerSP> opSet;
 		if(!spm) {
 			opSet = spn::construct();
 			spm = &(*opSet);
 		}
-		LuaState::_CheckType(ls, idx, LuaType::Table);
 		LuaState lsc(ls);
-		LCTable tbl;
+		const void* ptr = lsc.toPointer(idx);
+		auto itr = spm->find(ptr);
+		if(itr == spm->end())
+			return boost::get<SPLCTable>(itr->second);
+
+		// 循環参照対策で先にエントリを作っておく
+		SPLCTable ret(new LCTable());
+		spm->emplace(ptr, ret);
 		idx = lsc.absIndex(idx);
 		lsc.push(LuaNil());
 		while(lsc.next(idx) != 0) {
-			const void* ptr = lsc.toPointer(-1);
-			auto itr = spm->find(ptr);
-			if(itr == spm->end()) {
-				SPLCValue sp(new LCValue(LuaNil()));
-				// 循環参照対策で先にエントリを作っておく
-				spm->emplace(ptr, sp);
-				*(*spm)[ptr] = lsc.toLCValue(-1, spm);
-				// key=-2 value=-1
-				tbl.emplace(SPLCValue(new LCValue(lsc.toLCValue(-2, spm))), sp);
-			}
+			// key=-2 value=-1
+			ret->emplace(lsc.toLCValue(-2, spm), lsc.toLCValue(-1, spm));
 			// valueは取り除きkeyはlua_nextのために保持
 			lsc.pop(1);
 		}
-		return std::move(tbl);
+		return std::move(ret);
 	}
-	//TODO: アドレスを出力しても他のテーブルの区別がつかずあまり意味がないので改善する
-	// 出力階層の制限方法?
+	//TODO: アドレスを出力しても他のテーブルの区別がつかずあまり意味がないので改善する(出力階層の制限した上で列挙など)
 	std::ostream& LCV<LCTable>::operator()(std::ostream& os, const LCTable& t) const {
 		return os << "(table)" << std::hex << reinterpret_cast<uintptr_t>(&t); }
 	LuaType LCV<LCTable>::operator()() const {
 		return LuaType::Table; }
 
-	// --- LCV<LCValue> = LUA_T?? 該当なし
+	// --- LCV<LCValue>
 	namespace {
 		const std::function<LCValue (lua_State* ls, int idx, LPointerSP* spm)> c_toLCValue[LUA_NUMTAGS+1] = {
 			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(boost::blank()); },
@@ -212,12 +214,21 @@ namespace rs {
 			Visitor(lua_State* ls): _ls(ls) {}
 			template <class T>
 			void operator()(const T& t) const {
-				LCV<T>()(_ls, t);
-			}
+				LCV<T>()(_ls, t); }
+			void operator()(const SPLua& sp) const {
+				LCV<SPLua>()(_ls, sp); }
+			template <class T>
+			void operator()(const std::shared_ptr<T>& sp) const {
+				LCV<T>()(_ls, *sp); }
 		};
 		struct TypeVisitor : boost::static_visitor<LuaType> {
 			template <class T>
 			LuaType operator()(const T&) const {
+				return LCV<T>()(); }
+			LuaType operator()(const SPLua& sp) const {
+				return LCV<SPLua>()(); }
+			template <class T>
+			LuaType operator()(const std::shared_ptr<T>& sp) const {
 				return LCV<T>()(); }
 		};
 		struct PrintVisitor : boost::static_visitor<std::ostream&> {
@@ -226,8 +237,20 @@ namespace rs {
 			template <class T>
 			std::ostream& operator()(const T& t) const {
 				return LCV<T>()(_os, t); }
+			std::ostream& operator()(const SPLua& sp) const {
+				return LCV<SPLua>()(_os, sp); }
+			template <class T>
+			std::ostream& operator()(const std::shared_ptr<T>& sp) const {
+				return LCV<T>()(_os, *sp); }
 		};
 	}
+	LCValue::LCValue(): LCVar(boost::blank()) {}
+	LCValue::LCValue(const LCValue& lc): LCVar(static_cast<const LCVar&>(lc)) {}
+	LCValue::LCValue(LCValue&& lcv): LCVar(std::move(static_cast<LCVar&>(lcv))) {}
+	bool LCValue::operator == (const LCValue& lcv) const {
+		return static_cast<const LCVar&>(*this) == static_cast<const LCVar&>(lcv);
+	}
+
 	LCValue& LCValue::operator = (const LCValue& lcv) {
 		this->~LCValue();
 		new(this) LCValue(static_cast<const LCVar&>(lcv));

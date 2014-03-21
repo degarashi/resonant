@@ -472,8 +472,8 @@ namespace rs {
 	lua_CFunction LuaState::toCFunction(int idx) const {
 		return LCV<lua_CFunction>()(idx, getLS());
 	}
-	lua_Integer LuaState::toInteger(int idx) const {
-		return LCV<lua_Integer>()(idx, getLS());
+	Int_MainT LuaState::toInteger(int idx) const {
+		return LCV<Int_MainT>()(idx, getLS());
 	}
 	std::string LuaState::toString(int idx) const {
 		return LCV<std::string>()(idx, getLS());
@@ -486,8 +486,8 @@ namespace rs {
 		pop(1);
 		return std::move(ret);
 	}
-	lua_Number LuaState::toNumber(int idx) const {
-		return LCV<lua_Number>()(idx, getLS());
+	float LuaState::toNumber(int idx) const {
+		return LCV<float>()(idx, getLS());
 	}
 	const void* LuaState::toPointer(int idx) const {
 		return lua_topointer(getLS(), idx);
@@ -495,14 +495,15 @@ namespace rs {
 	SPLua LuaState::toThread(int idx) const {
 		return LCV<SPLua>()(idx, getLS());
 	}
-	lua_Unsigned LuaState::toUnsigned(int idx) const {
-		return LCV<lua_Unsigned>()(idx, getLS());
+	UInt_MainT LuaState::toUnsigned(int idx) const {
+		return LCV<UInt_MainT>()(idx, getLS());
 	}
 	void* LuaState::toUserData(int idx) const {
 		return LCV<void*>()(idx, getLS());
 	}
 	LCTable LuaState::toTable(int idx, LPointerSP* spm) const {
-		return LCV<LCTable>()(idx, getLS(), spm);
+		SPLCTable sp(LCV<LCTable>()(idx, getLS(), spm));
+		return std::move(*sp);
 	}
 
 	LCValue LuaState::toLCValue(int idx, LPointerSP* spm) const {

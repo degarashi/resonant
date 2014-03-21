@@ -17,6 +17,22 @@ namespace rs {
 	class RWops;
 	class RWMgr;
 	DEF_NHANDLE(rs::RWMgr, RW, rs::RWops, rs::RWops)
+
+	struct LuaNil {
+		bool operator == (LuaNil) const;
+	};
+}
+namespace std {
+	template <>
+	struct hash<rs::LuaNil> {
+		size_t operator()(rs::LuaNil) const {
+			return 0; }
+	};
+	template <>
+	struct hash<boost::blank> {
+		size_t operator()(boost::blank) const {
+			return 0; }
+	};
 }
 
 namespace rs {
@@ -26,17 +42,6 @@ namespace rs {
 	using SPLua = std::shared_ptr<LuaState>;
 	using WPLua = std::weak_ptr<LuaState>;
 	using SPILua = std::shared_ptr<lua_State>;
-	class LCValue;
-	using SPLCValue = std::shared_ptr<LCValue>;
-	class LCTable : public std::unordered_map<SPLCValue, SPLCValue> {
-		public:
-			using std::unordered_map<SPLCValue, SPLCValue>::unordered_map;
-	};
-	std::ostream& operator << (std::ostream& os, const LCTable& lct);
-	struct LuaNil {};
-	using SPLCTable = std::shared_ptr<LCTable>;
-	using LCVar = boost::variant<boost::blank, LuaNil, bool, const char*, lua_Integer, lua_Unsigned, lua_Number, SPLua, void*, lua_CFunction, const std::string&, std::string, LCTable>;
-
 	enum class LuaType {
 		LNone = LUA_TNONE,	//!< NoneだとX11のマクロと衝突する為
 		Nil = LUA_TNIL,
@@ -50,34 +55,106 @@ namespace rs {
 		LightUserdata = LUA_TLIGHTUSERDATA
 	};
 
+	class LCTable;
+	class LCVec;
+	using SPLCTable = std::shared_ptr<LCTable>;
+	using LCVar = boost::variant<boost::blank, LuaNil,
+					bool, const char*, float, double, int32_t, uint32_t, int64_t, uint64_t,
+					SPLua, void*, lua_CFunction, const std::string&, std::string, SPLCTable>;
+	class LCValue : public LCVar {
+		public:
+			struct HashVisitor : boost::static_visitor<size_t> {
+				template <class T>
+				size_t operator()(const T& t) const {
+					return std::hash<T>()(t);
+				}
+			};
+			LCValue();
+			LCValue(const LCValue& lc);
+			LCValue(LCValue&& lcv);
+			template <class T>
+			LCValue(T&& t): LCVar(std::forward<T>(t)) {}
+			template <class T>
+			LCValue& operator = (T&& t) {
+				static_cast<LCVar&>(*this) = std::forward<T>(t);
+				return *this;
+			}
+			LCValue& operator = (const LCValue& lcv);
+			LCValue& operator = (LCValue&& lcv);
+			bool operator == (const LCValue& lcv) const;
+			void push(lua_State* ls) const;
+			std::ostream& print(std::ostream& os) const;
+			LuaType type() const;
+			friend std::ostream& operator << (std::ostream&, const LCValue&);
+	};
+	std::ostream& operator << (std::ostream& os, const LCValue& lcv);
+	using SPLCValue = std::shared_ptr<LCValue>;
+}
+namespace std {
+	template <>
+	struct hash<rs::LCValue> {
+		size_t operator()(const rs::LCValue& v) const {
+			return boost::apply_visitor(rs::LCValue::HashVisitor(), static_cast<const rs::LCVar&>(v));
+		}
+	};
+}
+namespace rs {
+	class LCTable : public std::unordered_map<LCValue, LCValue> {
+		public:
+			using base = std::unordered_map<LCValue, LCValue>;
+			using base::base;
+	};
+	std::ostream& operator << (std::ostream& os, const LCTable& lct);
+
 	// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
 	template <class T>
 	struct LCV;
-	using LPointerSP = std::unordered_map<const void*, SPLCValue>;
-#define DEF_LCV(rtyp, typ) template <> struct LCV<rtyp> { \
-		void operator()(lua_State* ls, typ t) const; \
+	template <class T>
+	class LValue;
+	class LV_Global;
+	using LValueG = LValue<LV_Global>;
+
+	using LPointerSP = std::unordered_map<const void*, LCValue>;
+#define DEF_LCV0(typ, rtyp, argtyp) template <> struct LCV<typ> { \
+		void operator()(lua_State* ls, argtyp t) const; \
 		rtyp operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const; \
-		std::ostream& operator()(std::ostream& os, typ t) const; \
+		std::ostream& operator()(std::ostream& os, argtyp t) const; \
 		LuaType operator()() const; };
+#define DEF_LCV(typ, argtyp) DEF_LCV0(typ, typ, argtyp)
+#define DERIVED_LCV(ntyp, btyp)	template <> \
+		struct LCV<ntyp> : LCV<btyp> {};
 	DEF_LCV(boost::blank, boost::blank)
 	DEF_LCV(LuaNil, LuaNil)
 	DEF_LCV(bool, bool)
 	DEF_LCV(const char*, const char*)
 	DEF_LCV(std::string, const std::string&)
-	DEF_LCV(lua_Integer, lua_Integer)
-	DEF_LCV(lua_Unsigned, lua_Unsigned)
-	DEF_LCV(lua_Number, lua_Number)
 	DEF_LCV(SPLua, const SPLua&)
 	DEF_LCV(void*, const void*)
 	DEF_LCV(lua_CFunction, lua_CFunction)
-	DEF_LCV(LCTable, const LCTable&)
+	DEF_LCV0(LCTable, SPLCTable, const LCTable&)
 	DEF_LCV(LCValue, const LCValue&)
 	DEF_LCV(spn::SHandle, spn::SHandle)
-#undef DEF_LCV
+	DEF_LCV(double, double)
+	DEF_LCV(LValueG, const LValueG&)
+	DERIVED_LCV(float, double)
 	#if __x86_64__ || _LP64
-		template <>
-		struct LCV<int> : LCV<lua_Integer> {};
+		using Int_MainT = int64_t;
+		using UInt_MainT = uint64_t;
+		using Int_OtherT = int32_t;
+		using UInt_OtherT = uint32_t;
+	#else
+		using Int_MainT = int32_t;
+		using UInt_MainT = uint32_t;
+		using Int_OtherT = int64_t;
+		using UInt_OtherT = uint64_t;
 	#endif
+	DEF_LCV(Int_MainT, Int_MainT)
+	DEF_LCV(UInt_MainT, UInt_MainT)
+	DERIVED_LCV(Int_OtherT, Int_MainT)
+	DERIVED_LCV(UInt_OtherT, UInt_MainT)
+#undef DEF_LCV
+#undef DEF_LCV0
+#undef DERIVED_LCV
 	template <class T>
 	struct LCV<spn::HdlLock<T>> {
 		using SH = decltype(std::declval<spn::HdlLock<T>>().get());
@@ -90,8 +167,6 @@ namespace rs {
 		LuaType operator()() const {
 			return LCV<SH>()(); }
 	};
-	template <>
-	struct LCV<float> : LCV<lua_Number> {};
 
 	template <class T>
 	struct LCV<spn::SHandleT<T>> {
@@ -105,29 +180,6 @@ namespace rs {
 		LuaType operator()() const {
 			return LCV<spn::SHandle>()(); }
 	};
-
-	class LCValue : public LCVar {
-		public:
-			template <class T>
-			LCValue(T& t): LCVar(t) {}
-			template <class T>
-			LCValue(T* t): LCVar(t) {}
-			template <class T>
-			LCValue(T&& t): LCVar(std::move(t)) {}
-			LCValue& operator = (const LCValue& lcv);
-			LCValue& operator = (LCValue&& lcv);
-			LCValue(float fv): LCVar(lua_Number(fv)) {}
-			LCValue(double dv): LCVar(lua_Number(dv)) {}
-			LCValue(LCValue&& lcv): LCVar(reinterpret_cast<LCVar&&>(lcv)) {}
-			LCValue(const std::string& str): LCVar(str) {}
-			LCValue(int iv): LCVar(lua_Integer(iv)) {}
-			LCValue(unsigned int iv): LCVar(lua_Unsigned(iv)) {}
-			void push(lua_State* ls) const;
-			std::ostream& print(std::ostream& os) const;
-			LuaType type() const;
-			friend std::ostream& operator << (std::ostream&, const LCValue&);
-	};
-	std::ostream& operator << (std::ostream& os, const LCValue& lcv);
 
 	//! lua_Stateの単純なラッパークラス
 	class LuaState : public std::enable_shared_from_this<LuaState> {
@@ -347,12 +399,12 @@ namespace rs {
 			// --- convert function ---
 			bool toBoolean(int idx) const;
 			lua_CFunction toCFunction(int idx) const;
-			lua_Integer toInteger(int idx) const;
+			Int_MainT toInteger(int idx) const;
 			std::string toString(int idx) const;
 			std::string cnvString(int idx);
-			lua_Number toNumber(int idx) const;
+			float toNumber(int idx) const;
 			const void* toPointer(int idx) const;
-			lua_Unsigned toUnsigned(int idx) const;
+			UInt_MainT toUnsigned(int idx) const;
 			void* toUserData(int idx) const;
 			SPLua toThread(int idx) const;
 			LCTable toTable(int idx, LPointerSP* spm=nullptr) const;
@@ -566,9 +618,9 @@ namespace rs {
 			#define DEF_FUNC(typ, name) typ name() const { \
 				return LCV<typ>()(VPop(*this), T::getLS()); }
 			DEF_FUNC(bool, toBoolean)
-			DEF_FUNC(lua_Integer, toInteger)
-			DEF_FUNC(lua_Number, toNumber)
-			DEF_FUNC(lua_Unsigned, toUnsigned)
+			DEF_FUNC(Int_MainT, toInteger)
+			DEF_FUNC(float, toNumber)
+			DEF_FUNC(UInt_MainT, toUnsigned)
 			DEF_FUNC(void*, toUserData)
 			DEF_FUNC(const char*, toString)
 			DEF_FUNC(LCValue, toLCValue)
