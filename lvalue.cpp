@@ -208,6 +208,21 @@ namespace rs {
 	LuaType LCV<LCValue>::operator()() const {
 		return LuaType::LNone; }
 
+	// --- LCV<LValueG>
+	void LCV<LValueG>::operator()(lua_State* ls, const LValueG& t) const {
+		t.prepareValue(ls);
+	}
+	LValueG LCV<LValueG>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		LuaState lsc(ls);
+		lsc.pushValue(idx);
+		SPLua sp = lsc.getMainLS_SP();
+		return LValueG(sp);
+	}
+	std::ostream& LCV<LValueG>::operator()(std::ostream& os, const LValueG& t) const {
+		return os << t; }
+	LuaType LCV<LValueG>::operator()() const {
+		return LuaType::LNone; }
+
 	namespace {
 		struct Visitor : boost::static_visitor<> {
 			lua_State* _ls;
@@ -344,6 +359,17 @@ namespace rs {
 	}
 	lua_State* LV_Global::getLS() const {
 		return _lua->getLS();
+	}
+	std::ostream& operator << (std::ostream& os, const LV_Global& v) {
+		v._prepareValue();
+		os << *v._lua;
+		v._cleanValue();
+		return os;
+	}
+	std::ostream& operator << (std::ostream& os, const LV_Stack& v) {
+		v._prepareValue();
+		LCValue lcv(v._ls);
+		return os << lcv;
 	}
 
 	// ------------------- LV_Stack -------------------

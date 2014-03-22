@@ -504,6 +504,7 @@ namespace rs {
 			}
 			// lua_State*をゲットする関数
 			lua_State* getLS() const;
+			friend std::ostream& operator << (std::ostream& os, const LV_Global& t);
 	};
 	class LV_Stack {
 		lua_State*	_ls;
@@ -543,6 +544,7 @@ namespace rs {
 			LV_Stack& operator = (lua_State* ls);
 
 			lua_State* getLS() const;
+			friend std::ostream& operator << (std::ostream& os, const LV_Stack& t);
 	};
 
 	template <class T>
@@ -627,6 +629,9 @@ namespace rs {
 			DEF_FUNC(SPLua, toThread)
 			#undef DEF_FUNC
 
+			void prepareValue(lua_State* ls) const {
+				T::_prepareValue(ls);
+			}
 			template <class IDX>
 			void prepareAt(lua_State* ls, const IDX& idx) const {
 				T::_prepareValue(ls);
@@ -658,6 +663,8 @@ namespace rs {
 	};
 	using LValueS = LValue<LV_Stack>;
 	using LValueG = LValue<LV_Global>;
+	std::ostream& operator << (std::ostream& os, const LV_Stack& t);
+	std::ostream& operator << (std::ostream& os, const LV_Global& t);
 
 	//! Luaから引数を変換取得して関数を呼ぶ
 	template <class... Ts0>
