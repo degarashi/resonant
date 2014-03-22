@@ -682,19 +682,41 @@ namespace rs {
 			return func(std::forward<Ts1>(ts1)...);
 		}
 	};
+
+	template <class T>
+	using DecayT = typename std::decay<T>::type;
 	template <class Ts0A, class... Ts0>
 	struct FuncCall<Ts0A, Ts0...> {
 		template <class CB, class... Ts1>
-		static auto callCB(CB cb, lua_State* ls, int idx, Ts1&&... ts1) -> decltype(FuncCall<Ts0...>::callCB(cb, ls, idx+1, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls))) {
-			return FuncCall<Ts0...>::callCB(cb, ls, idx+1, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls));
+		static auto callCB(CB cb, lua_State* ls, int idx, Ts1&&... ts1) -> decltype(FuncCall<Ts0...>::callCB(cb, ls, idx+1, std::forward<Ts1>(ts1)..., LCV<DecayT<Ts0A>>()(idx, ls))) {
+			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
+			return FuncCall<Ts0...>::callCB(cb,
+					ls,
+					idx+1,
+					std::forward<Ts1>(ts1)...,
+					(Ts0A)value
+					);
 		}
 		template <class T, class RT, class... Args, class... Ts1>
 		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (T::*func)(Args...), Ts1&&... ts1) {
-			return FuncCall<Ts0...>::procMethod(ls, ptr, idx+1, func, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls));
+			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
+			return FuncCall<Ts0...>::procMethod(ls,
+					ptr,
+					idx+1,
+					func,
+					std::forward<Ts1>(ts1)...,
+					(Ts0A)value
+					);
 		}
 		template <class RT, class... Args, class... Ts1>
 		static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
-			return FuncCall<Ts0...>::proc(ls, idx+1, func, std::forward<Ts1>(ts1)..., LCV<Ts0A>()(idx, ls));
+			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
+			return FuncCall<Ts0...>::proc(ls,
+					idx+1,
+					func,
+					std::forward<Ts1>(ts1)...,
+					(Ts0A)value
+					);
 		}
 	};
 
