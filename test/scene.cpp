@@ -23,7 +23,7 @@ void TScene::MySt::CheckQuit() {
 		mgr_scene.setPopScene(1);
 	}
 }
-void TScene::MySt::onDown(TScene& self, rs::ObjTypeID prevID, const rs::Variant& arg) {
+void TScene::MySt::onDown(TScene& self, rs::ObjTypeID prevID, const rs::LCValue& arg) {
 	LogOutput("TScene::onDown");
 }
 void TScene::MySt::onPause(TScene& self) {
@@ -38,12 +38,12 @@ void TScene::MySt::onStop(TScene& self) {
 void TScene::MySt::onReStart(TScene& self) {
 	LogOutput("TScene::onReStart");
 }
-rs::Variant TScene::MySt::recvMsg(TScene& self, rs::GMessageID msg, rs::Variant arg) {
+rs::LCValue TScene::MySt::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
 	if(msg == MSG_CallFunc)
 		self._drawCube();
 	else if(msg == MSG_GetStatus)
 		return "Idle";
-	return boost::blank();
+	return rs::LCValue();
 }
 
 // ------------------------ TScene::MySt_Play ------------------------
@@ -59,10 +59,10 @@ void TScene::MySt_Play::onUpdate(TScene& self) {
 	MySt::CheckQuit();
 	self._drawCube();
 }
-rs::Variant TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageID msg, rs::Variant arg) {
+rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
 	if(msg == MSG_GetStatus)
 		return "Playing";
-	return boost::blank();
+	return rs::LCValue();
 }
 
 // ------------------------ TScene ------------------------

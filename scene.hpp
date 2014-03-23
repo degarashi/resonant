@@ -10,7 +10,7 @@ namespace rs {
 		bool		_scOp = false;		//!< SceneOpが有効か
 		int			_scNPop;
 		HLGbj		_scNext;
-		Variant		_scArg;
+		LCValue		_scArg;
 
 		void _doSceneOp();
 
@@ -20,7 +20,7 @@ namespace rs {
 			HGbj getTop() const;
 			HGbj getScene(int n) const;
 			void setPushScene(HGbj hSc, bool bPop=false);
-			void setPopScene(int nPop, const Variant& arg=Variant());
+			void setPopScene(int nPop, const LCValue& arg=LCValue());
 			//! フレーム更新のタイミングで呼ぶ
 			bool onUpdate();
 			//! 描画のタイミングで呼ぶ

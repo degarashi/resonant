@@ -16,11 +16,11 @@ namespace rs {
 		else {
 			_scNext = HLGbj(hSc);
 			_scNPop = bPop ? 1 : 0;
-			_scArg = Variant();
+			_scArg = LCValue();
 			_scOp = true;
 		}
 	}
-	void SceneMgr::setPopScene(int nPop, const Variant& arg) {
+	void SceneMgr::setPopScene(int nPop, const LCValue& arg) {
 		_scNext = HLGbj();
 		_scNPop = nPop;
 		_scArg = arg;
@@ -55,7 +55,7 @@ namespace rs {
 			else {
 				// 降りた先のシーンに戻り値を渡す
 				_scene.back().ref()->onDown(id, _scArg);
-				_scArg = Variant();
+				_scArg = LCValue();
 			}
 		}
 	}

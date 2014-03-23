@@ -87,19 +87,19 @@ class TScene : public rs::Scene<TScene> {
 		public:
 			void onEnter(TScene& self, rs::ObjTypeID prevID) override;
 			void onUpdate(TScene& self) override;
-			void onDown(TScene& self, rs::ObjTypeID prevID, const rs::Variant& arg) override;
+			void onDown(TScene& self, rs::ObjTypeID prevID, const rs::LCValue& arg) override;
 			void onPause(TScene& self) override;
 			void onResume(TScene& self) override;
 			void onStop(TScene& self) override;
 			void onReStart(TScene& self) override;
-			rs::Variant recvMsg(TScene& self, rs::GMessageID msg, rs::Variant arg) override;
+			rs::LCValue recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) override;
 			static void CheckQuit();
 	};
 	class MySt_Play : public StateT<MySt_Play> {
 		public:
 			void onEnter(TScene& self, rs::ObjTypeID prevID) override;
 			void onUpdate(TScene& self) override;
-			rs::Variant recvMsg(TScene& self, rs::GMessageID msg, rs::Variant arg) override;
+			rs::LCValue recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) override;
 	};
 	void _drawCube();
 	public:

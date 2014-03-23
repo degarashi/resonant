@@ -4,6 +4,7 @@
 #include <boost/variant.hpp>
 #include <list>
 #include "clock.hpp"
+#include "luaw.hpp"
 
 namespace rs {
 	using Priority = uint32_t;
@@ -59,17 +60,6 @@ namespace rs {
 	class UpdMgr : public spn::ResMgrA<UPUpdCh, UpdMgr> {};
 	DEF_AHANDLE(UpdMgr, Upd, UPUpdCh, UPUpdCh)
 
-	class GVec;
-	class GMap;
-	using Variant = boost::variant<boost::blank, int32_t, float, GMessageStr,
-							std::shared_ptr<GVec>, std::shared_ptr<GMap>, HGbj, HUpd>;
-	class GVec : public std::vector<Variant> {
-		using std::vector<Variant>::vector;
-	};
-	class GMap : public std::unordered_map<std::string, Variant> {
-		using std::unordered_map<std::string, Variant>::unordered_map;
-	};
-
 	// スクリプトからメッセージ文字列を受け取ったらGMessage::GetMsgID()
 	class GMessage {
 		using MsgMap = std::unordered_map<GMessageStr, GMessageID>;
@@ -81,16 +71,16 @@ namespace rs {
 			struct Packet {
 				Timepoint	tmSend;
 				GMessageID	msgID;
-				Variant		arg;
+				LCValue		arg;
 
 				Packet(const Packet& pk) = default;
-				Packet(GMessageID id, const Variant& args): msgID(id), arg(args) {}
-				Packet(GMessageID id, Variant&& args): msgID(id), arg(args) {}
+				Packet(GMessageID id, const LCValue& args): msgID(id), arg(args) {}
+				Packet(GMessageID id, LCValue&& args): msgID(id), arg(std::move(args)) {}
 				Packet(Packet&& p) { swap(p); }
-				Packet(Duration delay, GMessageID id, const Variant& args): Packet(id, args) {
+				Packet(Duration delay, GMessageID id, const LCValue& args): Packet(id, args) {
 					tmSend = Clock::now() + delay;
 				}
-				Packet(Timepoint when, GMessageID id, const Variant& args): Packet(id, args) {
+				Packet(Timepoint when, GMessageID id, const LCValue& args): Packet(id, args) {
 					tmSend = when;
 				}
 				void swap(Packet& p) noexcept {
@@ -116,7 +106,7 @@ namespace rs {
 			bool isDead() const { return _bDestroy; }
 			virtual void destroy() { _bDestroy = true; }
 			bool onUpdateUpd();
-			virtual Variant recvMsg(GMessageID id, const Variant& arg=boost::blank()) { return boost::blank(); }
+			virtual LCValue recvMsg(GMessageID id, const LCValue& arg=LCValue()) { return LCValue(); }
 			//! 各Objが実装するアップデート処理
 			virtual void onUpdate() = 0;
 			virtual void onDestroy() {}
@@ -148,7 +138,7 @@ namespace rs {
 			virtual ObjTypeID getTypeID() const = 0;					//!< オブジェクトの識別IDを取得
 			// ---------- Scene用メソッド ----------
 			virtual void onDraw() {}
-			virtual void onDown(ObjTypeID prevID, const Variant& arg) {}
+			virtual void onDown(ObjTypeID prevID, const LCValue& arg) {}
 			virtual void onPause() {}
 			virtual void onStop() {}
 			virtual void onResume() {}
@@ -259,7 +249,7 @@ namespace rs {
 			void proc(Priority prioBegin, Priority prioEnd, const IUpdProc* p) override;
 			void proc(const IUpdProc* p) override;
 			//! グループ内のオブジェクト全てに配信
-			Variant recvMsg(GMessageID msg, const Variant& arg) override;
+			LCValue recvMsg(GMessageID msg, const LCValue& arg) override;
 			//! 名前を新たに付加してグループ複製
 			/*! 下層のグループは複製されず参照カウントを加算 */
 			HLUpd clone() const;
@@ -287,7 +277,7 @@ namespace rs {
 			// ----------- 以下はGobjのアダプタメソッド -----------
 			void onUpdate() override;
 			void onDestroy() override;
-			Variant recvMsg(GMessageID msg, const Variant& arg) override;
+			LCValue recvMsg(GMessageID msg, const LCValue& arg) override;
 	};
 
 	//! オブジェクト基底
@@ -300,7 +290,7 @@ namespace rs {
 				virtual ~State() {}
 				virtual ObjTypeID getStateID() const = 0;
 				virtual void onUpdate(T& self) {}
-				virtual Variant recvMsg(T& self, GMessageID msg, Variant arg) { return boost::blank(); }
+				virtual LCValue recvMsg(T& self, GMessageID msg, const LCValue& arg) { return LCValue(); }
 				virtual void onEnter(T& self, ObjTypeID prevID) {}
 				virtual void onExit(T& self, ObjTypeID nextID) {}
 				virtual void onHitEnter(T& self, HGbj hGbj) {}
@@ -308,7 +298,7 @@ namespace rs {
 				virtual void onHitExit(T& self, WGbj whGbj, int n) {}
 				// --------- Scene用メソッド ---------
 				virtual void onDraw(T& self) {}
-				virtual void onDown(T& self, ObjTypeID prevID, const Variant& arg) {}
+				virtual void onDown(T& self, ObjTypeID prevID, const LCValue& arg) {}
 				virtual void onPause(T& self) {}
 				virtual void onStop(T& self) {}
 				virtual void onResume(T& self) {}
@@ -391,7 +381,7 @@ namespace rs {
 				AssertP(Trap, !_bSwState)
 			}
 			//! 上の層のシーンから抜ける時に戻り値を渡す (Scene用)
-			void onDown(ObjTypeID prevID, const Variant& arg) override final {
+			void onDown(ObjTypeID prevID, const LCValue& arg) override final {
 				_state->onDown(getRef(), prevID, arg);
 				_doSwitchState();
 			}
@@ -412,8 +402,8 @@ namespace rs {
 				_state->onHitExit(getRef(), wGbj, n);
 				_doSwitchState();
 			}
-			Variant recvMsg(GMessageID msg, const Variant& arg) override final {
-				Variant ret(_state->recvMsg(getRef(), msg, arg));
+			LCValue recvMsg(GMessageID msg, const LCValue& arg) override final {
+				LCValue ret(_state->recvMsg(getRef(), msg, arg));
 				_doSwitchState();
 				return std::move(ret);
 			}

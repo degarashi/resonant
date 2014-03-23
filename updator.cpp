@@ -63,7 +63,7 @@ namespace rs {
 		if(p->isDead())
 			destroy();
 	}
-	Variant UpdProxy::recvMsg(GMessageID msg, const Variant& arg) {
+	LCValue UpdProxy::recvMsg(GMessageID msg, const LCValue& arg) {
 		return _hlGbj.get().ref()->recvMsg(msg, arg);
 	}
 
@@ -207,10 +207,10 @@ namespace rs {
 		for(auto ent : _child.get().ref()->getList())
 			ent->proc(p);
 	}
-	Variant UpdGroup::recvMsg(GMessageID msg, const Variant& arg) {
+	LCValue UpdGroup::recvMsg(GMessageID msg, const LCValue& arg) {
 		for(auto ent : _child.get().ref()->getList())
 			ent->recvMsg(msg, arg);
-		return boost::blank();
+		return LCValue();
 	}
 	HLUpd UpdGroup::clone() const {
 		// UpdProxyは複製, UpdGroupは参照コピー
