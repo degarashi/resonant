@@ -150,6 +150,7 @@ local nilbase = {
 function DerivedClass(base, init)
 	base = base or nilbase
 	local object = init
+	object._base = base
 	object._mt = {
 		__index = object,
 		__newindex = function(tbl, key, value)
@@ -267,7 +268,22 @@ FSMachine = DerivedClass(nil, {
 			self:SwitchState()
 			return true, table.unpack(ret)
 		end
-		return false
+		-- C++のメッセージとして処理
+		local args = {...}
+		-- 引数は1つに統合
+		local nArg = #args
+		if nArg == 0 then
+			args = nil
+		elseif nArg == 1 then
+			args = args[1]
+		end
+		-- C++で受信した場合は戻り値がnil以外になる
+		local func = ObjectBase.RecvMsg
+		local ret = func(self, msg, args)
+		if ret == nil then
+			return false
+		end
+		return true,ret
 	end
 })
 function MakeDerivedMT(first, second)

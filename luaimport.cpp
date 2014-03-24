@@ -26,7 +26,8 @@ namespace rs {
 						ObjectBase("ObjectBase"),
 						DerivedHandle("DerivedHandle"),
 						MakeFSMachine("MakeFSMachine"),
-						MakePreENV("MakePreENV");
+						MakePreENV("MakePreENV"),
+						RecvMsg("RecvMsg");
 		namespace objBase {
 			const std::string ValueR("_valueR"),
 								ValueW("_valueW"),
@@ -114,6 +115,9 @@ namespace rs {
 		lsc.pushCClosure(DecrementHandle, 0);
 		lsc.setGlobal("DecrementHandle");
 
+		lsc.push(luaNS::RecvMsg);
+		lsc.pushCClosure(LuaImport::RecvMsg, 0);
+		lsc.setTable(-3);
 		// ObjectBase = {...}
 		lsc.setGlobal(luaNS::ObjectBase);
 		// TODO: あとで絶対パスを直す
@@ -143,6 +147,19 @@ namespace rs {
 		lsc.setGlobal(name);
 		lsc.pop(1);
 		return;
+	}
+	int LuaImport::RecvMsg(lua_State* ls) {
+		Object* obj = LI_GetHandle<typename ObjMgr::data_type>()(ls, 1);
+		auto msgID = GMessage::GetMsgID(LCV<std::string>()(2, ls));
+		if(msgID) {
+			// Noneで無ければ有効な戻り値とする
+			LCValue lcv = obj->recvMsg(*msgID, LCV<LCValue>()(3, ls));
+			if(lcv.type() != LuaType::LNone) {
+				lcv.push(ls);
+				return 1;
+			}
+		}
+		return 0;
 	}
 
 	// ------------------- LCValue -------------------

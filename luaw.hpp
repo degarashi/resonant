@@ -770,7 +770,8 @@ namespace rs {
 								ObjectBase,
 								DerivedHandle,
 								MakeFSMachine,
-								MakePreENV;
+								MakePreENV,
+								RecvMsg;
 		namespace objBase {
 			extern const std::string ValueR,
 									ValueW,
@@ -965,6 +966,9 @@ namespace rs {
 				lsc.setGlobal(name);
 				lsc.pop(1);
 			}
+			//! GObjectメッセージを受信
+			/*! Obj(UData), MessageStr, {Args} */
+			static int RecvMsg(lua_State* ls);
 	};
 }
 
