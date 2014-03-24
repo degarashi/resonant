@@ -259,7 +259,7 @@ namespace rs {
 				return LCV<T>()(_os, *sp); }
 		};
 	}
-	LCValue::LCValue(): LCVar(boost::blank()) {}
+	LCValue::LCValue(): LCVar(LuaNil()) {}
 	LCValue::LCValue(const LCValue& lc): LCVar(static_cast<const LCVar&>(lc)) {}
 	LCValue::LCValue(LCValue&& lcv): LCVar(std::move(static_cast<LCVar&>(lcv))) {}
 	bool LCValue::operator == (const LCValue& lcv) const {
