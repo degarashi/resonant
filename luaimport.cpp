@@ -13,7 +13,7 @@
 		...(ユーザーのデータ色々)
 	}
 */
-DEF_LUAIMPLEMENT_HDL(U_Scene, NOTHING, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, U_Scene, NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop), NOTHING)
 namespace rs {
 	using spn::SHandle;
@@ -58,17 +58,17 @@ namespace rs {
 	lua_Integer LuaImport::NumRef(SHandle sh) {
 		return sh.count(); }
 
-	void* LuaImport::GetPtr::operator()(lua_State* ls, int idx) const {
+	void* LI_GetPtr::operator()(lua_State* ls, int idx) const {
 		lua_getfield(ls, idx, luaNS::Pointer.c_str());
 		void* ret = LCV<void*>()(-1, ls);
 		lua_pop(ls, 2);
 		return ret;
 	}
-	void* LuaImport::GetHandle::operator()(lua_State* ls, int idx) const {
+	void* LI_GetHandleBase::operator()(lua_State* ls, int idx) const {
 		SHandle sh = getHandle(ls, idx);
 		return spn::ResMgrBase::GetPtr(sh);
 	}
-	SHandle LuaImport::GetHandle::getHandle(lua_State* ls, int idx) const {
+	SHandle LI_GetHandleBase::getHandle(lua_State* ls, int idx) const {
 		lua_getfield(ls, idx, luaNS::Udata.c_str());
 		SHandle ret(reinterpret_cast<uintptr_t>(LCV<void*>()(-1, ls)));
 		lua_pop(ls, 1);
@@ -82,7 +82,7 @@ namespace rs {
 		// ValueR = { HandleId=(HandleId), NumRef=(NumRef) }
 		lsc.push(luaNS::objBase::ValueR);
 		lsc.newTable();
-		LuaImport::RegisterMember<LuaImport::GetHandle>(lsc, luaNS::objBase::valueR::HandleId.c_str(), &SHandle::getValue);
+		LuaImport::RegisterMember<LI_GetHandle<SHandle>, SHandle>(lsc, luaNS::objBase::valueR::HandleId.c_str(), &SHandle::getValue);
 		lsc.push(luaNS::objBase::valueR::NumRef);
 		LuaImport::PushFunction(lsc, &NumRef);
 		lsc.setTable(-3);
@@ -166,7 +166,7 @@ namespace rs {
 		LuaState lsc(ls);
 		if(lsc.type(idx) == LuaType::Nil)
 			return SHandle();
-		return LuaImport::GetHandle().getHandle(ls, -1);
+		return LI_GetHandle<SHandle>().getHandle(ls, -1);
 	}
 	std::ostream& LCV<SHandle>::operator()(std::ostream& os, SHandle h) const {
 		return os << "(Handle)" << std::hex << "0x" << h.getValue();

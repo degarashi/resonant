@@ -673,8 +673,8 @@ namespace rs {
 		static auto callCB(CB cb, lua_State* ls, int idx, Ts1&&... ts1) -> decltype(cb(std::forward<Ts1>(ts1)...)) {
 			return cb(std::forward<Ts1>(ts1)...);
 		}
-		template <class T, class RT, class... Args, class... Ts1>
-		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (T::*func)(Args...), Ts1&&... ts1) {
+		template <class T, class RT, class FT, class... Args, class... Ts1>
+		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (FT::*func)(Args...), Ts1&&... ts1) {
 			return (ptr->*func)(std::forward<Ts1>(ts1)...);
 		}
 		template <class RT, class... Args, class... Ts1>
@@ -697,8 +697,8 @@ namespace rs {
 					(Ts0A)value
 					);
 		}
-		template <class T, class RT, class... Args, class... Ts1>
-		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (T::*func)(Args...), Ts1&&... ts1) {
+		template <class T, class RT, class FT, class... Args, class... Ts1>
+		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (FT::*func)(Args...), Ts1&&... ts1) {
 			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
 			return FuncCall<Ts0...>::procMethod(ls,
 					ptr,
@@ -787,6 +787,40 @@ namespace rs {
 }
 DEF_LUAIMPORT_BASE
 namespace rs {
+	// --- Lua->C++グルーコードにおけるクラスポインタの取得方法 ---
+	//! "pointer"に生ポインタが記録されている
+	struct LI_GetPtr {
+		void* operator()(lua_State* ls, int idx) const;
+	};
+	struct LI_GetHandleBase {
+		void* operator()(lua_State* ls, int idx) const;
+		spn::SHandle getHandle(lua_State* ls, int idx) const;
+	};
+	//! "udata"にハンドルが記録されている -> void*からそのままポインタ変換
+	template <class T>
+	struct LI_GetHandle : LI_GetHandleBase {
+		T* operator()(lua_State* ls, int idx) const {
+			return reinterpret_cast<T*>(static_cast<const LI_GetHandleBase&>(*this)(ls, idx));
+		}
+	};
+	//! "udata"にハンドルが記録されている -> unique_ptrからポインタ変換
+	template <class T, class Deleter>
+	struct LI_GetHandle<std::unique_ptr<T, Deleter>> : LI_GetHandleBase {
+		T* operator()(lua_State* ls, int idx) const {
+			auto* up = reinterpret_cast<std::unique_ptr<T,Deleter>*>(
+				static_cast<const LI_GetHandleBase&>(*this)(ls, idx));
+			return up->get();
+		}
+	};
+	//! "udata"にハンドルが記録されている -> shared_ptrからポインタ変換
+	template <class T>
+	struct LI_GetHandle<std::shared_ptr<T>> : LI_GetHandleBase {
+		T* operator()(lua_State* ls, int idx) const {
+			auto* up = reinterpret_cast<std::shared_ptr<T>*>(
+				static_cast<const LI_GetHandleBase&>(*this)(ls, idx));
+			return up->get();
+		}
+	};
 	//! LuaへC++のクラスをインポート、管理する
 	class LuaImport {
 		//! ハンドルオブジェクトの基本メソッド
@@ -826,69 +860,62 @@ namespace rs {
 		}
 		public:
 			//! lscにFuncTableを積んだ状態で呼ぶ
-			template <class GET, class RT, class T, class... Ts>
-			static void RegisterMember(LuaState& lsc, const char* name, RT (T::*func)(Ts...)) {
+			template <class GET, class T, class RT, class FT, class... Ts>
+			static void RegisterMember(LuaState& lsc, const char* name, RT (FT::*func)(Ts...)) {
 				lsc.push(name);
 				SetMethod(lsc.getLS(), func);
-				lsc.pushCClosure(&CallMethod<GET,RT,T,Ts...>, 1);
+				lsc.pushCClosure(&CallMethod<GET,T,RT,FT,Ts...>, 1);
 				lsc.setTable(-3);
 			}
-			template <class GET, class RT, class T, class... Ts>
-			static void RegisterMember(LuaState& lsc, const char* name, RT (T::*func)(Ts...) const) {
-				RegisterMember<GET>(lsc, name, (RT (T::*)(Ts...))func);
+			template <class GET, class T, class RT, class FT, class... Ts>
+			static void RegisterMember(LuaState& lsc, const char* name, RT (FT::*func)(Ts...) const) {
+				RegisterMember<GET,T>(lsc, name, (RT (T::*)(Ts...))func);
 			}
 			//! lscにReadTable, WriteTableを積んだ状態で呼ぶ
-			template <class GET, class V, class T>
-			static void RegisterMember(LuaState& lsc, const char* name, V T::*member) {
+			template <class GET, class T, class V, class VT>
+			static void RegisterMember(LuaState& lsc, const char* name, V VT::*member) {
 				// ReadValue関数の登録
 				lsc.push(name);
 				SetMember(lsc.getLS(), member);
-				lsc.pushCClosure(&ReadValue<GET,V,T>, 1);
+				lsc.pushCClosure(&ReadValue<GET,T,V,VT>, 1);
 				lsc.setTable(-4);
 				// WriteValue関数の登録
 				lsc.push(name);
 				SetMember(lsc.getLS(), member);
-				lsc.pushCClosure(&WriteValue<GET,V,T>, 1);
+				lsc.pushCClosure(&WriteValue<GET,T,V,VT>, 1);
 				lsc.setTable(-3);
 			}
-			struct GetPtr {
-				void* operator()(lua_State* ls, int idx) const;
-			};
-			struct GetHandle {
-				void* operator()(lua_State* ls, int idx) const;
-				spn::SHandle getHandle(lua_State* ls, int idx) const;
-			};
 			//! luaスタックから変数ポインタとクラスを取り出しメンバ変数を読み込む
-			template <class GET, class V, class T>
+			template <class GET, class T, class V, class VT>
 			static int ReadValue(lua_State* ls) {
 				// up[1]	変数ポインタ
 				// [1]		クラスポインタ(userdata)
 				const T* src = reinterpret_cast<const T*>(GET()(ls, 1));
-				auto vp = GetMember<V,T>(ls, lua_upvalueindex(1));
+				auto vp = GetMember<V,VT>(ls, lua_upvalueindex(1));
 				LCV<V>()(ls, src->*vp);
 				return 1;
 			}
 			//! luaスタックから変数ポインタとクラスと値を取り出しメンバ変数に書き込む
-			template <class GET, class V, class T>
+			template <class GET, class T, class V, class VT>
 			static int WriteValue(lua_State* ls) {
 				// up[1]	変数ポインタ
 				// [1]		クラスポインタ(userdata)
 				// [2]		セットする値
 				T* dst = reinterpret_cast<T*>(GET()(ls, 1));
-				auto ptr = GetMember<V,T>(ls, lua_upvalueindex(1));
+				auto ptr = GetMember<V,VT>(ls, lua_upvalueindex(1));
 				(dst->*ptr) = LCV<V>()(2, ls);
 				return 0;
 			}
 			//! luaスタックから関数ポインタとクラス、引数を取り出しクラスのメンバ関数を呼ぶ
-			template <class GET, class RT, class T, class... Args>
+			template <class GET, class T, class RT, class FT, class... Args>
 			static int CallMethod(lua_State* ls) {
 				// up[1]	関数ポインタ
 				// [1]		クラスポインタ(userdata)
 				// [2以降]	引数
-				using F = RT (T::*)(Args...);
+				using F = RT (FT::*)(Args...);
 				void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
 				F f = *reinterpret_cast<F*>(tmp);
-				T* ptr = reinterpret_cast<T*>(GET()(ls, 1));
+				auto* ptr = static_cast<T*>(GET()(ls, 1));
 				return RetSize<RT>::proc(ls, [ls,ptr,f]() { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
 			}
 			//! luaスタックから関数ポインタと引数を取り出しcall
