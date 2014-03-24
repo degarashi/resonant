@@ -94,8 +94,8 @@ namespace rs {
 			static GMessage& Ref();
 			//! メッセージIDの登録。同じメッセージを登録するとエラー
 			static GMessageID RegMsgID(const GMessageStr& msg);
-			//! メッセージIDの取得。存在しないメッセージを指定するとエラー
-			static GMessageID GetMsgID(const GMessageStr& msg);
+			//! メッセージIDの取得。存在しないメッセージの時はnoneを返す
+			static spn::Optional<GMessageID> GetMsgID(const GMessageStr& msg);
 	};
 
 	//! GameObj - UpdBase 共通基底

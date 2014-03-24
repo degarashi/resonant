@@ -18,10 +18,11 @@ namespace rs {
 		m._msgMap.insert(std::make_pair(msg, id));
 		return id;
 	}
-	GMessageID GMessage::GetMsgID(const GMessageStr& msg) {
+	spn::Optional<GMessageID> GMessage::GetMsgID(const GMessageStr& msg) {
 		GMessage& m = Ref();
 		auto itr = m._msgMap.find(msg);
-		Assert(Trap, itr != m._msgMap.end())
+		if(itr == m._msgMap.end())
+			return spn::none;
 		return itr->second;
 	}
 
