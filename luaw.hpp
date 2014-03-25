@@ -573,6 +573,17 @@ namespace rs {
 			}
 		};
 		public:
+			using Callback = std::function<void (LuaState&)>;
+			void iterateTable(Callback cb) {
+				LuaState lsc(T::getLS());
+				int idx = T::_prepareValue();
+				lsc.push(LuaNil());
+				while(lsc.next(idx) != 0) {
+					cb(lsc);
+					lsc.pop(1);
+				}
+				T::_cleanValue();
+			}
 			using T::T;
 			LValue(const LValue& lv): T(lv) {}
 			LValue(LValue&& lv): T(std::move(lv)) {}
