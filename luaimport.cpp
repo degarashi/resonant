@@ -17,6 +17,7 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, U_Scene, NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop), NOTHING)
 namespace rs {
 	using spn::SHandle;
+	using spn::WHandle;
 	namespace luaNS {
 		const std::string Udata("udata"),
 						Pointer("pointer"),
@@ -162,7 +163,7 @@ namespace rs {
 		return 0;
 	}
 
-	// ------------------- LCValue -------------------
+	// ------------------- LCV<SHandle> -------------------
 	void LCV<SHandle>::operator()(lua_State* ls, SHandle h) const {
 		// nullハンドルチェック
 		if(!h.valid()) {
@@ -190,6 +191,25 @@ namespace rs {
 	}
 	LuaType LCV<SHandle>::operator()() const {
 		return LuaType::Userdata;
+	}
+	// ------------------- LCV<WHandle> -------------------
+	void LCV<WHandle>::operator()(lua_State* ls, WHandle w) const {
+		if(!w.valid())
+			LCV<LuaNil>()(ls, LuaNil());
+		else {
+			LuaState lsc(ls);
+			lsc.push(reinterpret_cast<void*>(w.getValue()));
+		}
+	}
+	WHandle LCV<WHandle>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		void* data = LCV<void*>()(idx, ls, spm);
+		return WHandle(reinterpret_cast<WHandle::VWord>(data));
+	}
+	std::ostream& LCV<WHandle>::operator()(std::ostream& os, WHandle w) const {
+		return os << "(WHandle)" << std::hex << "0x" << w.getValue();
+	}
+	LuaType LCV<WHandle>::operator()() const {
+		return LuaType::LightUserdata;
 	}
 	//	アップデータの登録
 	//		シーンツリーの管理はスクリプトがメイン
