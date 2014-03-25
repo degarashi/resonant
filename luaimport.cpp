@@ -28,7 +28,8 @@ namespace rs {
 						DerivedHandle("DerivedHandle"),
 						MakeFSMachine("MakeFSMachine"),
 						MakePreENV("MakePreENV"),
-						RecvMsg("RecvMsg");
+						RecvMsg("RecvMsg"),
+						System("System");
 		namespace objBase {
 			const std::string ValueR("_valueR"),
 								ValueW("_valueW"),
@@ -211,6 +212,38 @@ namespace rs {
 	LuaType LCV<WHandle>::operator()() const {
 		return LuaType::LightUserdata;
 	}
+
+	// ------------------- LSysFunc -------------------
+	void LSysFunc::InitFuncs(LuaState& lsc) {
+		#define DEF_SYSFUNC(name) \
+			lsc.push(#name); \
+			LuaImport::PushFunction(lsc, name); \
+			lsc.setTable(-3);
+
+		lsc.getGlobal(luaNS::System);
+		DEF_SYSFUNC(LoadResourceFromURI)
+		DEF_SYSFUNC(LoadResources)
+		lsc.pop(1);
+
+		#undef DEF_SYSFUNC
+	}
+	SHandle LSysFunc::LoadResourceFromURI(const std::string& urisrc) {
+		spn::URI uri(urisrc);
+		return spn::ResMgrBase::LoadResource(uri);
+	}
+	LCTable LSysFunc::LoadResources(LValueG tbl) {
+		// tblには{ resourceName = "uri://path/to/resource", ... } というフォーマットでURIが記載されている
+		LCTable ret;
+		tbl.iterateTable([&ret](LuaState& lsc) {
+			LCValue ent = lsc.toLCValue(-2);
+			spn::URI uri(lsc.toString(-1));
+			SHandle sh = spn::ResMgrBase::LoadResource(uri);
+			LCValue lcv(sh);
+			ret.emplace(std::move(ent), sh);
+		});
+		return std::move(ret);
+	}
+
 	//	アップデータの登録
 	//		シーンツリーの管理はスクリプトがメイン
 	//		HGroup = createGroup("")
