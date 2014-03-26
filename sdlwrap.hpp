@@ -439,7 +439,8 @@ namespace rs {
 		SDL_Thread*			_thread;
 
 		using Holder = spn::ArgHolder<Args...>;
-		spn::Optional<Holder> _holder;
+		using OPHolder = spn::Optional<Holder>;
+		OPHolder			_holder;
 
 		enum Stat {
 			Idle,			//!< スレッド開始前
@@ -469,7 +470,7 @@ namespace rs {
 			tls_threadID = SDL_GetThreadID(ths->_thread);
 			Stat stat;
 			try {
-				ths->_holder->inorder([ths](Args... args){ ths->runIt(std::forward<Args>(args)...); });
+				ths->_holder->inorder([ths](Args&&... args){ ths->runIt(std::forward<Args>(args)...); });
 				stat = (ths->isInterrupted()) ? Interrupted_End : Finished;
 			} catch(...) {
 				Assert(Warn, false, "thread is finished unexpectedly")
@@ -608,7 +609,7 @@ namespace rs {
 	template <class RET, class... Args>
 	class Thread<RET (Args...)> : public _Thread<Thread<RET (Args...)>, RET, Args...> {
 		using base_type = _Thread<Thread<RET (Args...)>, RET, Args...>;
-		boost::optional<RET> 	_retVal;
+		spn::Optional<RET> 	_retVal;
 		protected:
 			virtual RET run(Args...) = 0;
 		public:
@@ -750,10 +751,10 @@ namespace rs {
 				void* 	ptr;
 				size_t	size;
 
-                template <class Archive>
-                void serialize(Archive& ar, const unsigned int) {
-                    AssertP(Trap, false, "this object cannot serialize")
-                }
+				template <class Archive>
+				void serialize(Archive& ar, const unsigned int) {
+					AssertP(Trap, false, "this object cannot serialize")
+				}
 			};
 
 			//! RWopsエラー基底
@@ -804,39 +805,39 @@ namespace rs {
 			using UPCallback = std::unique_ptr<Callback>;
 			UPCallback	_endCB;
 
-            void _deserializeFromMember();
+			void _deserializeFromMember();
 			void _clear();
 			friend class boost::serialization::access;
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			template <class Archive>
 			void save(Archive& ar, const unsigned int) const {
-                ar & _access;
-                if(isMemory()) {
-                    Type type;
-                    if(_type == Type::ConstMem || _type == Type::ConstVector)
-                        type = Type::ConstVector;
-                    else
-                        type = Type::Vector;
-                    ar & type;
+				ar & _access;
+				if(isMemory()) {
+					Type type;
+					if(_type == Type::ConstMem || _type == Type::ConstVector)
+						type = Type::ConstVector;
+					else
+						type = Type::Vector;
+					ar & type;
 
-                    auto dat = getMemoryPtrC();
-                    spn::ByteBuff buff(dat.second);
-                    std::memcpy(&buff[0], dat.first, dat.second);
-                    Data data(std::move(buff));
-                    ar & data;
-                } else
-                    ar & _type & _data;
-                int64_t pos = tell();
-                ar & pos & _endCB;
+					auto dat = getMemoryPtrC();
+					spn::ByteBuff buff(dat.second);
+					std::memcpy(&buff[0], dat.first, dat.second);
+					Data data(std::move(buff));
+					ar & data;
+				} else
+					ar & _type & _data;
+				int64_t pos = tell();
+				ar & pos & _endCB;
 			}
-            template <class Archive>
-            void load(Archive& ar, const unsigned int) {
-                int64_t pos;
-                ar & _access & _type & _data & pos & _endCB;
-                _deserializeFromType(pos);
+			template <class Archive>
+			void load(Archive& ar, const unsigned int) {
+				int64_t pos;
+				ar & _access & _type & _data & pos & _endCB;
+				_deserializeFromType(pos);
 			}
 
-            void _deserializeFromType(int64_t pos);
+			void _deserializeFromType(int64_t pos);
 			friend spn::ResWrap<RWops, spn::String<std::string>>;
 			RWops() = default;
 			template <class T>
