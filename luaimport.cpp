@@ -64,7 +64,7 @@ namespace rs {
 	void* LI_GetPtr::operator()(lua_State* ls, int idx) const {
 		lua_getfield(ls, idx, luaNS::Pointer.c_str());
 		void* ret = LCV<void*>()(-1, ls);
-		lua_pop(ls, 2);
+		lua_pop(ls, 1);
 		return ret;
 	}
 	void* LI_GetHandleBase::operator()(lua_State* ls, int idx) const {

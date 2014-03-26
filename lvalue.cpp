@@ -160,7 +160,7 @@ namespace rs {
 		LuaState lsc(ls);
 		const void* ptr = lsc.toPointer(idx);
 		auto itr = spm->find(ptr);
-		if(itr == spm->end())
+		if(itr != spm->end())
 			return boost::get<SPLCTable>(itr->second);
 
 		// 循環参照対策で先にエントリを作っておく
