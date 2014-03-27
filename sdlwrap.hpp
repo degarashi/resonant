@@ -13,7 +13,6 @@
 #include <SDL_image.h>
 #include <exception>
 #include <stdexcept>
-#include <boost/optional.hpp>
 #include "spinner/error.hpp"
 #include "spinner/size.hpp"
 #include <boost/serialization/access.hpp>
@@ -147,49 +146,38 @@ namespace rs {
 			SDL_mutex* getMutex();
 	};
 	class UniLock {
-		Mutex* _mutex;
+		Mutex*	_mutex;
+		bool	_bLocked;
+
 		public:
+			static struct DeferLock_t {} DeferLock;
+			static struct AdoptLock_t {} AdoptLock;
+			static struct TryLock_t {} TryLock;
+
 			UniLock() = delete;
 			UniLock(const UniLock&) = delete;
 			void operator = (const UniLock& u) = delete;
-			UniLock(Mutex& m): _mutex(&m) { m.lock(); }
-			~UniLock() {
-				unlock();
-			}
-			UniLock(UniLock&& u): _mutex(u._mutex) {
-				u._mutex = nullptr;
-			}
-			void unlock() {
-				if(_mutex) {
-					_mutex->unlock();
-					_mutex = nullptr;
-				}
-			}
-			SDL_mutex* getMutex() {
-				if(_mutex)
-					return _mutex->getMutex();
-				return nullptr;
-			}
+			UniLock(Mutex& m, DeferLock_t);
+			UniLock(Mutex& m, AdoptLock_t);
+			UniLock(Mutex& m, TryLock_t);
+			UniLock(Mutex& m);
+			~UniLock();
+			UniLock(UniLock&& u);
+			void lock();
+			void unlock();
+			bool tryLock();
+			bool isLocked() const;
+			SDL_mutex* getMutex();
 	};
 	class CondV {
 		SDL_cond*	_cond;
 		public:
-			CondV(): _cond(SDL_CreateCond()) {}
-			~CondV() {
-				SDL_DestroyCond(_cond);
-			}
-			void wait(UniLock& u) {
-				SDLEC_P(Trap, SDL_CondWait, _cond, u.getMutex());
-			}
-			bool wait_for(UniLock& u, uint32_t msec) {
-				return SDLEC_P(Trap, SDL_CondWaitTimeout, _cond, u.getMutex(), msec) == 0;
-			}
-			void signal() {
-				SDLEC_P(Trap, SDL_CondSignal, _cond);
-			}
-			void signal_all() {
-				SDLEC_P(Trap, SDL_CondBroadcast, _cond);
-			}
+			CondV();
+			~CondV();
+			void wait(UniLock& u);
+			bool wait_for(UniLock& u, uint32_t msec);
+			void signal();
+			void signal_all();
 	};
 	template <class SP, class T>
 	struct SpinInner {
