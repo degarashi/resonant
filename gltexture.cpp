@@ -81,7 +81,7 @@ namespace rs {
 			Assert(Trap, false, "not implemented yet");
 		#endif
 		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, SDL_PIXELFORMAT_ARGB8888);
-		auto hlRW = mgr_rw.fromFile(path, RWops::Write, true);
+		auto hlRW = mgr_rw.fromFile(path, RWops::Write);
 		sfc->saveAsPNG(hlRW);
 	}
 	void IGLTexture::setAnisotropicCoeff(float coeff) {
@@ -275,7 +275,7 @@ namespace rs {
 		IGLTexture(std::move(static_cast<IGLTexture&>(t))), _uri(std::move(t._uri)) {}
 	void Texture_StaticURI::onDeviceReset() {
 		if(_onDeviceReset())
-			_size = LoadTexture(*this, mgr_rw.fromURI(_uri, RWops::Read, true), CubeFace::PositiveX);
+			_size = LoadTexture(*this, mgr_rw.fromURI(_uri, RWops::Read), CubeFace::PositiveX);
 	}
 	// メンバ関数?
 	spn::Size MakeTex(GLenum tflag, const SPSurface& sfc, bool bP2, bool bMip) {
@@ -353,7 +353,7 @@ namespace rs {
 		if(_onDeviceReset()) {
 			int mask = _uri->getNPacked()==1 ? 0x00 : 0xff;
 			for(int i=0 ; i<6 ; i++)
-				_size = Texture_StaticURI::LoadTexture(*this, mgr_rw.fromURI(_uri->getPacked(i & mask), RWops::Read, true), static_cast<CubeFace>(i));
+				_size = Texture_StaticURI::LoadTexture(*this, mgr_rw.fromURI(_uri->getPacked(i & mask), RWops::Read), static_cast<CubeFace>(i));
 		}
 	}
 

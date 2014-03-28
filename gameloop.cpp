@@ -111,7 +111,7 @@ namespace rs {
 		UPtr<GLRes>			glrP(new GLRes());
 		UPtr<RWMgr>			rwP(new RWMgr());
 		UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
-		appPath->setFromText(mgr_rw.fromFile(pathfile, RWops::Read, false));
+		appPath->setFromText(mgr_rw.fromFile(pathfile, RWops::Read));
 		UPtr<FontFamily>	fontP(new FontFamily());
 		fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
 		UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));

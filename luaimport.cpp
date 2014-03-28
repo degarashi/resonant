@@ -123,7 +123,7 @@ namespace rs {
 		// ObjectBase = {...}
 		lsc.setGlobal(luaNS::ObjectBase);
 		// TODO: あとで絶対パスを直す
-		HLRW hlRW = mgr_rw.fromFile("/home/degarashi/projects/resonant/base.lua", RWops::Access::Read, true);
+		HLRW hlRW = mgr_rw.fromFile("/home/degarashi/projects/resonant/base.lua", RWops::Access::Read);
 		lsc.loadFromSource(hlRW, "base.lua", true);
 	}
 

@@ -71,7 +71,7 @@ TScene::TScene(): Scene(0) {
 	// サウンド読み込み
 	spn::PathBlock pb(mgr_path.getPath(rs::AppPath::Type::Sound));
 	pb <<= "the_thunder.ogg";
-	_hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile(pb.plain_utf8(), rs::RWops::Read, false));
+	_hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile(pb.plain_utf8(), rs::RWops::Read));
 	_hlSg = mgr_sound.createSourceGroup(1);
 	// Cube初期化
 	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));

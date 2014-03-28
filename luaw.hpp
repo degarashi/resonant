@@ -16,7 +16,7 @@
 namespace rs {
 	class RWops;
 	class RWMgr;
-	DEF_NHANDLE(rs::RWMgr, RW, rs::RWops, rs::RWops)
+	DEF_AHANDLE(rs::RWMgr, RW, rs::RWops, rs::RWops)
 
 	struct LuaNil {
 		bool operator == (LuaNil) const;

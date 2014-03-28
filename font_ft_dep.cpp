@@ -10,7 +10,7 @@ namespace rs {
 	HLFT FontFamily::Item::makeFont() const {
 		if(hlRW)
 			return mgr_font.newFace(hlRW, faceIndex);
-		return mgr_font.newFace(mgr_rw.fromFile(path.get(), RWops::Read, true), faceIndex);
+		return mgr_font.newFace(mgr_rw.fromFile(path.get(), RWops::Read), faceIndex);
 	}
 	void FontFamily::loadFamilyWildCard(spn::To8Str pattern) {
 		size_t len = pattern.getLength();
@@ -18,7 +18,7 @@ namespace rs {
 			return;
 
 		spn::Dir::EnumEntryWildCard(pattern.moveTo(), [this](const spn::Dir& dir) {
-			loadFamily(mgr_rw.fromFile(dir.plain_utf8(), RWops::Read, true));
+			loadFamily(mgr_rw.fromFile(dir.plain_utf8(), RWops::Read));
 		});
 	}
 	void FontFamily::loadFamily(HRW hRW) {

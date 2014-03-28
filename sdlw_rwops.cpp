@@ -122,7 +122,7 @@ namespace rs {
 				AssertP(Trap, _data.which() == 2)
 				auto& uri = boost::get<spn::URI>(_data);
 				auto handler = mgr_rw.getUriHandler(uri, _access);
-				HLRW hlRW = (*handler)->loadURI(uri, _access, true);
+				HLRW hlRW = (*handler)->loadURI(uri, _access);
 				*this = std::move(hlRW.ref());
 			}
 		}
@@ -296,17 +296,13 @@ namespace rs {
 		return std::make_pair(nullptr, 0);
 	}
 	// ---------------------------- RWMgr ----------------------------
-	HLRW RWMgr::fromURI(const spn::URI& uri, int access, bool bNoShared) {
+	HLRW RWMgr::fromURI(const spn::URI& uri, int access) {
 		if(auto handler = getUriHandler(uri, access))
-			return (*handler)->loadURI(uri, access, bNoShared);
+			return (*handler)->loadURI(uri, access);
 		AssertT(Throw, false, (RWops::RWE_File)(const std::string&), uri.plain_utf8())
 	}
-	HLRW RWMgr::fromFile(const std::string& path, int access, bool bNoShared) {
-		if(bNoShared)
-			return base_type::acquire(RWops::FromFile(path, access));
-		auto* str = &path[0];
-		str = spn::PathBlock::RemoveDriveLetter(str, str+path.length());
-		return base_type::acquire(str, RWops::FromFile(str, access)).first;
+	HLRW RWMgr::fromFile(const std::string& path, int access) {
+		return base_type::acquire(RWops::FromFile(path, access));
 	}
 	HLRW RWMgr::fromConstMem(const void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromConstMem(p,size,cb));
@@ -336,9 +332,9 @@ namespace rs {
 	bool UriH_File::canLoad(const spn::URI& uri, int access) const {
 		return uri.getType_utf8() == "file";
 	}
-	HLRW UriH_File::loadURI(const spn::URI& uri, int access, bool bNoShared) {
+	HLRW UriH_File::loadURI(const spn::URI& uri, int access) {
 		if(canLoad(uri, access))
-			return mgr_rw.fromFile(uri.plain_utf8(), access, bNoShared);
+			return mgr_rw.fromFile(uri.plain_utf8(), access);
 		return HLRW();
 	}
 }
