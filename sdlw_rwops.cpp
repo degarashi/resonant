@@ -47,7 +47,7 @@ namespace rs {
 	RWops::RWE_NullMemory::RWE_NullMemory(): RWE_Error("null memory pointer detected") {
 		setMessage("");
 	}
-	
+
 	RWops RWops::FromConstMem(const void* mem, size_t size, Callback* cb) {
 		AssertT(Trap, mem, (RWE_NullMemory))
 		SDL_RWops* ops = SDL_RWFromConstMem(mem,size);
@@ -72,8 +72,7 @@ namespace rs {
 		auto* str = path.c_str();
 		str = spn::PathBlock::RemoveDriveLetter(str, str + path.length());
 		std::string mode = ReadModeStr(access);
-		SDL_RWops* ops = SDL_RWFromFile(str, mode.c_str());
-		SDLEC_Chk(Throw)
+		SDL_RWops* ops = SDLEC(Throw, SDL_RWFromFile, str, mode.c_str());
 		return RWops(ops,
 					Type::File,
 					access,
@@ -121,8 +120,9 @@ namespace rs {
 			else {
 				AssertP(Trap, _data.which() == 2)
 				auto& uri = boost::get<spn::URI>(_data);
-				auto handler = mgr_rw.getUriHandler(uri, _access);
-				HLRW hlRW = (*handler)->loadURI(uri, _access);
+				auto& h = mgr_rw.getHandler();
+				h.procHandler(uri, _access);
+				HLRW hlRW = h.procHandler(uri, _access);
 				*this = std::move(hlRW.ref());
 			}
 		}
@@ -296,10 +296,16 @@ namespace rs {
 		return std::make_pair(nullptr, 0);
 	}
 	// ---------------------------- RWMgr ----------------------------
+	RWMgr::UriHandlerV& RWMgr::getHandler() {
+		return _handlerV;
+	}
+	HLRW RWMgr::HChk::operator()(UriHandler& h, const spn::URI& uri, int access) const {
+		return h.openURI_RW(uri, access);
+	}
 	HLRW RWMgr::fromURI(const spn::URI& uri, int access) {
-		if(auto handler = getUriHandler(uri, access))
-			return (*handler)->loadURI(uri, access);
-		AssertT(Throw, false, (RWops::RWE_File)(const std::string&), uri.plain_utf8())
+		HLRW ret = getHandler().procHandler(uri, access);
+		AssertT(Throw, ret.valid(), (RWops::RWE_File)(const std::string&), uri.plain_utf8())
+		return ret;
 	}
 	HLRW RWMgr::fromFile(const std::string& path, int access) {
 		return base_type::acquire(RWops::FromFile(path, access));
@@ -310,30 +316,15 @@ namespace rs {
 	HLRW RWMgr::fromMem(void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromMem(p,size, cb));
 	}
-	void RWMgr::addUriHandler(const SPUriHandler& h) {
-		Assert(Trap, std::find(_handler.begin(), _handler.end(), h)==_handler.end())
-		_handler.push_back(h);
-	}
-	void RWMgr::remUriHandler(const SPUriHandler& h) {
-		auto itr = std::find(_handler.begin(), _handler.end(), h);
-		Assert(Trap, itr!=_handler.end())
-		_handler.erase(itr);
-	}
-	RWMgr::OPUriHandler RWMgr::getUriHandler(const spn::URI& uri, int access) const {
-		for(auto& h : _handler) {
-			if(h->canLoad(uri, access))
-				return h;
-		}
-		Assert(Warn, false, "can't handle URI \"%s\"", uri.plainUri_utf8())
-		return spn::none;
-	}
 	// ---------------------------- UriH_File ----------------------------
 	UriH_File::UriH_File(spn::ToPathStr path): _basePath(path.moveTo()) {}
-	bool UriH_File::canLoad(const spn::URI& uri, int access) const {
-		return uri.getType_utf8() == "file";
+	spn::UP_Adapt UriH_File::openURI(const spn::URI& uri) {
+		std::unique_ptr<std::ifstream> up(new std::ifstream(uri.plain_utf8()));
+		Assert(Throw, up->is_open())
+		return spn::UP_Adapt(new spn::AdaptStd(std::move(up)));
 	}
-	HLRW UriH_File::loadURI(const spn::URI& uri, int access) {
-		if(canLoad(uri, access))
+	HLRW UriH_File::openURI_RW(const spn::URI& uri, int access) {
+		if(uri.getType_utf8() == "file")
 			return mgr_rw.fromFile(uri.plain_utf8(), access);
 		return HLRW();
 	}

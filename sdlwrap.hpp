@@ -830,7 +830,7 @@ namespace rs {
 			RWops() = default;
 			template <class T>
 			RWops(SDL_RWops* ops, Type type, int access, T&& data, Callback* cb=nullptr) {
-				AssertT(Trap, ops, (RWE_Error)(const std::string&), "unknown error")
+				AssertT(Trap, ops, (RWE_Error)(const char*), "unknown error")
 				_ops = ops;
 				_type = type;
 				_access = access;
@@ -886,20 +886,25 @@ namespace rs {
 			//! Type::Vector時のみ有効
 			std::pair<void*, size_t> getMemoryPtr();
 	};
-	struct UriHandler;
+	class RWMgr;
+	DEF_AHANDLE(RWMgr, RW, RWops, RWops)
+	struct UriHandler : spn::IURIOpener {
+		virtual HLRW openURI_RW(const spn::URI& uri, int access) = 0;
+	};
 	using SPUriHandler = std::shared_ptr<UriHandler>;
+
 	#define mgr_rw (::rs::RWMgr::_ref())
 	class RWMgr : public spn::ResMgrA<RWops, RWMgr> {
-		using HandlerL = std::vector<SPUriHandler>;
-		HandlerL _handler;
+		struct HChk {
+			HLRW operator()(UriHandler& h, const spn::URI& uri, int access) const;
+		};
+		using UriHandlerV = spn::HandlerV<UriHandler, HChk>;
+		UriHandlerV		_handlerV;
 
 		public:
+			UriHandlerV& getHandler();
 			using base_type = spn::ResMgrA<RWops, RWMgr>;
 			using LHdl = AnotherLHandle<RWops>;
-			using OPUriHandler = spn::Optional<const SPUriHandler&>;
-			void addUriHandler(const SPUriHandler& h);
-			void remUriHandler(const SPUriHandler& h);
-			OPUriHandler getUriHandler(const spn::URI& uri, int access) const;
 
 			// ---- RWopsへ中継するだけの関数 ----
 			//! 任意のURIからハンドル作成(ReadOnly)
@@ -912,23 +917,23 @@ namespace rs {
 			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
 	};
 	DEF_AHANDLE(RWMgr, RW, RWops, RWops)
-	struct UriHandler {
-		virtual bool canLoad(const spn::URI& uri, int access) const = 0;
-		virtual HLRW loadURI(const spn::URI& uri, int access) = 0;
-	};
 	//! アセットZipからのファイル読み込み (Android only)
 	struct UriH_AssetZip : UriHandler {
 		spn::PathStr	_zipPath;			//!< Asset中のZipファイルのパス
 		UriH_AssetZip(spn::ToPathStr zippath);
-		bool canLoad(const spn::URI& uri, int access) const override;
-		HLRW loadURI(const spn::URI& uri, int access) override;
+		// --- from UriHandler ---
+		HLRW openURI_RW(const spn::URI& uri, int access) override;
+		// --- from IURIOpener ---
+		spn::UP_Adapt openURI(const spn::URI& uri) override;
 	};
 	//! ファイルシステムからのファイル読み込み
 	struct UriH_File : UriHandler {
 		spn::PathStr	_basePath;
 		UriH_File(spn::ToPathStr path);
-		bool canLoad(const spn::URI& uri, int access) const override;
-		HLRW loadURI(const spn::URI& uri, int access) override;
+		// --- from UriHandler ---
+		HLRW openURI_RW(const spn::URI& uri, int access) override;
+		// --- from IURIOpener ---
+		spn::UP_Adapt openURI(const spn::URI& uri) override;
 	};
 
 	struct RGB {
