@@ -213,9 +213,8 @@ namespace rs {
 		t.prepareValue(ls);
 	}
 	LValueG LCV<LValueG>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
-		LuaState lsc(ls);
-		lsc.pushValue(idx);
-		SPLua sp = lsc.getMainLS_SP();
+		lua_pushvalue(ls, idx);
+		SPLua sp = LuaState::GetMainLS_SP(ls);
 		return LValueG(sp);
 	}
 	std::ostream& LCV<LValueG>::operator()(std::ostream& os, const LValueG& t) const {

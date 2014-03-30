@@ -36,8 +36,10 @@ namespace rs {
 		_offset = 0;
 		_readCur = _playedCur = _writeCur = 0;
 	}
-	ABufSub::ABufSub(ABufSub&& a): _hlAb(std::move(a._hlAb)),
-		_nLoop(a._nLoop), _nLoopInit(a._nLoopInit), _abuff(std::move(a._abuff)),
+	ABufSub::ABufSub(ABufSub&& a):
+		_hlAb(std::move(a._hlAb)),
+		_abuff(std::move(a._abuff)),
+		_nLoop(a._nLoop), _nLoopInit(a._nLoopInit),
 		_nBuffer(a._nBuffer), _readCur(a._readCur), _playedCur(a._playedCur), _writeCur(a._writeCur),
 		_offset(a._offset)
 	{}

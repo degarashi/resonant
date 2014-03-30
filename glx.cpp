@@ -106,7 +106,7 @@ namespace rs {
 					GL.glEnableVertexAttribArray(attrID);
 					// AssertMsg(Trap, "%1%, %2%", t2.semID, attr[t2.semID])
 					GLEC_ChkP(Trap)
-					GL.glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, (const GLvoid*)t2.offset);
+					GL.glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, reinterpret_cast<const GLvoid*>(t2.offset));
 					GLEC_ChkP(Trap)
 				};
 				++cur;
