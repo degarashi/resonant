@@ -7,8 +7,8 @@ namespace rs {
 		//! Regex: OpenGL version
 		/*!	[1,2,3] = OpenGL version
 			[4] = Profile
-			[5,6] = Driver version */
-		boost::regex re_version("(\\d+)\\.(\\d+)(?:\\.(\\d+))?\\s+([\\w ]+?)\\s+(\\d+)(?:\\.(\\d+))?");
+			[5,6,7] = Driver version */
+		boost::regex re_version("(\\d+)\\.(\\d+)(?:\\.(\\d+))?\\s+([\\w ]+)\\s+([^\\.]+)?\\.?([^\\.]+)?\\.?([^\\.]+)?");
 		//! Regex: GLSL Version
 		/*!	[1,2] = GLSL version (major, minor) */
 		boost::regex re_glsl("(\\d+)\\.(\\d+)");
@@ -27,7 +27,7 @@ namespace rs {
 
 		// プロファイルの特定
 		boost::cmatch cm;
-		if(boost::regex_match(reinterpret_cast<const char*>(GL.glGetString(GL_VERSION)), cm, re_version)) {
+		if(boost::regex_search(reinterpret_cast<const char*>(GL.glGetString(GL_VERSION)), cm, re_version)) {
 			auto prof = cm.str(4);
 			std::transform(prof.cbegin(), prof.cend(), prof.begin(), ::tolower);
 			if(prof == std::string("compatibility profile context"))
@@ -38,11 +38,14 @@ namespace rs {
 			for(int i=0 ; i<3 ; i++)
 				_verGL.ar[i] = boost::lexical_cast<int>(cm.str(i+1));
 
-			for(int i=0 ; i<std::min(int(cm.size()-5),3) ; i++)
-				_verDriver.ar[i] = boost::lexical_cast<int>(cm.str(i+5));
+			for(int i=0 ; i<std::min(static_cast<int>(cm.size()-5),3) ; i++) {
+				auto s = cm.str(i+5);
+				if(!s.empty())
+					_verDriver.ar[i] = boost::lexical_cast<int>(s);
+			}
 		} else
 			_verGL.clear();
-		if(boost::regex_match(reinterpret_cast<const char*>(GL.glGetString(GL_SHADING_LANGUAGE_VERSION)), cm, re_glsl)) {
+		if(boost::regex_search(reinterpret_cast<const char*>(GL.glGetString(GL_SHADING_LANGUAGE_VERSION)), cm, re_glsl)) {
 			for(int i=0 ; i<2 ; i++)
 				_verSL.ar[i] = boost::lexical_cast<int>(cm.str(i+1));
 			_verSL.ar[2] = 0;
