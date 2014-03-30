@@ -286,6 +286,25 @@ namespace rs {
 	std::ostream& LCValue::print(std::ostream& os) const {
 		return boost::apply_visitor(PrintVisitor(os), *this);
 	}
+	namespace {
+		struct LCVisitor : boost::static_visitor<const char*> {
+			template <class T>
+			const char* operator()(T) const {
+				return nullptr;
+			}
+			const char* operator()(const char* c) const { return c; }
+			const char* operator()(const std::string& s) const { return s.c_str(); }
+		};
+	}
+	const char* LCValue::toCStr() const {
+		return boost::apply_visitor(LCVisitor(), *this);
+	}
+	std::string LCValue::toString() const {
+		auto* str = toCStr();
+		if(str)
+			return std::string(str);
+		return std::string();
+	}
 	std::ostream& operator << (std::ostream& os, const LCValue& lcv) {
 		return lcv.print(os);
 	}

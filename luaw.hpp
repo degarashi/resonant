@@ -83,6 +83,8 @@ namespace rs {
 			LCValue& operator = (LCValue&& lcv);
 			bool operator == (const LCValue& lcv) const;
 			void push(lua_State* ls) const;
+			const char* toCStr() const;
+			std::string toString() const;
 			std::ostream& print(std::ostream& os) const;
 			LuaType type() const;
 			friend std::ostream& operator << (std::ostream&, const LCValue&);
