@@ -316,16 +316,64 @@ namespace rs {
 	HLRW RWMgr::fromMem(void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromMem(p,size, cb));
 	}
+	// file:// filetreeのみ
+	// pack:// zipのみ
+	// res:// zip, filetreeの順で探す
+	// ---------------------------- UriH_PackedZip ----------------------------
+	bool UriH_PackedZip::Capable(const spn::URI& uri) {
+		auto typ = uri.getType_utf8();
+		return (typ == "pack" || typ == "file");
+	}
+	UriH_PackedZip::UriH_PackedZip(spn::ToPathStr zippath):
+		_stream(new spn::AdaptStd(
+			std::unique_ptr<std::istream>(
+				new std::ifstream(zippath.getStringPtr())
+			)
+		)),
+		_ztree(*_stream)
+	{}
+	spn::UP_Adapt UriH_PackedZip::openURI(const spn::URI& uri) {
+		if(Capable(uri)) {
+			if(auto* pFile = _ztree.findFile(uri.plain_utf32())) {
+				std::unique_ptr<std::iostream> up(new std::stringstream);
+				std::unique_ptr<spn::AdaptIOStd> ret(new spn::AdaptIOStd(std::move(up)));
+				_ztree.extract(*ret, pFile->index, *_stream);
+				return std::move(ret);
+			}
+		}
+		return nullptr;
+	}
+	HLRW UriH_PackedZip::openURI_RW(const spn::URI& uri, int access) {
+		return HLRW();
+	}
+
+	// ---------------------------- UriH_AssetZip ----------------------------
 	// ---------------------------- UriH_File ----------------------------
 	UriH_File::UriH_File(spn::ToPathStr path): _basePath(path.moveTo()) {}
+	bool UriH_File::Capable(const spn::URI& uri, int access) {
+		auto typ = uri.getType_utf8();
+		return (typ == "file" || typ == "res");
+	}
 	spn::UP_Adapt UriH_File::openURI(const spn::URI& uri) {
-		std::unique_ptr<std::ifstream> up(new std::ifstream(uri.plain_utf8()));
-		Assert(Throw, up->is_open())
-		return spn::UP_Adapt(new spn::AdaptStd(std::move(up)));
+		if(Capable(uri, RWops::Read)) {
+			try {
+				std::unique_ptr<std::ifstream> up(new std::ifstream(uri.plain_utf8()));
+				Assert(Throw, up->is_open())
+				return spn::UP_Adapt(new spn::AdaptStd(std::move(up)));
+			} catch(const std::exception& e) {
+				// ファイルが読み込めないのはエラーとして扱わない
+			}
+		}
+		return nullptr;
 	}
 	HLRW UriH_File::openURI_RW(const spn::URI& uri, int access) {
-		if(uri.getType_utf8() == "file")
-			return mgr_rw.fromFile(uri.plain_utf8(), access);
+		if(Capable(uri, access)) {
+			try {
+				return mgr_rw.fromFile(uri.plain_utf8(), access);
+			} catch(const std::runtime_error& e) {
+				// ファイルが読み込めないのはエラーとして扱わない
+			}
+		}
 		return HLRW();
 	}
 }

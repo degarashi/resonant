@@ -17,6 +17,7 @@
 #include "spinner/size.hpp"
 #include <boost/serialization/access.hpp>
 #include <boost/variant.hpp>
+#include "spinner/ziptree.hpp"
 
 #define SDLEC_Base(act, ...)	::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #define SDLEC_Base0(act)		::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
@@ -917,23 +918,34 @@ namespace rs {
 			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
 	};
 	DEF_AHANDLE(RWMgr, RW, RWops, RWops)
+	//! ファイルシステムに置かれたZipからのファイル読み込み
+	class UriH_PackedZip : public UriHandler {
+		spn::UP_Adapt		_stream;
+		spn::zip::ZipTree	_ztree;
+		static bool Capable(const spn::URI& uri);
+		public:
+			UriH_PackedZip(spn::ToPathStr zippath);
+			// --- from UriHandler ---
+			HLRW openURI_RW(const spn::URI& uri, int access) override;
+			// --- from IURIOpener ---
+			spn::UP_Adapt openURI(const spn::URI& uri) override;
+	};
 	//! アセットZipからのファイル読み込み (Android only)
-	struct UriH_AssetZip : UriHandler {
-		spn::PathStr	_zipPath;			//!< Asset中のZipファイルのパス
-		UriH_AssetZip(spn::ToPathStr zippath);
-		// --- from UriHandler ---
-		HLRW openURI_RW(const spn::URI& uri, int access) override;
-		// --- from IURIOpener ---
-		spn::UP_Adapt openURI(const spn::URI& uri) override;
+	class UriH_AssetZip : public UriH_PackedZip {
+		public:
+			// Asset中のZipファイルのパスを指定
+			UriH_AssetZip(spn::ToPathStr zippath);
 	};
 	//! ファイルシステムからのファイル読み込み
-	struct UriH_File : UriHandler {
+	class UriH_File : public UriHandler {
 		spn::PathStr	_basePath;
-		UriH_File(spn::ToPathStr path);
-		// --- from UriHandler ---
-		HLRW openURI_RW(const spn::URI& uri, int access) override;
-		// --- from IURIOpener ---
-		spn::UP_Adapt openURI(const spn::URI& uri) override;
+		public:
+			UriH_File(spn::ToPathStr path);
+			static bool Capable(const spn::URI& uri, int access);
+			// --- from UriHandler ---
+			HLRW openURI_RW(const spn::URI& uri, int access) override;
+			// --- from IURIOpener ---
+			spn::UP_Adapt openURI(const spn::URI& uri) override;
 	};
 
 	struct RGB {

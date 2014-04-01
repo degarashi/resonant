@@ -143,7 +143,8 @@ void MyMain::_initEffect() {
 }
 
 MyMain::MyMain(const rs::SPWindow& sp) {
-	mgr_rw.addUriHandler(rs::SPUriHandler(new rs::UriH_File(u8"/")));
+	rs::SPUriHandler sph = std::make_shared<rs::UriH_File>(u8"/");
+	mgr_rw.getHandler().addHandler(0x00, sph);
 	_size *= 0;
 	auto lk = shared.lock();
 	lk->spWin = sp;
