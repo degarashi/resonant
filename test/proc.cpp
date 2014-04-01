@@ -215,7 +215,8 @@ bool MyMain::runU() {
 	ss << "FPS: " << fps << std::endl;
 	rs::Object& obj = *mgr_scene.getScene(0).ref();
 	auto var = obj.recvMsg(MSG_GetStatus);
-	ss << "Status: " << boost::get<rs::GMessageStr>(var) << std::endl;
+	ss << "Status: " << var.toCStr() << std::endl;
+
 	_hlText = mgr_text.createText(_charID, _infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
 	_hlText.ref().draw(&fx);
 
