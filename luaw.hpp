@@ -985,13 +985,5 @@ namespace rs {
 			/*! Obj(UData), MessageStr, {Args} */
 			static int RecvMsg(lua_State* ls);
 	};
-	struct LSysFunc {
-		static void InitFuncs(LuaState& lsc);
-
-		//! 拡張子で型を判別してリソース読み込み
-		static spn::SHandle LoadResourceFromURI(const std::string& urisrc);
-		//! Luaのテーブルからリソースを一括読み込み
-		static LCTable LoadResources(LValueG tbl);
-	};
 }
 

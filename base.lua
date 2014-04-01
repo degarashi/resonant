@@ -5,7 +5,7 @@ require("sysfunc")
 -- グローバル変数は全てここに含める
 Global = {}
 -- ゲームエンジンに関する変数など
-System = {}
+-- System = {}
 -- HandleID -> ObjInstance(fake)
 local handleId2Obj = {}
 -- HandleID -> ObjInstance(substance)
@@ -40,7 +40,7 @@ function GetHandle(id, ud)
 	IncrementHandle(sub)
 	ud2HandleId[id] = ud
 	handleId2Obj[id] = ret
-	return h
+	return ret
 end
 -- ObjMgr.release()で参照カウンタがゼロになった際に呼ばれる
 function DeleteHandle(ud)
