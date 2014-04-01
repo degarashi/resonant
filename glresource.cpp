@@ -114,4 +114,15 @@ namespace rs {
 				r->onDeviceReset();
 		}
 	}
+	spn::LHandle GLRes::loadResource(spn::AdaptStream& ast, const spn::URI& uri) {
+		auto ext = uri.getExtension();
+		spn::LHandle ret;
+		// is it Texture?
+		if(ext=="png" || ext=="jpg" || ext=="bmp")
+			ret = loadTexture(uri);
+		// is it Effect(Shader)?
+		else if(ext == "glx")
+			ret = loadEffect(uri);
+		return std::move(ret);
+	}
 }

@@ -60,7 +60,7 @@ namespace rs {
 	using SPLCTable = std::shared_ptr<LCTable>;
 	using LCVar = boost::variant<boost::blank, LuaNil,
 					bool, const char*, float, double, int32_t, uint32_t, int64_t, uint64_t,
-					spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, const std::string&, std::string, SPLCTable>;
+					spn::LHandle, spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, const std::string&, std::string, SPLCTable>;
 	class LCValue : public LCVar {
 		public:
 			struct HashVisitor : boost::static_visitor<size_t> {

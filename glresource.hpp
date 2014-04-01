@@ -184,6 +184,8 @@ namespace rs {
 			AnotherSHandle<UPTexture> getEmptyTexture() const;
 			LHdl _common(const std::string& key, std::function<UPResource()> cb);
 			GLFBufferTmp& getTmpFramebuffer() const;
+			// --- from ResMgrBase ---
+			spn::LHandle loadResource(spn::AdaptStream& ast, const spn::URI& uri);
 	};
 	DEF_NHANDLE_PROP(GLRes, Res, UPResource, UPResource, std::allocator, std::string)
 	DEF_NHANDLE_PROP(GLRes, Tex, UPResource, UPTexture, std::allocator, std::string)
