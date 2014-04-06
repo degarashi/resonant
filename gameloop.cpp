@@ -97,202 +97,210 @@ namespace rs {
 		lk->tmBegin = Clock::now();
 	}
 	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* pathfile) {
-		SPGLContext ctx = GLContext::CreateContext(w, false),
-					ctxD;
-		if(MULTICONTEXT) {
-			ctxD = GLContext::CreateContext(w, true);
-			ctxD->makeCurrent();
-			ctx->makeCurrent(w);
-		} else {
-			ctx->makeCurrent();
-			std::swap(ctxD, ctx);
-		}
-		UPtr<GLWrap>		glw(new GLWrap(MULTICONTEXT));
-		UPtr<GLRes>			glrP(new GLRes());
-		UPtr<RWMgr>			rwP(new RWMgr());
-		UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
-		appPath->setFromText(mgr_rw.fromFile(pathfile, RWops::Read));
-		UPtr<FontFamily>	fontP(new FontFamily());
-		fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
-		UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
-		UPtr<CameraMgr>		camP(new CameraMgr());
-		UPtr<PointerMgr>	pmP(new PointerMgr());
-		UPtr<InputMgr>		inpP(new InputMgr());
-		UPtr<ObjMgr>		objP(new ObjMgr());
-		UPtr<UpdMgr>		updP(new UpdMgr());
-		UPtr<SceneMgr>		scP(new SceneMgr());
-		UPtr<SoundMgr>		sndP(new SoundMgr(44100));
-		UPtr<UpdRep>		urep(new UpdRep());
-		UPtr<ObjRep>		orep(new ObjRep());
-		sndP->makeCurrent();
-		// 描画スレッドを先に初期化
-		DrawThread dth;
-		dth.start(std::ref(getLooper()), std::move(ctxD), w, _dcr());
-		// 描画スレッドの初期化完了を待つ
-		while(auto m = getLooper()->wait()) {
-			if(static_cast<msg::DrawInit*>(*m))
-				break;
-		}
-		GLW.initializeMainThread();
-
-		// 続いてメインスレッドを初期化
-		using UPHandler = UPtr<Handler>;
-		UPMainProc mp(_mcr(w));
-		UPHandler guiHandler(new Handler(guiLooper, [](){
-			SDL_Event e;
-			e.type = EVID_SIGNAL;
-			SDL_PushEvent(&e);
-		}));
-
-		UPHandler drawHandler(new Handler(dth.getLooper()));
-		guiHandler->postArgs(msg::MainInit());
-
-		const spn::FracI fracInterval(50000, 3);
-		spn::FracI frac(0,1);
-		Timepoint prevtime = Clock::now();
-		int skip = 0;
-		constexpr int MAX_SKIPFRAME = 3;
-		constexpr int DRAW_THRESHOLD_USEC = 2000;
-
-		using namespace std::chrono;
-		// ゲームの進行や更新タイミングを図って描画など
-		bool bLoop = true;
-		do {
-			if(!dth.isRunning()) {
-				// 何らかの原因で描画スレッドが終了していた時
-				try {
-					// 例外が投げられて終了したかをチェック
-					dth.getResult();
-				} catch (...) {
-					guiHandler->postArgs(msg::QuitReq());
-					Assert(Warn, false, "MainThread: draw thread was ended by throwing exception")
-					throw;
-				}
-				Assert(Warn, false, "MainThread: draw thread was ended unexpectedly")
-				break;
+		spn::Optional<DrawThread> opDth;
+		UPtr<GLWrap>	glw;
+		// Looper::atPanic
+		try {
+			SPGLContext ctx = GLContext::CreateContext(w, false),
+						ctxD;
+			if(MULTICONTEXT) {
+				ctxD = GLContext::CreateContext(w, true);
+				ctxD->makeCurrent();
+				ctx->makeCurrent(w);
+			} else {
+				ctx->makeCurrent();
+				std::swap(ctxD, ctx);
 			}
-			// 何かメッセージが来てたら処理する
-			while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
-				if(static_cast<msg::PauseReq*>(*m)) {
-					mgr_sound.pauseAllSound();
-					// ユーザーに通知(Pause)
-					mp->onPause();
-					std::stringstream buffer;	// サウンドデバイスデータ
-					for(;;) {
-						// DrawThreadがIdleになるまで待つ
-						while(dth.getInfo()->accum != getInfo()->accumDraw)
-							SDL_Delay(0);
+			glw.reset(new GLWrap(MULTICONTEXT));
+			UPtr<GLRes>			glrP(new GLRes());
+			UPtr<RWMgr>			rwP(new RWMgr());
+			UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
+			appPath->setFromText(mgr_rw.fromFile(pathfile, RWops::Read));
+			UPtr<FontFamily>	fontP(new FontFamily());
+			fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
+			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
+			UPtr<CameraMgr>		camP(new CameraMgr());
+			UPtr<PointerMgr>	pmP(new PointerMgr());
+			UPtr<InputMgr>		inpP(new InputMgr());
+			UPtr<ObjMgr>		objP(new ObjMgr());
+			UPtr<UpdMgr>		updP(new UpdMgr());
+			UPtr<SceneMgr>		scP(new SceneMgr());
+			UPtr<SoundMgr>		sndP(new SoundMgr(44100));
+			UPtr<UpdRep>		urep(new UpdRep());
+			UPtr<ObjRep>		orep(new ObjRep());
+			sndP->makeCurrent();
+			// 描画スレッドを先に初期化
+			opDth = spn::construct();
+			opDth->start(std::ref(getLooper()), std::move(ctxD), w, _dcr());
+			// 描画スレッドの初期化完了を待つ
+			while(auto m = getLooper()->wait()) {
+				if(static_cast<msg::DrawInit*>(*m))
+					break;
+			}
+			GLW.initializeMainThread();
 
-						// Resumeメッセージが来るまでwaitループ
-						OPMessage m = getLooper()->wait();
-						if(static_cast<msg::ResumeReq*>(*m)) {
-							mgr_sound.resumeAllSound();
-							// ユーザーに通知(Resume)
-							mp->onResume();
-							break;
-						} else if(static_cast<msg::StopReq*>(*m)) {
-							mp->onStop();
-							// OpenGLリソースの解放
-							mgr_gl.onDeviceLost();
-							GL.glFlush();
-							// サウンドデバイスのバックアップ
-							boost::archive::binary_oarchive oa(buffer);
-// 							oa << mgr_rw;
-//							mgr_rw.resetSerializeFlag();
- 							SoundMgr* sp = sndP.get();
- 							oa << sp;
-							sp->resetSerializeFlag();
-							sp->invalidate();
-							// サウンドを一旦全部停止させておく -> 復元した時に以前再生していたものは処理が継続される
- 							sndP.reset(nullptr);
-						}
-						else if(static_cast<msg::ReStartReq*>(*m)) {
-							// サウンドデバイスの復元
- 							boost::archive::binary_iarchive ia(buffer);
-//							ia >> mgr_rw;
- 							SoundMgr* sp = nullptr;
- 							ia >> sp;
- 							sndP.reset(sp);
- 							sndP->makeCurrent();
-							std::cout << "------------";
-							sndP->update();
-							// OpenGLリソースの再確保
-							mgr_gl.onDeviceReset();
-							GL.glFlush();
-							mp->onReStart();
+			// 続いてメインスレッドを初期化
+			UPMainProc mp(_mcr(w));
+			using UPHandler = UPtr<Handler>;
+			UPHandler guiHandler(new Handler(guiLooper, [](){
+				SDL_Event e;
+				e.type = EVID_SIGNAL;
+				SDL_PushEvent(&e);
+			}));
+
+			UPHandler drawHandler(new Handler(opDth->getLooper()));
+			guiHandler->postArgs(msg::MainInit());
+
+			const spn::FracI fracInterval(50000, 3);
+			spn::FracI frac(0,1);
+			Timepoint prevtime = Clock::now();
+			int skip = 0;
+			constexpr int MAX_SKIPFRAME = 3;
+			constexpr int DRAW_THRESHOLD_USEC = 2000;
+
+			using namespace std::chrono;
+			// ゲームの進行や更新タイミングを図って描画など
+			bool bLoop = true;
+			do {
+				if(!opDth->isRunning()) {
+					// 何らかの原因で描画スレッドが終了していた時
+					try {
+						// 例外が投げられて終了したかをチェック
+						opDth->getResult();
+					} catch (...) {
+						guiHandler->postArgs(msg::QuitReq());
+						Assert(Warn, false, "MainThread: draw thread was ended by throwing exception")
+						throw;
+					}
+					Assert(Warn, false, "MainThread: draw thread was ended unexpectedly")
+					break;
+				}
+				// 何かメッセージが来てたら処理する
+				while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
+					if(static_cast<msg::PauseReq*>(*m)) {
+						mgr_sound.pauseAllSound();
+						// ユーザーに通知(Pause)
+						mp->onPause();
+						std::stringstream buffer;	// サウンドデバイスデータ
+						for(;;) {
+							// DrawThreadがIdleになるまで待つ
+							while(opDth->getInfo()->accum != getInfo()->accumDraw)
+								SDL_Delay(0);
+
+							// Resumeメッセージが来るまでwaitループ
+							OPMessage m = getLooper()->wait();
+							if(static_cast<msg::ResumeReq*>(*m)) {
+								mgr_sound.resumeAllSound();
+								// ユーザーに通知(Resume)
+								mp->onResume();
+								break;
+							} else if(static_cast<msg::StopReq*>(*m)) {
+								mp->onStop();
+								// OpenGLリソースの解放
+								mgr_gl.onDeviceLost();
+								GL.glFlush();
+								// サウンドデバイスのバックアップ
+								boost::archive::binary_oarchive oa(buffer);
+	// 							oa << mgr_rw;
+	//							mgr_rw.resetSerializeFlag();
+								SoundMgr* sp = sndP.get();
+								oa << sp;
+								sp->resetSerializeFlag();
+								sp->invalidate();
+								// サウンドを一旦全部停止させておく -> 復元した時に以前再生していたものは処理が継続される
+								sndP.reset(nullptr);
+							}
+							else if(static_cast<msg::ReStartReq*>(*m)) {
+								// サウンドデバイスの復元
+								boost::archive::binary_iarchive ia(buffer);
+	//							ia >> mgr_rw;
+								SoundMgr* sp = nullptr;
+								ia >> sp;
+								sndP.reset(sp);
+								sndP->makeCurrent();
+								std::cout << "------------";
+								sndP->update();
+								// OpenGLリソースの再確保
+								mgr_gl.onDeviceReset();
+								GL.glFlush();
+								mp->onReStart();
+							}
 						}
 					}
 				}
-			}
-			// 次のフレーム開始を待つ
-			auto ntp = prevtime + microseconds(16666);
-			auto tp = Clock::now();
-			if(ntp <= tp)
-				ntp = tp;
-			else {
-				auto dur = ntp - tp;
-				if(dur >= microseconds(1000)) {
-					// 時間に余裕があるならスリープをかける
-					SDLEC_P(Warn, SDL_Delay, duration_cast<milliseconds>(dur).count() - 1);
+				// 次のフレーム開始を待つ
+				auto ntp = prevtime + microseconds(16666);
+				auto tp = Clock::now();
+				if(ntp <= tp)
+					ntp = tp;
+				else {
+					auto dur = ntp - tp;
+					if(dur >= microseconds(1000)) {
+						// 時間に余裕があるならスリープをかける
+						SDLEC_P(Warn, SDL_Delay, duration_cast<milliseconds>(dur).count() - 1);
+					}
+					// スピンウェイト
+					while(Clock::now() < ntp);
 				}
-				// スピンウェイト
-				while(Clock::now() < ntp);
-			}
-			prevtime = ntp;
+				prevtime = ntp;
 
-			// ゲーム進行
-			++getInfo()->accumUpd;
-			mgr_input.update();
-			if(!mp->runU()) {
-				std::cout << "MainLoop END" << std::endl;
-				break;
-			}
+				// ゲーム進行
+				++getInfo()->accumUpd;
+				mgr_input.update();
+				if(!mp->runU()) {
+					std::cout << "MainLoop END" << std::endl;
+					break;
+				}
 
-			// 時間が残っていれば描画
-			// 最大スキップフレームを超過してたら必ず描画
-			auto dur = Clock::now() - tp;
-			if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
-				skip = 0;
-				if(dth.getInfo()->accum == getInfo()->accumDraw)
-					drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw));
-			} else
-				++skip;
-		} while(bLoop && !isInterrupted());
-		while(mgr_scene.getTop().valid()) {
-			mgr_scene.setPopScene(1);
-			mgr_scene.onUpdate();
+				// 時間が残っていれば描画
+				// 最大スキップフレームを超過してたら必ず描画
+				auto dur = Clock::now() - tp;
+				if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
+					skip = 0;
+					if(opDth->getInfo()->accum == getInfo()->accumDraw)
+						drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw));
+				} else
+					++skip;
+			} while(bLoop && !isInterrupted());
+			while(mgr_scene.getTop().valid()) {
+				mgr_scene.setPopScene(1);
+				mgr_scene.onUpdate();
+			}
+			// DrawThreadがIdleになるまで待つ
+			while(opDth->getInfo()->accum != getInfo()->accumDraw)
+				SDL_Delay(0);
+
+			// 描画スレッドを後片付けフェーズへ移行
+			drawHandler->postArgs(msg::QuitReq());
+
+			mp.reset();
+
+			orep.reset();
+			urep.reset();
+			sndP.reset();
+			scP.reset();
+			updP.reset();
+			objP.reset();
+			inpP.reset();
+			camP.reset();
+			fgenP.reset();
+			fontP.reset();
+			appPath.reset();
+			rwP.reset();
+			glrP.reset();
+		} catch (const std::exception& e) {
+			LogOutput("MainThread: exception\n%s", e.what());
+		} catch (...) {
+			LogOutput("MainThread: unknown exception");
 		}
-		// DrawThreadがIdleになるまで待つ
-		while(dth.getInfo()->accum != getInfo()->accumDraw)
-			SDL_Delay(0);
-
-		// 描画スレッドを後片付けフェーズへ移行
-		drawHandler->postArgs(msg::QuitReq());
-
-		mp.reset();
-
-		orep.reset();
-		urep.reset();
-		sndP.reset();
-		scP.reset();
-		updP.reset();
-		objP.reset();
-		inpP.reset();
-		camP.reset();
-		fgenP.reset();
-		fontP.reset();
-		appPath.reset();
-		rwP.reset();
-		glrP.reset();
-
 		// 描画スレッドの終了を待つ
-		dth.interrupt();
-		drawHandler->postArgs(msg::QuitReq());
-		dth.join();
-		guiHandler->postArgs(msg::QuitReq());
-
-		glw.reset();
-		std::cout << "MainThread ended" << std::endl;
+		if(opDth) {
+			opDth->interrupt();
+			opDth->getLooper()->pushEvent(Message(Seconds(0), msg::QuitReq()));
+			opDth->join();
+			guiLooper->pushEvent(Message(Seconds(0), msg::QuitReq()));
+		}
+		LogOutput("MainThread ended");
 	}
 
 	void GameLoop::_procWindowEvent(SDL_Event& e) {
@@ -368,6 +376,8 @@ namespace rs {
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
 			if(static_cast<msg::MainInit*>(*msg))
+				break;
+			else if(static_cast<msg::QuitReq*>(*msg))
 				break;
 		}
 		_handler = Handler(mth.getLooper());
