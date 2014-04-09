@@ -80,7 +80,7 @@ namespace rs {
 	// ------------------------- GLE_ShaderError -------------------------
 	const char* GLE_ShaderError::GetErrorName() { return "compile shader failed"; }
 	GLE_ShaderError::GLE_ShaderError(const std::string& src, GLuint id):
-		GLE_ShProgBase(&IGL::glGetShaderiv, &IGL::glGetShaderInfoLog, spn::AddLineNumber(src, true, true) + GetErrorName(), id)
+		GLE_ShProgBase(&IGL::glGetShaderiv, &IGL::glGetShaderInfoLog, spn::AddLineNumber(src, 1, 1, true, true) + GetErrorName(), id)
 	{}
 	// ------------------------- GLE_ProgramError -------------------------
 	const char* GLE_ProgramError::GetErrorName() { return "link program failed"; }
