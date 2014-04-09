@@ -51,9 +51,9 @@ namespace rs {
 	// OpenGL関数ロード
 	// FuncNameで読み込めなければFuncNameARBとFuncNameEXTで試す
 	#define GLDEFINE(...)
-	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
+ 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		GLWrap::name = nullptr; \
-		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
+ 		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
 		if(GLWrap::name == nullptr) GLWrap::name = (typename GLWrap::t_##name)GLGETPROC(BOOST_PP_CAT(name,ARB)); \
 		if(GLWrap::name == nullptr) GLWrap::name = (typename GLWrap::t_##name)GLGETPROC(BOOST_PP_CAT(name,EXT)); \
 		Assert(Warn, GLWrap::name != nullptr, "could not load OpenGL function: %1%", #name)

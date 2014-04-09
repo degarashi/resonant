@@ -79,20 +79,8 @@ namespace rs {
 	}
 	// ------------------------- GLE_ShaderError -------------------------
 	const char* GLE_ShaderError::GetErrorName() { return "compile shader failed"; }
-	namespace {
-		const static boost::regex c_mainfunc("^\\s*?void\\s+?main\\("),
-									c_prep("^\\s*?#");
-		std::string MakeErrorMessage(const std::string& src) {
-			// プリプロセッサの最後の出現位置か、main関数の位置のどちらか先頭に近い方をソースの開始位置とする
-			auto res_prep = spn::RegexFindLast(src, c_prep);
-			auto res_main = spn::RegexFindFirst(src, c_mainfunc);
-			if(res_prep && res_main)
-				return spn::AddLineNumber(src, std::max(-res_prep->first-1, -res_main->first), 0, true, true);
-			return src;
-		}
-	}
 	GLE_ShaderError::GLE_ShaderError(const std::string& src, GLuint id):
-		GLE_ShProgBase(&IGL::glGetShaderiv, &IGL::glGetShaderInfoLog, MakeErrorMessage(src) + GetErrorName(), id)
+		GLE_ShProgBase(&IGL::glGetShaderiv, &IGL::glGetShaderInfoLog, spn::AddLineNumber(src, true, true) + GetErrorName(), id)
 	{}
 	// ------------------------- GLE_ProgramError -------------------------
 	const char* GLE_ProgramError::GetErrorName() { return "link program failed"; }
