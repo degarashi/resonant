@@ -5,6 +5,11 @@
 #include "glresource.hpp"
 #include "event.hpp"
 
+#if !defined(WIN32) && !defined(ANDROID)
+	#include <GL/glx.h>
+	#include "glxext.h"
+#endif
+
 namespace rs {
 	namespace {
 		bool g_bglfuncInit = false;

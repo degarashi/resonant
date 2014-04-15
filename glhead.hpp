@@ -10,20 +10,10 @@
 	#include <GL/gl.h>
 #endif
 
-#if !defined(WIN32) && !defined(ANDROID)
-	#include <GL/glx.h>
-	#undef Convex
-	#include "glext.h"
-	#include "glxext.h"
-#endif
 #if defined(WIN32)
 	#include <GL/glcorearb.h>
-	#include "glext.h"
 #endif
-
-#ifndef ANDROID
-	#include "glext.h"
-#endif
+#include "glext.h"
 
 namespace rs {
 	struct IGL {
