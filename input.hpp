@@ -186,7 +186,7 @@ namespace rs {
 			};
 			class ActMgr : public spn::ResMgrN<Action, ActMgr> {} _act;
 		public:
-			using HLAct = ActMgr::AnotherLHandle<Action>;
+			using HLAct = ActMgr::AnotherLHandle<Action, true>;
 			using HAct = ActMgr::AnotherSHandle<Action>;
 		private:
 			using ActSet = std::unordered_set<HLAct>;

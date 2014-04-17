@@ -158,14 +158,14 @@ namespace rs {
 #undef DEF_LCV
 #undef DEF_LCV0
 #undef DERIVED_LCV
-	template <class T>
-	struct LCV<spn::HdlLock<T>> {
-		using SH = decltype(std::declval<spn::HdlLock<T>>().get());
-		void operator()(lua_State* ls, const spn::HdlLock<T>& t) const {
+	template <class T, bool D>
+	struct LCV<spn::HdlLock<T,D>> {
+		using SH = decltype(std::declval<spn::HdlLock<T,D>>().get());
+		void operator()(lua_State* ls, const spn::HdlLock<T,D>& t) const {
 			LCV<SH>()(ls, t.get()); }
-		spn::HdlLock<T> operator()(int idx, lua_State* ls) const {
+		spn::HdlLock<T,D> operator()(int idx, lua_State* ls) const {
 			return LCV<SH>()(idx, ls); }
-		std::ostream& operator()(std::ostream& os, const spn::HdlLock<T>& t) const {
+		std::ostream& operator()(std::ostream& os, const spn::HdlLock<T,D>& t) const {
 			return LCV<SH>()(os, t.get()); }
 		LuaType operator()() const {
 			return LCV<SH>()(); }

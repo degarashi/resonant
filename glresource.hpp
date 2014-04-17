@@ -113,7 +113,7 @@ namespace rs {
 		std::unique_ptr<GLFBufferTmp>	_tmpFb;
 		//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
 		/*! デバッグで色を変えたりしてチェックできる */
-		std::unique_ptr<AnotherLHandle<UPTexture>>	_hlEmptyTex;
+		std::unique_ptr<AnotherLHandle<UPTexture, true>>	_hlEmptyTex;
 		//! DeviceLost/Resetの状態管理
 		bool	_bInit;
 		//! デストラクタ内の時はtrue
@@ -138,7 +138,7 @@ namespace rs {
 			void acquire();
 
 			// ------------ Texture ------------
-			using HLTex = AnotherLHandle<UPTexture>;
+			using HLTex = AnotherLHandle<UPTexture, true>;
 			//! ファイルからテクスチャを読み込む
 			/*! 圧縮テクスチャはファイルヘッダで判定
 				\param[in] fmt OpenGLの内部フォーマット(not ファイルのフォーマット)<br>
@@ -164,10 +164,10 @@ namespace rs {
 
 			// ------------ Shader ------------
 			//! 文字列からシェーダーを作成
-			AnotherLHandle<UPShader> makeShader(GLuint flag, const std::string& src);
+			AnotherLHandle<UPShader,true> makeShader(GLuint flag, const std::string& src);
 
 			using HSh = AnotherSHandle<UPShader>;
-			using HLProg = AnotherLHandle<UPProg>;
+			using HLProg = AnotherLHandle<UPProg,true>;
 			//! 複数のシェーダーからプログラムを作成 (vertex, geometry, pixel)
 			HLProg makeProgram(HSh vsh, HSh gsh, HSh psh);
 			//! 複数のシェーダーからプログラムを作成 (vertex, pixel)
@@ -175,11 +175,11 @@ namespace rs {
 
 			// ------------ Buffer ------------
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect> loadEffect(const spn::URI& uri);
+			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri);
 			//! 頂点バッファの確保
-			AnotherLHandle<UPVBuffer> makeVBuffer(GLuint dtype);
+			AnotherLHandle<UPVBuffer,true> makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
-			AnotherLHandle<UPIBuffer> makeIBuffer(GLuint dtype);
+			AnotherLHandle<UPIBuffer,true> makeIBuffer(GLuint dtype);
 
 			AnotherSHandle<UPTexture> getEmptyTexture() const;
 			LHdl _common(const std::string& key, std::function<UPResource()> cb);

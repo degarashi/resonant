@@ -905,7 +905,7 @@ namespace rs {
 		public:
 			UriHandlerV& getHandler();
 			using base_type = spn::ResMgrA<RWops, RWMgr>;
-			using LHdl = AnotherLHandle<RWops>;
+			using LHdl = AnotherLHandle<RWops, true>;
 
 			// ---- RWopsへ中継するだけの関数 ----
 			//! 任意のURIからハンドル作成(ReadOnly)

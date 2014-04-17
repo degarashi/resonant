@@ -8,7 +8,7 @@ namespace rs {
 	class WHandleMap {
 		using RMap = std::unordered_map<KEY,WHDL>;
 		RMap	_resource;
-		using LHdl = spn::HdlLock<typename WHDL::SHdl>;
+		using LHdl = spn::HdlLock<typename WHDL::SHdl, true>;
 
 		public:
 			void setObj(const KEY& key, WHDL wh) {
@@ -37,7 +37,7 @@ namespace rs {
 	//! リソースハンドルにKEYをつけて共有する (強参照)
 	template <class KEY, class SHDL>
 	class SHandleMap {
-		using RMap = std::unordered_map<KEY, spn::HdlLock<SHDL>>;
+		using RMap = std::unordered_map<KEY, spn::HdlLock<SHDL,true>>;
 		RMap	_resource;
 
 		public:
