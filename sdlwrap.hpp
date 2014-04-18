@@ -18,6 +18,7 @@
 #include <boost/serialization/access.hpp>
 #include <boost/variant.hpp>
 #include "spinner/ziptree.hpp"
+#include "handle.hpp"
 
 #define SDLEC_Base(act, ...)	::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #define SDLEC_Base0(act)		::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
@@ -887,8 +888,6 @@ namespace rs {
 			//! Type::Vector時のみ有効
 			std::pair<void*, size_t> getMemoryPtr();
 	};
-	class RWMgr;
-	DEF_AHANDLE(RWMgr, RW, RWops, RWops)
 	struct UriHandler : spn::IURIOpener {
 		virtual HLRW openURI_RW(const spn::URI& uri, int access) = 0;
 	};
@@ -917,7 +916,6 @@ namespace rs {
 			LHdl fromConstMem(const void* p, int size, typename RWops::Callback* cb=nullptr);
 			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
 	};
-	DEF_AHANDLE(RWMgr, RW, RWops, RWops)
 	//! ファイルシステムに置かれたZipからのファイル読み込み
 	class UriH_PackedZip : public UriHandler {
 		spn::UP_Adapt		_stream;

@@ -6,6 +6,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/export.hpp>
 #include "spinner/serialization/chrono.hpp"
+#include "handle.hpp"
 
 namespace rs {
 	Duration CalcTimeLength(int word_size, int ch, int hz, size_t buffLen);
@@ -38,9 +39,7 @@ namespace rs {
 			const AFormatF& getFormat() const { return _format; }
 			virtual void invalidate() {}
 	};
-	using UPABuff = std::unique_ptr<ABuffer>;
 	class ABufMgr : public spn::ResMgrA<UPABuff, ABufMgr> {};
-	DEF_AHANDLE(ABufMgr, Ab, UPABuff, UPABuff)
 
 	//! 固有サンプルデータソース
 	class ABufSub {
@@ -369,7 +368,6 @@ namespace rs {
 			void invalidate();
 	};
 	class SSrcMgr : public spn::ResMgrA<ASource, SSrcMgr> {};
-	DEF_AHANDLE(SSrcMgr, Ss, ASource, ASource)
 
 	class SGroupMgr;
 	//! ASourceをひとまとめにして管理
@@ -406,7 +404,6 @@ namespace rs {
 			void invalidate();
 	};
 	class SGroupMgr : public spn::ResMgrA<AGroup, SGroupMgr> {};
-	DEF_AHANDLE(SGroupMgr, Sg, AGroup, AGroup)
 
 	#define mgr_sound reinterpret_cast<::rs::SoundMgr&>(::rs::SoundMgr::_ref())
 	class SoundMgr : public SoundMgrDep {

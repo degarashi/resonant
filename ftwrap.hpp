@@ -7,6 +7,7 @@
 #include "spinner/resmgr.hpp"
 #include "sdlwrap.hpp"
 #include "spinner/error.hpp"
+#include "handle.hpp"
 
 #define FTEC(act, func, ...)	::spn::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::FTError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
 #ifdef DEBUG
@@ -80,5 +81,4 @@ namespace rs {
 			//! メモリまたはファイルシステム上のフォントファイルから読み込む
 			LHdl newFace(rs::HRW hRW, int index);
 	};
-	DEF_AHANDLE(FTLibrary, FT, FTFace, FTFace)
 }

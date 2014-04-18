@@ -2,6 +2,7 @@
 #include "spinner/vector.hpp"
 #include "spinner/resmgr.hpp"
 #include <set>
+#include "handle.hpp"
 
 namespace rs {
 	constexpr int 	InputRange = 1024,
@@ -30,7 +31,6 @@ namespace rs {
 
 	#define mgr_pointer ::rs::PointerMgr::_ref()
 	class PointerMgr : public spn::ResMgrA<TPos2D, PointerMgr> {};
-	DEF_AHANDLE(PointerMgr, Ptr, TPos2D, TPos2D)
 	using PtrNS = spn::noseq_list<HLPtr>;
 
 	struct IRecvPointer {
@@ -86,10 +86,8 @@ namespace rs {
 			// 1つ以上の座標が検出されたら何れかを返す
 			virtual WPtr getPointer() const { return WPtr(); }
 	};
-	using UPInput = std::unique_ptr<IInput>;
 
 	#define mgr_inputb (::rs::InputMgrBase::_ref())
 	#define mgr_input reinterpret_cast<::rs::InputMgr&>(::rs::InputMgrBase::_ref())
 	class InputMgrBase : public spn::ResMgrA<UPInput, InputMgrBase> {};
-	DEF_AHANDLE(InputMgrBase, Input, UPInput, UPInput)
 }

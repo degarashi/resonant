@@ -5,6 +5,7 @@
 #include "spinner/resmgr.hpp"
 #include "spinner/alignedalloc.hpp"
 #include "boomstick/geom3D.hpp"
+#include "handle.hpp"
 
 namespace rs {
 	using spn::AMat43; using spn::AMat44;
@@ -93,5 +94,4 @@ namespace rs {
 	};
 	#define mgr_cam (::rs::CameraMgr::_ref())
 	class CameraMgr : public spn::ResMgrA<CamData, CameraMgr, spn::Alloc16> {};
-	DEF_AHANDLE_PROP(CameraMgr, Cam, CamData, CamData, spn::Alloc16)
 }

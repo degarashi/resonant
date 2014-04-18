@@ -5,6 +5,7 @@
 #include <list>
 #include "clock.hpp"
 #include "luaw.hpp"
+#include "handle.hpp"
 
 namespace rs {
 	using Priority = uint32_t;
@@ -20,8 +21,6 @@ namespace rs {
 	using GMessageStr = std::string;
 
 	#define mgr_gobj (::rs::ObjMgr::_ref())
-	class Object;
-	using UPObject = std::unique_ptr<Object, void (*)(void*)>;	// Alignedメモリ対応の為 デリータ指定
 	//! アクティブゲームオブジェクトの管理
 	class ObjMgr : public spn::ResMgrA<UPObject, ObjMgr> {
 		using base = spn::ResMgrA<UPObject, ObjMgr>;
@@ -51,14 +50,10 @@ namespace rs {
 				return _makeObj<T>(typename spn::NType<alignof(T), 8>::great(), std::forward<Ts>(ar)...);
 			}
 	};
-	DEF_AHANDLE(ObjMgr, Gbj, UPObject, UPObject)
 
 	#define mgr_upd (::rs::UpdMgr::_ref())
-	class UpdChild;
-	using UPUpdCh = std::unique_ptr<UpdChild>;
 	//! アップデートグループの管理
 	class UpdMgr : public spn::ResMgrA<UPUpdCh, UpdMgr> {};
-	DEF_AHANDLE(UpdMgr, Upd, UPUpdCh, UPUpdCh)
 
 	// スクリプトからメッセージ文字列を受け取ったらGMessage::GetMsgID()
 	class GMessage {

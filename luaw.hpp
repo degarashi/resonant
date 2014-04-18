@@ -12,12 +12,9 @@
 #include <vector>
 #include "spinner/resmgr.hpp"
 #include "luaimport.hpp"
+#include "handle.hpp"
 
 namespace rs {
-	class RWops;
-	class RWMgr;
-	DEF_AHANDLE(rs::RWMgr, RW, rs::RWops, rs::RWops)
-
 	struct LuaNil {
 		bool operator == (LuaNil) const;
 	};
