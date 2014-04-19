@@ -5,6 +5,45 @@
 #include "spinner/alignedalloc.hpp"
 
 namespace rs {
+	struct IGLResource;
+	class GLRes;
+	using UPResource = std::unique_ptr<IGLResource>;
+	class GLEffect;
+	using UPEffect = std::unique_ptr<GLEffect>;
+	class VDecl;
+	using SPVDecl = std::shared_ptr<VDecl>;
+	class TPStructR;
+	class GLBuffer;
+	using UPBuffer = std::unique_ptr<GLBuffer>;
+	class GLVBuffer;
+	using UPVBuffer = std::unique_ptr<GLVBuffer>;
+	class GLIBuffer;
+	using UPIBuffer = std::unique_ptr<GLIBuffer>;
+	class IGLTexture;
+	using UPTexture = std::unique_ptr<IGLTexture>;
+	class GLProgram;
+	using UPProg = std::unique_ptr<GLProgram>;
+	class GLShader;
+	using UPShader = std::unique_ptr<GLShader>;
+	class GLFBuffer;
+	using UPFBuffer = std::unique_ptr<GLFBuffer>;
+	class GLRBuffer;
+	using UPRBuffer = std::unique_ptr<GLRBuffer>;
+	DEF_NHANDLE_PROP(GLRes, Res, UPResource, UPResource, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Tex, UPResource, UPTexture, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Vb, UPResource, UPVBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Ib, UPResource, UPIBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Buff, UPResource, UPBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Prog, UPResource, UPProg, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Sh, UPResource, UPShader, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Fx, UPResource, UPEffect, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Fb, UPResource, UPFBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Rb, UPResource, UPRBuffer, std::allocator, std::string)
+
+	class FontGen;
+	class TextObj;
+	DEF_NHANDLE_PROP(FontGen, Text, TextObj, TextObj, std::allocator, std::u32string)
+
 	class CameraMgr;
 	class CamData;
 	DEF_AHANDLE_PROP(CameraMgr, Cam, CamData, CamData, spn::Alloc16)

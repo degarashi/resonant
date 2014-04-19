@@ -131,5 +131,4 @@ namespace rs {
 			// デバイスロストで処理が必要なのはテクスチャハンドルだけなので、
 			// onDeviceLostやonDeviceResetは特に必要ない
 	};
-	DEF_NHANDLE_PROP(FontGen, Text, TextObj, TextObj, std::allocator, std::u32string)
 }

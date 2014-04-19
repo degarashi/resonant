@@ -187,16 +187,6 @@ namespace rs {
 			// --- from ResMgrBase ---
 			spn::LHandle loadResource(spn::AdaptStream& ast, const spn::URI& uri);
 	};
-	DEF_NHANDLE_PROP(GLRes, Res, UPResource, UPResource, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Tex, UPResource, UPTexture, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Vb, UPResource, UPVBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Ib, UPResource, UPIBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Buff, UPResource, UPBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Prog, UPResource, UPProg, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Sh, UPResource, UPShader, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Fx, UPResource, UPEffect, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Fb, UPResource, UPFBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Rb, UPResource, UPRBuffer, std::allocator, std::string)
 
 	using Priority = uint32_t;
 	using Priority64 = uint64_t;
