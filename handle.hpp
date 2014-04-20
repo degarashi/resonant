@@ -3,8 +3,10 @@
 #include <memory>
 #include "spinner/misc.hpp"
 #include "spinner/alignedalloc.hpp"
+#include "spinner/resmgr.hpp"
 
 namespace rs {
+	class GLWrap;
 	struct IGLResource;
 	class GLRes;
 	using UPResource = std::unique_ptr<IGLResource>;
