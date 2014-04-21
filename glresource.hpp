@@ -312,10 +312,35 @@ namespace rs {
 		};
 	}
 
+	template <class T>
+	struct is_vector { constexpr static int value = 0; };
+	template <class T>
+	struct is_vector<std::vector<T>> { constexpr static int value = 1; };
 	//! OpenGLバッファクラス
 	class GLBuffer : public IGLResource, public GLBufferCore {
+		using SPBuff = std::shared_ptr<void>;
 		PreFunc			_preFunc;
-		spn::ByteBuff	_buff;			//!< 再構築の際に必要となるデータ実体
+		SPBuff			_buff;			//!< 再構築の際に必要となるデータ実体(std::vector<T>)
+		void*			_pBuffer;		//!< bufferの先頭ポインタ
+		GLuint			_buffSize;		//!< bufferのバイトサイズ
+		void	_initData();
+
+		template <class T>
+		using Raw = typename std::decay<T>::type;
+		template <class T>
+		using ChkIfVector = typename std::enable_if<is_vector<Raw<T>>::value>::type;
+		template <class T, class = ChkIfVector<T>>
+		void _setVec(T&& src, GLuint stride) {
+			using RawType = Raw<T>;
+			auto fnDeleter = [](void* ptr) {
+				auto* rt = reinterpret_cast<RawType*>(ptr);
+				delete rt;
+			};
+			_stride = stride;
+			_pBuffer = src.data();
+			_buffSize = src.size() * stride;
+			_buff = SPBuff(static_cast<void*>(new RawType(std::forward<T>(src))), fnDeleter);
+		}
 
 		public:
 			using GLBufferCore::GLBufferCore;
@@ -323,7 +348,11 @@ namespace rs {
 
 			// 全域を書き換え
 			void initData(const void* src, size_t nElem, GLuint stride);
-			void initData(spn::ByteBuff&& buff, GLuint stride);
+			template <class T, class = ChkIfVector<T>>
+			void initData(T&& src, GLuint stride=sizeof(T::value_type)) {
+				_setVec(std::forward<T>(src), stride);
+				_initData();
+			}
 			// 部分的に書き換え
 			void updateData(const void* src, size_t nElem, GLuint offset);
 

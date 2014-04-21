@@ -39,34 +39,32 @@ namespace rs {
 	void GLBuffer::onDeviceReset() {
 		if(_idBuff == 0) {
 			GL.glGenBuffers(1, &_idBuff);
-			if(!_buff.empty()) {
+			if(_buff) {
 				auto u = use();
-				GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
+				GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 			}
 		}
 	}
 	GLBuffer::~GLBuffer() {
 		onDeviceLost();
 	}
-	void GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
-		_stride = stride;
-		_buff.resize(nElem*_stride);
-		std::memcpy(&_buff[0], src, nElem*_stride);
+	void GLBuffer::_initData() {
 		_preFunc = [=]() {
-			GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
+			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 		};
 	}
-	void GLBuffer::initData(spn::ByteBuff&& buff, GLuint stride) {
-		_stride = stride;
-		_buff.swap(buff);
-		_preFunc = [=]() {
-			GL.glBufferData(_buffType, _buff.size(), &_buff[0], _drawType);
-		};
+	void GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
+		size_t sz = nElem*stride;
+		auto* b = new spn::ByteBuff(sz);
+		std::memcpy(b->data(), src, sz);
+		initData(std::move(*b), stride);
 	}
 	void GLBuffer::updateData(const void* src, size_t nElem, GLuint offset) {
-		std::memcpy(&_buff[0]+offset, src, nElem*_stride);
+		size_t szCopy = nElem * _stride,
+				ofs = offset*_stride;
+		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
 		_preFunc = [=]() {
-			GL.glBufferSubData(_buffType, offset*_stride, nElem*_stride, src);
+			GL.glBufferSubData(_buffType, ofs, szCopy, src);
 		};
 	}
 	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
