@@ -299,14 +299,13 @@ namespace rs {
 
 			draw::Task		_task;
 			Priority		_sysP;
-			using OPID = spn::Optional<int>;
 			struct {
 				// passをセットしたタイミングでProgramを検索し、InitTagにセット
 				using OPProg = spn::Optional<GLuint>;
 				using OPInitTag = spn::Optional<draw::InitTag>;
 				using OPNormalTag = spn::Optional<draw::NormalTag>;
 
-				OPID			tech,
+				OPGLint			tech,
 								pass;
 				TPRef			tps;		//!< 現在使用中のTech
 				UniMap			uniMap;		//!< 現在設定中のUniform
@@ -352,10 +351,11 @@ namespace rs {
 			//! システムセマンティクス(3D)
 			//! システムセマンティクス(Both)
 
-			int getTechID(const std::string& tech) const;
-			int getPassID(const std::string& pass) const;
-			OPID getCurTechID() const;
-			OPID getCurPassID() const;
+			//! Technique
+			OPGLint getTechID(const std::string& tech) const;
+			OPGLint getPassID(const std::string& pass) const;
+			OPGLint getCurTechID() const;
+			OPGLint getCurPassID() const;
 			//! Tech切替時に初期値をセットするか
 			void setTechnique(int id, bool bReset);
 			//! Pass指定
@@ -366,7 +366,7 @@ namespace rs {
 			void setVStream(HVb vb, int n);
 			void setIStream(HIb ib);
 			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
-			GLint getUniformID(const std::string& name) const;
+			OPGLint getUniformID(const std::string& name) const;
 
 			template <class T>
 			void setUniform(GLint id, const T& t) {

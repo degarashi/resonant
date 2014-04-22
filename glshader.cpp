@@ -56,9 +56,9 @@ namespace rs {
 	// OpenGL関数ロード
 	// FuncNameで読み込めなければFuncNameARBとFuncNameEXTで試す
 	#define GLDEFINE(...)
- 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
+	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		GLWrap::name = nullptr; \
- 		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
+		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
 		if(GLWrap::name == nullptr) GLWrap::name = (typename GLWrap::t_##name)GLGETPROC(BOOST_PP_CAT(name,ARB)); \
 		if(GLWrap::name == nullptr) GLWrap::name = (typename GLWrap::t_##name)GLGETPROC(BOOST_PP_CAT(name,EXT)); \
 		Assert(Warn, GLWrap::name != nullptr, "could not load OpenGL function: %1%", #name)
@@ -187,24 +187,18 @@ namespace rs {
 	const HLSh& GLProgram::getShader(ShType type) const {
 		return _shader[(int)type];
 	}
-	int GLProgram::getUniformID(const std::string& name) const {
-		GLint id = getUniformIDNc(name);
-		AssertT(Trap, id>=0, (GLE_ParamNotFound)(const std::string&), name)
-		return id;
+	OPGLint GLProgram::getUniformID(const std::string& name) const {
+		GLint id = GL.glGetUniformLocation(getProgramID(), name.c_str());
+		AssertTP(Warn, id>=0, (GLE_ParamNotFound)(const std::string&), name)
+		return id>=0 ? OPGLint(id) : OPGLint(spn::none);
 	}
-	int GLProgram::getUniformIDNc(const std::string& name) const {
-		return GL.glGetUniformLocation(getProgramID(), name.c_str());
-	}
-	int GLProgram::getAttribID(const std::string& name) const {
-		GLint id = getAttribIDNc(name);
-		AssertT(Trap, id>=0, (GLE_ParamNotFound)(const std::string&), name)
-		return id;
+	OPGLint GLProgram::getAttribID(const std::string& name) const {
+		GLint id = GL.glGetAttribLocation(getProgramID(), name.c_str());
+		AssertT(Warn, id>=0, (GLE_ParamNotFound)(const std::string&), name)
+		return id>=0 ? OPGLint(id) : OPGLint(spn::none);
 	}
 	GLuint GLProgram::getProgramID() const {
 		return _idProg;
-	}
-	int GLProgram::getAttribIDNc(const std::string& name) const {
-		return GL.glGetAttribLocation(getProgramID(), name.c_str());
 	}
 	void GLProgram::use() const {
 		GL.glUseProgram(getProgramID());

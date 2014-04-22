@@ -63,6 +63,12 @@ namespace rs {
 			}
 	};
 
+	using OPGLboolean = spn::Optional<GLboolean>;
+	using OPGLint = spn::Optional<GLint>;
+	using OPGLuint = spn::Optional<GLuint>;
+	using OPGLfloat = spn::Optional<GLfloat>;
+	using OPGLdouble = spn::Optional<GLdouble>;
+
 	// ------------------ GL例外クラス ------------------
 	using GLGetIV = decltype(&IGL::glGetShaderiv);
 	using GLInfoFunc = decltype(&IGL::glGetShaderInfoLog);
@@ -394,10 +400,8 @@ namespace rs {
 			void onDeviceReset() override;
 			draw::Program getDrawToken(IPreFunc& pf, HRes hRes) const;
 			const HLSh& getShader(ShType type) const;
-			int getUniformID(const std::string& name) const;
-			int getUniformIDNc(const std::string& name) const;
-			int getAttribID(const std::string& name) const;
-			int getAttribIDNc(const std::string& name) const;
+			OPGLint getUniformID(const std::string& name) const;
+			OPGLint getAttribID(const std::string& name) const;
 			GLuint getProgramID() const;
 			void use() const;
 	};

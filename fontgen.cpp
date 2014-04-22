@@ -167,7 +167,7 @@ namespace rs {
 	const SPString& TextObj::getFaceName() const { return _faceName; }
 	void TextObj::draw(GLEffect* gle) {
 		gle->setVDecl(cs_vDecl);
-		GLint id = gle->getUniformID("tDiffuse");
+		GLint id = *gle->getUniformID("tDiffuse");
 		for(auto& ds : _drawSet) {
 			gle->setUniform(id, HLTex(ds.hTex));
 			gle->setVStream(ds.hlVb.get(), 0);

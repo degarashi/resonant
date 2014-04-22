@@ -468,7 +468,6 @@ namespace rs {
 			cur.bInit = true;
 			auto& tps = *cur.tps;
 			cur.init._opProgram = spn::construct(tps.getProgram().get());
-			Assert(Trap, cur.init._opProgram)
 			cur.init._opVAttrID = tps.getVAttrID();
 			// UnifMapをクリア
 			cur.uniMap.clear();
@@ -500,15 +499,15 @@ namespace rs {
 			});
 //		}
 	}
-	int GLEffect::getTechID(const std::string& tech) const {
+	OPGLint GLEffect::getTechID(const std::string& tech) const {
 		int nT = _techName.size();
 		for(int i=0 ; i<nT ; i++) {
 			if(_techName[i][0] == tech)
 				return i;
 		}
-		return -1;
+		return spn::none;
 	}
-	int GLEffect::getPassID(const std::string& pass) const {
+	OPGLint GLEffect::getPassID(const std::string& pass) const {
 		AssertT(Trap, _current.tech, (GLE_Error)(const char*), "tech is not selected")
 		auto& tech = _techName[*_current.tech];
 		int nP = tech.size();
@@ -516,12 +515,12 @@ namespace rs {
 			if(tech[i] == pass)
 				return i-1;
 		}
-		return -1;
+		return spn::none;
 	}
-	GLEffect::OPID GLEffect::getCurPassID() const {
+	OPGLint GLEffect::getCurPassID() const {
 		return _current.pass;
 	}
-	GLEffect::OPID GLEffect::getCurTechID() const {
+	OPGLint GLEffect::getCurTechID() const {
 		return _current.tech;
 	}
 	void GLEffect::_exportInitTag() {
@@ -768,11 +767,8 @@ namespace rs {
 	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HLTex& hlTex) {
 		return _MakeUniformToken(pf, id, hlTex.get());
 	}
-	GLint GLEffect::getUniformID(const std::string& name) const {
-		GLint loc = GL.glGetUniformLocation(_current.tps->getProgram().cref()->getProgramID(), name.c_str());
-		GLEC_ChkP(Trap)
-		Assert(Warn, loc>=0, "Uniform argument \"%1%\" not found", name)
-		return loc;
+	OPGLint GLEffect::getUniformID(const std::string& name) const {
+		return _current.tps->getProgram().cref()->getUniformID(name);
 	}
 	void GLEffect::beginTask() {
 		_task.beginTask();
@@ -917,8 +913,8 @@ namespace rs {
 			// セマンティクスの重複はエラー
 			auto& atID = _vAttrID[p->sem];
 			AssertT(Trap, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
-			atID = GL.glGetAttribLocation(prog.getProgramID(), p->name.c_str());
-			GLEC_ChkP(Trap)
+			auto at = prog.getAttribID(p->name.c_str());
+			atID = (at) ? *at : -1;
 			// -1の場合は警告を出す(もしかしたらシェーダー内で使ってないだけかもしれない)
 		}
 

@@ -71,9 +71,9 @@ void Cube::draw(rs::GLEffect& glx) {
 	const spn::AQuat& q = this->getRot();
 	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), 0.01f));
 	if(_techID < 0) {
-		_techID = glx.getTechID("TheCube");
+		_techID = *glx.getTechID("TheCube");
 		glx.setTechnique(_techID, true);
-		_passID = glx.getPassID("P0");
+		_passID = *glx.getPassID("P0");
 	}
 	glx.setTechnique(_techID, true);
 	glx.setPass(_passID);
@@ -84,16 +84,16 @@ void Cube::draw(rs::GLEffect& glx) {
 		{0,20, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::NORMAL}
 	});
 	glx.setVDecl(std::move(decl));
-	glx.setUniform(glx.getUniformID("tDiffuse"), _hlTex);
+	glx.setUniform(*glx.getUniformID("tDiffuse"), _hlTex);
 	auto m = getToWorld();
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
 	auto lk = shared.lock();
 	rs::CamData& cd = lk->hlCam.ref();
 	m2 *= cd.getViewProjMatrix().convert44();
-	glx.setUniform(glx.getUniformID("mTrans"), m2);
+	glx.setUniform(*glx.getUniformID("mTrans"), m2);
 	glx.setVStream(_hlVb, 0);
 
-	glx.setUniform(glx.getUniformID("vLitDir"), spn::Vec3(0,1,0));
+	glx.setUniform(*glx.getUniformID("vLitDir"), spn::Vec3(0,1,0));
 	glx.draw(GL_TRIANGLES, 0, 6*6);
 }
 
