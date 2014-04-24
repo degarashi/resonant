@@ -713,7 +713,7 @@ namespace rs {
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
 		_exportInitTag();
-		Assert(Trap, _exportUniform())
+		_exportUniform();
 		// NormalTagにDrawCallTokenを加えた後に出力
 		_current.normal._tokenL.emplace_back(new draw::DrawCall(mode, first, count));
 		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
@@ -722,7 +722,7 @@ namespace rs {
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offset) {
 		GLenum sz = _current.init._opIb->getStride() == sizeof(GLshort) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_BYTE;
 		_exportInitTag();
-		Assert(Trap, _exportUniform())
+		_exportUniform();
 		_current.normal._tokenL.emplace_back(new draw::DrawCallI(mode, sz, count, offset));
 		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
 		_current.bNormal = false;
