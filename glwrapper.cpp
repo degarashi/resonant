@@ -80,12 +80,20 @@ namespace rs {
 			}
 		};
 	}
+#ifdef DEBUG
+	#define GLEC_BaseP(act, func, seq)	\
+		if((uintptr_t)GLWrap::func != (uintptr_t)GLWrap::glGetError) \
+			return GLEC_Base(AAct_##act<::rs::GLE_Error>(), [&](){return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));}); \
+		return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));
+#else
+	#define GLEC_BaseP(act, func, seq)		return GLWrap::func(BOOST_PP_SEQ_ENUM(seq))
+#endif
 	// マクロで分岐
 	#define GLDEFINE(...)
  	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		typename GLWrap::t_##name GLWrap::name = nullptr; \
  		ret_type IGL_Draw::name(BOOST_PP_SEQ_ENUM(args)) { \
- 			return GLWrap::name(BOOST_PP_SEQ_ENUM(argnames)); } \
+			GLEC_BaseP(Warn, name, argnames) } \
  		ret_type IGL_OtherSingle::name(BOOST_PP_SEQ_ENUM(args)) { \
 			auto p = GLW.refShared().put(); \
 			return CallHandler<ret_type>()(GLW.getDrawHandler(), [=](){ \
