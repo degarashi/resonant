@@ -343,9 +343,10 @@ namespace rs {
 				delete rt;
 			};
 			_stride = stride;
-			_pBuffer = src.data();
 			_buffSize = src.size() * stride;
-			_buff = SPBuff(static_cast<void*>(new RawType(std::forward<T>(src))), fnDeleter);
+			RawType* rt = new RawType(std::forward<T>(src));
+			_pBuffer = rt->data();
+			_buff = SPBuff(static_cast<void*>(rt), fnDeleter);
 		}
 
 		public:

@@ -11,10 +11,8 @@ namespace rs {
 	}
 	void GLBufferCore::use_begin() const {
 		GL.glBindBuffer(getBuffType(), getBuffID());
-		GLEC_ChkP(Trap)
 	}
 	void GLBufferCore::use_end() const {
-		GLEC_ChkP(Trap)
 		GL.glBindBuffer(getBuffType(), 0);
 	}
 
@@ -33,7 +31,6 @@ namespace rs {
 		if(_idBuff != 0) {
 			GL.glDeleteBuffers(1, &_idBuff);
 			_idBuff = 0;
-			GLEC_ChkP(Trap)
 		}
 	}
 	void GLBuffer::onDeviceReset() {
@@ -49,21 +46,23 @@ namespace rs {
 		onDeviceLost();
 	}
 	void GLBuffer::_initData() {
-		_preFunc = [=]() {
+		_preFunc = [this]() {
+			use_begin();
 			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 		};
 	}
 	void GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
 		size_t sz = nElem*stride;
-		auto* b = new spn::ByteBuff(sz);
-		std::memcpy(b->data(), src, sz);
-		initData(std::move(*b), stride);
+		spn::ByteBuff b(sz);
+		std::memcpy(b.data(), src, sz);
+		initData(std::move(b), stride);
 	}
 	void GLBuffer::updateData(const void* src, size_t nElem, GLuint offset) {
 		size_t szCopy = nElem * _stride,
 				ofs = offset*_stride;
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
 		_preFunc = [=]() {
+			use_begin();
 			GL.glBufferSubData(_buffType, ofs, szCopy, src);
 		};
 	}
