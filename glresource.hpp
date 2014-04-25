@@ -302,7 +302,6 @@ namespace rs {
 		class Buffer : public GLBufferCore, public Token {
 			public:
 				Buffer(const GLBufferCore& core, HRes hRes);
-				Buffer(Buffer&& b);
 				void operator = (const Buffer&) = delete;
 
 				void exec() override;
@@ -312,7 +311,6 @@ namespace rs {
 			GLuint		_idProg;
 			public:
 				Program(HProg hProg);
-				Program(Program&& p);
 
 				void exec() override;
 		};
@@ -736,7 +734,6 @@ namespace rs {
 
 			public:
 				FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[AttID::NUM_ATTACHMENT]);
-				FrameBuff(FrameBuff&& f);
 
 				void exec() override;
 		};

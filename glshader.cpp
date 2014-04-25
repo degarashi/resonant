@@ -123,7 +123,6 @@ namespace rs {
 	namespace draw {
 		Program::Program(HProg hProg):
 			Token(hProg), _idProg(hProg.ref()->getProgramID()) {}
-		Program::Program(Program&& p): Token(p), _idProg(p._idProg) {}
 		void Program::exec() {
 			GL.glUseProgram(_idProg);
 		}

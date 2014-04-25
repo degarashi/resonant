@@ -527,7 +527,8 @@ namespace rs {
 		// もしInitTagが有効ならそれを出力
 		if(_current.bInit) {
 			_current.bInit = false;
-			_task.pushTag(new draw::InitTag(std::move(_current.init)));
+			// 後続の描画コールのためにコピーを手元に残す
+			_task.pushTag(new draw::InitTag(_current.init));
 		}
 	}
 
@@ -590,7 +591,6 @@ namespace rs {
 		}
 
 		// -------------- Tag --------------
-		Tag::Tag(Tag&& t): _funcL(std::move(t._funcL)) {}
 		void Tag::exec() {
 			cancel();
 		}
@@ -606,7 +606,6 @@ namespace rs {
 		}
 
 		// -------------- NormalTag --------------
-		NormalTag::NormalTag(NormalTag&& t): Tag(std::move(t)), _tokenL(std::move(t._tokenL)) {}
 		void NormalTag::exec() {
 			Tag::exec();
 			for(auto& f : _tokenL)
@@ -614,12 +613,6 @@ namespace rs {
 		}
 
 		// -------------- InitTag --------------
-		InitTag::InitTag(InitTag&& t): Tag(std::move(t)), _opProgram(std::move(t._opProgram)),
-				_spVDecl(std::move(t._spVDecl)), _opVAttrID(std::move(t._opVAttrID)), _opIb(std::move(t._opIb)), _opFb(std::move(t._opFb))
-		{
-			for(int i=0 ; i<VData::MAX_STREAM ; i++)
-				_opVb[i] = std::move(t._opVb[i]);
-		}
 		void InitTag::exec() {
 			_opProgram->exec();
 			// VertexAttribをシェーダーに設定

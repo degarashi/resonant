@@ -183,20 +183,20 @@ namespace rs {
 		}
 	}
 	namespace draw {
+		/*!	描画スレッドが処理するタスク基底
+			PreFunc = 描画がスキップされた時も実行される処理 */
 		class Tag : public IPreFunc {
 			PreFuncL		_funcL;
 			protected:
 				Priority64	_priority;
 			public:
-				Tag() = default;
-				Tag(Tag&& tag);
-
 				virtual void exec();
 				virtual void cancel();
 				void addPreFunc(PreFunc pf) override;
 		};
 		using UPTag = std::unique_ptr<Tag>;
 
+		//! 描画ソートで使う優先度値
 		struct Prio {
 			Priority	userP, sysP;
 			float		camDist;
@@ -204,6 +204,7 @@ namespace rs {
 
 			Priority64 makeID(float minD, float maxD) const;
 		};
+		//! DrawToken: DrawCall
 		struct DrawCall : Token {
 			GLenum	_mode;
 			GLint	_first;
@@ -212,6 +213,7 @@ namespace rs {
 			DrawCall(GLenum mode, GLint first, GLsizei count);
 			void exec() override;
 		};
+		//! DrawToken: DrawCall(Indexed)
 		struct DrawCallI : Token {
 			GLenum	_mode, _stride;
 			GLsizei	_count;
@@ -220,19 +222,17 @@ namespace rs {
 			DrawCallI(GLenum mode, GLenum stride, GLsizei count, GLuint offset);
 			void exec() override;
 		};
-		// [Texture, Uniform]
+		//! DrawTag (Texture, Uniformなど雑多なオペレーション)
 		class NormalTag : public Tag {
 			friend class ::rs::GLEffect;
 			TokenL		_tokenL;
 			public:
-				NormalTag() = default;
-				NormalTag(NormalTag&& t);
 				// ---- from DrawThread ----
 				void exec() override;
 		};
-		// ProgramとUniformの初期値をセットするTag
-		// PreFuncとして(TPStructR::applySettingsを追加)
-		// [Program, VStream, IStream, FrameBuff, RenderBuff]
+		//! ProgramとUniformの初期値をセットするTag
+		/*! PreFuncとして(TPStructR::applySettingsを追加)
+			[Program, VStream, IStream, FrameBuff, RenderBuff] */
 		class InitTag : public Tag {
 			friend class ::rs::GLEffect;
 			using OPProg = spn::Optional<Program>;
@@ -249,11 +249,10 @@ namespace rs {
 			OPFb		_opFb;
 
 			public:
-				InitTag() = default;
-				InitTag(InitTag&& t);
 				// ---- from DrawThread ----
 				void exec() override;
 		};
+		// 今のところDrawTagはInitTagとNormalTagしかない
 
 		class Task {
 			constexpr static int NUM_ENTRY = 3;

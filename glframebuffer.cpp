@@ -179,7 +179,6 @@ namespace rs {
 			for(int i=0 ; i<AttID::NUM_ATTACHMENT ; i++)
 				boost::apply_visitor(Visitor(_ent[i]), att[i]);
 		}
-		FrameBuff::FrameBuff(FrameBuff&& f): GLFBufferCore(std::move(f)), Token(std::move(f)) {}
 		void FrameBuff::exec() {
 			use_begin();
 			for(int i=0 ; i<NUM_ATTACHMENT ; i++) {
