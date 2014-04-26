@@ -384,12 +384,21 @@ namespace rs {
 			void updateData(const GLubyte* src, size_t nElem, GLuint offset);
 	};
 
+	struct GLParamInfo : GLSLFormatDesc {
+		std::string name;
+		GLParamInfo() = default;
+		GLParamInfo(const GLParamInfo&) = default;
+		GLParamInfo(const GLSLFormatDesc& desc);
+	};
 	//! GLSLプログラムクラス
 	class GLProgram : public IGLResource {
 		HLSh		_shader[ShType::NUM_SHTYPE];
 		GLuint		_idProg;
 
 		void _initProgram();
+		using InfoF = void (IGL::*)(GLuint, GLuint, GLsizei, GLsizei*, GLint*, GLenum*, GLchar*);
+		GLParamInfo _getActiveParam(int n, InfoF infoF) const;
+		int _getNumParam(GLenum flag) const;
 
 		public:
 			GLProgram(HSh vsh, HSh psh);
@@ -402,6 +411,10 @@ namespace rs {
 			OPGLint getUniformID(const std::string& name) const;
 			OPGLint getAttribID(const std::string& name) const;
 			GLuint getProgramID() const;
+			int getNActiveAttribute() const;
+			int getNActiveUniform() const;
+			GLParamInfo getActiveAttribute(int n) const;
+			GLParamInfo getActiveUniform(int n) const;
 			void use() const;
 	};
 	enum class CubeFace {

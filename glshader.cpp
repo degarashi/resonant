@@ -199,8 +199,37 @@ namespace rs {
 	GLuint GLProgram::getProgramID() const {
 		return _idProg;
 	}
+	int GLProgram::_getNumParam(GLenum flag) const {
+		int iv;
+		GL.glGetProgramiv(getProgramID(), flag, &iv);
+		return iv;
+	}
+	int GLProgram::getNActiveAttribute() const {
+		return _getNumParam(GL_ACTIVE_ATTRIBUTES);
+	}
+	int GLProgram::getNActiveUniform() const {
+		return _getNumParam(GL_ACTIVE_UNIFORMS);
+	}
+	GLParamInfo GLProgram::_getActiveParam(int n, InfoF infoF) const {
+		GLchar buff[128];
+		GLsizei len;
+		GLint sz;
+		GLenum typ;
+		(GL.*infoF)(getProgramID(), n, countof(buff), &len, &sz, &typ, buff);
+		GLParamInfo ret = *GLFormat::QueryGLSLInfo(typ);
+		ret.name = buff;
+		return std::move(ret);
+	}
+	GLParamInfo GLProgram::getActiveAttribute(int n) const {
+		return _getActiveParam(n, &IGL::glGetActiveAttrib);
+	}
+	GLParamInfo GLProgram::getActiveUniform(int n) const {
+		return _getActiveParam(n, &IGL::glGetActiveUniform);
+	}
 	void GLProgram::use() const {
 		GL.glUseProgram(getProgramID());
-		GLEC_ChkP(Trap)
 	}
+	// ------------------ GLParamInfo ------------------
+	GLParamInfo::GLParamInfo(const GLSLFormatDesc& desc): GLSLFormatDesc(desc) {}
 }
+
