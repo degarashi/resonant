@@ -52,8 +52,8 @@ namespace rs {
 		initHandle(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
-	HLSh GLRes::makeShader(GLuint flag, const std::string& src) {
-		LHdl lh = base_type::acquire(UPResource(new GLShader(flag, src)));
+	HLSh GLRes::makeShader(ShType type, const std::string& src) {
+		LHdl lh = base_type::acquire(UPResource(new GLShader(type, src)));
 		initHandle(lh);
 		return Cast<UPShader>(std::move(lh));
 	}

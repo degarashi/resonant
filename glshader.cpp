@@ -81,7 +81,7 @@ namespace rs {
 	#undef GLDEFINE
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {
-		_idSh = GL.glCreateShader(_flag);
+		_idSh = GL.glCreateShader(c_glShFlag[_flag]);
 
 		std::string ss("#version 110\n");
 		ss.append(_source);
@@ -96,7 +96,7 @@ namespace rs {
 	}
 
 	GLShader::GLShader() {}
-	GLShader::GLShader(GLuint flag, const std::string& src): _flag(flag), _source(src) {
+	GLShader::GLShader(ShType flag, const std::string& src): _idSh(0), _flag(flag), _source(src) {
 		_initShader();
 	}
 	GLShader::~GLShader() {
@@ -118,6 +118,9 @@ namespace rs {
 		if(!isEmpty() && _idSh==0)
 			_initShader();
 	}
+	ShType GLShader::getShaderType() const {
+		return _flag;
+	}
 
 	// ---------------------- draw::Program ----------------------
 	namespace draw {
@@ -129,16 +132,9 @@ namespace rs {
 	}
 
 	// ---------------------- GLProgram ----------------------
-	GLProgram::GLProgram(HSh vsh, HSh psh) {
-		_shader[ShType::VERTEX] = vsh;
-		_shader[ShType::PIXEL] = psh;
-		_initProgram();
-	}
-	GLProgram::GLProgram(HSh vsh, HSh gsh, HSh psh) {
-		_shader[ShType::VERTEX] = vsh;
-		_shader[ShType::PIXEL] = psh;
-		_shader[ShType::GEOMETRY] = gsh;
-		_initProgram();
+	void GLProgram::_setShader(HSh hSh) {
+		if(hSh)
+			_shader[hSh.ref()->getShaderType()] = hSh;
 	}
 	void GLProgram::_initProgram() {
 		_idProg = GL.glCreateProgram();

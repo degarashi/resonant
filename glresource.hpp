@@ -170,7 +170,7 @@ namespace rs {
 
 			// ------------ Shader ------------
 			//! 文字列からシェーダーを作成
-			AnotherLHandle<UPShader,true> makeShader(GLuint flag, const std::string& src);
+			AnotherLHandle<UPShader,true> makeShader(ShType type, const std::string& src);
 
 			using HSh = AnotherSHandle<UPShader>;
 			using HLProg = AnotherLHandle<UPProg,true>;
@@ -263,19 +263,19 @@ namespace rs {
 
 	//! GLシェーダークラス
 	class GLShader : public IGLResource {
-		GLuint				_idSh,
-							_flag;
+		GLuint				_idSh;
+		ShType				_flag;
 		const std::string	_source;
 		void _initShader();
 
 		public:
 			//! 空シェーダーの初期化
 			GLShader();
-			GLShader(GLuint flag, const std::string& src);
+			GLShader(ShType flag, const std::string& src);
 			~GLShader() override;
-
 			bool isEmpty() const;
 			int getShaderID() const;
+			ShType getShaderType() const;
 			void onDeviceLost() override;
 			void onDeviceReset() override;
 	};
@@ -399,10 +399,22 @@ namespace rs {
 		using InfoF = void (IGL::*)(GLuint, GLuint, GLsizei, GLsizei*, GLint*, GLenum*, GLchar*);
 		GLParamInfo _getActiveParam(int n, InfoF infoF) const;
 		int _getNumParam(GLenum flag) const;
+		void _setShader(HSh hSh);
+
+		void _init() {
+			_initProgram();
+		}
+		template <class T, class... Ts>
+		void _init(const T& t, const Ts&... ts) {
+			_setShader(t);
+			_init(ts...);
+		}
 
 		public:
-			GLProgram(HSh vsh, HSh psh);
-			GLProgram(HSh vsh, HSh gsh, HSh psh);
+			template <class... Ts>
+			GLProgram(const Ts&... ts) {
+				_init(ts...);
+			}
 			~GLProgram() override;
 			void onDeviceLost() override;
 			void onDeviceReset() override;

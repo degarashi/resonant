@@ -164,7 +164,7 @@ namespace rs {
 	const static GLuint c_glShFlag[ShType::NUM_SHTYPE] = {
 		GL_VERTEX_SHADER,
 		#ifdef ANDROID
-			0,
+			0xdeadbeef,
 		#else
 			GL_GEOMETRY_SHADER,
 		#endif

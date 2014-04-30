@@ -873,7 +873,7 @@ namespace rs {
 			std::cout << ss.str();
 			std::cout.flush();
 	#endif
-			shP[i] = mgr_gl.makeShader(c_glShFlag[i], ss.str());
+			shP[i] = mgr_gl.makeShader(static_cast<ShType>(i), ss.str());
 
 			ss.str("");
 			ss.clear();
