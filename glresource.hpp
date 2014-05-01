@@ -2,7 +2,6 @@
 #ifdef WIN32
 	#include <intrin.h>
 #endif
-#define BOOST_PP_VARIADICS 1
 #include <boost/variant.hpp>
 #include "spinner/abstbuff.hpp"
 #include "spinner/resmgr.hpp"

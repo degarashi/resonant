@@ -1,4 +1,3 @@
-#define BOOST_PP_VARIADICS 1
 #include "glx.hpp"
 #include "spinner/common.hpp"
 #include "spinner/matrix.hpp"

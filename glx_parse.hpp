@@ -1,6 +1,5 @@
 #pragma once
 #define BOOST_NO_CXX11_DECLTYPE_N3276
-#define BOOST_PP_VARIADICS 1
 #include "glhead.hpp"
 #include "glx_macro.hpp"
 #include <boost/spirit/include/qi.hpp>

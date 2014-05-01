@@ -1,6 +1,5 @@
 #pragma once
 #include "glhead.hpp"
-#define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 #include <boost/variant.hpp>
 #include <unordered_map>

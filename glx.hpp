@@ -1,5 +1,4 @@
 #pragma once
-#define BOOST_PP_VARIADICS 1
 #include "glhead.hpp"
 #include "glresource.hpp"
 #include "glx_parse.hpp"

@@ -1,5 +1,4 @@
 #pragma once
-#define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 
 #define SEQ_VSEM BOOST_PP_REPEAT(NUM_TEXCOORD, PPFUNC_ADDNUM, TEXCOORD)(POSITION)(COLOR)(NORMAL)(BINORMAL)(TANGENT)

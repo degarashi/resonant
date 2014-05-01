@@ -1,6 +1,5 @@
 #include "luaw.hpp"
 #include "updator_lua.hpp"
-#define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 #include <boost/regex.hpp>
 #include "sdlwrap.hpp"
