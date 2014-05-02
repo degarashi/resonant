@@ -9,11 +9,16 @@ namespace rs {
 		using boost::phoenix::construct;
 		using boost::phoenix::insert;
 
+		// String: "[^"]+"
 		rlString %= lit('"') > +(standard::char_ - '"') > '"';
+		// NameToken: [:Alnum:_]+;
 		rlNameToken %= qi::lexeme[+(standard::alnum | standard::char_('_'))];
+		// Bracket: (\.)[^\1]Bracket?[^\1](\1)
 		rlBracket %= lit(_r1) > qi::as_string[qi::lexeme[*(standard::char_ - lit(_r1) - lit(_r2))]] > -(rlBracket(_r1,_r2)) > lit(_r2);
 
+		// AttrEnt: GLPrecision? GLType NameToken : GLSem;
 		rlAttrEnt = (-(GLPrecision[at_c<0>(_val)=_1]) >> GLType[at_c<1>(_val)=_1] >> rlNameToken[at_c<2>(_val)=_1] >> ':') > GLSem[at_c<3>(_val)=_1] > ';';
+		// VaryEnt: GLPrecision? GLType NameToken;
 		rlVaryEnt %= -(GLPrecision) >> GLType >> rlNameToken >> ';';
 
 		// (prec) valueType valueName<sizeSem> : defaultStr
@@ -21,26 +26,36 @@ namespace rs {
 		rlUnifEnt = (-(GLPrecision[at_c<0>(_val)=_1]) >> GLType[at_c<1>(_val)=_1]) > rlNameToken[at_c<2>(_val)=_1] >
 					-('<' > rlNameToken[at_c<3>(_val)=_1] > '>') >
 					-(lit('=') > (rlVec | qi::float_ | qi::bool_)[at_c<4>(_val)=_1]) > ';';
+		// Vector: [Float+]
 		rlVec %= '[' > +qi::float_ > ']';
+		// MacroEntry: NameToken(=NameToken)?;
 		rlMacroEnt %= rlNameToken > -('=' > rlNameToken) > ';';
+		// ConstEntry: GLPrecision? GLType = NameToken (Vector|Float|Bool);
 		rlConstEnt = (-(GLPrecision[at_c<0>(_val)=_1]) >> GLType[at_c<1>(_val)=_1] >> rlNameToken[at_c<2>(_val)=_1] >>
 			lit('=')) > (rlVec | qi::float_ | qi::bool_)[at_c<3>(_val)=_1] > ';';
+		// BoolSet: GLBoolsetting = Bool;
 		rlBoolSet %= qi::no_case[GLBoolsetting] > '=' > qi::no_case[qi::bool_] > ';';
+		// ValueSet: GLSetting = (0xUint|GLFunc|GLStencilop|GLEq|GLBlend|GLFace|GLFacedir|GLColormask){1,4} | Float | Bool;
 		rlValueSet %= qi::no_case[GLSetting] > '=' >
 			qi::repeat(1,4)[(lit("0x") > qi::uint_) |
 			qi::no_case[GLFunc | GLStencilop | GLEq | GLBlend | GLFace | GLFacedir | GLColormask]
 			| qi::float_ | qi::bool_] > ';';
+		// BlockUse: GLBlocktype (= | +=) NameToken (, NameToken)*;
 		rlBlockUse = qi::no_case[GLBlocktype][at_c<0>(_val)=_1] > (lit('=')[at_c<1>(_val)=val(false)] | lit("+=")[at_c<1>(_val)=val(true)]) > (rlNameToken % ',')[at_c<2>(_val)=_1] > ';';
+		// ShSet: GLShadertype = NameToken \((Vector|Bool|Float)? (, Vector|Bool|Float)*\);
 		rlShSet = qi::no_case[GLShadertype][at_c<0>(_val)=_1] > '=' > rlNameToken[at_c<1>(_val)=_1] > lit('(') >
 			(-(rlVec|qi::bool_|qi::float_)[push_back(at_c<2>(_val), _1)] > *(lit(',') > (rlVec|qi::bool_|qi::float_)[push_back(at_c<2>(_val), _1)])) >
 			lit(");");
-
+		// AttrBlock: attribute NameToken (: NameToken)? \{(AttrEnt|Comment)\}
 		rlAttrBlock = lit("attribute") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
 							'{' > *(rlAttrEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
+		// VaryBlock: varying NameToken (: NameToken)? \{VaryEnt|Comment\}
 		rlVaryBlock = lit("varying") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
 							'{' > *(rlVaryEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
+		// UnifBlock: uniform NameToken (: NameToken) \{UnifEnt|Comment\}
 		rlUnifBlock = lit("uniform") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
 							'{' > *(rlUnifEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
+		// ConstBlock: const NameToken (: NameToken) \{ConstEnt|Comment\}
 		rlConstBlock = lit("const") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
 							'{' > *(rlConstEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
 	}
