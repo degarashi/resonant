@@ -10,10 +10,12 @@ namespace rs {
 
 		// Arg: GLType NameToken
 		rlArg %= GLType > rlNameToken;
-		// ShBlock: GLShadertype NameToken \(Arg (, Arg)*\) \{[^\}]*\}
-		rlShBlock = qi::no_case[GLShadertype][at_c<0>(_val)=_1] > rlNameToken[at_c<1>(_val)=_1] > '(' >
-						-(rlArg[push_back(at_c<2>(_val),_1)] > *(',' > rlArg[push_back(at_c<2>(_val),_1)])) > ')' >
-						lit('{') > (qi::lexeme[qi::as_string[*qi::lexeme[standard::char_ - '}']]])[at_c<3>(_val)=_1] > '}';
+		// ShBlock: GLShadertype\([^\)]+\) NameToken \(Arg (, Arg)*\) \{[^\}]*\}
+		rlShBlock = qi::no_case[GLShadertype][at_c<0>(_val)=_1] >
+						'(' > qi::as_string[qi::lexeme[*(standard::char_ - lit(')'))]][at_c<1>(_val)=_1] > ')' >
+						rlNameToken[at_c<2>(_val)=_1] > '(' >
+						-(rlArg[push_back(at_c<3>(_val),_1)] > *(',' > rlArg[push_back(at_c<3>(_val),_1)])) > ')' >
+						lit('{') > (qi::lexeme[qi::as_string[*qi::lexeme[standard::char_ - '}']]])[at_c<4>(_val)=_1] > '}';
 		// MacroBlock: macro \{ MacroEnt \}
 		rlMacroBlock %= qi::no_case[lit("macro")] > '{' > *rlMacroEnt > '}';
 		// PassBlock: pass \{ (BlockUse | BoolSet | MacroBlock | ShSet | ValueSet)* \}
@@ -29,7 +31,7 @@ namespace rs {
 		// GLX: (Comment | (AttrBlock | ConstBlock | ShBlock | TechBlock | UnifBlock | VaryBlock))*
 		rlGLX = *(rlComment | (rlAttrBlock[insert(at_c<0>(_val), construct<std::pair<std::string,AttrStruct>>(at_c<0>(_1), _1))] |
 					rlConstBlock[insert(at_c<1>(_val), construct<std::pair<std::string,ConstStruct>>(at_c<0>(_1), _1))] |
-					rlShBlock[insert(at_c<2>(_val), construct<std::pair<std::string,ShStruct>>(at_c<1>(_1), _1))] |
+					rlShBlock[insert(at_c<2>(_val), construct<std::pair<std::string,ShStruct>>(at_c<2>(_1), _1))] |
 					rlTechBlock[push_back(at_c<3>(_val), _1)] |
 					rlUnifBlock[insert(at_c<4>(_val), construct<std::pair<std::string,UnifStruct>>(at_c<0>(_1), _1))] |
 					rlVaryBlock[insert(at_c<5>(_val), construct<std::pair<std::string,VaryStruct>>(at_c<0>(_1), _1))]));

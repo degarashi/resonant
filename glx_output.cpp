@@ -59,6 +59,7 @@ namespace rs {
 		using std::endl;
 
 		os << '"' << name << '"' << endl;
+		os << "version: " << version_str << endl;
 		os << "type: " << c_shType[type] << endl;
 		os << "args: ";
 		for(auto& a : args)

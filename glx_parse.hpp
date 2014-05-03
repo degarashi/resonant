@@ -283,6 +283,8 @@ namespace rs {
 	struct ShStruct {
 		//! シェーダータイプ
 		uint32_t				type;
+		//! バージョン文字列
+		std::string				version_str;
 		//! シェーダー名
 		std::string				name;
 		//! 引数群(型ID + 名前)
@@ -290,10 +292,6 @@ namespace rs {
 		//! シェーダーの中身(文字列)
 		std::string				info;
 
-		ShStruct() = default;
-		ShStruct(const ShStruct& a) = default;
-		ShStruct& operator = (const ShStruct& a);
-		ShStruct(ShStruct&& a);
 		void swap(ShStruct& a) noexcept;
 		void output(std::ostream& os) const;
 	};
@@ -348,7 +346,7 @@ FUSION_ADAPT_STRUCT_AUTO(rs::AttrStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::VaryStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::UnifStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::ConstStruct, (name)(derive)(entry))
-FUSION_ADAPT_STRUCT_AUTO(rs::ShStruct, (type)(name)(args)(info))
+FUSION_ADAPT_STRUCT_AUTO(rs::ShStruct, (type)(version_str)(name)(args)(info))
 FUSION_ADAPT_STRUCT_AUTO(rs::TPStruct, (name)(blkL)(bsL)(mcL)(shL)(tpL)(vsL)(derive))
 FUSION_ADAPT_STRUCT_AUTO(rs::Bracket, (str)(child))
 FUSION_ADAPT_STRUCT_AUTO(rs::GLXStruct, (atM)(csM)(shM)(tpL)(uniM)(varM))

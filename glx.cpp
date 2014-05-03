@@ -153,14 +153,9 @@ namespace rs {
 		return std::move(ret);
 	}
 
-	ShStruct& ShStruct::operator = (const ShStruct& a) {
-		this->~ShStruct();
-		new(this) ShStruct(a);
-		return *this;
-	}
-	ShStruct::ShStruct(ShStruct&& a): ShStruct() { swap(a); }
 	void ShStruct::swap(ShStruct& a) noexcept {
 		std::swap(type, a.type);
+		std::swap(version_str, a.version_str);
 		std::swap(name, a.name);
 		std::swap(args, a.args);
 		std::swap(info, a.info);
@@ -834,7 +829,10 @@ namespace rs {
 			auto* shp = selectSh[i];
 			if(!shp)
 				continue;
-
+			Assert(Trap, gs.shM.count(shp->shName)==1)
+			const ShStruct& s = gs.shM.at(shp->shName);
+			// シェーダーバージョンを出力
+			ss << "#version " << s.version_str << std::endl;
 			{
 				// マクロを定義をGLSLソースに出力
 				auto mc = dupl.exportMacro();
@@ -857,8 +855,6 @@ namespace rs {
 			_unifL = dupl.exportEntries<UnifStruct,UnifEntry>(GLBlocktype_::uniformT, &GLXStruct::uniM);
 			OutputS(ss, _unifL);
 
-			Assert(Trap, gs.shM.count(shp->shName)==1)
-			const ShStruct& s = gs.shM.at(shp->shName);
 			// シェーダー引数の型チェック
 			// ユーザー引数はグローバル変数として用意
 			ArgChecker acheck(ss, shp->shName, s.args);
