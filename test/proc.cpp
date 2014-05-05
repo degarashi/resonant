@@ -7,7 +7,7 @@
 #include "input.hpp"
 
 // ------------------------------ MyDraw ------------------------------
-bool MyDraw::runU(uint64_t accum) {
+bool MyDraw::runU(uint64_t accum, bool bSkip) {
 	GL.glClearColor(0,0,0.1f,1);
 	GL.glClearDepth(1.0f);
 	GL.glDepthMask(GL_TRUE);
@@ -17,7 +17,7 @@ bool MyDraw::runU(uint64_t accum) {
 	auto lk = shared.lock();
 	auto& fx = *lk->hlFx.ref();
 	lk->fps.update();
-	fx.execTask(false);
+	fx.execTask(bSkip);
 	return true;
 }
 
@@ -161,6 +161,7 @@ bool MyMain::runU() {
 	// 描画コマンド
 	auto lk = shared.lock();
 	rs::GLEffect& fx = *lk->hlFx.ref();
+	// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
 	fx.beginTask();
 	if(mgr_scene.onUpdate())
 		return false;

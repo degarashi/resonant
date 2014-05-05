@@ -57,7 +57,7 @@ namespace rs {
 				if(msg::DrawReq* p = *m) {
 					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
-					if(up->runU(p->id))
+					if(up->runU(p->id, p->bSkip))
 						ctx->swapWindow();
 					GL.glFinish();
 					{
@@ -255,12 +255,12 @@ namespace rs {
 				// 時間が残っていれば描画
 				// 最大スキップフレームを超過してたら必ず描画
 				auto dur = Clock::now() - tp;
-				if(skip >= MAX_SKIPFRAME || dur > microseconds(DRAW_THRESHOLD_USEC)) {
+				bool bSkip = (skip < MAX_SKIPFRAME && dur <= microseconds(DRAW_THRESHOLD_USEC));
+				if(!bSkip)
 					skip = 0;
-					if(opDth->getInfo()->accum == getInfo()->accumDraw)
-						drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw));
-				} else
+				else
 					++skip;
+				drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw, bSkip));
 			} while(bLoop && !isInterrupted());
 			while(mgr_scene.getTop().valid()) {
 				mgr_scene.setPopScene(1);

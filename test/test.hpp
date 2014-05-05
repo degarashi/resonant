@@ -41,7 +41,7 @@ class Mth_Dth : public spn::Singleton<Mth_Dth>, public rs::GLSharedData<Mth_DthD
 
 class MyDraw : public rs::IDrawProc {
 	public:
-		bool runU(uint64_t accum) override;
+		bool runU(uint64_t accum, bool bSkip) override;
 };
 
 class Cube : public spn::Pose3D {

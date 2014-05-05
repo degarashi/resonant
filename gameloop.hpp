@@ -72,7 +72,8 @@ namespace rs {
 		struct DrawReq : MsgBase<DrawReq> {
 			// 管理用の描画リクエストID
 			uint64_t	id;
-			DrawReq(uint64_t t): id(t) {}
+			bool		bSkip;
+			DrawReq(uint64_t t, bool skip): id(t), bSkip(skip) {}
 		};
 		//! スレッド終了リクエスト
 		struct QuitReq : MsgBase<QuitReq> {};
@@ -86,8 +87,9 @@ namespace rs {
 		//! 描画コールバック
 		/*! 描画スレッドから呼ばれる */
 		/*! \param[in] accum 累積フレーム数
+			\param[in] bSkip 描画スキップフラグ
 			\return backbufferのswapをかける時はtrue */
-		virtual bool runU(uint64_t accum) = 0;
+		virtual bool runU(uint64_t accum, bool bSkip) = 0;
 		virtual ~IDrawProc() {}
 	};
 	using UPDrawProc = UPtr<IDrawProc>;
