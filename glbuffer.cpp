@@ -45,7 +45,10 @@ namespace rs {
 		onDeviceLost();
 	}
 	void GLBuffer::_initData() {
-		_preFunc = [this]() {
+		Assert(Trap, getBuffID() > 0);
+		HLRes hlRes;
+		handleFromThis(hlRes);
+		_preFunc = [=]() {
 			use_begin();
 			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 		};
@@ -60,6 +63,8 @@ namespace rs {
 		size_t szCopy = nElem * _stride,
 				ofs = offset*_stride;
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
+		HLRes hlRes;
+		handleFromThis(hlRes);
 		_preFunc = [=]() {
 			use_begin();
 			GL.glBufferSubData(_buffType, ofs, szCopy, src);

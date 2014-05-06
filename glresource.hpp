@@ -200,7 +200,8 @@ namespace rs {
 		// とりあえず描画ソートの事は考えない
 		struct Token {
 			HLRes	_hlRes;
-			Token(HRes hRes=HRes()): _hlRes(hRes) {}
+			Token(HRes hRes): _hlRes(hRes) {}
+			virtual ~Token() {}
 
 			virtual void exec() = 0;
 		};
@@ -250,11 +251,12 @@ namespace rs {
 		};
 	}
 	struct IPreFunc {
+		virtual ~IPreFunc() {}
 		virtual void addPreFunc(PreFunc pf) = 0;
 	};
 	//! OpenGL関連のリソース
 	/*! Android用にデバイスロスト対応 */
-	struct IGLResource {
+	struct IGLResource : spn::EnableFromThis {
 		virtual void onDeviceLost() {}
 		virtual void onDeviceReset() {}
 		virtual ~IGLResource() {}
@@ -287,7 +289,7 @@ namespace rs {
 						_idBuff;			//!< OpenGLバッファID
 		public:
 			GLBufferCore(GLuint flag, GLuint dtype);
-			GLBufferCore(const GLBufferCore&) = default;
+			virtual ~GLBufferCore() {}
 
 			RUser<GLBufferCore> use() const;
 			void use_begin() const;
@@ -301,7 +303,6 @@ namespace rs {
 		class Buffer : public GLBufferCore, public Token {
 			public:
 				Buffer(const GLBufferCore& core, HRes hRes);
-				void operator = (const Buffer&) = delete;
 
 				void exec() override;
 		};
@@ -348,6 +349,8 @@ namespace rs {
 
 		public:
 			using GLBufferCore::GLBufferCore;
+			GLBuffer(GLBuffer&& b) = delete;
+			GLBuffer(const GLBuffer&) = delete;
 			~GLBuffer() override;
 
 			// 全域を書き換え

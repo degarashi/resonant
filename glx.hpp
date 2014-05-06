@@ -189,6 +189,7 @@ namespace rs {
 			protected:
 				Priority64	_priority;
 			public:
+				virtual ~Tag() {}
 				virtual void exec();
 				virtual void cancel();
 				void addPreFunc(PreFunc pf) override;
@@ -259,7 +260,7 @@ namespace rs {
 			using UPTagL = std::vector<UPTag>;
 			UPTagL	_entry[NUM_ENTRY];
 			//! 読み書きカーソル位置
-			uint32_t	_curWrite, _curRead;
+			int			_curWrite, _curRead;
 			Mutex		_mutex;
 			CondV		_cond;
 

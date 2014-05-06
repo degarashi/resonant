@@ -621,14 +621,14 @@ namespace rs {
 		}
 
 		// -------------- DrawCall --------------
-		DrawCall::DrawCall(GLenum mode, GLint first, GLsizei count): _mode(mode), _first(first), _count(count) {}
+		DrawCall::DrawCall(GLenum mode, GLint first, GLsizei count): Token(HRes()), _mode(mode), _first(first), _count(count) {}
 		void DrawCall::exec() {
 			GL.glDrawArrays(_mode, _first, _count);
 			GLEC_ChkP(Trap);
 		}
 
 		// -------------- DrawCallI --------------
-		DrawCallI::DrawCallI(GLenum mode, GLenum stride, GLsizei count, GLuint offset): _mode(mode), _stride(stride), _count(count), _offset(offset) {}
+		DrawCallI::DrawCallI(GLenum mode, GLenum stride, GLsizei count, GLuint offset): Token(HRes()), _mode(mode), _stride(stride), _count(count), _offset(offset) {}
 		void DrawCallI::exec() {
 			GL.glDrawElements(_mode, _count, _stride, reinterpret_cast<const GLvoid*>(_offset));
 			GLEC_ChkP(Trap);
