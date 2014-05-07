@@ -46,9 +46,7 @@ namespace rs {
 	}
 	void GLBuffer::_initData() {
 		Assert(Trap, getBuffID() > 0);
-		HLRes hlRes;
-		handleFromThis(hlRes);
-		_preFunc = [=]() {
+		_preFunc = [this]() {
 			use_begin();
 			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 		};
@@ -63,15 +61,19 @@ namespace rs {
 		size_t szCopy = nElem * _stride,
 				ofs = offset*_stride;
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
-		HLRes hlRes;
-		handleFromThis(hlRes);
 		_preFunc = [=]() {
 			use_begin();
 			GL.glBufferSubData(_buffType, ofs, szCopy, src);
 		};
 	}
 	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
-		pf.addPreFunc(std::move(_preFunc));
+		if(_preFunc) {
+			PreFunc pfunc(std::move(const_cast<GLBuffer*>(this)->_preFunc));
+			HLRes hlRes(hRes);
+			pf.addPreFunc([pfunc, hlRes]() {
+				pfunc();
+			});
+		}
 		return draw::Buffer(*this, hRes);
 	}
 

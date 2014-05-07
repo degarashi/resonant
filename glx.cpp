@@ -517,16 +517,21 @@ namespace rs {
 	OPGLint GLEffect::getCurTechID() const {
 		return _current.tech;
 	}
+	
 	void GLEffect::_exportInitTag() {
 		// もしInitTagが有効ならそれを出力
 		if(_current.bInit) {
 			_current.bInit = false;
 			// 後続の描画コールのためにコピーを手元に残す
 			_task.pushTag(new draw::InitTag(_current.init));
+			_current.init.clearTags();
 		}
 	}
 
 	namespace draw {
+		void Tag::clearTags() {
+			_funcL.clear();
+		}
 		// -------------- Task --------------
 		Task::Task(): _curWrite(0), _curRead(0) {}
 		Task::UPTagL& Task::refWriteEnt() {
@@ -599,7 +604,7 @@ namespace rs {
 			if(!_funcL.empty()) {
 				for(auto& f : _funcL)
 					f();
-				_funcL.clear();
+				// ここではまだ開放しない
 			}
 		}
 		void Tag::addPreFunc(PreFunc pf) {

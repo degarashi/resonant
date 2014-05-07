@@ -192,6 +192,7 @@ namespace rs {
 				virtual ~Tag() {}
 				virtual void exec();
 				virtual void cancel();
+				void clearTags();
 				void addPreFunc(PreFunc pf) override;
 		};
 		using UPTag = std::unique_ptr<Tag>;
