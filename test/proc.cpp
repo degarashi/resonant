@@ -8,17 +8,19 @@
 
 // ------------------------------ MyDraw ------------------------------
 bool MyDraw::runU(uint64_t accum, bool bSkip) {
-	GL.glClearColor(0,0,0.1f,1);
-	GL.glClearDepth(1.0f);
-	GL.glDepthMask(GL_TRUE);
-	GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	GL.glDepthMask(GL_FALSE);
-
+	if(!bSkip) {
+		GL.glClearColor(0,0,0.1f,1);
+		GL.glClearDepth(1.0f);
+		GL.glDepthMask(GL_TRUE);
+		GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		GL.glDepthMask(GL_FALSE);
+	}
 	auto lk = shared.lock();
 	auto& fx = *lk->hlFx.ref();
-	lk->fps.update();
+	if(!bSkip)
+		lk->fps.update();
 	fx.execTask(bSkip);
-	return true;
+	return !bSkip;
 }
 
 // ------------------------------ MyMain ------------------------------
