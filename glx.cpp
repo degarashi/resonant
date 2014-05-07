@@ -560,11 +560,18 @@ namespace rs {
 		}
 		void Task::clear() {
 			UniLock lk(_mutex);
-			while(_curWrite > _curRead) {
+			while(_curWrite >= _curRead) {
+				if(_curWrite == _curRead) {
+					++_curWrite;
+					execTask(false);
+					break;
+				}
 				execTask(false);
 				++_curRead;
 			}
 			GL.glFinish();
+			for(auto& e : _entry)
+				e.clear();
 			_curWrite = _curRead = 0;
 		}
 		void Task::execTask(bool bSkip) {
