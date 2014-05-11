@@ -527,7 +527,7 @@ namespace rs {
 	class OPArray : public IOPArray<T> {
 		spn::Optional<T>	_packed[N];
 
-		void _init(spn::Optional<T>* dst) {}
+		void _init(spn::Optional<T>* /*dst*/) {}
 		template <class TA, class... Ts>
 		void _init(spn::Optional<T>* dst, TA&& ta, Ts&&... ts) {
 			*dst++ = std::forward<TA>(ta);

@@ -79,7 +79,7 @@ namespace rs {
 		void reset() const {
 			I::Reset();
 		}
-		const char *const getAPIName() const {
+		const char* getAPIName() const {
 			return I::c_apiName;
 		}
 	};
@@ -651,7 +651,7 @@ namespace rs {
 			void _checkState();
 		public:
 			template <class... Ts>
-			static void SetGLAttributes(Ts... ts) {}
+			static void SetGLAttributes(Ts... /*ts*/) {}
 			template <class... Ts>
 			static void SetGLAttributes(SDL_GLattr attr, int value, Ts... ts) {
 				SDL_GL_SetAttribute(attr, value);
@@ -742,7 +742,7 @@ namespace rs {
 				size_t	size;
 
 				template <class Archive>
-				void serialize(Archive& ar, const unsigned int) {
+				void serialize(Archive& /*ar*/, const unsigned int /*ver*/) {
 					AssertP(Trap, false, "this object cannot serialize")
 				}
 			};
