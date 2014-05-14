@@ -12,6 +12,7 @@
 #include "serialization/smart_ptr.hpp"
 #include "serialization/chrono.hpp"
 #include "serialization/chars.hpp"
+#include "spinner/random.hpp"
 
 namespace rs {
 	// --------------------- FPSCounter ---------------------
@@ -112,6 +113,7 @@ namespace rs {
 				std::swap(ctxD, ctx);
 			}
 			glw.reset(new GLWrap(MULTICONTEXT));
+			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));

@@ -1,4 +1,6 @@
 #include "sdlwrap.hpp"
+#include "spinner/random.hpp"
+#include "spinner/charvec.hpp"
 
 namespace rs {
 	// --------------------- RWE_Error ---------------------
@@ -296,6 +298,31 @@ namespace rs {
 		return std::make_pair(nullptr, 0);
 	}
 	// ---------------------------- RWMgr ----------------------------
+	namespace {
+		constexpr int RANDOMLEN_MIN = 8,
+						RANDOMLEN_MAX = 16,
+						RANDOMIZER_ID = 0x10000000;
+		const spn::CharVec<char> c_charVec{
+			{'A', 'Z'},
+			{'a', 'z'},
+			{'0', '9'},
+			{'_'}
+		};
+		const std::string c_tmpDirName("tmp");
+	}
+	RWMgr::RWMgr(const std::string& org_name, const std::string& app_name):
+		_orgName(org_name),
+		_appName(app_name)
+	{
+		static bool s_bInitRandom = false;
+		if(!s_bInitRandom) {
+			// 初回だけランダム生成器を初期化
+			s_bInitRandom = true;
+			mgr_random.initEngine(RANDOMIZER_ID);
+			// 一時ファイルを掃除
+			_cleanupTemporaryFile();
+		}
+	}
 	RWMgr::UriHandlerV& RWMgr::getHandler() {
 		return _handlerV;
 	}
@@ -316,6 +343,42 @@ namespace rs {
 	HLRW RWMgr::fromMem(void* p, int size, typename RWops::Callback* cb) {
 		return base_type::acquire(RWops::FromMem(p,size, cb));
 	}
+	struct SDLDeleter {
+		void operator ()(void* ptr) const {
+			SDL_free(ptr);
+		}
+	};
+	using SDLPtr = std::unique_ptr<void, SDLDeleter>;
+	spn::URI RWMgr::makeFilePath(const std::string& dirName) const {
+		SDLPtr str(SDL_GetPrefPath(_orgName.c_str(), _appName.c_str()));
+		std::string path(reinterpret_cast<const char*>(str.get()));
+		if(!dirName.empty())
+			path.append(dirName);
+		return spn::URI("file", std::move(path));
+	}
+	spn::URI RWMgr::createTemporaryFile() {
+		// ランダムなファイル名[A-Za-z0-9_]{8,16}を重複考えず作る
+		std::string str;
+		auto rnd = mgr_random.get(RANDOMIZER_ID);
+		// 一旦ファイルを開いてみて、開けなければファイルが存在しないと想定
+		int length = rnd.getUniformRange<int>(RANDOMLEN_MIN, RANDOMLEN_MAX);
+		int csize = c_charVec.size();
+		for(int i=0 ; i<length ; i++)
+			str.append(1, c_charVec.get(rnd.getUniformRange<int>(0, csize-1)));
+		auto uri = makeFilePath(c_tmpDirName);
+		uri <<= str;
+		return std::move(uri);
+	}
+	void RWMgr::_cleanupTemporaryFile() {
+		std::string path = makeFilePath(c_tmpDirName).plain_utf8();
+		path += "/*";
+		auto strlist = spn::Dir::EnumEntryWildCard(path);
+		for(auto& s : strlist) {
+			spn::Dir dir(s);
+			dir.remove();
+		}
+	}
+
 	// file:// filetreeのみ
 	// pack:// zipのみ
 	// res:// zip, filetreeの順で探す

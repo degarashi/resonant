@@ -900,8 +900,13 @@ namespace rs {
 		};
 		using UriHandlerV = spn::HandlerV<UriHandler, HChk>;
 		UriHandlerV		_handlerV;
+		std::string		_orgName,
+						_appName;
+		//! 一時ファイルディレクトリのファイルを全て削除
+		void _cleanupTemporaryFile();
 
 		public:
+			RWMgr(const std::string& org_name, const std::string& app_name);
 			UriHandlerV& getHandler();
 			using base_type = spn::ResMgrA<RWops, RWMgr>;
 			using LHdl = AnotherLHandle<RWops, true>;
@@ -915,6 +920,9 @@ namespace rs {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }
 			LHdl fromConstMem(const void* p, int size, typename RWops::Callback* cb=nullptr);
 			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
+			//! ランダムな名前の一時ファイルを作ってそのURIを返す
+			spn::URI createTemporaryFile();
+			spn::URI makeFilePath(const std::string& dirName) const;
 	};
 	//! ファイルシステムに置かれたZipからのファイル読み込み
 	class UriH_PackedZip : public UriHandler {
