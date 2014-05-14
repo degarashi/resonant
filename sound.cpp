@@ -279,7 +279,6 @@ namespace rs {
 			_timePos = _duration;
 			return;
 		}
-		Duration dur = _hlAb.ref()->getDuration();
 		auto t2 = t;
 		while(t2 >= _duration)
 			t2 -= _duration;
@@ -521,8 +520,7 @@ namespace rs {
 	void ASource::S_Playing::update(ASource& self) {
 		// 前回のUpdateを呼んだ時間からの差を累積
 		Timepoint tnow = Clock::now();
-		Duration diff = tnow - self._tmUpdate,
-				single = self._opBuf->getDuration();
+		Duration diff = tnow - self._tmUpdate;
 		self._tmUpdate = tnow;
 		self._timePos = std::min(self._timePos + diff, self._duration);
 		// 再生時間からサンプル数を計算
