@@ -141,9 +141,21 @@ namespace rs {
 		void update();
 		int getFPS() const;
 	};
+	struct GLoopInitParam {
+		std::string	pathfile,
+					title,
+					organization,
+					app_name;
+		int			width,
+					height,
+					depth,
+					verMajor,
+					verMinor;
+		uint32_t	flag;
+	};
 	//! メインスレッド
 	class MainThread : public spn::Singleton<MainThread>,
-						public ThreadL<void (const SPLooper&,const SPWindow&,const char*)>
+						public ThreadL<void (const SPLooper&,const SPWindow&,const GLoopInitParam&)>
 	{
 		using base = ThreadL<void (const SPLooper&,const SPWindow&,const char*)>;
 		MPCreate	_mcr;
@@ -157,7 +169,7 @@ namespace rs {
 		SpinLock<Info>		_info;
 
 		protected:
-			void runL(const SPLooper& guiLooper, const SPWindow& w, const char* pathfile) override;
+			void runL(const SPLooper& guiLooper, const SPWindow& w, const GLoopInitParam& param) override;
 		public:
 			MainThread(MPCreate mcr, DPCreate dcr);
 			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
@@ -200,6 +212,8 @@ namespace rs {
 			/*!	\param[in] mcr ゲームアップデートコールバック(メインスレッドから呼ばれる, ゲーム終了時にfalseを返す)
 				\param[in] dcr 描画コールバックインタフェースを作成(描画スレッドから呼ばれる) */
 			GameLoop(MPCreate mcr, DPCreate dcr);
-			int run(const char* pathfile, spn::To8Str title, int w, int h, uint32_t flag, int major=2, int minor=0, int depth=16);
+
+			int run(const GLoopInitParam& param);
 	};
 }
+

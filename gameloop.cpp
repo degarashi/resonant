@@ -96,7 +96,7 @@ namespace rs {
 		lk->accumUpd = lk->accumDraw = 0;
 		lk->tmBegin = Clock::now();
 	}
-	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const char* pathfile) {
+	void MainThread::runL(const SPLooper& guiLooper, const SPWindow& w, const GLoopInitParam& param) {
 		spn::Optional<DrawThread> opDth;
 		UPtr<GLWrap>	glw;
 		// Looper::atPanic
@@ -113,9 +113,9 @@ namespace rs {
 			}
 			glw.reset(new GLWrap(MULTICONTEXT));
 			UPtr<GLRes>			glrP(new GLRes());
-			UPtr<RWMgr>			rwP(new RWMgr());
+			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
-			appPath->setFromText(mgr_rw.fromFile(pathfile, RWops::Read));
+			appPath->setFromText(mgr_rw.fromFile(param.pathfile, RWops::Read));
 			UPtr<FontFamily>	fontP(new FontFamily());
 			fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
 			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
@@ -359,12 +359,12 @@ namespace rs {
 	};
 	const uint32_t EVID_SIGNAL = SDL_RegisterEvents(1);
 	GameLoop::GameLoop(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr), _level(Active) {}
-	int GameLoop::run(const char* pathfile, spn::To8Str title, int w, int h, uint32_t flag, int major, int minor, int depth) {
+	int GameLoop::run(const GLoopInitParam& param) {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
-		Window::SetStdGLAttributes(major, minor, depth);
-		SPWindow _spWindow = Window::Create(title.moveTo(), w, h, flag);
+		Window::SetStdGLAttributes(param.verMajor, param.verMinor, param.depth);
+		SPWindow _spWindow = Window::Create(param.title, param.width, param.height, param.flag);
 		rs::SDLMouse::SetWindow(_spWindow->getWindow());
 
 		// メインスレッドのメッセージキューを初期化
@@ -372,7 +372,7 @@ namespace rs {
 		auto& loop = Looper::GetLooper();
 		// メインスレッドに渡す
 		MainThread mth(_mcr, _dcr);
-		mth.start(std::ref(loop), std::ref(_spWindow), pathfile);
+		mth.start(std::ref(loop), std::ref(_spWindow), param);
 		// メインスレッドのキューが準備出来るのを待つ
 		while(auto msg = loop->wait()) {
 			if(static_cast<msg::MainInit*>(*msg))
