@@ -35,6 +35,7 @@ namespace rs {
 
 	struct IRecvPointer {
 		virtual void newPointer(WPtr wptr) = 0;
+		virtual ~IRecvPointer() {}
 	};
 	struct RecvPtrGroup : IRecvPointer {
 		using LSet = std::set<IRecvPointer*>;

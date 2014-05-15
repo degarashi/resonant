@@ -134,6 +134,7 @@ namespace rs {
 				}
 			};
 			struct IState {
+				virtual ~IState() {}
 				virtual void play(ASource& self, Duration fadeIn) {}
 				virtual void pause(ASource& self, Duration fadeOut) {}
 				virtual void stop(ASource& self, Duration fadeOut) {}

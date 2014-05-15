@@ -618,6 +618,7 @@ namespace rs {
 
 	//! デバッグ用テクスチャ模様生成インタフェース
 	struct ITDGen {
+		virtual ~ITDGen() {}
 		virtual uint32_t getFormat() const = 0;
 		virtual bool isSingle() const = 0;
 		virtual spn::ByteBuff generate(const spn::Size& size, CubeFace face=CubeFace::PositiveX) const = 0;

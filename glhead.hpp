@@ -38,6 +38,7 @@ namespace rs {
 		virtual void stencilOpBack(int sfail, int dpfail, int dppass) = 0;
 		virtual void stencilMaskFront(int mask) = 0;
 		virtual void stencilMaskBack(int mask) = 0;
+		virtual ~IGL() {}
 	};
 	//! 直でOpenGL関数を呼ぶ
 	struct IGL_Draw : IGL {
