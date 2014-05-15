@@ -301,7 +301,8 @@ namespace rs {
 	namespace {
 		constexpr int RANDOMLEN_MIN = 8,
 						RANDOMLEN_MAX = 16,
-						RANDOMIZER_ID = 0x10000000;
+						RANDOMIZER_ID = 0x10000000,
+						MAX_RETRY_COUNT = 64;
 		const spn::CharVec<char> c_charVec{
 			{'A', 'Z'},
 			{'a', 'z'},
@@ -349,28 +350,42 @@ namespace rs {
 		}
 	};
 	using SDLPtr = std::unique_ptr<void, SDLDeleter>;
-	spn::URI RWMgr::makeFilePath(const std::string& dirName) const {
+	std::string RWMgr::makeFilePath(const std::string& dirName) const {
 		SDLPtr str(SDL_GetPrefPath(_orgName.c_str(), _appName.c_str()));
 		std::string path(reinterpret_cast<const char*>(str.get()));
 		if(!dirName.empty())
 			path.append(dirName);
-		return spn::URI("file", std::move(path));
+		return std::move(path);
 	}
-	spn::URI RWMgr::createTemporaryFile() {
+	std::pair<HLRW,std::string> RWMgr::createTemporaryFile() {
+		// Temporaryディレクトリ構造を作る
+		spn::Dir tmpdir(makeFilePath(c_tmpDirName));
+		using spn::FStatus;
+		// 既に別のファイルがあるなどしてディレクトリが作れなければ内部で例外を投げる
+		tmpdir.mkdir(FStatus::GroupRead | FStatus::OtherRead | FStatus::UserRWX);
 		// ランダムなファイル名[A-Za-z0-9_]{8,16}を重複考えず作る
 		std::string str;
 		auto rnd = mgr_random.get(RANDOMIZER_ID);
-		// 一旦ファイルを開いてみて、開けなければファイルが存在しないと想定
-		int length = rnd.getUniformRange<int>(RANDOMLEN_MIN, RANDOMLEN_MAX);
-		int csize = c_charVec.size();
-		for(int i=0 ; i<length ; i++)
-			str.append(1, c_charVec.get(rnd.getUniformRange<int>(0, csize-1)));
-		auto uri = makeFilePath(c_tmpDirName);
-		uri <<= str;
-		return std::move(uri);
+		int retry_count = MAX_RETRY_COUNT;
+		while(--retry_count >= 0) {
+			int length = rnd.getUniformRange<int>(RANDOMLEN_MIN, RANDOMLEN_MAX);
+			int csize = c_charVec.size();
+			for(int i=0 ; i<length ; i++)
+				str.append(1, c_charVec.get(rnd.getUniformRange<int>(0, csize-1)));
+			// 同名のファイルが既に存在しないかチェック
+			spn::Dir dir(tmpdir);
+			dir.pushBack(str);
+			if(!dir.isFile()) {
+				std::string fpath = dir.plain_utf8();
+				return std::make_pair(fromFile(fpath, RWops::Write), fpath);
+			}
+		}
+		// 指定回数リトライしても駄目な場合はエラーとする
+		Assert(Trap, false, "can't create temporary file")
+		return std::make_pair(HLRW(), std::string());
 	}
 	void RWMgr::_cleanupTemporaryFile() {
-		std::string path = makeFilePath(c_tmpDirName).plain_utf8();
+		std::string path = makeFilePath(c_tmpDirName);
 		path += "/*";
 		auto strlist = spn::Dir::EnumEntryWildCard(path);
 		for(auto& s : strlist) {

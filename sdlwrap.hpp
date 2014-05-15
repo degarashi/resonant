@@ -920,9 +920,10 @@ namespace rs {
 				return base_type::acquire(RWops::FromVector(std::forward<T>(t))); }
 			LHdl fromConstMem(const void* p, int size, typename RWops::Callback* cb=nullptr);
 			LHdl fromMem(void* p, int size, typename RWops::Callback* cb=nullptr);
-			//! ランダムな名前の一時ファイルを作ってそのURIを返す
-			spn::URI createTemporaryFile();
-			spn::URI makeFilePath(const std::string& dirName) const;
+			//! ランダムな名前の一時ファイルを作ってそのハンドルとファイルパスを返す
+			std::pair<LHdl, std::string> createTemporaryFile();
+			//! OrgNameとAppNameからなるプライベートなディレクトリパス
+			std::string makeFilePath(const std::string& dirName) const;
 	};
 	//! ファイルシステムに置かれたZipからのファイル読み込み
 	class UriH_PackedZip : public UriHandler {
