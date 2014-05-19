@@ -649,25 +649,29 @@ namespace rs {
 		// -------------- Uniforms --------------
 		Uniform::Uniform(HRes hRes, GLint id): Token(hRes), idUnif(id) {}
 
-		Unif_Int::Unif_Int(GLint id, bool b): Uniform(HRes(), id), iValue(static_cast<int>(b)) {}
-		Unif_Int::Unif_Int(GLint id, int iv): Uniform(HRes(), id), iValue(iv) {}
-		void Unif_Int::exec() {
-			GL.glUniform1i(idUnif, iValue);
+		namespace {
+			using IGLF = void (*)(GLint, const void*, int);
+			const IGLF c_iglf[] = {
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform1fv(id, n, reinterpret_cast<const GLfloat*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform2fv(id, n, reinterpret_cast<const GLfloat*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform3fv(id, n, reinterpret_cast<const GLfloat*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform4fv(id, n, reinterpret_cast<const GLfloat*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform1iv(id, n, reinterpret_cast<const GLint*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform2iv(id, n, reinterpret_cast<const GLint*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform3iv(id, n, reinterpret_cast<const GLint*>(ptr)); },
+				[](GLint id, const void* ptr, int n) {
+					GL.glUniform4iv(id, n, reinterpret_cast<const GLint*>(ptr)); }
+			};
 		}
-
-		Unif_Float::Unif_Float(GLint id, float v): Uniform(HRes(), id), fValue(v) {}
-		void Unif_Float::exec() {
-			GL.glUniform1f(idUnif, fValue);
-		}
-
-		Unif_Vec3::Unif_Vec3(GLint id, const spn::Vec3& v): Uniform(HRes(), id), vValue(v) {}
-		void Unif_Vec3::exec() {
-			GL.glUniform3f(idUnif, vValue.x, vValue.y, vValue.z);
-		}
-
-		Unif_Vec4::Unif_Vec4(GLint id, const spn::Vec4& v): Uniform(HRes(), id), vValue(v) {}
-		void Unif_Vec4::exec() {
-			GL.glUniform4f(idUnif, vValue.x, vValue.y, vValue.z, vValue.w);
+		void Unif_Vec_Exec(int idx, GLint id, const void* ptr, int n) {
+			c_iglf[idx](id, ptr, n);
 		}
 
 		Unif_Mat33::Unif_Mat33(GLint id, const spn::Mat33& m): Uniform(HRes(), id), mValue(m) {}
@@ -734,16 +738,13 @@ namespace rs {
 		return _MakeUniformToken(pf, id, static_cast<int>(b));
 	}
 	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, int iv) {
-		return std::make_shared<draw::Unif_Int>(id, iv);
+		return std::make_shared<draw::Unif_Vec<int, 1, 1>>(id, &iv);
 	}
 	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, float fv) {
-		return std::make_shared<draw::Unif_Float>(id, fv);
+		return std::make_shared<draw::Unif_Vec<float, 1, 1>>(id, &fv);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Vec3& v) {
-		return std::make_shared<draw::Unif_Vec3>(id, v);
-	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Vec4& v) {
-		return std::make_shared<draw::Unif_Vec4>(id, v);
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, double dv) {
+		return _MakeUniformToken(pf, id, static_cast<float>(dv));
 	}
 	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat32& v) {
 		return _MakeUniformToken(pf, id, v.convert33());

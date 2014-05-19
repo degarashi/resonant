@@ -212,31 +212,23 @@ namespace rs {
 			GLint	idUnif;
 			Uniform(HRes hRes, GLint id);
 		};
-		struct Unif_Int : Uniform {
-			int		iValue;
 
-			Unif_Int(GLint id, bool b);
-			Unif_Int(GLint id, int iv);
-			void exec() override;
-		};
-		struct Unif_Float : Uniform {
-			float	fValue;
+		void Unif_Vec_Exec(int idx, GLint id, const void* ptr, int n);
+		//! ivec[1-4], fvec[1-4]対応
+		template <class T, int DN, int N>
+		struct Unif_Vec : Uniform {
+			T	value[N][DN];
 
-			Unif_Float(GLint id, float v);
-			void exec() override;
+			template <int N2, bool A2>
+			Unif_Vec(GLint id, const spn::VecT<N2, A2>& v): Unif_Vec(id, v.m) {}
+			Unif_Vec(GLint id, const T* v): Uniform(HRes(), id) {
+				std::memcpy(value, v, sizeof(T)*DN*N);
+			}
+			void exec() override {
+				Unif_Vec_Exec(std::is_integral<T>::value * 4 + DN, idUnif, value, N);
+			}
 		};
-		struct Unif_Vec3 : Uniform {
-			spn::Vec3	vValue;
 
-			Unif_Vec3(GLint id, const spn::Vec3& v);
-			void exec() override;
-		};
-		struct Unif_Vec4 : Uniform {
-			spn::Vec4	vValue;
-
-			Unif_Vec4(GLint id, const spn::Vec4& v);
-			void exec() override;
-		};
 		struct Unif_Mat33 : Uniform {
 			spn::Mat33	mValue;
 
