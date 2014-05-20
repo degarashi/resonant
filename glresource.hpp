@@ -110,6 +110,7 @@ namespace rs {
 
 	// ------------------ GLリソース管理 ------------------
 	class GLFBufferTmp;
+	struct AdaptSDL;
 	#define mgr_gl (::rs::GLRes::_ref())
 	//! OpenGL関連のリソースマネージャ
 	class GLRes : public spn::ResMgrN<UPResource, GLRes, std::allocator, std::string> {
@@ -179,8 +180,9 @@ namespace rs {
 			HLProg makeProgram(HSh vsh, HSh psh);
 
 			// ------------ Buffer ------------
+			using CBCreateFx = std::function<GLEffect* (AdaptSDL&)>;
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri);
+			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri, CBCreateFx cb);
 			//! 頂点バッファの確保
 			AnotherLHandle<UPVBuffer,true> makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保

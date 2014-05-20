@@ -5,6 +5,7 @@
 #include "gpu.hpp"
 #include "camera.hpp"
 #include "input.hpp"
+#include "adaptsdl.hpp"
 
 // ------------------------------ MyDraw ------------------------------
 bool MyDraw::runU(uint64_t accum, bool bSkip) {
@@ -135,7 +136,7 @@ void MyMain::_initEffect() {
 	auto lk = shared.lock();
 	spn::URI uriFx("file", mgr_path.getPath(rs::AppPath::Type::Effect));
 	uriFx <<= "test.glx";
-	lk->hlFx = mgr_gl.loadEffect(uriFx);
+	lk->hlFx = mgr_gl.loadEffect(uriFx, [](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
 	auto& pFx = *lk->hlFx.ref();
 	_techID = *pFx.getTechID("TheTech");
 	pFx.setTechnique(_techID, true);

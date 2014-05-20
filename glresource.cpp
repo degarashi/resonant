@@ -57,10 +57,10 @@ namespace rs {
 		initHandle(lh);
 		return Cast<UPShader>(std::move(lh));
 	}
-	HLFx GLRes::loadEffect(const spn::URI& uri) {
+	HLFx GLRes::loadEffect(const spn::URI& uri, CBCreateFx cb) {
 		HLRW hlRW = mgr_rw.fromURI(uri, RWops::Read);
 		AdaptSDL as(hlRW.get());
-		LHdl lh = _common(uri.plainUri_utf8(), [&](){ return UPResource(new GLEffect(as)); });
+		LHdl lh = _common(uri.plainUri_utf8(), [&](){ return UPResource(cb(as)); });
 		return Cast<UPEffect>(std::move(lh));
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
@@ -122,7 +122,7 @@ namespace rs {
 			ret = loadTexture(uri);
 		// is it Effect(Shader)?
 		else if(ext == "glx")
-			ret = loadEffect(uri);
+			ret = loadEffect(uri, [](AdaptSDL& as){ return new GLEffect(as); });
 		return std::move(ret);
 	}
 }
