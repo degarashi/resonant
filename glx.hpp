@@ -377,12 +377,6 @@ namespace rs {
 			void setUniform(GLint id, const T& t) {
 				_current.uniMap.emplace(id, _MakeUniformToken(_current.normal, id, t));
 			}
-			template <int M, int N>
-			void setUniform(GLint id, const spn::MatT<M,N,true>& m) {
-				spn::MatT<M,N,false> tmp;
-				m.convert(tmp);
-				setUniform(id, tmp);
-			}
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, bool b);
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, float fv);
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, double fv);
@@ -399,9 +393,9 @@ namespace rs {
 
 			void setUserPriority(Priority p);
 			//! IStreamを使用して描画
-			void drawIndexed(GLenum mode, GLsizei count, GLuint offset=0);
+			virtual void drawIndexed(GLenum mode, GLsizei count, GLuint offset=0);
 			//! IStreamを使わず描画
-			void draw(GLenum mode, GLint first, GLsizei count);
+			virtual void draw(GLenum mode, GLint first, GLsizei count);
 
 			// ---- from MainThread ----
 			//! バッファを2つともクリア(主にスリープ時)
