@@ -517,6 +517,22 @@ namespace rs {
 	OPGLint GLEffect::getCurTechID() const {
 		return _current.tech;
 	}
+	HLProg GLEffect::getProgram(int techID, int passID) const {
+		if(techID < 0) {
+			if(!_current.tech)
+				return HLProg();
+			techID = *_current.tech;
+		}
+		if(passID < 0) {
+			if(!_current.pass)
+				return HLProg();
+			passID = *_current.pass;
+		}
+		auto itr = _techMap.find(GL16ID(techID, passID));
+		if(itr != _techMap.end())
+			return itr->second.getProgram();
+		return HLProg();
+	}
 	
 	void GLEffect::_exportInitTag() {
 		// もしInitTagが有効ならそれを出力

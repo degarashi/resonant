@@ -356,6 +356,11 @@ namespace rs {
 			OPGLint getPassID(const std::string& pass) const;
 			OPGLint getCurTechID() const;
 			OPGLint getCurPassID() const;
+			//! TechID, PassIDに該当するProgramハンドルを返す
+			/*! \param[in] techID (-1 = currentTechID)
+				\param[in] passID (-1 = currentPassID)
+				\return 該当があればそのハンドル、なければ無効なハンドル */
+			HLProg getProgram(int techID=-1, int passID=-1) const;
 			//! Tech切替時に初期値をセットするか
 			void setTechnique(int id, bool bReset);
 			//! Pass指定
