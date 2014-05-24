@@ -342,8 +342,7 @@ namespace rs {
 		}
 
 		public:
-			using GLBufferCore::GLBufferCore;
-			GLBuffer(GLBuffer&& b) = delete;
+			GLBuffer(GLuint flag, GLuint dtype);
 			GLBuffer(const GLBuffer&) = delete;
 			~GLBuffer() override;
 
@@ -356,6 +355,7 @@ namespace rs {
 			}
 			// 部分的に書き換え
 			void updateData(const void* src, size_t nElem, GLuint offset);
+			GLuint getSize() const;
 
 			void onDeviceLost() override;
 			void onDeviceReset() override;
@@ -564,7 +564,7 @@ namespace rs {
 		OPBuff		_buff;			//!< DeviceLost時用のバッファ
 		OPFormat	_typeFormat;	//!< _buffに格納されているデータの形式(Type)
 
-		bool		_bStream;		//!< 頻繁に書き換えられるか(の、ヒント)
+		//bool		_bStream;		//!< 頻繁に書き換えられるか(の、ヒント)
 		bool		_bRestore;
 		//! テクスチャフォーマットから必要なサイズを計算してバッファを用意する
 		const GLFormatDesc& _prepareBuffer();
@@ -634,7 +634,7 @@ namespace rs {
 	//! カラーチェッカー
 	/*! 準モンテカルロで色を決定 */
 	class TDCChecker : public ITDGen {
-		int			_nDivW, _nDivH;
+		// int			_nDivW, _nDivH;
 		public:
 			TDCChecker(int nDivW, int nDivH);
 			DEF_DEBUGGEN

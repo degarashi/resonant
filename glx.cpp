@@ -361,35 +361,45 @@ namespace rs {
 		auto itr = str.cbegin();
 		bool bS = boost::spirit::qi::phrase_parse(itr, str.cend(), glx, standard::space, _result);
 	#ifdef DEBUG
-		// テスト表示
-		_result.output(std::cout);
-		if(bS)
-			std::cout << "------- analysis succeeded! -------" << std::endl;
-		else
-			std::cout << "------- analysis failed! -------" << std::endl;
+		LogOutput((bS) ? "------- analysis succeeded! -------"
+					: "------- analysis failed! -------");
 		if(itr != str.cend()) {
-			std::cout << "<but not reached to end>" << std::endl
-				<< "remains: " << std::endl << std::string(itr, str.cend()) << std::endl;
+			LogOutput("<but not reached to end>\nremains: %1%", std::string(itr, str.cend()));
+		} else {
+			// 解析結果の表示
+			std::stringstream ss;
+			_result.output(ss);
+			LogOutput(ss.str());
 		}
 	#endif
-		if(!bS || itr!=str.cend())
-			throw EC_GLXGrammar("invalid GLEffect format");
+		if(!bS || itr!=str.cend()) {
+			std::stringstream ss;
+			ss << "GLEffect parse error:";
+			if(itr != str.cend())
+				ss << "remains:\n" << std::string(itr, str.cend());
+			throw EC_GLXGrammar(ss.str());
+		}
 
-		// Tech/Passを順に実行形式へ変換
-		// (一緒にTech/Pass名リストを構築)
-		int nI = _result.tpL.size();
-		_techName.resize(nI);
-		for(int techID=0 ; techID<nI ; techID++) {
-			auto& nmm = _techName[techID];
-			auto& tpTech = _result.tpL.at(techID);
-			// Pass毎に処理
-			int nJ = _result.tpL[techID].tpL.size();
-			nmm.resize(nJ+1);
-			nmm[0] = tpTech.name;
-			for(int passID=0 ; passID<nJ ; passID++) {
-				nmm[passID+1] = tpTech.tpL.at(passID).get().name;
-				_techMap.insert(std::make_pair(GL16ID(techID, passID), TPStructR(_result, techID, passID)));
+		try {
+			// Tech/Passを順に実行形式へ変換
+			// (一緒にTech/Pass名リストを構築)
+			int nI = _result.tpL.size();
+			_techName.resize(nI);
+			for(int techID=0 ; techID<nI ; techID++) {
+				auto& nmm = _techName[techID];
+				auto& tpTech = _result.tpL.at(techID);
+				// Pass毎に処理
+				int nJ = _result.tpL[techID].tpL.size();
+				nmm.resize(nJ+1);
+				nmm[0] = tpTech.name;
+				for(int passID=0 ; passID<nJ ; passID++) {
+					nmm[passID+1] = tpTech.tpL.at(passID).get().name;
+					_techMap.insert(std::make_pair(GL16ID(techID, passID), TPStructR(_result, techID, passID)));
+				}
 			}
+		} catch(const std::exception& e) {
+			LogOutput("GLEffect exception: %1%", e.what());
+			throw;
 		}
 		GLEC_ChkP(Trap)
 	}
@@ -849,7 +859,7 @@ namespace rs {
 			selectSh[a.type] = &a;
 
 		// VertexとPixelシェーダは必須、Geometryは任意
-		AssertT(Trap, (selectSh[ShType::VERTEX] && selectSh[ShType::PIXEL]), (GLE_LogicalError)(const char*), "no vertex or pixel shader found")
+		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::PIXEL]), (GLE_LogicalError)(const char*), "no vertex or pixel shader found")
 
 		std::stringstream ss;
 		TPSDupl dupl(gs, tech, pass);
@@ -929,7 +939,7 @@ namespace rs {
 			// 頂点セマンティクス対応リストを生成
 			// セマンティクスの重複はエラー
 			auto& atID = _vAttrID[p->sem];
-			AssertT(Trap, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
+			AssertT(Throw, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
 			auto at = prog.getAttribID(p->name.c_str());
 			atID = (at) ? *at : -1;
 			// -1の場合は警告を出す(もしかしたらシェーダー内で使ってないだけかもしれない)

@@ -382,7 +382,7 @@ namespace rs {
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, double fv);
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, int iv);
 			template <int N, bool A>
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::VecT<N,A>& v) {
+			static draw::SPToken _MakeUniformToken(IPreFunc& /*pf*/, GLint id, const spn::VecT<N,A>& v) {
 				return std::make_shared<draw::Unif_Vec<float, N, 1>>(id, v); }
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat32& m);
 			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat33& m);

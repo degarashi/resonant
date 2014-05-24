@@ -196,7 +196,7 @@ namespace rs {
 	// ------------------------- GLFBuffer -------------------------
 	namespace {
 		const auto fnReset = [](IGLResource* r) { r->onDeviceReset(); };
-		const auto fnLost = [](IGLResource* r) { r->onDeviceLost(); };
+		// const auto fnLost = [](IGLResource* r) { r->onDeviceLost(); };
 
 		template <class F>
 		struct HdlVisitor : boost::static_visitor<> {

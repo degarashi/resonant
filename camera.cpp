@@ -94,7 +94,7 @@ namespace rs {
 	}
 	bool CamData::lerpTurn(const Quat& q_tgt, float t) {
 		Quat q = getRot();
-		q.lerp(q_tgt, t);
+		q.slerp(q_tgt, t);
 		return q.distance(q_tgt) < TURN_THRESHOLD;
 	}
 	uint32_t CamData::getAccum() const {

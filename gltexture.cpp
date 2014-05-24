@@ -131,7 +131,7 @@ namespace rs {
 
 	// ------------------------- Texture_Mem -------------------------
 	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore):
-		IGLTexture(fmt, sz, bCube), _bStream(bStream), _bRestore(bRestore)
+		IGLTexture(fmt, sz, bCube), /*_bStream(bStream),*/ _bRestore(bRestore)
 	{}
 	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff):
 		Texture_Mem(bCube, fmt, sz, bStream, bRestore)
@@ -426,7 +426,7 @@ namespace rs {
 		return std::move(buff);
 	}
 	// ------------------------- TDCChecker -------------------------
-	TDCChecker::TDCChecker(int nDivW, int nDivH): _nDivW(nDivW), _nDivH(nDivH) {}
+	TDCChecker::TDCChecker(int nDivW, int nDivH)/*: _nDivW(nDivW), _nDivH(nDivH)*/ {}
 	uint32_t TDCChecker::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDCChecker::isSingle() const { return true; }
 	spn::ByteBuff TDCChecker::generate(const spn::Size& size, CubeFace face) const {

@@ -41,6 +41,7 @@ namespace rs {
 			}
 		}
 	}
+	GLBuffer::GLBuffer(GLuint flag, GLuint dtype): GLBufferCore(flag, dtype), _buffSize(0) {}
 	GLBuffer::~GLBuffer() {
 		onDeviceLost();
 	}
@@ -65,6 +66,9 @@ namespace rs {
 			use_begin();
 			GL.glBufferSubData(_buffType, ofs, szCopy, src);
 		};
+	}
+	GLuint GLBuffer::getSize() const {
+		return _buffSize;
 	}
 	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
 		if(_preFunc) {
