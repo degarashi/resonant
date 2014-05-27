@@ -70,6 +70,9 @@ namespace rs {
 	GLuint GLBuffer::getSize() const {
 		return _buffSize;
 	}
+	GLuint GLBuffer::getNElem() const {
+		return _buffSize / _stride;
+	}
 	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
 		if(_preFunc) {
 			PreFunc pfunc(std::move(const_cast<GLBuffer*>(this)->_preFunc));

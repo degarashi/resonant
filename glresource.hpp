@@ -335,7 +335,7 @@ namespace rs {
 				delete rt;
 			};
 			_stride = stride;
-			_buffSize = src.size() * stride;
+			_buffSize = src.size() * sizeof(typename Raw<T>::value_type);
 			RawType* rt = new RawType(std::forward<T>(src));
 			_pBuffer = rt->data();
 			_buff = SPBuff(static_cast<void*>(rt), fnDeleter);
@@ -349,13 +349,14 @@ namespace rs {
 			// 全域を書き換え
 			void initData(const void* src, size_t nElem, GLuint stride);
 			template <class T, class = ChkIfVector<T>>
-			void initData(T&& src, GLuint stride=sizeof(T::value_type)) {
+			void initData(T&& src, GLuint stride=sizeof(typename Raw<T>::value_type)) {
 				_setVec(std::forward<T>(src), stride);
 				_initData();
 			}
 			// 部分的に書き換え
 			void updateData(const void* src, size_t nElem, GLuint offset);
 			GLuint getSize() const;
+			GLuint getNElem() const;
 
 			void onDeviceLost() override;
 			void onDeviceReset() override;
