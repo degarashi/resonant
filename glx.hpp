@@ -216,11 +216,16 @@ namespace rs {
 		};
 		//! DrawToken: DrawCall(Indexed)
 		struct DrawCallI : Token {
-			GLenum	_mode, _stride;
+			GLenum	_mode;
 			GLsizei	_count;
+			GLenum	_sizeF;
 			GLuint	_offset;
 
-			DrawCallI(GLenum mode, GLenum stride, GLsizei count, GLuint offset);
+			/*! \param[in] mode 描画モードフラグ(OpenGL)
+				\param[in] count 描画に使用される要素数
+				\param[in] sizeF 1要素のサイズを表すフラグ
+				\param[in] offset オフセットバイト数 */
+			DrawCallI(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 			void exec() override;
 		};
 		//! DrawTag (Texture, Uniformなど雑多なオペレーション)
@@ -393,8 +398,14 @@ namespace rs {
 
 			void setUserPriority(Priority p);
 			//! IStreamを使用して描画
-			virtual void drawIndexed(GLenum mode, GLsizei count, GLuint offset=0);
+			/*! \param[in] mode 描画モードフラグ(OpenGL)
+				\param[in] count 描画に使用される要素数
+				\param[in] offsetElem オフセット要素数 */
+			virtual void drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem=0);
 			//! IStreamを使わず描画
+			/*! \param[in] mode 描画モードフラグ(OpenGL)
+				\param[in] first 描画を開始する要素オフセット
+				\param[in] count 描画に使用される要素数 */
 			virtual void draw(GLenum mode, GLint first, GLsizei count);
 
 			// ---- from MainThread ----

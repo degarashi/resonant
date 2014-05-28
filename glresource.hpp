@@ -372,13 +372,14 @@ namespace rs {
 	class GLIBuffer : public GLBuffer {
 		public:
 			GLIBuffer(GLuint dtype);
+			using GLBuffer::initData;
 			void initData(const GLubyte* src, size_t nElem);
 			void initData(const GLushort* src, size_t nElem);
-			void initData(spn::ByteBuff&& buff);
-			void initData(const spn::U16Buff& buff);
 
 			void updateData(const GLushort* src, size_t nElem, GLuint offset);
 			void updateData(const GLubyte* src, size_t nElem, GLuint offset);
+			GLenum getSizeFlag() const;
+			static GLenum GetSizeFlag(int stride);
 	};
 
 	struct GLParamInfo : GLSLFormatDesc {

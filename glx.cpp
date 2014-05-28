@@ -666,9 +666,9 @@ namespace rs {
 		}
 
 		// -------------- DrawCallI --------------
-		DrawCallI::DrawCallI(GLenum mode, GLenum stride, GLsizei count, GLuint offset): Token(HRes()), _mode(mode), _stride(stride), _count(count), _offset(offset) {}
+		DrawCallI::DrawCallI(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset): Token(HRes()), _mode(mode), _count(count), _sizeF(sizeF), _offset(offset) {}
 		void DrawCallI::exec() {
-			GL.glDrawElements(_mode, _count, _stride, reinterpret_cast<const GLvoid*>(_offset));
+			GL.glDrawElements(_mode, _count, _sizeF, reinterpret_cast<const GLvoid*>(_offset));
 			GLEC_ChkP(Trap);
 		}
 
@@ -748,11 +748,13 @@ namespace rs {
 		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
 		_current.bNormal = false;
 	}
-	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offset) {
-		GLenum sz = _current.init._opIb->getStride() == sizeof(GLshort) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_BYTE;
+	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
 		_exportInitTag();
 		_exportUniform();
-		_current.normal._tokenL.emplace_back(new draw::DrawCallI(mode, sz, count, offset));
+		draw::Buffer& ib = *_current.init._opIb;
+		auto str = ib.getStride();
+		auto szF = GLIBuffer::GetSizeFlag(str);
+		_current.normal._tokenL.emplace_back(new draw::DrawCallI(mode, count, szF, offsetElem * str));
 		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
 		_current.bNormal = false;
 	}

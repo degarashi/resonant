@@ -95,16 +95,27 @@ namespace rs {
 	void GLIBuffer::initData(const GLushort* src, size_t nElem) {
 		GLBuffer::initData(src, nElem, sizeof(GLushort));
 	}
-	void GLIBuffer::initData(spn::ByteBuff&& buff) {
-		GLBuffer::initData(std::forward<spn::ByteBuff>(buff), sizeof(GLubyte));
-	}
-	void GLIBuffer::initData(const spn::U16Buff& buff) {
-		GLBuffer::initData(reinterpret_cast<const void*>(&buff[0]), buff.size(), sizeof(GLushort));
-	}
 	void GLIBuffer::updateData(const GLubyte* src, size_t nElem, GLuint offset) {
 		GLBuffer::updateData(src, nElem, offset*sizeof(GLubyte));
 	}
 	void GLIBuffer::updateData(const GLushort* src, size_t nElem, GLuint offset) {
 		GLBuffer::updateData(src, nElem, offset*sizeof(GLushort));
 	}
+	GLenum GLIBuffer::getSizeFlag() const {
+		return GetSizeFlag(getStride());
+	}
+	GLenum GLIBuffer::GetSizeFlag(int stride) {
+		switch(stride) {
+			case sizeof(GLubyte):
+				return GL_UNSIGNED_BYTE;
+			case sizeof(GLushort):
+				return GL_UNSIGNED_SHORT;
+			case sizeof(GLuint):
+				return GL_UNSIGNED_INT;
+			default:
+				Assert(Trap, false, "unknown ibuffer size type");
+		}
+		return 0;
+	}
 }
+
