@@ -216,32 +216,40 @@ namespace rs {
 		};
 
 		void Unif_Vec_Exec(int idx, GLint id, const void* ptr, int n);
+		void Unif_Mat_Exec(int idx, GLint id, const void* ptr, int n, bool bT);
 		//! ivec[1-4], fvec[1-4]対応
-		template <class T, int DN, int N>
-		struct Unif_Vec : Uniform {
-			T	value[N][DN];
+		template <class T, int DN>
+		class Unif_Vec : public Uniform {
+			protected:
+				using UPT = std::unique_ptr<T>;
+				UPT		_data;
+				int		_nAr;
 
-			template <int N2, bool A2>
-			Unif_Vec(GLint id, const spn::VecT<N2, A2>& v): Unif_Vec(id, v.m) {}
-			Unif_Vec(GLint id, const T* v): Uniform(HRes(), id) {
-				std::memcpy(value, v, sizeof(T)*DN*N);
-			}
-			void exec() override {
-				Unif_Vec_Exec(std::is_integral<T>::value * 4 + DN, idUnif, value, N);
-			}
+			public:
+				template <bool A>
+				Unif_Vec(GLint id, const spn::VecT<DN, A>& v, int n): Unif_Vec(id, v.m, DN, n) {}
+				Unif_Vec(GLint id, const T* v, int nElem, int n):
+					Uniform(HRes(), id),
+					_data(new T[nElem*n]),
+					_nAr(n)
+				{
+					std::memcpy(_data.get(), v, sizeof(T)*nElem*n);
+				}
+				void exec() override {
+					Unif_Vec_Exec(std::is_integral<T>::value * 4 + DN-1, idUnif, _data.get(), _nAr);
+				}
 		};
-
-		struct Unif_Mat33 : Uniform {
-			spn::Mat33	mValue;
-
-			Unif_Mat33(GLint id, const spn::Mat33& m);
-			void exec() override;
-		};
-		struct Unif_Mat44 : Uniform {
-			spn::Mat44	mValue;
-
-			Unif_Mat44(GLint id, const spn::Mat44& m);
-			void exec() override;
+		template <class T, int DN>
+		class Unif_Mat : public Unif_Vec<T,DN> {
+			private:
+				using base = Unif_Vec<T,DN>;
+				bool	_bT;
+			public:
+				template <bool A>
+				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>& m, int n, bool bT): base(id, m.data, DN*DN, n), _bT(bT) {}
+				void exec() override {
+					Unif_Mat_Exec(DN-2, Uniform::idUnif, base::_data.get(), base::_nAr, _bT);
+				}
 		};
 	}
 	struct IPreFunc {

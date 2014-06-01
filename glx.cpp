@@ -676,8 +676,8 @@ namespace rs {
 		Uniform::Uniform(HRes hRes, GLint id): Token(hRes), idUnif(id) {}
 
 		namespace {
-			using IGLF = void (*)(GLint, const void*, int);
-			const IGLF c_iglf[] = {
+			using IGLF_V = void (*)(GLint, const void*, int);
+			const IGLF_V c_iglfV[] = {
 				[](GLint id, const void* ptr, int n) {
 					GL.glUniform1fv(id, n, reinterpret_cast<const GLfloat*>(ptr)); },
 				[](GLint id, const void* ptr, int n) {
@@ -695,19 +695,21 @@ namespace rs {
 				[](GLint id, const void* ptr, int n) {
 					GL.glUniform4iv(id, n, reinterpret_cast<const GLint*>(ptr)); }
 			};
+			using IGLF_M = void(*)(GLint, const void*, int, GLboolean);
+			const IGLF_M c_iglfM[] = {
+				[](GLint id, const void* ptr, int n, GLboolean bT) {
+					GL.glUniformMatrix2fv(id, n, bT, reinterpret_cast<const GLfloat*>(ptr)); },
+				[](GLint id, const void* ptr, int n, GLboolean bT) {
+					GL.glUniformMatrix3fv(id, n, bT, reinterpret_cast<const GLfloat*>(ptr)); },
+				[](GLint id, const void* ptr, int n, GLboolean bT) {
+					GL.glUniformMatrix4fv(id, n, bT, reinterpret_cast<const GLfloat*>(ptr)); }
+			};
 		}
 		void Unif_Vec_Exec(int idx, GLint id, const void* ptr, int n) {
-			c_iglf[idx](id, ptr, n);
+			c_iglfV[idx](id, ptr, n);
 		}
-
-		Unif_Mat33::Unif_Mat33(GLint id, const spn::Mat33& m): Uniform(HRes(), id), mValue(m) {}
-		void Unif_Mat33::exec() {
-			GL.glUniformMatrix3fv(idUnif, 1, true, reinterpret_cast<const GLfloat*>(mValue.ma));
-		}
-
-		Unif_Mat44::Unif_Mat44(GLint id, const spn::Mat44& m): Uniform(HRes(), id), mValue(m) {}
-		void Unif_Mat44::exec() {
-			GL.glUniformMatrix4fv(idUnif, 1, true, reinterpret_cast<const GLfloat*>(mValue.ma));
+		void Unif_Mat_Exec(int idx, GLint id, const void* ptr, int n, bool bT) {
+			c_iglfM[idx](id, ptr, n, bT ? GL_TRUE : GL_FALSE);
 		}
 	}
 	namespace {
@@ -762,38 +764,26 @@ namespace rs {
 		_current.prio.userP = p;
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, bool b) {
-		return _MakeUniformToken(pf, id, static_cast<int>(b));
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, bool b, int n, bool bT) {
+		return _MakeUniformToken(pf, id, static_cast<int>(b), n, bT);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, int iv) {
-		return std::make_shared<draw::Unif_Vec<int, 1, 1>>(id, &iv);
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, int iv, int n, bool /*bT*/) {
+		return std::make_shared<draw::Unif_Vec<int, 1>>(id, &iv, 1, n);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, float fv) {
-		return std::make_shared<draw::Unif_Vec<float, 1, 1>>(id, &fv);
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, float fv, int n, bool /*bT*/) {
+		return std::make_shared<draw::Unif_Vec<float, 1>>(id, &fv, 1, n);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, double dv) {
-		return _MakeUniformToken(pf, id, static_cast<float>(dv));
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, double dv, int n, bool bT) {
+		return _MakeUniformToken(pf, id, static_cast<float>(dv), n, bT);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat32& v) {
-		return _MakeUniformToken(pf, id, v.convert33());
-	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat33& v) {
-		return std::make_shared<draw::Unif_Mat33>(id, v);
-	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat43& v) {
-		return _MakeUniformToken(pf, id, v.convert44());
-	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const spn::Mat44& v) {
-		return std::make_shared<draw::Unif_Mat44>(id, v);
-	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HTex& hTex) {
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HTex& hTex, int /*n*/, bool /*bT*/) {
 		auto& t = hTex.cref();
 //		auto aID = _current.texIndex.at(id);
 //		t->setActiveID(aID);
 		return t->getDrawToken(pf, id, hTex);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HLTex& hlTex) {
-		return _MakeUniformToken(pf, id, hlTex.get());
+	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HLTex& hlTex, int n, bool bT) {
+		return _MakeUniformToken(pf, id, hlTex.get(), n, bT);
 	}
 	OPGLint GLEffect::getUniformID(const std::string& name) const {
 		return _current.tps->getProgram().cref()->getUniformID(name);
@@ -835,7 +825,7 @@ namespace rs {
 			template <class T>
 			void _addResult(const T& t) {
 				if(uniID >= 0)
-					result.emplace(uniID, GLEffect::_MakeUniformToken(*this, uniID, t));
+					result.emplace(uniID, GLEffect::_MakeUniformToken(*this, uniID, t, 1, false));
 			}
 
 			void operator()(const std::vector<float>& v) {
