@@ -21,10 +21,9 @@ namespace rs {
 		// VaryEnt: GLPrecision? GLType NameToken;
 		rlVaryEnt %= -(GLPrecision) >> GLType >> rlNameToken >> ';';
 
-		// (prec) valueType valueName<sizeSem> : defaultStr
-		// valueName<sizeSem> = defaultValue
+		// UnifEntry: Precision`GLPrecision` ValueName`rlNameToken` [SizeSem`rlNameToken`] = DefaultValue`rlVec|float|bool`
 		rlUnifEnt = (-(GLPrecision[at_c<0>(_val)=_1]) >> GLType[at_c<1>(_val)=_1]) > rlNameToken[at_c<2>(_val)=_1] >
-					-('<' > rlNameToken[at_c<3>(_val)=_1] > '>') >
+					-('[' > rlNameToken[at_c<3>(_val)=_1] > ']') >
 					-(lit('=') > (rlVec | qi::float_ | qi::bool_)[at_c<4>(_val)=_1]) > ';';
 		// Vector: [Float+]
 		rlVec %= '[' > +qi::float_ > ']';

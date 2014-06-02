@@ -173,7 +173,7 @@ namespace rs {
 	};
 	//! Uniform宣言エントリ
 	struct UnifEntry : EntryBase {
-		boost::optional<std::string>	sizeSem;
+		boost::optional<std::string>	arraySize;
 		boost::optional<boost::variant<std::vector<float>, float, bool>>	defStr;
 
 		void output(std::ostream& os) const;
@@ -336,7 +336,7 @@ namespace rs {
 }
 FUSION_ADAPT_STRUCT_AUTO(rs::AttrEntry, (prec)(type)(name)(sem))
 FUSION_ADAPT_STRUCT_AUTO(rs::VaryEntry, (prec)(type)(name))
-FUSION_ADAPT_STRUCT_AUTO(rs::UnifEntry, (prec)(type)(name)(sizeSem)(defStr))
+FUSION_ADAPT_STRUCT_AUTO(rs::UnifEntry, (prec)(type)(name)(arraySize)(defStr))
 FUSION_ADAPT_STRUCT_AUTO(rs::ConstEntry, (prec)(type)(name)(defVal))
 FUSION_ADAPT_STRUCT_AUTO(rs::BoolSetting, (type)(value))
 FUSION_ADAPT_STRUCT_AUTO(rs::ValueSetting, (type)(value))
