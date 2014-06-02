@@ -158,74 +158,63 @@ namespace rs {
 		boost::optional<unsigned>	prec;
 		int							type;
 		std::string					name;
-
-		void output(std::ostream& os, const char* prefix, char postfix) const;
 	};
+	std::ostream& operator << (std::ostream& os, const EntryBase& e);
 	//! Attribute宣言エントリ
 	struct AttrEntry : EntryBase {
 		unsigned					sem;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const AttrEntry& e);
 	//! Varying宣言エントリ
-	struct VaryEntry : EntryBase {
-		void output(std::ostream& os) const;
-	};
+	struct VaryEntry : EntryBase {};
+	std::ostream& operator << (std::ostream& os, const VaryEntry& e);
 	//! Uniform宣言エントリ
 	struct UnifEntry : EntryBase {
-		boost::optional<std::string>	arraySize;
+		boost::optional<int>	arraySize;
 		boost::optional<boost::variant<std::vector<float>, float, bool>>	defStr;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const UnifEntry& e);
 	//! Const宣言エントリ
 	struct ConstEntry : EntryBase {
 		boost::variant<bool, float, std::vector<float>>		defVal;
-
-		void output(std::ostream& os) const;
 	};
-
+	std::ostream& operator << (std::ostream& os, const ConstEntry& e);
 	//! Bool設定項目エントリ
 	struct BoolSetting {
 		GLuint				type;		//!< 設定項目ID
 		bool				value;		//!< 設定値ID or 数値
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const BoolSetting& s);
 	//! 数値設定エントリ
 	struct ValueSetting {
 		using ValueT = boost::variant<boost::blank,unsigned int,float,bool>;
 
 		GLSetting_::TYPE 		type;
 		std::vector<ValueT>		value;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const ValueSetting& s);
 
 	//! 変数ブロック使用宣言
 	struct BlockUse {
 		unsigned					type;	// Attr,Vary,Unif,Const
 		bool						bAdd;
 		std::vector<std::string>	name;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const BlockUse& b);
 	//! シェーダー設定エントリ
 	struct ShSetting {
 		int							type;
 		std::string					shName;
 		// 引数指定
 		std::vector<boost::variant<std::vector<float>, float, bool>>	args;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const ShSetting& s);
 	//! マクロ宣言エントリ
 	struct MacroEntry {
 		std::string						fromStr;
 		boost::optional<std::string>	toStr;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const MacroEntry& e);
 
 	template <class Ent>
 	struct Struct {
@@ -264,8 +253,7 @@ namespace rs {
 
 			// print entries
 			for(auto& e : entry) {
-				e.output(os);
-				os << endl;
+				os << e << endl;
 			}
 		}
 	};
@@ -273,6 +261,11 @@ namespace rs {
 	using VaryStruct = Struct<VaryEntry>;
 	using UnifStruct = Struct<UnifEntry>;
 	using ConstStruct = Struct<ConstEntry>;
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const Struct<T>& s) {
+		s.output(os);
+		return os;
+	}
 
 	struct ArgItem {
 		int			type;
@@ -311,9 +304,8 @@ namespace rs {
 		std::vector<ValueSetting> 	vsL;
 
 		std::vector<std::string>	derive;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const TPStruct& t);
 
 	//! 括弧の中身
 	struct Bracket;
@@ -330,9 +322,8 @@ namespace rs {
 		std::vector<TPStruct>	tpL;
 		NameMap<UnifStruct>		uniM;
 		NameMap<VaryStruct>		varM;
-
-		void output(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const GLXStruct& glx);
 }
 FUSION_ADAPT_STRUCT_AUTO(rs::AttrEntry, (prec)(type)(name)(sem))
 FUSION_ADAPT_STRUCT_AUTO(rs::VaryEntry, (prec)(type)(name))

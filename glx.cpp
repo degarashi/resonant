@@ -216,30 +216,29 @@ namespace rs {
 	namespace {
 		boost::regex re_comment(R"(//[^\s$]+)"),		//!< 一行コメント
 					re_comment2(R"(/\*[^\*]*\*/)");		//!< 範囲コメント
-	}
-	namespace {
+
 		class TPSDupl {
-			using TPList = std::vector<const TPStruct*>;
-			const GLXStruct &_glx;
-			const TPStruct &_tTech, &_tPass;
-			//! [Pass][Tech][Tech(Base0)][Tech(Base1)]...
-			TPList _tpList;
+			private:
+				using TPList = std::vector<const TPStruct*>;
+				const GLXStruct &_glx;
+				const TPStruct &_tTech, &_tPass;
+				//! 優先度順に並べたTPStructのポインタリスト [Pass][Tech][Tech(Base0)][Tech(Base1)]...
+				TPList _tpList;
 
-			void _getTPStruct(TPList& dst, const TPStruct* tp) const {
-				dst.push_back(tp);
-				auto& der = tp->derive;
-				for(auto& name : der) {
-					auto itr = std::find_if(_glx.tpL.begin(), _glx.tpL.end(), [&name](const boost::recursive_wrapper<TPStruct>& t){return t.get().name == name;});
-					_getTPStruct(dst, &(*itr));
+				void _listupBlocks(TPList& dst, const TPStruct* tp) const {
+					dst.push_back(tp);
+					auto& tpL = _glx.tpL;
+					for(auto& name : tp->derive) {
+						auto itr = std::find_if(tpL.begin(),
+												tpL.end(),
+												[&name](const boost::recursive_wrapper<TPStruct>& t){
+													return t.get().name == name;
+												});
+						// 継承Techは必ずGLEffectが持っている筈
+						Assert(Trap, itr!=tpL.end());
+						_listupBlocks(dst, &(*itr));
+					}
 				}
-			}
-			public:
-				TPSDupl(const GLXStruct& gs, int tech, int pass): _glx(gs), _tTech(gs.tpL.at(tech)), _tPass(_tTech.tpL.at(pass).get()) {
-					_tpList.push_back(&_tPass);
-					// 継承関係をリストアップ
-					_getTPStruct(_tpList, &_tTech);
-				}
-
 				template <class ST>
 				void _extractBlocks(std::vector<const ST*>& dst, const ST* attr, const NameMap<ST> (GLXStruct::*mfunc)) const {
 					for(auto itr=attr->derive.rbegin() ; itr!=attr->derive.rend() ; itr++) {
@@ -250,17 +249,29 @@ namespace rs {
 					if(std::find(dst.begin(), dst.end(), attr) == dst.end())
 						dst.push_back(attr);
 				}
+			public:
+				TPSDupl(const GLXStruct& gs, int tech, int pass):
+					_glx(gs),
+					_tTech(gs.tpL.at(tech)),
+					_tPass(_tTech.tpL.at(pass).get())
+				{
+					// 継承関係をリストアップ
+					// Pass, Tech, Tech(Base0) ... Tech(BaseN) の順番
+					_tpList.push_back(&_tPass);
+					_listupBlocks(_tpList, &_tTech);
+				}
 
 				template <class ST, class ENT>
 				std::vector<const ENT*> exportEntries(uint32_t blockID, const std::map<std::string,ST> (GLXStruct::*mfunc)) const {
 					// 使用されるAttributeブロックを収集
 					std::vector<const ST*> tmp, tmp2;
-					// 配列末尾から処理をする
+					// 配列末尾から処理をする = Pass, Tech, TechBase... の順
 					for(auto itr=_tpList.rbegin() ; itr!=_tpList.rend() ; itr++) {
 						const TPStruct* tp = (*itr);
-						// ブロックは順方向で操作 = 後に書いたほうが優先
+						// ブロックは順方向で操作 ( Block = A,B,C ならAが優先 )
 						for(auto& blk : tp->blkL) {
 							if(blk.type == blockID) {
+								// += 演算子でないならエントリを初期化
 								if(!blk.bAdd)
 									tmp.clear();
 								for(auto& name : blk.name) {
@@ -338,8 +349,7 @@ namespace rs {
 		template <class DST, class SRC>
 		void OutputS(DST& dst, const SRC& src) {
 			for(auto& p : src) {
-				p->output(dst);
-				dst << std::endl;
+				dst << *p << std::endl;
 			}
 		}
 	}
@@ -368,7 +378,7 @@ namespace rs {
 		} else {
 			// 解析結果の表示
 			std::stringstream ss;
-			_result.output(ss);
+			ss << _result;
 			LogOutput(ss.str());
 		}
 	#endif

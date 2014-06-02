@@ -6,28 +6,31 @@ namespace rs {
 		const static char* c_shType[] = {"VertexShader", "GeometryShader", "PixelShader"};
 	}
 	// (prec) type name の順に出力
-	void EntryBase::output(std::ostream& os, const char* prefix, char postfix) const {
-		os << prefix;
-		if(prec)
-			os << GLPrecision_::cs_typeStr[*prec] << ' ';
-		os << GLType_::cs_typeStr[type] << ' ';
-		os.write(name.c_str(), name.length());
-		os << postfix;
+	std::ostream& operator << (std::ostream& os, const EntryBase& e) {
+		if(e.prec)
+			os << GLPrecision_::cs_typeStr[*e.prec] << ' ';
+		os << GLType_::cs_typeStr[e.type] << ' ';
+		os.write(e.name.c_str(), e.name.length());
+		return os;
 	}
 
-	void AttrEntry::output(std::ostream& os) const {
-		EntryBase::output(os, "attribute ", ';');
+	std::ostream& operator << (std::ostream& os, const AttrEntry& e) {
+		return os << "attribute " << static_cast<const EntryBase&>(e) << ';';
 	}
-	void VaryEntry::output(std::ostream& os) const {
-		EntryBase::output(os, "varying ", ';');
+	std::ostream& operator << (std::ostream& os, const VaryEntry& e) {
+		return os << "varying " << static_cast<const EntryBase&>(e) << ';';
 	}
 	// nameの代わりにsemanticを出力
-	void UnifEntry::output(std::ostream& os) const {
-		EntryBase::output(os, "uniform ", ';');
+	std::ostream& operator << (std::ostream& os, const UnifEntry& e) {
+		os << "uniform " << static_cast<const EntryBase&>(e);
+		if(e.arraySize) {
+			os << '[' << *e.arraySize << ']';
+		}
+		return os << ';';
 	}
 
-	void ConstEntry::output(std::ostream& os) const {
-		EntryBase::output(os, "const ", '=');
+	std::ostream& operator << (std::ostream& os, const ConstEntry& e) {
+		os << "const " << static_cast<const EntryBase&>(e) << '=';
 
 		struct Tmp : boost::static_visitor<> {
 			std::ostream& _dst;
@@ -51,100 +54,104 @@ namespace rs {
 		};
 
 		Tmp tmp(os);
-		boost::apply_visitor(tmp, defVal);
-		os << ';';
+		boost::apply_visitor(tmp, e.defVal);
+		return os << ';';
 	}
 
-	void ShStruct::output(std::ostream& os) const {
+	std::ostream& operator << (std::ostream& os, const ShStruct& s) {
 		using std::endl;
 
-		os << '"' << name << '"' << endl;
-		os << "version: " << version_str << endl;
-		os << "type: " << c_shType[type] << endl;
+		os << '"' << s.name << '"' << endl;
+		os << "version: " << s.version_str << endl;
+		os << "type: " << c_shType[s.type] << endl;
 		os << "args: ";
-		for(auto& a : args)
+		for(auto& a : s.args)
 			os << GLType_::cs_typeStr[a.type] << ' ' << a.name << ", ";
-		os << endl;
+		return os << endl;
 	}
 
-	void BlockUse::output(std::ostream& os) const {
+	std::ostream& operator << (std::ostream& os, const BlockUse& b) {
 		using std::endl;
 
-		os << GLBlocktype_::cs_typeStr[type] << endl;
+		os << GLBlocktype_::cs_typeStr[b.type] << endl;
 		os << "derives: ";
-		for(auto& a : name)
+		for(auto& a : b.name)
 			os << a << ", ";
-		os << endl;
+		return os << endl;
 	}
-	void BoolSetting::output(std::ostream& os) const {
-		os << type << ": value=" << value << std::endl;
+	std::ostream& operator << (std::ostream& os, const BoolSetting& s) {
+		return os << s.type << ": value=" << s.value << std::endl;
 	}
-	void MacroEntry::output(std::ostream& os) const {
+	std::ostream& operator << (std::ostream& os, const MacroEntry& e) {
 		// Entry オンリーなら #define Entry
 		// Entry=Value なら #define Entry Value とする
-		os << "#define " << fromStr;
-		if(toStr)
-			os << ' ' << *toStr;
-		os << std::endl;
+		os << "#define " << e.fromStr;
+		if(e.toStr)
+			os << ' ' << *e.toStr;
+		return os << std::endl;
 	}
-	void ValueSetting::output(std::ostream& os) const {
-		os << GLSetting_::cs_typeStr[type] << "= ";
-		for(auto& a : value)
+	std::ostream& operator << (std::ostream& os, const ValueSetting& s) {
+		os << GLSetting_::cs_typeStr[s.type] << "= ";
+		for(auto& a : s.value)
 			os << a << ' ';
-		os << std::endl;
+		return os << std::endl;
 	}
 
 	#define SEQ_TPS_ (blkL, BlockUse)(bsL, BoolSetting)(mcL, MacroEntry)(shL, ShSetting)(vsL, ValueSetting)(tpL, Pass)
 	#define SEQ_TPS MAKE_SEQ(2, SEQ_TPS_)
 	#define SEQ_GLX_ (atM, Attribute)(csM, Const)(shM, Shader)(uniM, Uniform)(varM, Varying)
 	#define SEQ_GLX MAKE_SEQ(2, SEQ_GLX_)
-	#define PRINTIT(ign,data,elem) for(auto& a : BOOST_PP_TUPLE_ELEM(0,elem)) {PrintIt(BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(1,elem), _array)), a);}
-	#define PRINTITM(ign,data,elem) for(auto& a : BOOST_PP_TUPLE_ELEM(0,elem)) {PrintIt(BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(1,elem), _map)), a.second);}
+	#define PRINTIT(ign,data,elem) for(auto& a : data.BOOST_PP_TUPLE_ELEM(0,elem)) {PrintIt(os, BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(1,elem), _array)), a);}
+	#define PRINTITM(ign,data,elem) for(auto& a : data.BOOST_PP_TUPLE_ELEM(0,elem)) {PrintIt(os, BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(1,elem), _map)), a.second);}
 	namespace {
 		template <class T>
-		void PrintIt(const T& t) {
-			t.output(std::cout);
+		void PrintIt(std::ostream& os, const T& t) {
+			os << t;
 		}
-		void PrintIt(const boost::recursive_wrapper<TPStruct>& tp) {
-			tp.get().output(std::cout);
+		void PrintIt(std::ostream& os, const boost::recursive_wrapper<TPStruct>& tp) {
+			os << tp.get();
 		}
 		template <class T>
-		void PrintIt(const char* msg, const T& t) {
-			std::cout << msg << std::endl;
-			PrintIt(t);
-			std::cout << "-------------" << std::endl;
+		void PrintIt(std::ostream& os, const char* msg, const T& t) {
+			os << msg << std::endl;
+			PrintIt(os, t);
+			os << "-------------" << std::endl;
 		}
 		struct Visitor : boost::static_visitor<> {
+			std::ostream& _dst;
+			Visitor(std::ostream& os): _dst(os) {}
 			void operator()(float f) const {
-				std::cout << "float(" << f << ')'; }
+				_dst << "float(" << f << ')'; }
 			void operator()(bool b) const {
-				std::cout << "bool(" << b << ')'; }
+				_dst << "bool(" << b << ')'; }
 
 			template <class T>
 			void operator()(const std::vector<T>& ar) const {
-				std::cout << "vector[";
+				_dst << "vector[";
 				for(auto& a : ar) {
-					std::cout << a << ' ';
+					_dst << a << ' ';
 				}
-				std::cout << ']';
+				_dst << ']';
 			}
 		};
 	}
 
-	void ShSetting::output(std::ostream& os) const {
-		os << c_shType[type] << "= " << shName << std::endl << "args: ";
-		for(auto& a : args) {
-			boost::apply_visitor(Visitor(), a);
-			std::cout << ", ";
+	std::ostream& operator << (std::ostream& os, const ShSetting& s) {
+		os << c_shType[s.type] << "= " << s.shName << std::endl << "args: ";
+		for(auto& a : s.args) {
+			boost::apply_visitor(Visitor(os), a);
+			os << ", ";
 		}
-		std::cout << std::endl;
+		return os << std::endl;
 	}
-	void TPStruct::output(std::ostream&) const {
-		BOOST_PP_SEQ_FOR_EACH(PRINTIT, _, SEQ_TPS)
+	std::ostream& operator << (std::ostream& os, const TPStruct& t) {
+		BOOST_PP_SEQ_FOR_EACH(PRINTIT, t, SEQ_TPS)
+		return os;
 	}
-	void GLXStruct::output(std::ostream&) const {
-		BOOST_PP_SEQ_FOR_EACH(PRINTITM, _, SEQ_GLX)
-		for(auto& a : tpL)
-			PrintIt("Tech: ", a);
+	std::ostream& operator << (std::ostream& os, const GLXStruct& glx) {
+		BOOST_PP_SEQ_FOR_EACH(PRINTITM, glx, SEQ_GLX)
+		for(auto& a : glx.tpL)
+			PrintIt(os, "Tech: ", a);
+		return os;
 	}
 }
