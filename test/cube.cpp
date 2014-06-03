@@ -84,16 +84,16 @@ void Cube::draw(rs::GLEffect& glx) {
 		{0,20, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::NORMAL}
 	});
 	glx.setVDecl(std::move(decl));
-	glx.setUniform(*glx.getUniformID("tDiffuse"), _hlTex, 1, false);
+	glx.setUniform(*glx.getUniformID("tDiffuse"), _hlTex);
 	auto m = getToWorld();
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
 	auto lk = shared.lock();
 	rs::CamData& cd = lk->hlCam.ref();
 	m2 *= cd.getViewProjMatrix().convert44();
-	glx.setUniform(*glx.getUniformID("mTrans"), m2, 1, true);
+	glx.setUniform(*glx.getUniformID("mTrans"), m2, true);
 	glx.setVStream(_hlVb, 0);
 
-	glx.setUniform(*glx.getUniformID("vLitDir"), spn::Vec3(0,1,0), 1, false);
+	glx.setUniform(*glx.getUniformID("vLitDir"), spn::Vec3(0,1,0), false);
 	glx.draw(GL_TRIANGLES, 0, 6*6);
 }
 

@@ -212,7 +212,7 @@ bool MyMain::runU() {
 						0,			ry*r, 		0,
 						-1.f+x*rx,	1.f-y*ry,	1);
 	};
-	fx.setUniform(*fx.getUniformID("mText"), fn(0,0,1), 1, true);
+	fx.setUniform(*fx.getUniformID("mText"), fn(0,0,1), true);
 
 	int fps = lk->fps.getFPS();
 	std::stringstream ss;

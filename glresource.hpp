@@ -227,7 +227,9 @@ namespace rs {
 
 			public:
 				template <bool A>
-				Unif_Vec(GLint id, const spn::VecT<DN, A>& v, int n): Unif_Vec(id, v.m, DN, n) {}
+				Unif_Vec(GLint id, const spn::VecT<DN,A>& v): Unif_Vec(id, v.m, DN, 1) {}
+				template <bool A>
+				Unif_Vec(GLint id, const spn::VecT<DN,A>* vp, int n): Unif_Vec(id, vp->m, DN, n) {}
 				Unif_Vec(GLint id, const T* v, int nElem, int n):
 					Uniform(HRes(), id),
 					_data(new T[nElem*n]),
@@ -246,7 +248,9 @@ namespace rs {
 				bool	_bT;
 			public:
 				template <bool A>
-				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>& m, int n, bool bT): base(id, m.data, DN*DN, n), _bT(bT) {}
+				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>& m, bool bT): Unif_Mat(id, &m, 1, bT) {}
+				template <bool A>
+				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>* mp, int n, bool bT): base(id, mp->data, DN*DN, n), _bT(bT) {}
 				void exec() override {
 					Unif_Mat_Exec(DN-2, Uniform::idUnif, base::_data.get(), base::_nAr, _bT);
 				}

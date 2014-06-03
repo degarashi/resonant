@@ -378,25 +378,35 @@ namespace rs {
 			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
 			OPGLint getUniformID(const std::string& name) const;
 
+			template <class T,
+				typename std::enable_if<
+					!std::is_pointer<T>::value
+				>::type*& = spn::Enabler
+			>
+			void setUniform(GLint id, const T& t, bool bT=false) {
+				setUniform(id, &t, 1, bT); }
 			template <class T>
-			void setUniform(GLint id, const T& t, int n=1, bool bT=false) {
-				_current.uniMap.emplace(id, _MakeUniformToken(_current.normal, id, t, n, bT));
-			}
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, bool b, int n, bool);
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, float fv, int n, bool);
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, double fv, int n, bool);
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, int iv, int n, bool);
+			void setUniform(GLint id, const T* t, int n, bool bT=false) {
+				_current.uniMap.emplace(id, _MakeUniformToken(_current.normal, id, t, n, bT)); }
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const bool* b, int n, bool);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const float* fv, int n, bool);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const double* fv, int n, bool);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const int* iv, int n, bool);
 			template <int DN, bool A>
-			static draw::SPToken _MakeUniformToken(IPreFunc& /*pf*/, GLint id, const spn::VecT<DN,A>& v, int n, bool) {
+			static draw::SPToken _MakeUniformToken(IPreFunc& /*pf*/, GLint id, const spn::VecT<DN,A>* v, int n, bool) {
 				return std::make_shared<draw::Unif_Vec<float, DN>>(id, v, n); }
 			template <int DM, int DN, bool A>
-			static draw::SPToken _MakeUniformToken(IPreFunc& /*pf*/, GLint id, const spn::MatT<DM,DN,A>& m, int n, bool bT) {
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) {
 				constexpr int DIM = spn::TValue<DM,DN>::great;
-				spn::MatT<DIM,DIM,false> tm;
-				m.convert(tm);
-				return std::make_shared<draw::Unif_Mat<float, DIM>>(id, tm, n, bT); }
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const HTex& hTex, int, bool);
-			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const HLTex& hlTex, int, bool);
+				std::vector<spn::MatT<DIM,DIM,false>> tm(n);
+				for(int i=0 ; i<n ; i++)
+					m[i].convert(tm[i]);
+				return _MakeUniformToken(pf, id, tm.data(), n, bT); }
+			template <int DN, bool A>
+			static draw::SPToken _MakeUniformToken(IPreFunc& /*pf*/, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) {
+				return std::make_shared<draw::Unif_Mat<float, DN>>(id, m, n, bT); }
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const HTex* hTex, int n, bool);
+			static draw::SPToken _MakeUniformToken(IPreFunc& pf, GLint id, const HLTex* hlTex, int n, bool);
 
 			void setUserPriority(Priority p);
 			//! IStreamを使用して描画
