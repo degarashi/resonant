@@ -510,15 +510,28 @@ namespace rs {
 
 			bool isCubemap() const;
 			bool operator == (const IGLTexture& t) const;
-			draw::SPToken getDrawToken(IPreFunc& pf, GLint id, HRes hRes);
+			/*! \param[in] uniform変数の番号
+				\param[in] index idで示されるuniform変数配列のインデックス(デフォルト=0)
+				\param[in] hRes 自身のリソースハンドル */
+			draw::SPToken getDrawToken(IPreFunc& pf, GLint id, int index, int actID, HRes hRes);
 	};
 	namespace draw {
+		// 連番テクスチャはUniformID + Indexとして設定
 		class Texture : public IGLTexture, public Uniform {
 			public:
-				Texture(HRes hRes, GLint id, const IGLTexture& t);
+				Texture(HRes hRes, GLint id, int index, int baseActID, const IGLTexture& t);
+				Texture(Texture&&) = default;
 				Texture(const Texture&) = delete;
 				virtual ~Texture();
 
+				void exec() override;
+		};
+		class TextureA : public Uniform {
+			private:
+				using TexA = std::vector<Texture>;
+				TexA	_texA;
+			public:
+				TextureA(GLint id, const HRes* hRes, const IGLTexture** tp, int baseActID, int nTex);
 				void exec() override;
 		};
 	}

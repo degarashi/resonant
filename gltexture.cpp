@@ -118,14 +118,14 @@ namespace rs {
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
 	}
-	draw::SPToken IGLTexture::getDrawToken(IPreFunc& pf, GLint id, HRes hRes) {
+	draw::SPToken IGLTexture::getDrawToken(IPreFunc& pf, GLint id, int index, int actID, HRes hRes) {
 		if(_preFunc)
 			pf.addPreFunc(std::move(_preFunc));
 		if(_bReset) {
 			_bReset = false;
 			_reallocate();
 		}
-		draw::SPToken ret = std::make_shared<draw::Texture>(hRes, id, *this);
+		draw::SPToken ret = std::make_shared<draw::Texture>(hRes, id, index, actID, *this);
 		return std::move(ret);
 	}
 
@@ -244,7 +244,11 @@ namespace rs {
 
 	// ------------------------- draw::Texture -------------------------
 	namespace draw {
-		Texture::Texture(HRes hRes, GLint uid, const IGLTexture& t): IGLTexture(t), Uniform(hRes, uid) {}
+		// --------------- Texture ---------------
+		Texture::Texture(HRes hRes, GLint uid, int index, int baseActID, const IGLTexture& t): IGLTexture(t), Uniform(hRes, uid + index)
+		{
+			setActiveID(baseActID);
+		}
 		Texture::~Texture() {
 			// IGLTextureのdtorでリソースを開放されないように0にセットしておく
 			_idTex = 0;
@@ -265,6 +269,18 @@ namespace rs {
 				GL.glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
 			}
 			GL.glUniform1i(idUnif, _actID);
+		}
+
+		// --------------- TextureA ---------------
+		TextureA::TextureA(GLint id, const HRes* hRes, const IGLTexture** tp, int baseActID, int nTex):
+			Uniform(HRes(), -1)
+		{
+			for(int i=0 ; i<nTex ; i++)
+				_texA.emplace_back(hRes[i], id, i, baseActID+i, *tp[i]);
+		}
+		void TextureA::exec() {
+			for(auto& p : _texA)
+				p.exec();
 		}
 	}
 

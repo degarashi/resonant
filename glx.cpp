@@ -433,7 +433,7 @@ namespace rs {
 		if(!_bInit) {
 			_bInit = true;
 			for(auto& p : _techMap)
-				p.second.ts_onDeviceReset();
+				p.second.ts_onDeviceReset(*this);
 		}
 	}
 	// Tech, Pass, 他InitTagの内容を変更したらフラグを立て、
@@ -774,37 +774,55 @@ namespace rs {
 		_current.prio.userP = p;
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const bool* b, int n, bool bT) {
+	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const bool* b, int n, bool bT) const {
 		int tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<int>(b[i]);
-		return _MakeUniformToken(pf, id, static_cast<const int*>(tmp), 1, bT);
+		return _makeUniformToken(pf, id, static_cast<const int*>(tmp), 1, bT);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& /*pf*/, GLint id, const int* iv, int n, bool /*bT*/) {
+	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& /*pf*/, GLint id, const int* iv, int n, bool /*bT*/) const {
 		return std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& /*pf*/, GLint id, const float* fv, int n, bool /*bT*/) {
+	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& /*pf*/, GLint id, const float* fv, int n, bool /*bT*/) const {
 		return std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const double* dv, int n, bool bT) {
+	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const double* dv, int n, bool bT) const {
 		float tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<float>(dv[i]);
-		return _MakeUniformToken(pf, id, static_cast<const float*>(tmp), n, bT);
+		return _makeUniformToken(pf, id, static_cast<const float*>(tmp), n, bT);
 	}
-	//TODO: テクスチャ配列対応
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HTex* hTex, int /*n*/, bool /*bT*/) {
-		auto& t = hTex->cref();
-//		auto aID = _current.texIndex.at(id);
-//		t->setActiveID(aID);
-		return t->getDrawToken(pf, id, *hTex);
+	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
+		auto aID = _current.texIndex.at(id);
+		if(n > 1) {
+			std::vector<const IGLTexture*> pTexA(n);
+			for(int i=0 ; i<n ; i++)
+				pTexA[i] = (hTex[i].cref()).get();
+			return std::make_shared<draw::TextureA>(id,
+				reinterpret_cast<const HRes*>(hTex),
+				pTexA.data(), aID, n);
+		}
+		AssertP(Trap, n==1)
+		HTex hTex2(*hTex);
+		return hTex2.ref()->getDrawToken(pf, id, 0, aID, *hTex);
 	}
-	draw::SPToken GLEffect::_MakeUniformToken(IPreFunc& pf, GLint id, const HLTex* hlTex, int /*n*/, bool /*bT*/) {
-		auto& t = hlTex->cref();
-		return t->getDrawToken(pf, id, hlTex->get());
+	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const HLTex* hlTex, int n, bool bT) const {
+		if(n > 1) {
+			std::vector<HLTex> hTexA(n);
+			for(int i=0 ; i<n ; i++)
+				hTexA[i] = hlTex[i].get();
+			return _makeUniformToken(pf, id, hTexA.data(), n, bT);
+		}
+		AssertP(Trap, n==1)
+		HTex hTex = hlTex->get();
+		return _makeUniformToken(pf, id, &hTex, 1, bT);
 	}
 	OPGLint GLEffect::getUniformID(const std::string& name) const {
-		return _current.tps->getProgram().cref()->getUniformID(name);
+		AssertP(Trap, _current.tps, "Tech/Pass is not set")
+		auto& tps = *_current.tps;
+		HProg hProg = tps.getProgram();
+		AssertP(Trap, hProg.valid(), "shader program handle is invalid")
+		return hProg->get()->getUniformID(name);
 	}
 	void GLEffect::beginTask() {
 		_task.beginTask();
@@ -830,6 +848,8 @@ namespace rs {
 			GLint		uniID;
 			UniMap		result;
 			PreFuncL	funcL;
+			const GLEffect&	glx;
+			Visitor(const GLEffect& g): glx(g) {}
 
 			void addPreFunc(PreFunc pf) override {
 				funcL.push_back(pf);
@@ -843,7 +863,7 @@ namespace rs {
 			template <class T>
 			void _addResult(const T& t) {
 				if(uniID >= 0)
-					result.emplace(uniID, GLEffect::_MakeUniformToken(*this, uniID, &t, 1, false));
+					result.emplace(uniID, glx._makeUniformToken(*this, uniID, &t, 1, false));
 			}
 
 			void operator()(const std::vector<float>& v) {
@@ -936,7 +956,7 @@ namespace rs {
 		_noDefValue.clear();
 		_defaultValue.clear();
 	}
-	void TPStructR::ts_onDeviceReset() {
+	void TPStructR::ts_onDeviceReset(const GLEffect& glx) {
 		AssertP(Trap, !_bInit)
 		_bInit = true;
 		auto& prog = *_prog.cref();
@@ -956,7 +976,7 @@ namespace rs {
 		}
 
 		// Uniform変数にデフォルト値がセットしてある物をリストアップ
-		Visitor visitor;
+		Visitor visitor(glx);
 		visitor.pgID = _prog.cref()->getProgramID();
 		for(const auto* p : _unifL) {
 			if(visitor.setKey(p->name)) {
