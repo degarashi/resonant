@@ -46,11 +46,12 @@ namespace rs {
 		onDeviceLost();
 	}
 	void GLBuffer::_initData() {
-		Assert(Trap, getBuffID() > 0);
-		_preFunc = [this]() {
-			use_begin();
-			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
-		};
+		if(getBuffID() > 0) {
+			_preFunc = [this]() {
+				use_begin();
+				GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
+			};
+		}
 	}
 	void GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
 		size_t sz = nElem*stride;
@@ -62,10 +63,12 @@ namespace rs {
 		size_t szCopy = nElem * _stride,
 				ofs = offset*_stride;
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
-		_preFunc = [=]() {
-			use_begin();
-			GL.glBufferSubData(_buffType, ofs, szCopy, src);
-		};
+		if(getBuffID() > 0) {
+			_preFunc = [=]() {
+				use_begin();
+				GL.glBufferSubData(_buffType, ofs, szCopy, src);
+			};
+		}
 	}
 	GLuint GLBuffer::getSize() const {
 		return _buffSize;
@@ -74,6 +77,7 @@ namespace rs {
 		return _buffSize / _stride;
 	}
 	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
+		Assert(Trap, getBuffID() > 0);
 		if(_preFunc) {
 			PreFunc pfunc(std::move(const_cast<GLBuffer*>(this)->_preFunc));
 			HLRes hlRes(hRes);
