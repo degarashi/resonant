@@ -128,7 +128,7 @@ void MyMain::_initCam() {
 	auto lk = shared.lock();
 	lk->hlCam = mgr_cam.emplace();
 	rs::CamData& cd = lk->hlCam.ref();
-	cd.setOfs(0,0,-3);
+	cd.setOffset({0,0,-3});
 	cd.setFOV(spn::DEGtoRAD(60));
 	cd.setZPlane(0.01f, 500.f);
 }

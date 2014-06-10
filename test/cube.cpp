@@ -2,7 +2,7 @@
 
 // ---------------------- Cube ----------------------
 Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex), _techID(-1), _passID(-1) {
-	setScale(s,s,s);
+	setScale({s,s,s});
 	using spn::Vec2;
 	using spn::Vec3;
 	// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする

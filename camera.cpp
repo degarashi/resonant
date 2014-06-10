@@ -63,19 +63,19 @@ namespace rs {
 		Vec3 vZ = getDir();
 		vZ.y = 0;
 		vZ.normalize();
-		addOfsVec(vZ * speed);
+		addOffset(vZ * speed);
 	}
 	void CamData::moveSide2D(float speed) {
 		Vec3 vX = getRight();
 		vX.y = 0;
 		vX.normalize();
-		addOfsVec(vX * speed);
+		addOffset(vX * speed);
 	}
 	void CamData::moveFwd3D(float speed) {
-		addOfsVec(getDir() * speed);
+		addOffset(getDir() * speed);
 	}
 	void CamData::moveSide3D(float speed) {
-		addOfsVec(getRight() * speed);
+		addOffset(getRight() * speed);
 	}
 	void CamData::turnAxis(const Vec3& axis, float rad) {
 		Quat q = getRot();
@@ -179,7 +179,7 @@ namespace rs {
 		return Pose3D(getOffset(), getRot(), AVec3(1,1,1));
 	}
 	void CamData::setPose(const Pose3D& ps) {
-		setOfsVec(ps.getOffset());
+		setOffset(ps.getOffset());
 		setRot(ps.getRot());
 		// (スケールは適用しない)
 	}
@@ -218,9 +218,9 @@ namespace rs {
 	Frustum CamData::getNearFrustum() const {
 		Frustum fr;
 		float t = std::tan(_fov/2);
-		fr.setScale(t*_aspect, t, getNearDist()*8);
+		fr.setScale({t*_aspect, t, getNearDist()*8});
 		fr.setRot(getRot());
-		fr.setOfsVec(getOffset());
+		fr.setOffset(getOffset());
 		return fr;
 	}
 }
