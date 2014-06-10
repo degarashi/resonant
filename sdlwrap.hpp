@@ -293,7 +293,7 @@ namespace rs {
 				bool bSuccess = false;
 				if(SDL_AtomicCAS(&_atmLock, 0, *tls_threadID) == SDL_TRUE)
 					bSuccess = true;
-				else if(SDL_AtomicGet(&_atmLock) == *tls_threadID) {
+				else if(SDL_AtomicGet(&_atmLock) == static_cast<decltype(SDL_AtomicGet(&_atmLock))>(*tls_threadID)) {
 					// 同じスレッドからのロック
 					bSuccess = true;
 				}
