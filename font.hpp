@@ -32,7 +32,9 @@ namespace rs {
 	/*! TriangleList形式。とりあえず改行だけ対応
 		折り返し表示機能は無し
 		全体の位置やサイズはシェーダーのconst変数で指定
-		オフセットの基準をXYそれぞれで始点、終点、中央　のいずれか選択 */
+		オフセットの基準をXYそれぞれで始点、終点、中央　のいずれか選択
+		---------------- Uniform変数 ----------------
+		Texture: EUnif::Diffuse */
 	class TextObj {
 		//! 文字列表示用頂点
 		const static SPVDecl cs_vDecl;

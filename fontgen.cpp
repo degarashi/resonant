@@ -1,6 +1,7 @@
 #include "font.hpp"
 #include "lane.hpp"
 #include "glx.hpp"
+#include "sys_uniform.hpp"
 
 namespace rs {
 	// --------------------------- Face ---------------------------
@@ -167,9 +168,13 @@ namespace rs {
 	const SPString& TextObj::getFaceName() const { return _faceName; }
 	void TextObj::draw(GLEffect* gle) {
 		gle->setVDecl(cs_vDecl);
-		GLint id = *gle->getUniformID("tDiffuse");
+		auto& str = EUnif::Get(EUnif::Texture::Diffuse);
+		auto id = gle->getUniformID(str);
+		Assert(Warn, id, u8R"(uniform value %1% is not found)", str)
+		if(!id)
+			return;
 		for(auto& ds : _drawSet) {
-			gle->setUniform(id, ds.hTex);
+			gle->setUniform(*id, ds.hTex);
 			gle->setVStream(ds.hlVb.get(), 0);
 			gle->setIStream(ds.hlIb.get());
 			gle->drawIndexed(GL_TRIANGLES, ds.nChar*6, 0);
