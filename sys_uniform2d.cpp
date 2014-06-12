@@ -2,6 +2,16 @@
 #include "resonant/glx.hpp"
 
 namespace rs {
+	// ------------------ EUnif2D ------------------
+	const std::string EUnif2D::cs_word[] = {
+		"fDepth",
+		"fAlpha"
+	};
+	const std::string& EUnif2D::Get(value_t t) {
+		return cs_word[t];
+	}
+
+	// ------------------ SysUnif2D ------------------
 	const std::string SysUnif2D::cs_word[] = {
 		"sys_mTrans2D"
 	};

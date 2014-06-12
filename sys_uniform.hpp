@@ -21,6 +21,15 @@ namespace rs {
 		const static std::string cs_word[];
 		const static std::string& Get(value_t t);
 	};
+	struct EUnif2D : UnifBase {
+		struct Param { enum {
+			Depth,
+			Alpha,
+			_Num
+		};};
+		const static std::string cs_word[];
+		const static std::string& Get(value_t t);
+	};
 	// Uniform変数: 名前だけ定義
 	struct EUnif3D : UnifBase {
 		struct Texture { enum {
@@ -39,7 +48,7 @@ namespace rs {
 		const static std::string cs_word[];
 		const static std::string& Get(value_t t);
 	};
-	struct SysUnif2D : SysUnif {
+	struct SysUnif2D : UnifBase {
 		struct Matrix { enum {
 			Transform,
 			_Num
