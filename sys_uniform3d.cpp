@@ -94,17 +94,14 @@ namespace rs {
 		};
 	}
 	SystemUniform3D::SystemUniform3D() {}
-	void SystemUniform3D::setCamera(HCam hCam) {
-		_rflag.set<Camera>(hCam);
-	}
-	void SystemUniform3D::setWorldMat(const spn::Mat43& m) {
-		_rflag.set<World>(m.convertA44());
-	}
 	void SystemUniform3D::outputUniforms(GLEffect& glx, bool bBase) const {
 		if(bBase)
 			SystemUniformBase::outputUniforms(glx);
 		for(auto& f : c_systagF3D)
 			f(*this, glx);
+	}
+	void SystemUniform3D::setTransform(const spn::AMat44& m) {
+		_rflag.set<Transform>(m);
 	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, ViewInv*) const {
 		auto m4 = getCamera().cref().getViewMatrix().convertA44();

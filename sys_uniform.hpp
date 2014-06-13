@@ -50,7 +50,7 @@ namespace rs {
 	};
 	struct SysUnif2D : UnifBase {
 		struct Matrix { enum {
-			Transform,
+			Transform2D,
 			_Num
 		};};
 		const static std::string cs_word[];
@@ -100,15 +100,14 @@ namespace rs {
 				((ViewOffset)(spn::Vec2)) \
 				((ViewScale)(spn::Vec2)) \
 				((ViewRotation)(float)) \
-				((Transform)(spn::Mat32)(ViewOffset)(ViewScale)(ViewRotation))
+				((Transform2D)(spn::Mat32)(ViewOffset)(ViewScale)(ViewRotation))
 			RFLAG_S(SystemUniform2D, SEQ_SYSUNI2D)
 		public:
 			RFLAG_GETMETHOD_S(SEQ_SYSUNI2D)
+			RFLAG_SETMETHOD_S(SEQ_SYSUNI2D)
 			#undef SEQ_SYSUNI2D
 
-			void setViewOffset(const spn::Vec2& ofs);
-			void setViewScale(const spn::Vec2& s);
-			void setViewRotation(float deg);
+			void setTransform2D(const spn::Mat32& m);
 			void outputUniforms(GLEffect& glx, bool bBase) const;
 	};
 	//! システムuniform変数をセットする(3D)
@@ -144,11 +143,11 @@ namespace rs {
 
 		public:
 			RFLAG_GETMETHOD_S(SEQ_SYSUNI3D)
+			RFLAG_SETMETHOD_S(SEQ_SYSUNI3D)
 			#undef SEQ_SYSUNI3D
 
 			SystemUniform3D();
-			void setCamera(HCam hCam);
-			void setWorldMat(const spn::Mat43& m);
+			void setTransform(const spn::AMat44& m);
 			void outputUniforms(GLEffect& glx, bool bBase) const;
 	};
 }
