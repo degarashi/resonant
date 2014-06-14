@@ -214,7 +214,9 @@ namespace rs {
 	}
 	Face& FontGen::_getArray(CCoreID cid) {
 		// FaceList線形探索
-		auto itr = std::find(_faceL.begin(), _faceL.end(), cid);
+		auto itr = std::find_if(_faceL.begin(), _faceL.end(), [cid](const Face& fc){
+			return fc.coreID.at<CCoreID::FaceID>() == cid.at<CCoreID::FaceID>();
+		});
 		AssertP(Trap, itr != _faceL.end())
 		return *itr;
 	}
