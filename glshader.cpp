@@ -181,12 +181,12 @@ namespace rs {
 		return _shader[(int)type];
 	}
 	OPGLint GLProgram::getUniformID(const std::string& name) const {
-		GLint id = GL.glGetUniformLocation(getProgramID(), name.c_str());
+		GLint id = GL.glGetUniformLocation_NC(getProgramID(), name.c_str());
 		AssertTP(Warn, id>=0, (GLE_ParamNotFound)(const std::string&), name)
 		return id>=0 ? OPGLint(id) : OPGLint(spn::none);
 	}
 	OPGLint GLProgram::getAttribID(const std::string& name) const {
-		GLint id = GL.glGetAttribLocation(getProgramID(), name.c_str());
+		GLint id = GL.glGetAttribLocation_NC(getProgramID(), name.c_str());
 		AssertT(Warn, id>=0, (GLE_ParamNotFound)(const std::string&), name)
 		return id>=0 ? OPGLint(id) : OPGLint(spn::none);
 	}
