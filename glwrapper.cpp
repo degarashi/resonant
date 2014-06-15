@@ -80,24 +80,34 @@ namespace rs {
 			}
 		};
 	}
-#ifdef DEBUG
-	#define GLEC_BaseP(act, func, seq)	\
-		if((uintptr_t)GLWrap::func != (uintptr_t)GLWrap::glGetError) \
-			return GLEC_Base(AAct_##act<::rs::GLE_Error>(), [&](){return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));}); \
-		return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));
-#else
-	#define GLEC_BaseP(act, func, seq)		return GLWrap::func(BOOST_PP_SEQ_ENUM(seq))
-#endif
-	// マクロで分岐
-	#define GLDEFINE(...)
- 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
-		typename GLWrap::t_##name GLWrap::name = nullptr; \
- 		ret_type IGL_Draw::name(BOOST_PP_SEQ_ENUM(args)) { \
-			GLEC_BaseP(Warn, name, argnames) } \
- 		ret_type IGL_OtherSingle::name(BOOST_PP_SEQ_ENUM(args)) { \
+	#define GLCall(func, seq)	GLWrap::func(BOOST_PP_SEQ_ENUM(seq));
+	#define DEF_SINGLE_METHOD(ret_type, name, args, argnames) \
+		ret_type IGL_OtherSingle::name(BOOST_PP_SEQ_ENUM(args)) { \
 			auto p = GLW.refShared().put(); \
 			return CallHandler<ret_type>()(GLW.getDrawHandler(), [=](){ \
 				return IGL_Draw().name(BOOST_PP_SEQ_ENUM(argnames)); }); }
+#ifdef DEBUG
+	/* デバッグ時:	glFUNC = チェック付き
+					glFUNC_NC = チェック無し */
+	#define DEF_DRAW_GLEC(act, func, seq) \
+		if((uintptr_t)GLWrap::func != (uintptr_t)GLWrap::glGetError) \
+			return GLEC_Base(AAct_##act<::rs::GLE_Error>(), [&](){return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));}); \
+		return GLCall(func, seq)
+#else
+	#define DEF_DRAW_GLEC(act, func, seq) \
+		return GLCall(func, seq)
+#endif
+
+	// マクロで分岐
+	#define GLDEFINE(...)
+	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
+		typename GLWrap::t_##name GLWrap::name = nullptr; \
+		ret_type IGL_Draw::name##_NC(BOOST_PP_SEQ_ENUM(args)) { \
+			return GLCall(name, argnames) } \
+ 		ret_type IGL_Draw::name(BOOST_PP_SEQ_ENUM(args)) { \
+			DEF_DRAW_GLEC(Warn, name, argnames) } \
+		DEF_SINGLE_METHOD(ret_type, name, args, argnames) \
+		DEF_SINGLE_METHOD(ret_type, BOOST_PP_CAT(name, _NC), args, argnames)
 
 		#ifndef ANDROID
 			#ifdef ANDROID
@@ -109,8 +119,13 @@ namespace rs {
 			#endif
 		#endif
 
+	#undef DEF_SINGLE_METHOD
 	#undef DEF_GLMETHOD
 	#undef GLDEFINE
+	#undef DEF_DRAW_METHOD
+	#undef DEF_DRAW_GLEC
+	#undef GLCall
+
 	GLWrap::GLWrap(bool bShareEnabled): _bShare(bShareEnabled), _drawHandler(nullptr) {
 		*_pShared.lock() = nullptr;
 	}

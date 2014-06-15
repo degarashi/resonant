@@ -18,8 +18,14 @@
 namespace rs {
 	struct IGL {
 		#define GLDEFINE(...)
+		#ifdef DEBUG
+			#define DEF_GLMETHOD2(ret_type, name, args) virtual ret_type name##_NC(BOOST_PP_SEQ_ENUM(args)) = 0;
+		#else
+			#define DEF_GLMETHOD2(...)
+		#endif
 		#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
-			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) = 0;
+			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) = 0; \
+			DEF_GLMETHOD2(ret_type, name, args)
 
 		#ifdef ANDROID
 			#include "android_gl.inc"
@@ -30,6 +36,7 @@ namespace rs {
 		#endif
 
 		#undef DEF_GLMETHOD
+		#undef DEF_GLMETHOD2
 		#undef GLDEFINE
 		virtual void setSwapInterval(int n) = 0;
 		virtual void stencilFuncFront(int func, int ref, int mask) = 0;
@@ -43,8 +50,14 @@ namespace rs {
 	//! 直でOpenGL関数を呼ぶ
 	struct IGL_Draw : IGL {
 		#define GLDEFINE(...)
+		#ifdef DEBUG
+			#define DEF_GLMETHOD2(ret_type, name, args) virtual ret_type name##_NC(BOOST_PP_SEQ_ENUM(args)) override;
+		#else
+			#define DEF_GLMETHOD2(...)
+		#endif
 		#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
-			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) override;
+			virtual ret_type name(BOOST_PP_SEQ_ENUM(args)) override; \
+			DEF_GLMETHOD2(ret_type, name, args)
 
 		#ifdef ANDROID
 			#include "android_gl.inc"
@@ -74,6 +87,7 @@ namespace rs {
 		#endif
 		
 		#undef DEF_GLMETHOD
+		#undef DEF_GLMETHOD2
 		#undef GLDEFINE
 
 		void setSwapInterval(int n) override;
