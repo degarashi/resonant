@@ -12,8 +12,6 @@ namespace rs {
 	// フォントのHeightとラインのHeightは違う！
 	Face::Face(const SPString& name, const spn::PowSize& sfcSize, CCoreID cid, FontChMap& m):
 		faceName(name), dep(*name, cid), coreID(cid), cplane(sfcSize, dep.height(), UPLaneAlloc(new LAlloc())), fontMap(m) {}
-	Face::Face(Face&& f):
-		faceName(std::move(f.faceName)), dep(std::move(f.dep)), coreID(std::move(f.coreID)), cplane(std::move(f.cplane)), fontMap(f.fontMap) {}
 	bool Face::operator != (const std::string& name) const {
 		return !(this->operator == (name));
 	}
@@ -78,9 +76,6 @@ namespace rs {
 	TextObj::TextObj(Face& face, std::u32string&& s): _text(std::move(s)), _coreID(face.coreID), _faceName(face.faceName) {
 		_init(face);
 	}
-	TextObj::TextObj(TextObj&& t): _text(std::move(t._text)), _drawSet(std::move(t._drawSet)),
-		_coreID(std::move(t._coreID)), _faceName(std::move(t._faceName)), _rectSize(std::move(t._rectSize)) {}
-
 	void TextObj::_init(Face& face) {
 		int height = face.dep.height();
 		// CharPosリストの作成

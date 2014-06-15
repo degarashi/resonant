@@ -20,7 +20,7 @@ namespace rs {
 		CharPlane		cplane;
 		FontChMap&		fontMap;
 
-		Face(Face&& f);
+		Face(Face&& f) = default;
 		Face(const SPString& name, const spn::PowSize& sfcSize, CCoreID cid, FontChMap& m);
 		bool operator == (const std::string& name) const;
 		bool operator != (const std::string& name) const;
@@ -63,7 +63,7 @@ namespace rs {
 		void _init(Face &face);
 
 		public:
-			TextObj(TextObj&& t);
+			TextObj(TextObj&& t) = default;
 			/*! \param[in] dep フォントデータを生成するための環境依存クラス
 				\param[in] s 生成する文字列 */
 			TextObj(Face& face, std::u32string&& s);
