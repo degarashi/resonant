@@ -2,20 +2,15 @@
 #include "glx.hpp"
 
 namespace rs {
-	// --------------------- EUnif ---------------------
-	const std::string& EUnif::Get(value_t t) {
-		return cs_word[t];
+	namespace unif {
+		namespace texture {
+			const std::string Diffuse("texDiffuse");
+		}
 	}
-	const std::string EUnif::cs_word[] = {
-		"texDiffuse"
-	};
-
-	// --------------------- SysUnif ---------------------
-	const std::string SysUnif::cs_word[] = {
-		"sys_screen"
-	};
-	const std::string& SysUnif::Get(value_t t) {
-		return cs_word[t];
+	namespace sysunif {
+		namespace screen {
+			const std::string Size("sys_screen");
+		}
 	}
 
 	// --------------------- SystemUniformBase ---------------------
@@ -23,7 +18,7 @@ namespace rs {
 		using SetF = std::function<void (const SystemUniformBase&, GLEffect&)>;
 		const SetF c_systagF[] = {
 			[](const SystemUniformBase& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif::Get(SysUnif::Screen::size))) {
+				if(auto id = glx.getUniformID(sysunif::screen::Size)) {
 					auto& ss = s.getScreenSize();
 					glx.setUniform(*id, spn::Vec4(ss.width,
 												ss.height,

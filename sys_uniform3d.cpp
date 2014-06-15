@@ -3,91 +3,89 @@
 #include "glx.hpp"
 
 namespace rs {
-	const std::string EUnif3D::cs_word[] = {
-		"texSpecular",
-		"texNormal"
-	};
-	const std::string& EUnif3D::Get(value_t t) {
-		return cs_word[t];
+	namespace sysunif3d {
+		namespace matrix {
+			const std::string Transform("sys_mTrans"),
+							TransformInv("sys_mTransInv"),
+							Proj("sys_mProj"),
+							ProjInv("sys_mProjInv"),
+							View("sys_mView"),
+							ViewInv("sys_mViewInv"),
+							ViewProj("sys_mViewProj"),
+							ViewProjInv("sys_mViewProjInv"),
+							World("sys_mWorld"),
+							WorldInv("sys_mWorldInv"),
+							EyePos("sys_vEyePos"),
+							EyeDir("sys_vEyeDir");
+		}
 	}
-	const std::string SysUnif3D::cs_word[] = {
-		"sys_mTrans",
-		"sys_mTransInv",
-		"sys_mProj",
-		"sys_mProjInv",
-		"sys_mView",
-		"sys_mViewInv",
-		"sys_mViewProj",
-		"sys_mViewProjInv",
-		"sys_mWorld",
-		"sys_mWorldInv",
-		"sys_vEyePos",
-		"sys_vEyeDir"
-	};
-	const std::string& SysUnif3D::Get(value_t t) {
-		return cs_word[t];
+	namespace unif3d {
+		namespace texture {
+			const std::string Specular("texSpecular"),
+								Normal("texNormal");
+		}
 	}
 
 	namespace {
 		using SetF3D = std::function<void (const SystemUniform3D&, GLEffect&)>;
 		const SetF3D c_systagF3D[] = {
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::Transform)))
+				if(auto id = glx.getUniformID(sysunif3d::matrix::Transform))
 					glx.setUniform(*id, s.getTransform(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::TransformInv)))
+				if(auto id = glx.getUniformID(sysunif3d::matrix::TransformInv))
 					glx.setUniform(*id, s.getTransformInv(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::Proj)))
+					if(auto id = glx.getUniformID(sysunif3d::matrix::Proj))
 						glx.setUniform(*id, hCam.cref().getProjMatrix(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::ProjInv)))
+				if(auto id = glx.getUniformID(sysunif3d::matrix::ProjInv))
 					glx.setUniform(*id, s.getProjInv(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::View)))
+					if(auto id = glx.getUniformID(sysunif3d::matrix::View))
 						glx.setUniform(*id, hCam.cref().getViewMatrix(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::ViewInv)))
+				if(auto id = glx.getUniformID(sysunif3d::matrix::ViewInv))
 					glx.setUniform(*id, s.getViewInv(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::ViewProj)))
+					if(auto id = glx.getUniformID(sysunif3d::matrix::ViewProj))
 						glx.setUniform(*id, hCam.cref().getViewProjMatrix(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::ViewProjInv)))
+					if(auto id = glx.getUniformID(sysunif3d::matrix::ViewProjInv))
 						glx.setUniform(*id, hCam.cref().getViewProjInv(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::World)))
+				if(auto id = glx.getUniformID(sysunif3d::matrix::World))
 					glx.setUniform(*id, s.getWorld(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::WorldInv)))
+				if(auto id = glx.getUniformID(sysunif3d::matrix::WorldInv))
 					glx.setUniform(*id, s.getWorldInv(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::EyePos)))
+					if(auto id = glx.getUniformID(sysunif3d::matrix::EyePos))
 						glx.setUniform(*id, hCam.cref().getOffset());
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(SysUnif3D::Get(SysUnif3D::Matrix::EyeDir)))
+					if(auto id = glx.getUniformID(sysunif3d::matrix::EyeDir))
 						glx.setUniform(*id, hCam.cref().getRot().getZAxis());
 				}
 			}

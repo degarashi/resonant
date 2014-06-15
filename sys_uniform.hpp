@@ -7,75 +7,49 @@
 #include "spinner/size.hpp"
 
 namespace rs {
-	class UnifBase {
-		private:
-			enum _Dummy { dummy };
-		public:
-			using value_t = uint32_t;
-	};
-	struct EUnif : UnifBase {
-		struct Texture { enum {
-			Diffuse,
-			_Num
-		};};
-		const static std::string cs_word[];
-		const static std::string& Get(value_t t);
-	};
-	struct EUnif2D : UnifBase {
-		struct Param { enum {
-			Depth,
-			Alpha,
-			_Num
-		};};
-		const static std::string cs_word[];
-		const static std::string& Get(value_t t);
-	};
 	// Uniform変数: 名前だけ定義
-	struct EUnif3D : UnifBase {
-		struct Texture { enum {
-			Specular,
-			Normal,
-			_Num
-		};};
-		const static std::string cs_word[];
-		const static std::string& Get(value_t t);
-	};
-	struct SysUnif : UnifBase {
-		struct Screen { enum {
-			size,
-			_Num
-		};};
-		const static std::string cs_word[];
-		const static std::string& Get(value_t t);
-	};
-	struct SysUnif2D : UnifBase {
-		struct Matrix { enum {
-			Transform2D,
-			_Num
-		};};
-		const static std::string cs_word[];
-		const static std::string& Get(value_t t);
-	};
+	namespace unif {
+		namespace texture {
+			extern const std::string Diffuse;
+		}
+	}
+	namespace unif2d {
+		extern const std::string Depth,
+								Alpha;
+	}
+	namespace unif3d {
+		namespace texture {
+			extern const std::string Specular,
+									Normal;
+		}
+	}
+	namespace sysunif {
+		namespace screen {
+			extern const std::string Size;
+		}
+	}
+	namespace sysunif2d {
+		namespace matrix {
+			extern const std::string Transform;
+		}
+	}
 	// SystemUnif3Dが値の管理を行う
-	struct SysUnif3D : SysUnif {
-		struct Matrix { enum {
-			Transform,
-			TransformInv,
-			Proj,
-			ProjInv,
-			View,
-			ViewInv,
-			ViewProj,
-			ViewProjInv,
-			World,
-			WorldInv,
-			EyePos,
-			EyeDir,
-			_Num
-		};};
-		const static std::string cs_word[];
-		const static std::string& Get(value_t t);
-	};
+	namespace sysunif3d {
+		namespace matrix {
+			extern const std::string Transform,
+									TransformInv,
+									Proj,
+									ProjInv,
+									View,
+									ViewInv,
+									ViewProj,
+									ViewProjInv,
+									World,
+									WorldInv,
+									EyePos,
+									EyeDir;
+		}
+	}
 
 	//! (3D/2D共通)
 	/*! 予め変数名がsys_*** の形で決められていて, 存在すれば計算&設定される

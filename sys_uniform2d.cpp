@@ -2,27 +2,20 @@
 #include "resonant/glx.hpp"
 
 namespace rs {
-	// ------------------ EUnif2D ------------------
-	const std::string EUnif2D::cs_word[] = {
-		"fDepth",
-		"fAlpha"
-	};
-	const std::string& EUnif2D::Get(value_t t) {
-		return cs_word[t];
+	namespace unif2d {
+		const std::string	Depth("fDepth"),
+							Alpha("fAlpha");
 	}
-
-	// ------------------ SysUnif2D ------------------
-	const std::string SysUnif2D::cs_word[] = {
-		"sys_mTrans2D"
-	};
-	const std::string& SysUnif2D::Get(value_t t) {
-		return cs_word[t];
+	namespace sysunif2d {
+		namespace matrix {
+			const std::string	Transform("sys_mTrans2D");
+		}
 	}
 	namespace {
 		using SetF = std::function<void (const SystemUniform2D&, GLEffect&)>;
 		const SetF c_systagF2D[] = {
 			[](const SystemUniform2D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(SysUnif2D::Get(SysUnif2D::Matrix::Transform2D)))
+				if(auto id = glx.getUniformID(sysunif2d::matrix::Transform))
 					glx.setUniform(*id, s.getTransform2D(), true);
 			}
 		};

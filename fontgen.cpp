@@ -168,7 +168,7 @@ namespace rs {
 	const SPString& TextObj::getFaceName() const { return _faceName; }
 	void TextObj::draw(GLEffect* gle) {
 		gle->setVDecl(cs_vDecl);
-		auto& str = EUnif::Get(EUnif::Texture::Diffuse);
+		auto& str = unif::texture::Diffuse;
 		auto id = gle->getUniformID(str);
 		Assert(Warn, id, u8R"(uniform value %1% is not found)", str)
 		if(!id)
