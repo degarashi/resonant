@@ -553,7 +553,7 @@ namespace rs {
 			return itr->second.getProgram();
 		return HLProg();
 	}
-	
+
 	void GLEffect::_exportInitTag() {
 		// もしInitTagが有効ならそれを出力
 		if(_current.bInit) {
@@ -856,8 +856,8 @@ namespace rs {
 			}
 			bool setKey(const std::string& key) {
 				uniID = GL.glGetUniformLocation(pgID, key.c_str());
-				GLEC_ChkP(Trap)
-				Assert(Warn, uniID>=0, "Uniform argument \"%1%\" not found", key)
+				// ここでキーが見つからない = uniformブロックで宣言されているがGLSLコードで使われない場合なのでエラーではない
+				// Assert(Warn, uniID>=0, "Uniform argument \"%1%\" not found", key)
 				return uniID >= 0;
 			}
 			template <class T>
