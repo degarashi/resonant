@@ -38,24 +38,22 @@ namespace rs {
 			HLFT fontFromID(CCoreID id) const;
 	};
 	//! フォント作成クラス: 環境依存
-	/*! フォントの設定毎に用意する */
+	/*! フォント設定毎に用意する */
 	class Font_FTDep {
-		CCoreID			_coreID;
 		// FTFaceとCCoreIDの対応
 		HLFT			_hlFT;
 		// 一時バッファは対応する最大サイズで確保
 		spn::ByteBuff	_buff;
-		//! キャラクタフラグ (AAや縁取りなど)
-		int				_charType;
-		int				_boldP;
-		bool			_bItalic;
 		//! 描画に必要な範囲を取得
 		spn::Rect _boundingRect(char32_t code) const;
+		//! フォントサイズ、Italic, Bold等の設定フラグ
+		CCoreID			_coreID;
 
 		public:
-			Font_FTDep(Font_FTDep&& dep);
+			Font_FTDep(Font_FTDep&&) = default;
 			Font_FTDep(const std::string& name, CCoreID cid);
-			Font_FTDep& operator = (Font_FTDep&& dep);
+			Font_FTDep(CCoreID cid);
+			Font_FTDep& operator = (Font_FTDep&& dep) = default;
 
 			//! 結果的にCCoreIDが同じになるパラメータの値を統一
 			/*! (依存クラスによってはサイズが縦しか指定できなかったりする為) */
@@ -64,7 +62,7 @@ namespace rs {
 			//! 使用テクスチャとUV範囲、カーソル移動距離など取得
 			/*! \return first=フォントピクセルデータ(各ピクセル8bit)
 						second=フォント原点に対する描画オフセット */
-			std::pair<spn::ByteBuff, spn::Rect> getChara(char32_t code);
+			std::pair<spn::ByteBuff, spn::Rect> getChara(char32_t c);
 			int maxWidth() const;
 			int height() const;
 			int width(char32_t c);

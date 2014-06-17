@@ -38,46 +38,53 @@ namespace rs {
 		return itr->second.makeFont();
 	}
 	HLFT FontFamily::fontFromFile(const std::string& path) {
+		Assert(Trap, false, "not implemented yet")
 		return HLFT();
 	}
 	HLFT FontFamily::fontFromID(CCoreID id) const {
+		Assert(Trap, false, "not implemented yet")
 		return HLFT();
 	}
 
 	// ---------------------- Font_FTDep ----------------------
-	// TODO: 縁取り対応
-	Font_FTDep::Font_FTDep(const std::string& name, CCoreID cid):
-		_charType(cid.at<CCoreID::CharFlag>()), _boldP(cid.at<CCoreID::Weight>()), _bItalic(cid.at<CCoreID::Italic>())
-	{
-		if(name.empty())
-			_hlFT = mgr_font.fontFromID(cid);
-		else
-			_hlFT = mgr_font.fontFromFamilyName(name);
-		Assert(Trap, _hlFT.valid());
-
-		// TODO: この値は埋め込むのではなくてディスプレイから取得するべき
-		constexpr int DPI_W = 300,
-					DPI_H = 300;
-		int w = cid.at<CCoreID::Width>(),
-			h = cid.at<CCoreID::Height>();
-		auto& ft = _hlFT.ref();
-		switch(cid.at<CCoreID::SizeType>()) {
-			case CCoreID::SizeType_Pixel:
-				ft.setPixelSizes(w, h); break;
-			case CCoreID::SizeType_Point:
-				ft.setCharSize(w, h, DPI_W, DPI_H); break;
-			case CCoreID::SizeType_LineHeight:
-				ft.setSizeFromLine(h); break;
-			default:
-                AssertP(Trap, false, "invalid sizetype number");
+	namespace {
+		void SetFTSize(FTFace& ft, CCoreID coreID) {
+			// TODO: この値は埋め込むのではなくてディスプレイから取得するべき
+			constexpr int DPI_W = 300,
+						DPI_H = 300;
+			int w = coreID.at<CCoreID::Width>(),
+				h = coreID.at<CCoreID::Height>();
+			switch(coreID.at<CCoreID::SizeType>()) {
+				case CCoreID::SizeType_Pixel:
+					ft.setPixelSizes(w, h); break;
+				case CCoreID::SizeType_Point:
+					ft.setCharSize(w, h, DPI_W, DPI_H); break;
+				case CCoreID::SizeType_LineHeight:
+					ft.setSizeFromLine(h); break;
+				default:
+					AssertP(Trap, false, "invalid sizetype number");
+			}
+		}
+		void PrepareGlyph(FTFace& ft, CharID cid) {
+			ft.prepareGlyph(cid.code, (cid.at<CCoreID::CharFlag>() & CCoreID::CharFlag_AA) ? FTFace::RenderMode::Normal : FTFace::RenderMode::Mono,
+								cid.at<CCoreID::Weight>()>0,
+								cid.at<CCoreID::Italic>());
 		}
 	}
-	Font_FTDep::Font_FTDep(Font_FTDep&& d):
-		_coreID(d._coreID), _hlFT(std::move(d._hlFT)), _buff(std::move(d._buff)), _charType(d._charType) {}
-	Font_FTDep& Font_FTDep::operator = (Font_FTDep&& d) {
-		this->~Font_FTDep();
-		new(this) Font_FTDep(std::move(d));
-		return *this;
+	// TODO: 縁取り対応
+	Font_FTDep::Font_FTDep(const std::string& name, CCoreID cid):
+		_coreID(cid)
+	{
+		_hlFT = mgr_font.fontFromFamilyName(name);
+		Assert(Trap, _hlFT.valid());
+		SetFTSize(_hlFT.ref(), _coreID);
+	}
+	Font_FTDep::Font_FTDep(CCoreID cid):
+		_coreID(cid)
+	{
+		_hlFT = mgr_font.fontFromID(cid);
+		Assert(Trap, _hlFT.valid());
+		SetFTSize(_hlFT.ref(), _coreID);
 	}
 
 	int Font_FTDep::height() const {
@@ -85,18 +92,18 @@ namespace rs {
 	}
 	int Font_FTDep::width(char32_t c) {
 		auto& ft = _hlFT.ref();
-		ft.prepareGlyph(c, (_charType & CCoreID::CharFlag_AA) ? FTFace::RenderMode::Normal : FTFace::RenderMode::Mono,
-							_boldP>0, _bItalic);
+		SetFTSize(ft, _coreID);
+		PrepareGlyph(ft, CharID(c, _coreID));
 		return ft.getGlyphInfo().advanceX;
 	}
 	int Font_FTDep::maxWidth() const {
 		return _hlFT.cref().getFaceInfo().maxWidth;
 	}
 	CCoreID Font_FTDep::adjustParams(CCoreID cid) { return cid; }
-	std::pair<spn::ByteBuff, spn::Rect> Font_FTDep::getChara(char32_t code) {
+	std::pair<spn::ByteBuff, spn::Rect> Font_FTDep::getChara(char32_t c) {
 		auto& ft = _hlFT.ref();
-		ft.prepareGlyph(code, (_charType & CCoreID::CharFlag_AA) ? FTFace::RenderMode::Normal : FTFace::RenderMode::Mono,
-						_boldP>0, _bItalic);
+		SetFTSize(ft, _coreID);
+		PrepareGlyph(ft, CharID(c, _coreID));
 		const auto& gi = ft.getGlyphInfo();
 		spn::ByteBuff buff;
 		spn::Rect rect(gi.horiBearingX, gi.horiBearingX + gi.width,

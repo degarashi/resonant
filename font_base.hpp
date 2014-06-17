@@ -122,11 +122,11 @@ namespace rs {
 		using PlaneVec = std::vector<HLTex>;
 		PlaneVec		_plane;
 		spn::PowSize	_sfcSize;
-		const int	_fontH;		//!< フォント縦幅 (=height)
-		UPLaneAlloc	_lalloc;	//!< レーンの残り幅管理
-		int			_nUsed;		//!< 割り当て済みのChar数(動作には影響しない)
-		int			_nH;		//!< Plane一枚のLane数
-		float		_dV;		//!< 1文字のVサイズ
+		const int		_fontH;		//!< フォント縦幅 (=height)
+		UPLaneAlloc		_lalloc;	//!< レーンの残り幅管理
+		int				_nUsed;		//!< 割り当て済みのChar数(動作には影響しない)
+		int				_nH;		//!< Plane一枚のLane数
+		float			_dV;		//!< 1文字のVサイズ
 
 		//! キャッシュテクスチャを一枚追加 -> Lane登録
 		void _addCacheTex();
@@ -134,10 +134,9 @@ namespace rs {
 		public:
 			//! フォントキャッシュテクスチャの確保
 			/*! \param size[in] テクスチャ1辺のサイズ
-				\param fw[in] Char幅
 				\param fh[in] Char高 */
 			CharPlane(const spn::PowSize& size, int fh, UPLaneAlloc&& a);
-			CharPlane(CharPlane&& cp);
+			CharPlane(CharPlane&& cp) = default;
 			//! 新しいChar登録領域を確保
 			/*! まだどこにも登録されてないcodeである事はFontArray_Depが保証する
 				\param[out] dst uv, hTexを書き込む */

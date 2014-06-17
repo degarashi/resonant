@@ -8,11 +8,6 @@ namespace rs {
 		_dV = static_cast<float>(fh) / _sfcSize.height;
 		_nH = static_cast<int>(spn::Rcp22Bit(_dV));
 	}
-	CharPlane::CharPlane(CharPlane&& cp): _plane(std::move(cp._plane)), _sfcSize(cp._sfcSize), _fontH(cp._fontH),
-		_lalloc(std::move(cp._lalloc)), _nUsed(cp._nUsed), _dV(cp._dV)
-	{
-		cp._lalloc.reset(nullptr);
-	}
 	void CharPlane::_addCacheTex() {
 		// OpenGLテクスチャ確保
 		// MEMO: 環境によってはGL_RGBAが32bitでないかもしれないので対策が必要

@@ -14,19 +14,28 @@ namespace rs {
 	// (FaceNameを複数箇所で共有する都合上)
 	using SPString = std::shared_ptr<std::string>;
 	struct Face {
+		struct DepPair {
+			FontArray_Dep	dep;
+			CharPlane		cplane;
+
+			DepPair(const SPString& name, const spn::PowSize& sfcSize, CCoreID cid);
+			DepPair(DepPair&&) = default;
+		};
+		using DepMap = std::unordered_map<CCoreID, DepPair>;
+		DepMap			depMap;
 		SPString		faceName;
-		FontArray_Dep	dep;
-		CCoreID			coreID;
-		CharPlane		cplane;
+		CCoreID			coreID;		// family=0としたCoreID
+		const spn::PowSize& sfcSize;
 		FontChMap&		fontMap;
 
 		Face(Face&& f) = default;
-		Face(const SPString& name, const spn::PowSize& sfcSize, CCoreID cid, FontChMap& m);
+		Face(const SPString& name, const spn::PowSize& size, CCoreID cid, FontChMap& m);
 		bool operator == (const std::string& name) const;
 		bool operator != (const std::string& name) const;
 		bool operator == (CCoreID cid) const;
 		bool operator != (CCoreID cid) const;
-		const CharPos* getCharPos(char32_t c);
+		const CharPos* getCharPos(CharID cid);
+		DepPair& getDepPair(CCoreID coreID);
 	};
 	//! 文章の描画に必要なフォントや頂点を用意
 	/*! TriangleList形式。とりあえず改行だけ対応
@@ -66,7 +75,7 @@ namespace rs {
 			TextObj(TextObj&& t) = default;
 			/*! \param[in] dep フォントデータを生成するための環境依存クラス
 				\param[in] s 生成する文字列 */
-			TextObj(Face& face, std::u32string&& s);
+			TextObj(Face& face, CCoreID coreID, std::u32string&& s);
 			// FontGenから呼び出す
 			void onCacheLost();
 			void onCacheReset(Face& face);
@@ -127,7 +136,7 @@ namespace rs {
 				// CCoreIDを付加した文字列をキーにする
 				auto& ar = _getArray(cid);
 				auto tag = _MakeTextTag(cid, str32);
-				LHdl lh = emplace(std::move(tag), TextObj(ar, std::move(str32))).first;
+				LHdl lh = emplace(std::move(tag), TextObj(ar, cid, std::move(str32))).first;
 				return std::move(lh);
 			}
 			// デバイスロストで処理が必要なのはテクスチャハンドルだけなので、

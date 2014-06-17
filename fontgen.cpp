@@ -4,14 +4,22 @@
 #include "sys_uniform.hpp"
 
 namespace rs {
-	// --------------------------- Face ---------------------------
 	namespace {
 		// 最低サイズ2bits, Layer1=4bits, Layer0=6bits = 12bits(4096)
 		using LAlloc = LaneAlloc<6,4,2>;
 	}
+	// --------------------------- Face::DepPair ---------------------------
+	Face::DepPair::DepPair(const SPString& name, const spn::PowSize& sfcSize, CCoreID cid):
+		dep(*name, cid), cplane(sfcSize, dep.height(), UPLaneAlloc(new LAlloc()))
+	{}
+	// --------------------------- Face ---------------------------
 	// フォントのHeightとラインのHeightは違う！
-	Face::Face(const SPString& name, const spn::PowSize& sfcSize, CCoreID cid, FontChMap& m):
-		faceName(name), dep(*name, cid), coreID(cid), cplane(sfcSize, dep.height(), UPLaneAlloc(new LAlloc())), fontMap(m) {}
+	Face::Face(const SPString& name, const spn::PowSize& size, CCoreID cid, FontChMap& m):
+		faceName(name),
+		coreID(cid),
+		sfcSize(size),
+		fontMap(m)
+	{}
 	bool Face::operator != (const std::string& name) const {
 		return !(this->operator == (name));
 	}
@@ -24,8 +32,15 @@ namespace rs {
 	bool Face::operator == (CCoreID cid) const {
 		return coreID == cid;
 	}
-	const CharPos* Face::getCharPos(char32_t c) {
-		CharID chID(c, coreID);
+	Face::DepPair& Face::getDepPair(CCoreID coreID) {
+		auto itrDP = depMap.find(coreID);
+		if(itrDP == depMap.end()) {
+			depMap.emplace(coreID, DepPair(faceName, sfcSize, coreID));
+			itrDP = depMap.find(coreID);
+		}
+		return itrDP->second;
+	}
+	const CharPos* Face::getCharPos(CharID chID) {
 		// キャッシュが既にあればそれを使う
 		auto itr = fontMap.find(chID);
 		if(itr != fontMap.end())
@@ -34,17 +49,18 @@ namespace rs {
 		// CharMapにエントリを作る
 		CharPos& cp = fontMap[chID];
 		// Dependクラスから文字のビットデータを取得
-		auto res = dep.getChara(c);
+		auto& dp = getDepPair(chID);
+		auto res = dp.dep.getChara(chID.code);
 		// この時点では1ピクセル8bitなので、32bitRGBAに展開
 		res.first = Convert8Bit_Packed32Bit(&res.first[0], res.second.width(), res.second.width(), res.second.height());
 		cp.box = res.second;
-		cp.space = dep.width(c);
+		cp.space = dp.dep.width(chID.code);
 		if(res.second.width() <= 0) {
 			cp.uv *= 0;
 			cp.hTex = mgr_gl.getEmptyTexture();
 		} else {
 			LaneRaw lraw;
-			cplane.rectAlloc(lraw, res.second.width());
+			dp.cplane.rectAlloc(lraw, res.second.width());
 			cp.hTex = lraw.hTex;
 
 			// ビットデータをglTexSubImage2Dで書き込む
@@ -52,7 +68,7 @@ namespace rs {
 			u->writeRect(spn::AB_Byte(std::move(res.first)), lraw.rect.width(), lraw.rect.x0, lraw.rect.y0, GL_UNSIGNED_BYTE);
 
 			// UVオフセットを計算
-			const auto& sz = cplane.getSurfaceSize();
+			const auto& sz = dp.cplane.getSurfaceSize();
 			float invW = spn::Rcp22Bit(static_cast<float>(sz.width)),
 				invH = spn::Rcp22Bit(static_cast<float>(sz.height));
 
@@ -73,11 +89,12 @@ namespace rs {
 			{0, 8, GL_FLOAT, GL_FALSE, 3, (GLuint)VSem::TEXCOORD0}
 		}
 	);
-	TextObj::TextObj(Face& face, std::u32string&& s): _text(std::move(s)), _coreID(face.coreID), _faceName(face.faceName) {
+	TextObj::TextObj(Face& face, CCoreID coreID, std::u32string&& s): _text(std::move(s)), _coreID(coreID), _faceName(face.faceName) {
 		_init(face);
 	}
 	void TextObj::_init(Face& face) {
-		int height = face.dep.height();
+		auto& dp = face.getDepPair(_coreID);
+		int height = dp.dep.height();
 		// CharPosリストの作成
 		// 1文字につき4頂点 + インデックス6個
 		struct CPair {
@@ -94,7 +111,7 @@ namespace rs {
 		float dt = spn::Rcp22Bit(_text.length()),
 			t = 0;
 		for(auto& c : _text) {
-			auto* p = face.getCharPos(c);
+			auto* p = face.getCharPos(CharID(c, _coreID));
 			// 幾つのテクスチャが要るのかカウントしつつ、フォントを配置
 			if(c == U'\n') {
 				ofsy -= height;
@@ -190,6 +207,7 @@ namespace rs {
 
 	template <class S>
 	CCoreID FontGen::_makeCoreID(const S& name, CCoreID cid) {
+		// cid = フォントファミリを無視した値
 		auto itr = std::find(_faceL.begin(), _faceL.end(), ToCp(name));
 		if(itr == _faceL.end()) {
 			// 新しくFaceを作成
