@@ -1,3 +1,4 @@
+#ifdef INCLUDE_OPENGL_ANDROID
 DEF_GLMETHOD(void, 0, glActiveTexture, (GLenum texture), (texture))
 DEF_GLMETHOD(void, 0, glAttachShader, (GLuint program)(GLuint shader), (program)(shader))
 DEF_GLMETHOD(void, 0, glBindAttribLocation, (GLuint program)(GLuint index)(const GLchar* name), (program)(index)(name))
@@ -140,3 +141,4 @@ DEF_GLMETHOD(void, 0, glVertexAttrib4f, (GLuint indx)(GLfloat x)(GLfloat y)(GLfl
 DEF_GLMETHOD(void, 0, glVertexAttrib4fv, (GLuint indx)(const GLfloat* values), (indx)(values))
 DEF_GLMETHOD(void, 0, glVertexAttribPointer, (GLuint indx)(GLint size)(GLenum type)(GLboolean normalized)(GLsizei stride)(const GLvoid* ptr), (indx)(size)(type)(normalized)(stride)(ptr))
 DEF_GLMETHOD(void, 0, glViewport, (GLint x)(GLint y)(GLsizei width)(GLsizei height), (x)(y)(width)(height))
+#endif

@@ -1,3 +1,4 @@
+#ifdef INCLUDE_OPENGL_1_X
 DEF_GLMETHOD(void, 0, glClearIndex, (GLfloat c), (c))
 DEF_GLMETHOD(void, 0, glClearColor, (GLclampf red)(GLclampf green)(GLclampf blue)(GLclampf alpha), (red)(green)(blue)(alpha))
 DEF_GLMETHOD(void, 0, glClear, (GLbitfield mask), (mask))
@@ -448,10 +449,11 @@ DEF_GLMETHOD(void, 0, glMultiTexCoord4iARB, (GLenum target)(GLint s)(GLint t)(GL
 DEF_GLMETHOD(void, 0, glMultiTexCoord4ivARB, (GLenum target)(const GLint *v), (target)(v))
 DEF_GLMETHOD(void, 0, glMultiTexCoord4sARB, (GLenum target)(GLshort s)(GLshort t)(GLshort r)(GLshort q), (target)(s)(t)(r)(q))
 DEF_GLMETHOD(void, 0, glMultiTexCoord4svARB, (GLenum target)(const GLshort *v), (target)(v))
-DEF_GLMETHOD(void, 0, glFramebufferTextureLayerEXT, (GLenum target)(GLenum attachment)(GLuint texture)(GLint level)(GLint layer), (target)(attachment)(texture)(level)(layer))
 DEF_GLMETHOD(void, 0, glBlendEquationSeparateATI, (GLenum modeRGB)(GLenum modeA), (modeRGB)(modeA))
 DEF_GLMETHOD(void, 0, glEGLImageTargetTexture2DOES, (GLenum target)(GLeglImageOES image), (target)(image))
 DEF_GLMETHOD(void, 0, glEGLImageTargetRenderbufferStorageOES, (GLenum target)(GLeglImageOES image), (target)(image))
+#endif
+#ifdef INCLUDE_OPENGL_1_X
 DEF_GLMETHOD(void, 0, glBlendFuncSeparate, (GLenum sfactorRGB)(GLenum dfactorRGB)(GLenum sfactorAlpha)(GLenum dfactorAlpha), (sfactorRGB)(dfactorRGB)(sfactorAlpha)(dfactorAlpha))
 DEF_GLMETHOD(void, 0, glMultiDrawArrays, (GLenum mode)(const GLint *first)(const GLsizei *count)(GLsizei drawcount), (mode)(first)(count)(drawcount))
 DEF_GLMETHOD(void, 0, glMultiDrawElements, (GLenum mode)(const GLsizei *count)(GLenum type)(const GLvoid* const *indices)(GLsizei drawcount), (mode)(count)(type)(indices)(drawcount))
@@ -497,6 +499,8 @@ DEF_GLMETHOD(void, 0, glWindowPos3i, (GLint x)(GLint y)(GLint z), (x)(y)(z))
 DEF_GLMETHOD(void, 0, glWindowPos3iv, (const GLint *v), (v))
 DEF_GLMETHOD(void, 0, glWindowPos3s, (GLshort x)(GLshort y)(GLshort z), (x)(y)(z))
 DEF_GLMETHOD(void, 0, glWindowPos3sv, (const GLshort *v), (v))
+#endif
+#ifdef INCLUDE_OPENGL_1_X
 DEF_GLMETHOD(void, 0, glGenQueries, (GLsizei n)(GLuint *ids), (n)(ids))
 DEF_GLMETHOD(void, 0, glDeleteQueries, (GLsizei n)(const GLuint *ids), (n)(ids))
 DEF_GLMETHOD(GLboolean, 1, glIsQuery, (GLuint id), (id))
@@ -516,6 +520,8 @@ DEF_GLMETHOD(GLvoid*, 1, glMapBuffer, (GLenum target)(GLenum access), (target)(a
 DEF_GLMETHOD(GLboolean, 1, glUnmapBuffer, (GLenum target), (target))
 DEF_GLMETHOD(void, 0, glGetBufferParameteriv, (GLenum target)(GLenum pname)(GLint *params), (target)(pname)(params))
 DEF_GLMETHOD(void, 0, glGetBufferPointerv, (GLenum target)(GLenum pname)(GLvoid* *params), (target)(pname)(params))
+#endif
+#ifdef INCLUDE_OPENGL_2_X
 DEF_GLMETHOD(void, 0, glBlendEquationSeparate, (GLenum modeRGB)(GLenum modeAlpha), (modeRGB)(modeAlpha))
 DEF_GLMETHOD(void, 0, glDrawBuffers, (GLsizei n)(const GLenum *bufs), (n)(bufs))
 DEF_GLMETHOD(void, 0, glStencilOpSeparate, (GLenum face)(GLenum sfail)(GLenum dpfail)(GLenum dppass), (face)(sfail)(dpfail)(dppass))
@@ -609,12 +615,97 @@ DEF_GLMETHOD(void, 0, glVertexAttrib4ubv, (GLuint index)(const GLubyte *v), (ind
 DEF_GLMETHOD(void, 0, glVertexAttrib4uiv, (GLuint index)(const GLuint *v), (index)(v))
 DEF_GLMETHOD(void, 0, glVertexAttrib4usv, (GLuint index)(const GLushort *v), (index)(v))
 DEF_GLMETHOD(void, 0, glVertexAttribPointer, (GLuint index)(GLint size)(GLenum type)(GLboolean normalized)(GLsizei stride)(const GLvoid *pointer), (index)(size)(type)(normalized)(stride)(pointer))
+#endif
+#ifdef INCLUDE_OPENGL_2_X
 DEF_GLMETHOD(void, 0, glUniformMatrix2x3fv, (GLint location)(GLsizei count)(GLboolean transpose)(const GLfloat *value), (location)(count)(transpose)(value))
 DEF_GLMETHOD(void, 0, glUniformMatrix3x2fv, (GLint location)(GLsizei count)(GLboolean transpose)(const GLfloat *value), (location)(count)(transpose)(value))
 DEF_GLMETHOD(void, 0, glUniformMatrix2x4fv, (GLint location)(GLsizei count)(GLboolean transpose)(const GLfloat *value), (location)(count)(transpose)(value))
 DEF_GLMETHOD(void, 0, glUniformMatrix4x2fv, (GLint location)(GLsizei count)(GLboolean transpose)(const GLfloat *value), (location)(count)(transpose)(value))
 DEF_GLMETHOD(void, 0, glUniformMatrix3x4fv, (GLint location)(GLsizei count)(GLboolean transpose)(const GLfloat *value), (location)(count)(transpose)(value))
 DEF_GLMETHOD(void, 0, glUniformMatrix4x3fv, (GLint location)(GLsizei count)(GLboolean transpose)(const GLfloat *value), (location)(count)(transpose)(value))
+#endif
+#ifdef INCLUDE_OPENGL_3_X
+DEF_GLMETHOD(void, 0, glColorMaski, (GLuint index)(GLboolean r)(GLboolean g)(GLboolean b)(GLboolean a), (index)(r)(g)(b)(a))
+DEF_GLMETHOD(void, 0, glGetBooleani_v, (GLenum target)(GLuint index)(GLboolean *data), (target)(index)(data))
+DEF_GLMETHOD(void, 0, glGetIntegeri_v, (GLenum target)(GLuint index)(GLint *data), (target)(index)(data))
+DEF_GLMETHOD(void, 0, glEnablei, (GLenum target)(GLuint index), (target)(index))
+DEF_GLMETHOD(void, 0, glDisablei, (GLenum target)(GLuint index), (target)(index))
+DEF_GLMETHOD(GLboolean, 1, glIsEnabledi, (GLenum target)(GLuint index), (target)(index))
+DEF_GLMETHOD(void, 0, glBeginTransformFeedback, (GLenum primitiveMode), (primitiveMode))
+DEF_GLMETHOD(void, 0, glEndTransformFeedback, (), ())
+DEF_GLMETHOD(void, 0, glBindBufferRange, (GLenum target)(GLuint index)(GLuint buffer)(GLintptr offset)(GLsizeiptr size), (target)(index)(buffer)(offset)(size))
+DEF_GLMETHOD(void, 0, glBindBufferBase, (GLenum target)(GLuint index)(GLuint buffer), (target)(index)(buffer))
+DEF_GLMETHOD(void, 0, glTransformFeedbackVaryings, (GLuint program)(GLsizei count)(const GLchar* const *varyings)(GLenum bufferMode), (program)(count)(varyings)(bufferMode))
+DEF_GLMETHOD(void, 0, glGetTransformFeedbackVarying, (GLuint program)(GLuint index)(GLsizei bufSize)(GLsizei *length)(GLsizei *size)(GLenum *type)(GLchar *name), (program)(index)(bufSize)(length)(size)(type)(name))
+DEF_GLMETHOD(void, 0, glClampColor, (GLenum target)(GLenum clamp), (target)(clamp))
+DEF_GLMETHOD(void, 0, glBeginConditionalRender, (GLuint id)(GLenum mode), (id)(mode))
+DEF_GLMETHOD(void, 0, glEndConditionalRender, (), ())
+DEF_GLMETHOD(void, 0, glVertexAttribIPointer, (GLuint index)(GLint size)(GLenum type)(GLsizei stride)(const GLvoid *pointer), (index)(size)(type)(stride)(pointer))
+DEF_GLMETHOD(void, 0, glGetVertexAttribIiv, (GLuint index)(GLenum pname)(GLint *params), (index)(pname)(params))
+DEF_GLMETHOD(void, 0, glGetVertexAttribIuiv, (GLuint index)(GLenum pname)(GLuint *params), (index)(pname)(params))
+DEF_GLMETHOD(void, 0, glVertexAttribI1i, (GLuint index)(GLint x), (index)(x))
+DEF_GLMETHOD(void, 0, glVertexAttribI2i, (GLuint index)(GLint x)(GLint y), (index)(x)(y))
+DEF_GLMETHOD(void, 0, glVertexAttribI3i, (GLuint index)(GLint x)(GLint y)(GLint z), (index)(x)(y)(z))
+DEF_GLMETHOD(void, 0, glVertexAttribI4i, (GLuint index)(GLint x)(GLint y)(GLint z)(GLint w), (index)(x)(y)(z)(w))
+DEF_GLMETHOD(void, 0, glVertexAttribI1ui, (GLuint index)(GLuint x), (index)(x))
+DEF_GLMETHOD(void, 0, glVertexAttribI2ui, (GLuint index)(GLuint x)(GLuint y), (index)(x)(y))
+DEF_GLMETHOD(void, 0, glVertexAttribI3ui, (GLuint index)(GLuint x)(GLuint y)(GLuint z), (index)(x)(y)(z))
+DEF_GLMETHOD(void, 0, glVertexAttribI4ui, (GLuint index)(GLuint x)(GLuint y)(GLuint z)(GLuint w), (index)(x)(y)(z)(w))
+DEF_GLMETHOD(void, 0, glVertexAttribI1iv, (GLuint index)(const GLint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI2iv, (GLuint index)(const GLint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI3iv, (GLuint index)(const GLint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI4iv, (GLuint index)(const GLint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI1uiv, (GLuint index)(const GLuint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI2uiv, (GLuint index)(const GLuint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI3uiv, (GLuint index)(const GLuint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI4uiv, (GLuint index)(const GLuint *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI4bv, (GLuint index)(const GLbyte *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI4sv, (GLuint index)(const GLshort *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI4ubv, (GLuint index)(const GLubyte *v), (index)(v))
+DEF_GLMETHOD(void, 0, glVertexAttribI4usv, (GLuint index)(const GLushort *v), (index)(v))
+DEF_GLMETHOD(void, 0, glGetUniformuiv, (GLuint program)(GLint location)(GLuint *params), (program)(location)(params))
+DEF_GLMETHOD(void, 0, glBindFragDataLocation, (GLuint program)(GLuint color)(const GLchar *name), (program)(color)(name))
+DEF_GLMETHOD(GLint, 1, glGetFragDataLocation, (GLuint program)(const GLchar *name), (program)(name))
+DEF_GLMETHOD(void, 0, glUniform1ui, (GLint location)(GLuint v0), (location)(v0))
+DEF_GLMETHOD(void, 0, glUniform2ui, (GLint location)(GLuint v0)(GLuint v1), (location)(v0)(v1))
+DEF_GLMETHOD(void, 0, glUniform3ui, (GLint location)(GLuint v0)(GLuint v1)(GLuint v2), (location)(v0)(v1)(v2))
+DEF_GLMETHOD(void, 0, glUniform4ui, (GLint location)(GLuint v0)(GLuint v1)(GLuint v2)(GLuint v3), (location)(v0)(v1)(v2)(v3))
+DEF_GLMETHOD(void, 0, glUniform1uiv, (GLint location)(GLsizei count)(const GLuint *value), (location)(count)(value))
+DEF_GLMETHOD(void, 0, glUniform2uiv, (GLint location)(GLsizei count)(const GLuint *value), (location)(count)(value))
+DEF_GLMETHOD(void, 0, glUniform3uiv, (GLint location)(GLsizei count)(const GLuint *value), (location)(count)(value))
+DEF_GLMETHOD(void, 0, glUniform4uiv, (GLint location)(GLsizei count)(const GLuint *value), (location)(count)(value))
+DEF_GLMETHOD(void, 0, glTexParameterIiv, (GLenum target)(GLenum pname)(const GLint *params), (target)(pname)(params))
+DEF_GLMETHOD(void, 0, glTexParameterIuiv, (GLenum target)(GLenum pname)(const GLuint *params), (target)(pname)(params))
+DEF_GLMETHOD(void, 0, glGetTexParameterIiv, (GLenum target)(GLenum pname)(GLint *params), (target)(pname)(params))
+DEF_GLMETHOD(void, 0, glGetTexParameterIuiv, (GLenum target)(GLenum pname)(GLuint *params), (target)(pname)(params))
+DEF_GLMETHOD(void, 0, glClearBufferiv, (GLenum buffer)(GLint drawbuffer)(const GLint *value), (buffer)(drawbuffer)(value))
+DEF_GLMETHOD(void, 0, glClearBufferuiv, (GLenum buffer)(GLint drawbuffer)(const GLuint *value), (buffer)(drawbuffer)(value))
+DEF_GLMETHOD(void, 0, glClearBufferfv, (GLenum buffer)(GLint drawbuffer)(const GLfloat *value), (buffer)(drawbuffer)(value))
+DEF_GLMETHOD(void, 0, glClearBufferfi, (GLenum buffer)(GLint drawbuffer)(GLfloat depth)(GLint stencil), (buffer)(drawbuffer)(depth)(stencil))
+DEF_GLMETHOD(const GLubyte *, 1, glGetStringi, (GLenum name)(GLuint index), (name)(index))
+#endif
+#ifdef INCLUDE_OPENGL_3_X
+DEF_GLMETHOD(void, 0, glDrawArraysInstanced, (GLenum mode)(GLint first)(GLsizei count)(GLsizei instancecount), (mode)(first)(count)(instancecount))
+DEF_GLMETHOD(void, 0, glDrawElementsInstanced, (GLenum mode)(GLsizei count)(GLenum type)(const GLvoid *indices)(GLsizei instancecount), (mode)(count)(type)(indices)(instancecount))
+DEF_GLMETHOD(void, 0, glTexBuffer, (GLenum target)(GLenum internalformat)(GLuint buffer), (target)(internalformat)(buffer))
+DEF_GLMETHOD(void, 0, glPrimitiveRestartIndex, (GLuint index), (index))
+#endif
+#ifdef INCLUDE_OPENGL_3_X
+DEF_GLMETHOD(void, 0, glGetInteger64i_v, (GLenum target)(GLuint index)(GLint64 *data), (target)(index)(data))
+DEF_GLMETHOD(void, 0, glGetBufferParameteri64v, (GLenum target)(GLenum pname)(GLint64 *params), (target)(pname)(params))
+DEF_GLMETHOD(void, 0, glFramebufferTexture, (GLenum target)(GLenum attachment)(GLuint texture)(GLint level), (target)(attachment)(texture)(level))
+#endif
+#ifdef INCLUDE_OPENGL_3_X
+DEF_GLMETHOD(void, 0, glVertexAttribDivisor, (GLuint index)(GLuint divisor), (index)(divisor))
+#endif
+#ifdef INCLUDE_OPENGL_4_X
+DEF_GLMETHOD(void, 0, glMinSampleShading, (GLfloat value), (value))
+DEF_GLMETHOD(void, 0, glBlendEquationi, (GLuint buf)(GLenum mode), (buf)(mode))
+DEF_GLMETHOD(void, 0, glBlendEquationSeparatei, (GLuint buf)(GLenum modeRGB)(GLenum modeAlpha), (buf)(modeRGB)(modeAlpha))
+DEF_GLMETHOD(void, 0, glBlendFunci, (GLuint buf)(GLenum src)(GLenum dst), (buf)(src)(dst))
+DEF_GLMETHOD(void, 0, glBlendFuncSeparatei, (GLuint buf)(GLenum srcRGB)(GLenum dstRGB)(GLenum srcAlpha)(GLenum dstAlpha), (buf)(srcRGB)(dstRGB)(srcAlpha)(dstAlpha))
+#endif
+#ifdef INCLUDE_OPENGL_FRAMEBUFFER
 DEF_GLMETHOD(GLboolean, 1, glIsRenderbuffer, (GLuint renderbuffer), (renderbuffer))
 DEF_GLMETHOD(void, 0, glBindRenderbuffer, (GLenum target)(GLuint renderbuffer), (target)(renderbuffer))
 DEF_GLMETHOD(void, 0, glDeleteRenderbuffers, (GLsizei n)(const GLuint *renderbuffers), (n)(renderbuffers))
@@ -635,6 +726,8 @@ DEF_GLMETHOD(void, 0, glGenerateMipmap, (GLenum target), (target))
 DEF_GLMETHOD(void, 0, glBlitFramebuffer, (GLint srcX0)(GLint srcY0)(GLint srcX1)(GLint srcY1)(GLint dstX0)(GLint dstY0)(GLint dstX1)(GLint dstY1)(GLbitfield mask)(GLenum filter), (srcX0)(srcY0)(srcX1)(srcY1)(dstX0)(dstY0)(dstX1)(dstY1)(mask)(filter))
 DEF_GLMETHOD(void, 0, glRenderbufferStorageMultisample, (GLenum target)(GLsizei samples)(GLenum internalformat)(GLsizei width)(GLsizei height), (target)(samples)(internalformat)(width)(height))
 DEF_GLMETHOD(void, 0, glFramebufferTextureLayer, (GLenum target)(GLenum attachment)(GLuint texture)(GLint level)(GLint layer), (target)(attachment)(texture)(level)(layer))
+#endif
+#ifdef INCLUDE_OPENGL_SYNC
 DEF_GLMETHOD(GLsync, 1, glFenceSync, (GLenum condition)(GLbitfield flags), (condition)(flags))
 DEF_GLMETHOD(GLboolean, 1, glIsSync, (GLsync sync), (sync))
 DEF_GLMETHOD(void, 0, glDeleteSync, (GLsync sync), (sync))
@@ -642,6 +735,9 @@ DEF_GLMETHOD(GLenum, 1, glClientWaitSync, (GLsync sync)(GLbitfield flags)(GLuint
 DEF_GLMETHOD(void, 0, glWaitSync, (GLsync sync)(GLbitfield flags)(GLuint64 timeout), (sync)(flags)(timeout))
 DEF_GLMETHOD(void, 0, glGetInteger64v, (GLenum pname)(GLint64 *params), (pname)(params))
 DEF_GLMETHOD(void, 0, glGetSynciv, (GLsync sync)(GLenum pname)(GLsizei bufSize)(GLsizei *length)(GLint *values), (sync)(pname)(bufSize)(length)(values))
+#endif
+#ifdef INCLUDE_OPENGL_TIMER_QUERY
 DEF_GLMETHOD(void, 0, glQueryCounter, (GLuint id)(GLenum target), (id)(target))
 DEF_GLMETHOD(void, 0, glGetQueryObjecti64v, (GLuint id)(GLenum pname)(GLint64 *params), (id)(pname)(params))
 DEF_GLMETHOD(void, 0, glGetQueryObjectui64v, (GLuint id)(GLenum pname)(GLuint64 *params), (id)(pname)(params))
+#endif

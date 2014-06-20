@@ -7,6 +7,7 @@ project(resonant)
 include("spinner/${BUILD_TYPE}.cmake" require)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-function")
 
+# この辺は実際に使うOpenGLのバージョンに合わせて定義する
 add_definitions(-DTOOL_PREFIX="${TOOL_PREFIX}")
 
 # 依存ファイル以外のソースファイルを収集
@@ -31,10 +32,15 @@ include_directories(${PROJECT_SOURCE_DIR}/spinner
 					${CMAKE_INSTALL_PREFIX}/include/lua)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib_${TOOL_PREFIX})
 if(DEFINED ARCHITECTURE)
-	add_definitions(-DGL_GLEXT_PROTOTYPES -DUSE_OPENGLES2)
+	# Android環境
+	add_definitions(-DINCLUDE_OPENGL_ANDROID
+					-DGL_GLEXT_PROTOTYPES
+					-DUSE_OPENGLES2)
 	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
 						${CMAKE_INSTALL_PREFIX}/include/SDL2)
 elseif(${WIN32})
+	# Windows環境
+	#TODO OpenGL関数インクルードの定義
 	execute_process(COMMAND which ${CMAKE_CXX_COMPILER} OUTPUT_VARIABLE CompilerPath)
 	execute_process(COMMAND ${PROJECT_SOURCE_DIR}/getbasepath.sh ${CompilerPath} OUTPUT_VARIABLE CompilerPath)
 	execute_process(COMMAND ${PROJECT_SOURCE_DIR}/getbasepath.sh ${CompilerPath} OUTPUT_VARIABLE CompilerPath)
@@ -42,6 +48,13 @@ elseif(${WIN32})
 	include_directories(${CompilerBasePath}/include/SDL2
 						${CompilerBasePath}/include/freetype2)
 else()
+	# Linux環境
+	add_definitions(-DINCLUDE_OPENGL_1_X
+					-DINCLUDE_OPENGL_2_X
+					-DINCLUDE_OPENGL_3_X
+					-DINCLUDE_OPENGL_FRAMEBUFFER
+					-DINCLUDE_OPENGL_SYNC
+					-DINCLUDE_OPENGL_TIMER_QUERY)
 	include_directories(/usr/local/include/SDL2
 						/usr/local/include/freetype2)
 endif()
