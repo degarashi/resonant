@@ -103,10 +103,14 @@ namespace rs {
 					if(attrID < 0)
 						return;
 					GL.glEnableVertexAttribArray(attrID);
-					// AssertMsg(Trap, "%1%, %2%", t2.semID, attr[t2.semID])
-					GLEC_ChkP(Trap)
-					GL.glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, reinterpret_cast<const GLvoid*>(t2.offset));
-					GLEC_ChkP(Trap)
+					#ifndef USE_OPENGLES2
+						auto typ = GLFormat::QueryGLSLInfo(t2.elemFlag)->type;
+						if(typ == GLSLType::BoolT || typ == GLSLType::IntT) {
+							// PCにおけるAMDドライバの場合、Int値はIPointerでセットしないと値が化けてしまう為
+							GL.glVertexAttribIPointer(attrID, t2.elemSize, t2.elemFlag, stride, reinterpret_cast<const GLvoid*>(t2.offset));
+						} else
+					#endif
+							GL.glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, reinterpret_cast<const GLvoid*>(t2.offset));
 				};
 				++cur;
 			}
