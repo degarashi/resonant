@@ -22,7 +22,8 @@ namespace rs {
 	namespace unif3d {
 		namespace texture {
 			const std::string Specular("texSpecular"),
-								Normal("texNormal");
+								Normal("texNormal"),
+								Emissive("texEmissive");
 		}
 	}
 

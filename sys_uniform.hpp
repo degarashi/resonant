@@ -14,13 +14,17 @@ namespace rs {
 		}
 	}
 	namespace unif2d {
+		using namespace unif;
 		extern const std::string Depth,
 								Alpha;
 	}
 	namespace unif3d {
+		using namespace unif;
 		namespace texture {
+			using namespace unif::texture;
 			extern const std::string Specular,
-									Normal;
+									Normal,
+									Emissive;
 		}
 	}
 	namespace sysunif {
@@ -29,12 +33,14 @@ namespace rs {
 		}
 	}
 	namespace sysunif2d {
+		using namespace sysunif;
 		namespace matrix {
 			extern const std::string Transform;
 		}
 	}
 	// SystemUnif3Dが値の管理を行う
 	namespace sysunif3d {
+		using namespace sysunif;
 		namespace matrix {
 			extern const std::string Transform,
 									TransformInv,
