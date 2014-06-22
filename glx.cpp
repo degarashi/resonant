@@ -778,48 +778,54 @@ namespace rs {
 		_current.prio.userP = p;
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const bool* b, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const bool* b, int n, bool bT) const {
 		int tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<int>(b[i]);
-		return _makeUniformToken(pf, id, static_cast<const int*>(tmp), 1, bT);
+		_makeUniformToken(dstToken, pf, id, static_cast<const int*>(tmp), 1, bT);
 	}
-	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& /*pf*/, GLint id, const int* iv, int n, bool /*bT*/) const {
-		return std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n);
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& /*pf*/, GLint id, const int* iv, int n, bool /*bT*/) const {
+		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n));
 	}
-	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& /*pf*/, GLint id, const float* fv, int n, bool /*bT*/) const {
-		return std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n);
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& /*pf*/, GLint id, const float* fv, int n, bool /*bT*/) const {
+		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n));
 	}
-	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const double* dv, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const double* dv, int n, bool bT) const {
 		float tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<float>(dv[i]);
-		return _makeUniformToken(pf, id, static_cast<const float*>(tmp), n, bT);
+		_makeUniformToken(dstToken, pf, id, static_cast<const float*>(tmp), n, bT);
 	}
-	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
-		auto aID = _current.texIndex.at(id);
-		if(n > 1) {
-			std::vector<const IGLTexture*> pTexA(n);
-			for(int i=0 ; i<n ; i++)
-				pTexA[i] = (hTex[i].cref()).get();
-			return std::make_shared<draw::TextureA>(id,
-				reinterpret_cast<const HRes*>(hTex),
-				pTexA.data(), aID, n);
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
+		// テクスチャユニット番号を検索
+		auto itr = _current.texIndex.find(id);
+		if(itr != _current.texIndex.end()) {
+			auto aID = itr->second;
+			if(n > 1) {
+				std::vector<const IGLTexture*> pTexA(n);
+				for(int i=0 ; i<n ; i++)
+					pTexA[i] = (hTex[i].cref()).get();
+				dstToken.emplace(id, std::make_shared<draw::TextureA>(id,
+											reinterpret_cast<const HRes*>(hTex),
+											pTexA.data(), aID, n));
+				return;
+			}
+			AssertP(Trap, n==1)
+			HTex hTex2(*hTex);
+			dstToken.emplace(id, hTex2.ref()->getDrawToken(pf, id, 0, aID, *hTex));
 		}
-		AssertP(Trap, n==1)
-		HTex hTex2(*hTex);
-		return hTex2.ref()->getDrawToken(pf, id, 0, aID, *hTex);
 	}
-	draw::SPToken GLEffect::_makeUniformToken(IPreFunc& pf, GLint id, const HLTex* hlTex, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const HLTex* hlTex, int n, bool bT) const {
 		if(n > 1) {
 			std::vector<HLTex> hTexA(n);
 			for(int i=0 ; i<n ; i++)
 				hTexA[i] = hlTex[i].get();
-			return _makeUniformToken(pf, id, hTexA.data(), n, bT);
+			_makeUniformToken(dstToken, pf, id, hTexA.data(), n, bT);
+			return;
 		}
 		AssertP(Trap, n==1)
 		HTex hTex = hlTex->get();
-		return _makeUniformToken(pf, id, &hTex, 1, bT);
+		_makeUniformToken(dstToken, pf, id, &hTex, 1, bT);
 	}
 	OPGLint GLEffect::getUniformID(const std::string& name) const {
 		AssertP(Trap, _current.tps, "Tech/Pass is not set")
@@ -867,7 +873,7 @@ namespace rs {
 			template <class T>
 			void _addResult(const T& t) {
 				if(uniID >= 0)
-					result.emplace(uniID, glx._makeUniformToken(*this, uniID, &t, 1, false));
+					glx._makeUniformToken(result, *this, uniID, &t, 1, false);
 			}
 
 			void operator()(const std::vector<float>& v) {
