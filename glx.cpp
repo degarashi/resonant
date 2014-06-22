@@ -502,14 +502,19 @@ namespace rs {
 			GLsizei len;
 			int size;
 			GLenum typ;
-			GLchar cbuff[0];
+			GLchar cbuff[0x100];	// GLSL変数名の最大がよくわからない
 			// Sampler2D変数が見つかった順にテクスチャIDを割り振る
 			GLint curI = 0;
 			cur.texIndex.clear();
 			for(GLint i=0 ; i<nUnif ; i++) {
 				GLEC_P(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
-				if(typ == GL_SAMPLER_2D)
-					cur.texIndex.insert(std::make_pair(i, curI++));
+				auto opInfo = GLFormat::QueryGLSLInfo(typ);
+				if(opInfo->type == GLSLType::TextureT) {
+					// GetActiveUniformでのインデックスとGetUniformLocationIDは異なる場合があるので・・
+					GLint id = GL.glGetUniformLocation(pid, cbuff);
+					Assert(Trap, id>=0)
+					cur.texIndex.insert(std::make_pair(id, curI++));
+				}
 			}
 
 			cur.init.addPreFunc([&tps](){
