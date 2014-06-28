@@ -3,7 +3,7 @@
 
 namespace rs {
 	namespace {
-		const static char* c_shType[] = {"VertexShader", "GeometryShader", "PixelShader"};
+		const static char* c_shType[] = {"VertexShader", "GeometryShader", "FragmentShader"};
 	}
 	// (prec) type name の順に出力
 	std::ostream& operator << (std::ostream& os, const EntryBase& e) {

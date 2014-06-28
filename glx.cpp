@@ -904,7 +904,7 @@ namespace rs {
 			selectSh[a.type] = &a;
 
 		// VertexとPixelシェーダは必須、Geometryは任意
-		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::PIXEL]), (GLE_LogicalError)(const char*), "no vertex or pixel shader found")
+		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::FRAGMENT]), (GLE_LogicalError)(const char*), "no vertex or fragment shader found")
 
 		std::stringstream ss;
 		TPSDupl dupl(gs, tech, pass);

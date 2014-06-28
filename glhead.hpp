@@ -172,7 +172,7 @@ namespace rs {
 
 namespace rs {
 	enum ShType : unsigned int {
-		VERTEX, GEOMETRY, PIXEL,
+		VERTEX, GEOMETRY, FRAGMENT,
 		NUM_SHTYPE
 	};
 	//! シェーダーIDに対するOpenGL定数

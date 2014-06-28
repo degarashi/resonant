@@ -174,10 +174,10 @@ namespace rs {
 
 			using HSh = AnotherSHandle<UPShader>;
 			using HLProg = AnotherLHandle<UPProg,true>;
-			//! 複数のシェーダーからプログラムを作成 (vertex, geometry, pixel)
-			HLProg makeProgram(HSh vsh, HSh gsh, HSh psh);
-			//! 複数のシェーダーからプログラムを作成 (vertex, pixel)
-			HLProg makeProgram(HSh vsh, HSh psh);
+			//! 複数のシェーダーからプログラムを作成 (vertex, geometry, fragment)
+			HLProg makeProgram(HSh vsh, HSh gsh, HSh fsh);
+			//! 複数のシェーダーからプログラムを作成 (vertex, fragment)
+			HLProg makeProgram(HSh vsh, HSh fsh);
 
 			// ------------ Buffer ------------
 			using CBCreateFx = std::function<GLEffect* (AdaptSDL&)>;

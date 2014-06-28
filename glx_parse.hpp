@@ -135,7 +135,7 @@ namespace rs {
 	struct GLShadertype_ : qi::symbols<char, unsigned> {
 		GLShadertype_(): symbols(std::string("ShaderType")) {
 			add("vertexshader", (unsigned)rs::ShType::VERTEX)
-				("pixelshader", (unsigned)rs::ShType::PIXEL)
+				("fragmentshader", (unsigned)rs::ShType::FRAGMENT)
 				("geometryshader", (unsigned)rs::ShType::GEOMETRY);
 		}
 	};
