@@ -45,18 +45,18 @@ namespace rs {
 		rlShSet = qi::no_case[GLShadertype][at_c<0>(_val)=_1] > '=' > rlNameToken[at_c<1>(_val)=_1] > lit('(') >
 			(-(rlVec|qi::bool_|qi::float_)[push_back(at_c<2>(_val), _1)] > *(lit(',') > (rlVec|qi::bool_|qi::float_)[push_back(at_c<2>(_val), _1)])) >
 			lit(");");
-		// AttrBlock: attribute NameToken (: NameToken)? \{(AttrEnt|Comment)\}
+		// AttrBlock: attribute NameToken (: NameToken)? \{(AttrEnt*)\}
 		rlAttrBlock = lit("attribute") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
-							'{' > *(rlAttrEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
-		// VaryBlock: varying NameToken (: NameToken)? \{VaryEnt|Comment\}
+							'{' > *rlAttrEnt[push_back(at_c<2>(_val), _1)] > '}';
+		// VaryBlock: varying NameToken (: NameToken)? \{VaryEnt*\}
 		rlVaryBlock = lit("varying") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
-							'{' > *(rlVaryEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
-		// UnifBlock: uniform NameToken (: NameToken) \{UnifEnt|Comment\}
+							'{' > *rlVaryEnt[push_back(at_c<2>(_val), _1)] > '}';
+		// UnifBlock: uniform NameToken (: NameToken)? \{UnifEnt*\}
 		rlUnifBlock = lit("uniform") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
-							'{' > *(rlUnifEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
-		// ConstBlock: const NameToken (: NameToken) \{ConstEnt|Comment\}
+							'{' > *rlUnifEnt[push_back(at_c<2>(_val), _1)] > '}';
+		// ConstBlock: const NameToken (: NameToken)? \{ConstEnt*\}
 		rlConstBlock = lit("const") > rlNameToken[at_c<0>(_val)=_1] > -(':' > (rlNameToken % ',')[at_c<1>(_val)=_1]) >
-							'{' > *(rlConstEnt[push_back(at_c<2>(_val), _1)] | rlComment) > '}';
+							'{' > *rlConstEnt[push_back(at_c<2>(_val), _1)] > '}';
 	}
 
 	GR_Glx::GR_Glx(): GR_Glx::base_type(rlGLX, "OpenGL_effect_parser") {
@@ -74,9 +74,6 @@ namespace rs {
 		DEF_ERR(rlBlockUse, "block-use_parser")
 		DEF_ERR(rlConstEnt, "const_entry_parser")
 		DEF_ERR(rlConstBlock, "const_block_parser")
-		DEF_ERR(rlComment, "comment_parser")
-		DEF_ERR(rlCommentL, "long_comment_parser")
-		DEF_ERR(rlCommentS, "short_comment_parser")
 		DEF_ERR(rlString, "quoted_string_parser")
 		DEF_ERR(rlNameToken, "name_token_parser")
 		DEF_ERR(rlBracket, "bracket_parser")

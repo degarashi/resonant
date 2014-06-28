@@ -365,7 +365,6 @@ namespace rs {
 		qi::rule<Itr, BoolSetting(), standard::space_type>				rlBoolSet;
 		qi::rule<Itr, ValueSetting(), standard::space_type>				rlValueSet;
 		qi::rule<Itr, BlockUse(), standard::space_type>					rlBlockUse;
-		qi::rule<Itr, void(), standard::space_type>						rlCommentS, rlCommentL, rlComment;
 
 		qi::rule<Itr, ShSetting(), standard::space_type>				rlShSet;
 		// 各種定義ブロック

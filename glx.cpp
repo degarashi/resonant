@@ -218,7 +218,7 @@ namespace rs {
 	}
 
 	namespace {
-		boost::regex re_comment(R"(//[^\s$]+)"),		//!< 一行コメント
+		boost::regex re_comment(R"(//[^\n$]+)"),		//!< 一行コメント
 					re_comment2(R"(/\*[^\*]*\*/)");		//!< 範囲コメント
 
 		class TPSDupl {
