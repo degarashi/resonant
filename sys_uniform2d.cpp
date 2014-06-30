@@ -1,5 +1,5 @@
 #include "sys_uniform.hpp"
-#include "resonant/glx.hpp"
+#include "glx.hpp"
 
 namespace rs {
 	namespace unif2d {
