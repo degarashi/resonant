@@ -140,8 +140,8 @@ namespace rs {
 	}
 	const GLFormatDesc& Texture_Mem::_prepareBuffer() {
 		auto& info = *GLFormat::QueryInfo(*_format);
-		_typeFormat = info.toType;
-		_buff = spn::ByteBuff(_size.width * _size.height * GLFormat::QuerySize(info.toType) * info.numType);
+		_typeFormat = info.elementType;
+		_buff = spn::ByteBuff(_size.width * _size.height * GLFormat::QuerySize(info.elementType) * info.numElem);
 		return info;
 	}
 	void Texture_Mem::onDeviceLost() {
@@ -157,7 +157,7 @@ namespace rs {
 				tmp.attach(GLFBuffer::COLOR0, 0);
 	#else
 				auto u = use();
-				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.toBase, info.toType, &_buff->operator[](0));
+				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.baseType, info.elementType, &_buff->operator[](0));
 	#endif
 			}
 			IGLTexture::onDeviceLost();
@@ -168,7 +168,7 @@ namespace rs {
 			auto u = use();
 			if(_bRestore && _buff) {
 				// バッファの内容から復元
-				GLenum baseFormat = GLFormat::QueryInfo(_format.get())->toBase;
+				GLenum baseFormat = GLFormat::QueryInfo(_format.get())->baseType;
 				GLEC(Warn, glTexImage2D, GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, baseFormat, _typeFormat.get(), &_buff->operator [](0));
 				// DeviceがActiveな時はバッファを空にしておく
 				_buff = spn::none;
@@ -217,7 +217,7 @@ namespace rs {
 					(*pf)();
 				auto u = use();
 				// GLテクスチャに転送
-				GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->toBase;
+				GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;
 				GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), pbuff->data());
 			};
 		} else {
@@ -321,7 +321,7 @@ namespace rs {
 			if(bP2 && size != n2size)
 				tsfc = tsfc->resize(n2size);
 			func = [&tsfc, &info](CB cb) {
-				auto buff = tsfc->extractAsContinuous(info->toSDLFormat);
+				auto buff = tsfc->extractAsContinuous(info->sdlFormat);
 				cb(&buff[0]);
 			};
 		}
@@ -330,7 +330,7 @@ namespace rs {
 		auto ret = size;
 		int layer = 0;
 		auto make = [tflag, &layer, &info, &size](const void* data) {
-			GL.glTexImage2D(tflag, layer++, info->type, size.width, size.height, 0, info->toBase, info->toType, data);
+			GL.glTexImage2D(tflag, layer++, info->format, size.width, size.height, 0, info->baseType, info->elementType, data);
 		};
 		if(!bMip)
 			func(make);
@@ -348,8 +348,8 @@ namespace rs {
 	spn::Size MakeMip(GLenum tflag, GLenum format, const spn::Size& size, const spn::ByteBuff& buff, bool bP2, bool bMip) {
 		// 簡単の為に一旦SDL_Surfaceに変換
 		auto info = GLFormat::QueryInfo(format);
-		int pixelsize = info->numType * GLFormat::QuerySize(info->toBase);
-		SPSurface sfc = Surface::Create(buff, pixelsize*size.width, size.width, size.height, info->toSDLFormat);
+		int pixelsize = info->numElem* GLFormat::QuerySize(info->baseType);
+		SPSurface sfc = Surface::Create(buff, pixelsize*size.width, size.width, size.height, info->sdlFormat);
 		return MakeTex(tflag, sfc, bP2, bMip);
 	}
 	spn::Size Texture_StaticURI::LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face) {
@@ -374,10 +374,10 @@ namespace rs {
 	}
 
 	// ------------------------- Texture_Debug -------------------------
-	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube): IGLTexture(GLFormat::QuerySDLtoGL(gen->getFormat())->type, size, bCube), _gen(gen) {}
+	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube): IGLTexture(GLFormat::QuerySDLtoGL(gen->getFormat())->format, size, bCube), _gen(gen) {}
 	void Texture_Debug::onDeviceReset() {
 		if(_onDeviceReset()) {
-			GLenum fmt = GLFormat::QuerySDLtoGL(this->_gen->getFormat())->type;
+			GLenum fmt = GLFormat::QuerySDLtoGL(this->_gen->getFormat())->format;
 			auto size = getSize();
 			auto u = use();
 			if(isCubemap()) {

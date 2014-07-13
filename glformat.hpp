@@ -99,11 +99,11 @@ namespace std {
 }
 namespace rs {
 	struct GLFormatDesc {
-		GLenum		type,			//!< 定義するOpenGLのピクセルフォーマット
-					toType;			//!< 保存する時のType
-		int			numType;		//!< 1画素に使うType数
-		GLenum		toBase;			//!< BaseFormatにする場合の型
-		uint32_t	toSDLFormat;	//!< 対応するSDLの型(ない場合はUNKNOWN)
+		GLenum		format,			//!< 定義するOpenGLのピクセルフォーマット
+					elementType;	//!< 保存する時の変数Type
+		int			numElem;		//!< 1画素に使うElement数
+		GLenum		baseType;		//!< BaseFormatにする場合の型
+		uint32_t	sdlFormat;		//!< 対応するSDLの型(ない場合はUNKNOWN)
 	};
 	enum class GLSLType : uint32_t {
 		IntT,

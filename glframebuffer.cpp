@@ -3,7 +3,7 @@
 namespace rs {
 	// ------------------------- GLRBuffer -------------------------
 	GLRBuffer::GLRBuffer(int w, int h, GLInRenderFmt fmt):
-		_idRbo(0), _behLost(NONE), _restoreInfo(boost::none), _buffFmt(GLFormat::QueryInfo(fmt)->toType), _fmt(fmt), _width(w), _height(h)
+		_idRbo(0), _behLost(NONE), _restoreInfo(boost::none), _buffFmt(GLFormat::QueryInfo(fmt)->elementType), _fmt(fmt), _width(w), _height(h)
 	{}
 	GLRBuffer::~GLRBuffer() {
 		onDeviceLost();
@@ -40,8 +40,8 @@ namespace rs {
 			GLFormat::OPInfo op = GLFormat::QueryInfo(rb._fmt.get());
 			int texSize;
 			if(op) {
-				rb._buffFmt = op->toType;
-				texSize = op->numType * GLFormat::QuerySize(op->numType);
+				rb._buffFmt = op->elementType;
+				texSize = op->numElem * GLFormat::QuerySize(op->numElem);
 			} else {
 				// BaseFormatな時は判別をかける
 				uint32_t dsc = GLFormat::QueryFormat(rb._fmt.get(), GLFormat::Query_DSC);

@@ -39,7 +39,7 @@ namespace rs {
 		return 0;
 	}
 	size_t GLFormat::QueryByteSize(GLenum fmt, GLenum typ) {
-		return QueryInfo(fmt)->numType * QuerySize(typ);
+		return QueryInfo(fmt)->numElem * QuerySize(typ);
 	}
 	GLFormat::OPGLSLInfo GLFormat::QueryGLSLInfo(GLenum fmt) {
 		auto itr = s_idMap->find(FmtID(Query_GLSLTypeInfo, fmt));
@@ -127,12 +127,12 @@ namespace rs {
 		BOOST_PP_SEQ_FOR_EACH(ADD_FMTID_DSC, Depth, PSEQ_DEPTHFORMAT)
 
 		for(auto& p : c_GLFormatList)
-			s_idMap->insert(std::make_pair(FmtID(Query_Info, p.type), p));
+			s_idMap->insert(std::make_pair(FmtID(Query_Info, p.format), p));
 		// SDLのフォーマット -> 対応するOpenGLフォーマット
 		for(auto& p : c_GLFormatList) {
-			auto itr = s_SDLtoGL->find(p.toSDLFormat);
-			if(p.toSDLFormat!=SDL_PIXELFORMAT_UNKNOWN && itr==s_SDLtoGL->end())
-				s_SDLtoGL->emplace(p.toSDLFormat, p);
+			auto itr = s_SDLtoGL->find(p.sdlFormat);
+			if(p.sdlFormat!=SDL_PIXELFORMAT_UNKNOWN && itr==s_SDLtoGL->end())
+				s_SDLtoGL->emplace(p.sdlFormat, p);
 		}
 		for(auto& p : c_SDLtoSDLGL)
 			s_SDLtoSDLGL->insert(p);
