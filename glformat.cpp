@@ -20,12 +20,6 @@ namespace rs {
 			return boost::get<GLFormatDesc>(itr->second);
 		return spn::none;
 	}
-	spn::Optional<uint32_t> GLFormat::QuerySDLtoSDLGL(uint32_t fmt) {
-		auto itr = s_SDLtoSDLGL->find(fmt);
-		if(itr != s_SDLtoSDLGL->end())
-			return itr->second;
-		return spn::none;
-	}
 	GLFormat::OPInfo GLFormat::QuerySDLtoGL(uint32_t fmt) {
 		auto itr = s_SDLtoGL->find(fmt);
 		if(itr != s_SDLtoGL->end())
@@ -78,7 +72,6 @@ namespace rs {
 	}
 	GLFormat::IDMap* GLFormat::s_idMap;
 	GLFormat::SDLtoGL* GLFormat::s_SDLtoGL;
-	GLFormat::SDLtoSDLGL* GLFormat::s_SDLtoSDLGL;
 
 	constexpr uint32_t MakeDim() {
 		return 0;
@@ -95,7 +88,6 @@ namespace rs {
 	void GLFormat::Initialize() {
 		s_idMap = new IDMap(1024);
 		s_SDLtoGL = new SDLtoGL(1024);
-		s_SDLtoSDLGL = new SDLtoSDLGL(64);
 		#include "glformat_const.inc"
 		// フォーマット判定用エントリ
 		BOOST_PP_SEQ_FOR_EACH(ADD_FMTID1, Internal, SEQ_INTERNAL)
@@ -128,19 +120,23 @@ namespace rs {
 
 		for(auto& p : c_GLFormatList)
 			s_idMap->insert(std::make_pair(FmtID(Query_Info, p.format), p));
+		for(auto& p : c_GLTypeList)
+			s_idMap->insert(std::make_pair(FmtID(Query_TypeSize, p.first), p.second));
+		for(auto& p : c_GLSLTypeList)
+			s_idMap->insert(std::make_pair(FmtID(Query_GLSLTypeInfo, p.first), p.second));
+
 		// SDLのフォーマット -> 対応するOpenGLフォーマット
+		for(auto& p : c_SDLtoGL) {
+			auto info = QueryInfo(p.second);
+			AssertP(Trap, info)
+			s_SDLtoGL->emplace(p.first, *info);
+		}
+		// 上記と同じだがc_GLFormatListの逆パターンで登録
 		for(auto& p : c_GLFormatList) {
 			auto itr = s_SDLtoGL->find(p.sdlFormat);
 			if(p.sdlFormat!=SDL_PIXELFORMAT_UNKNOWN && itr==s_SDLtoGL->end())
 				s_SDLtoGL->emplace(p.sdlFormat, p);
 		}
-		for(auto& p : c_SDLtoSDLGL)
-			s_SDLtoSDLGL->insert(p);
-
-		for(auto& p : c_GLTypeList)
-			s_idMap->insert(std::make_pair(FmtID(Query_TypeSize, p.first), p.second));
-		for(auto& p : c_GLSLTypeList)
-			s_idMap->insert(std::make_pair(FmtID(Query_GLSLTypeInfo, p.first), p.second));
 	}
 	void GLFormat::Terminate() {
 		delete s_idMap;

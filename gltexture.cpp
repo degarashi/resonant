@@ -298,12 +298,10 @@ namespace rs {
 		// SDLフォーマットから適したOpenGLフォーマットへ変換
 		SPSurface tsfc = sfc;
 		uint32_t fmt = tsfc->getFormat().format;
-		if(auto op = GLFormat::QuerySDLtoSDLGL(fmt)) {
-			fmt = *op;
-			tsfc = tsfc->convert(fmt);
-		}
 		auto info = GLFormat::QuerySDLtoGL(fmt);
 		Assert(Trap, info)
+		fmt = info->sdlFormat;
+		tsfc = tsfc->convert(fmt);
 
 		// テクスチャ用のサイズ調整
 		auto size = tsfc->getSize();
