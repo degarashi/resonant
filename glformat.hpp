@@ -77,7 +77,8 @@ namespace rs {
 					elementType;	//!< 保存する時の変数Type
 		int			numElem;		//!< 1画素に使うElement数
 		GLenum		baseType;		//!< BaseFormatにする場合の型
-		uint32_t	sdlFormat;		//!< 対応するSDLの型(ない場合はUNKNOWN)
+		uint32_t	sdlFormat;		//!< GLFormatと一致するSDLの型(ない場合はUNKNOWN)
+		uint32_t	sdlLossFormat;
 	};
 	enum class GLSLType : uint32_t {
 		IntT,
