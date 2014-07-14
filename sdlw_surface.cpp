@@ -1,10 +1,10 @@
 #include "sdlwrap.hpp"
 
 namespace rs {
+	UPSDLFormat MakeUPFormat(uint32_t fmt) {
+		return std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>(SDL_AllocFormat(fmt), SDL_FreeFormat);
+	}
 	namespace {
-		std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)> MakeUPFormat(uint32_t fmt) {
-			return std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>(SDL_AllocFormat(fmt), SDL_FreeFormat);
-		}
 		#define DEF_FSTR(name)	{name, #name},
 		// フォーマット文字列
 		const std::pair<uint32_t, std::string> c_formatName[] = {
@@ -183,6 +183,9 @@ namespace rs {
 		SDL_Surface* nsfc = SDL_ConvertSurface(_sfc, const_cast<SDL_PixelFormat*>(&fmt), 0);
 		Assert(Trap, nsfc)
 		return SPSurface(new Surface(nsfc));
+	}
+	uint32_t Surface::getFormatEnum() const {
+		return _sfc->format->format;
 	}
 	bool Surface::isContinuous() const {
 		return _sfc->pitch == _sfc->w * _sfc->format->BytesPerPixel;

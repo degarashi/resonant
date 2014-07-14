@@ -971,6 +971,9 @@ namespace rs {
 		RGBA(RGB rgb, int a): ar{rgb.r, rgb.g, rgb.b, static_cast<uint8_t>(a)} {}
 	};
 
+	using UPSDLFormat = std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>;
+	UPSDLFormat MakeUPFormat(uint32_t fmt);
+
 	class Surface;
 	using SPSurface = std::shared_ptr<Surface>;
 	class Surface {
@@ -1027,6 +1030,7 @@ namespace rs {
 			spn::ByteBuff extractAsContinuous(uint32_t dstFmt=0) const;
 			void blit(const SPSurface& sfc, const spn::Rect& srcRect, int dstX, int dstY) const;
 			void blitScaled(const SPSurface& sfc, const spn::Rect& srcRect, const spn::Rect& dstRect) const;
+			uint32_t getFormatEnum() const;
 			SDL_Surface* getSurface();
 			SPSurface resize(const spn::Size& s) const;
 	};
