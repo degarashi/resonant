@@ -19,6 +19,7 @@
 #include <boost/variant.hpp>
 #include "spinner/ziptree.hpp"
 #include "handle.hpp"
+#include "sdlformat.hpp"
 
 #define SDLEC_Base(act, ...)	::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #define SDLEC_Base0(act)		::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
@@ -995,8 +996,12 @@ namespace rs {
 		Surface(SDL_Surface* sfc, spn::ByteBuff&& buff);
 		public:
 			static uint32_t Map(uint32_t format, RGB rgb);
+			//! RGBA値をSDLのピクセルフォーマット形式にパックする
 			static uint32_t Map(uint32_t format, RGBA rgba);
+			//! SDLのピクセルフォーマットからRGB値を取り出す
 			static RGBA Get(uint32_t format, uint32_t pixel);
+			//! SDLのピクセルフォーマット名を表す文字列を取得
+			static const std::string& GetFormatString(uint32_t format);
 
 			//! 任意のフォーマットの画像を読み込む
 			static SPSurface Load(HRW hRW);
