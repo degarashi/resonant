@@ -299,7 +299,11 @@ namespace rs {
 		SPSurface tsfc = sfc;
 		uint32_t fmt = tsfc->getFormat().format;
 		auto info = GLFormat::QuerySDLtoGL(fmt);
-		Assert(Trap, info)
+		if(!info) {
+			// INDEXEDなフォーマット等は該当が無いのでRGB24として扱う
+			info = GLFormat::QuerySDLtoGL(SDL_PIXELFORMAT_RGB24);
+			AssertP(Trap, info)
+		}
 		fmt = info->sdlFormat;
 		tsfc = tsfc->convert(fmt);
 

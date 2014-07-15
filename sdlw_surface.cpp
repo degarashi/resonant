@@ -195,15 +195,15 @@ namespace rs {
 		if(dstFmt == 0)
 			dstFmt = myformat.format;
 
+		auto lk = lock();
 		int w = width(),
 			h = height();
-		auto lk = lock();
+		// ピクセルデータが隙間なく詰まっていて、なおかつフォーマットも同じならそのままメモリをコピー
 		if(isContinuous() && dstFmt==myformat.format) {
 			auto* src = reinterpret_cast<uint8_t*>(lk.getBits());
 			return spn::ByteBuff(src, src + w*h*myformat.BytesPerPixel);
 		}
-
-		std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>	upFmt(SDL_AllocFormat(dstFmt), SDL_FreeFormat);
+		auto upFmt = MakeUPFormat(dstFmt);
 		size_t dstSize = w * h * upFmt->BytesPerPixel;
 		spn::ByteBuff dst(dstSize);
 		SDLEC(Trap, SDL_ConvertPixels,
