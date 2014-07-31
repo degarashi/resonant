@@ -39,6 +39,7 @@ namespace rs {
 		void _calcFrustum() const;
 
 		public:
+			using Vec3x2 = std::pair<Vec3,Vec3>;
 			CamData();
 			CamData(const CamData& c);
 
@@ -83,11 +84,11 @@ namespace rs {
 			Plane getNearPlane() const;
 			const Frustum& getFrustum() const;
 			Frustum getNearFrustum() const;
-			// ビューポート座標をワールド座標系に変換
-			void unproject(Vec3& vdPos, const Vec3& vsPos);						// 単体
-			void unprojectVec(Vec3& vdBegin, Vec3& vdEnd, const Vec2& vsPos);	// (Near,Far)
-			// ビューポート座標からワールド座標(FarPlane位置)を取得
-			Vec3 vp2wp(float x, float y, float z);
+			//! ビューポート座標をワールド座標系に変換
+			Vec3 unproject(const Vec3& vsPos) const;		// 単体
+			Vec3x2 unprojectVec(const Vec2& vsPos) const;	// (Near,Far)
+			//! ビューポート座標からワールド座標(FarPlane位置)を取得
+			Vec3 vp2wp(const Vec3& vp) const;
 
 			Pose3D getPose() const;
 			void setPose(const Pose3D& ps);

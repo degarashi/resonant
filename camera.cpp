@@ -156,24 +156,19 @@ namespace rs {
 		_calcFrustum();
 		return _vfrus;
 	}
-	void CamData::unproject(Vec3& vdPos, const Vec3& vsPos) {
+	Vec3 CamData::unproject(const Vec3& vsPos) const {
 		const AMat44& mI = getViewProjInv();
-		vdPos = AVec4(vsPos.asVec4(1) * mI).asVec3Coord();
+		return (vsPos.asVec4(1) * mI).asVec3Coord();
 	}
-	void CamData::unprojectVec(Vec3& vdBegin, Vec3& vdEnd, const Vec2& vsPos) {
+	CamData::Vec3x2 CamData::unprojectVec(const Vec2& vsPos) const {
 		const AMat44& mI = getViewProjInv();
-		vdBegin = AVec4(AVec4(vsPos.x, vsPos.y, 0, 1) * mI).asVec3Coord();
-		vdEnd = AVec4(AVec4(vsPos.x, vsPos.y, 1, 1) * mI).asVec3Coord();
+		return Vec3x2(
+			(AVec4(vsPos.x, vsPos.y, 0, 1) * mI).asVec3Coord(),
+			(AVec4(vsPos.x, vsPos.y, 1, 1) * mI).asVec3Coord()
+		);
 	}
-	Vec3 CamData::vp2wp(float x, float y, float z) {
-		AVec4 v(x,y,z,1);
-		const AMat44& m = getViewProjMatrix();
-		AMat44 im;
-		m.inversion(im);
-		v *= im;
-
-		float inv = 1.0f/v.w;
-		return Vec3(v.x*inv, v.y*inv, v.z*inv);
+	Vec3 CamData::vp2wp(const Vec3& vp) const {
+		return (vp.asVec4(1) * getViewProjInv()).asVec3Coord();
 	}
 	Pose3D CamData::getPose() const {
 		return Pose3D(getOffset(), getRot(), AVec3(1,1,1));
