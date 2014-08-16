@@ -6,6 +6,7 @@
 #include "spinner/optional.hpp"
 #include "spinner/misc.hpp"
 #include "sdlformat.hpp"
+#include "spinner/structure/niftycounter.hpp"
 
 namespace rs {
 	#ifdef USE_OPENGLES2

@@ -9,6 +9,7 @@
 #include "spinner/size.hpp"
 #include "glformat.hpp"
 #include "spinner/error.hpp"
+#include "spinner/chunk.hpp"
 #include "sdlwrap.hpp"
 
 namespace rs {

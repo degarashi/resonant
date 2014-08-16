@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include "spinner/resmgr.hpp"
+#include "spinner/structure/freeobj.hpp"
 #include "luaimport.hpp"
 #include "handle.hpp"
 

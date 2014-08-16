@@ -3,6 +3,7 @@
 	#include <intrin.h>
 #endif
 #include "spinner/size.hpp"
+#include "spinner/structure/fixstr.hpp"
 #include "glresource.hpp"
 
 namespace rs {
