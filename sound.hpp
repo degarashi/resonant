@@ -7,6 +7,8 @@
 #include <boost/serialization/export.hpp>
 #include "spinner/serialization/chrono.hpp"
 #include "handle.hpp"
+#undef BOOST_NO_CXX11_SMART_PTR
+#include <boost/serialization/unique_ptr.hpp>
 
 namespace rs {
 	Duration CalcTimeLength(int word_size, int ch, int hz, size_t buffLen);

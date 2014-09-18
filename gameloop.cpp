@@ -9,7 +9,6 @@
 #include <sstream>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include "serialization/smart_ptr.hpp"
 #include "serialization/chrono.hpp"
 #include "serialization/chars.hpp"
 #include "spinner/random.hpp"
