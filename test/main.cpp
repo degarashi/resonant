@@ -2,7 +2,7 @@
 	#include <intrin.h>
 	#include <windows.h>
 #endif
-#include "test/test.hpp"
+#include "test.hpp"
 
 namespace {
 	constexpr int RESOLUTION_X = 1024,
