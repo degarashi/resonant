@@ -61,8 +61,27 @@ namespace rs {
 	};
 	//! 頂点宣言
 	class VDecl {
+		private:
+			friend class boost::serialization::access;
+			template <class Ar>
+			void serialize(Ar& ar, const unsigned int) {
+				ar	& BOOST_SERIALIZATION_NVP(_vdInfo);
+				if(typename Ar::is_loading())
+					_init();
+			}
 		public:
 			struct VDInfo {
+				friend class boost::serialization::access;
+				template <class Ar>
+				void serialize(Ar& ar, const unsigned int) {
+					ar	& BOOST_SERIALIZATION_NVP(streamID)
+						& BOOST_SERIALIZATION_NVP(offset)
+						& BOOST_SERIALIZATION_NVP(elemFlag)
+						& BOOST_SERIALIZATION_NVP(bNormalize)
+						& BOOST_SERIALIZATION_NVP(elemSize)
+						& BOOST_SERIALIZATION_NVP(semID);
+				}
+
 				GLuint	streamID,		//!< 便宜上の)ストリームID
 						offset,			//!< バイトオフセット
 						elemFlag,		//!< OpenGLの要素フラグ
@@ -70,14 +89,20 @@ namespace rs {
 						elemSize,		//!< 要素数
 						semID;			//!< 頂点セマンティクスID
 			};
+			using VDInfoV = std::vector<VDInfo>;
 		private:
 			using Func = std::function<void (GLuint, const VData::AttrA&)>;
 			using FuncL = std::vector<Func>;
-			FuncL	_func;						//!< ストリーム毎のサイズを1次元配列で格納 = 0番から並べる
-			int		_nEnt[VData::MAX_STREAM+1];	//!< 各ストリームの先頭インデックス
+			FuncL		_func;						//!< ストリーム毎のサイズを1次元配列で格納 = 0番から並べる
+			int			_nEnt[VData::MAX_STREAM+1];	//!< 各ストリームの先頭インデックス
+			VDInfoV		_vdInfo;
+
+			static VDInfoV _ToVector(std::initializer_list<VDInfo>& il);
+			void _init();
 
 		public:
 			VDecl();
+			VDecl(const VDInfoV& vl);
 			//! 入力: {streamID, offset, GLFlag, bNoramalize, semantics}
 			VDecl(std::initializer_list<VDInfo> il);
 			//! OpenGLへ頂点位置を設定

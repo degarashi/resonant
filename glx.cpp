@@ -43,7 +43,7 @@ namespace rs {
 	// -------------- ValueSettingR --------------
 	ValueSettingR::ValueSettingR(const ValueSetting& s) {
 		func = cs_func[s.type];
-		int nV = std::min(static_cast<int>(s.value.size()), countof(value));
+		int nV = std::min(s.value.size(), countof(value));
 		for(int i=0 ; i<nV ; i++)
 			value[i] = s.value[i];
 		for(int i=nV ; i<countof(value) ; i++)
@@ -75,10 +75,23 @@ namespace rs {
 		EC_Base((boost::format("file path: \"%1%\" was not found.") % fPath).str()) {}
 	// ----------------- VDecl -----------------
 	VDecl::VDecl() {}
+	VDecl::VDecl(const VDInfoV& vl) {
+		_vdInfo = vl;
+		_init();
+	}
 	VDecl::VDecl(std::initializer_list<VDInfo> il) {
+		int n = il.size();
+		_vdInfo.resize(n);
+		// 一旦Vectorに変換
+		auto itr = il.begin();
+		for(int i=0 ; i<n ; i++)
+			_vdInfo[i] = *itr++;
+		_init();
+	}
+	void VDecl::_init() {
 		// StreamID毎に集計
 		std::vector<VDInfo> tmp[VData::MAX_STREAM];
-		for(auto& v : il)
+		for(auto& v : _vdInfo)
 			tmp[v.streamID].push_back(v);
 
 		// 頂点定義のダブり確認
@@ -93,7 +106,7 @@ namespace rs {
 			}
 		}
 
-		_func.resize(il.size());
+		_func.resize(_vdInfo.size());
 		int cur = 0;
 		for(int i=0 ; i<countof(tmp) ; i++) {
 			_nEnt[i] = cur;
