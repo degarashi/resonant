@@ -88,7 +88,7 @@ namespace rs {
 	void GLFormat::Initialize() {
 		s_idMap = new IDMap(1024);
 		s_SDLtoGL = new SDLtoGL(1024);
-		#include "glformat_const.inc"
+		#include "include/glformat_const.inc"
 		// フォーマット判定用エントリ
 		BOOST_PP_SEQ_FOR_EACH(ADD_FMTID1, Internal, SEQ_INTERNAL)
 		BOOST_PP_SEQ_FOR_EACH(ADD_FMTID1, Internal_Sized, SEQ_INTERNALSIZED)
