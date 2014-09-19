@@ -73,6 +73,19 @@ namespace rs {
 
 	GLEffect::EC_FileNotFound::EC_FileNotFound(const std::string& fPath):
 		EC_Base((boost::format("file path: \"%1%\" was not found.") % fPath).str()) {}
+
+	// ----------------- VDecl::VDInfo -----------------
+	bool VDecl::VDInfo::operator == (const VDInfo& v) const {
+		return ((streamID ^ v.streamID)
+				| (offset ^ v.offset)
+				| (elemFlag ^ v.elemFlag)
+				| (bNormalize ^ v.bNormalize)
+				| (elemSize ^ v.elemSize)
+				| (semID ^ v.semID)) == 0;
+	}
+	bool VDecl::VDInfo::operator != (const VDInfo& v) const {
+		return !(this->operator == (v));
+	}
 	// ----------------- VDecl -----------------
 	VDecl::VDecl() {}
 	VDecl::VDecl(const VDInfoV& vl) {
@@ -142,6 +155,13 @@ namespace rs {
 					_func[j](stride, vdata.attrID);
 			}
 		}
+	}
+	bool VDecl::operator == (const VDecl& vd) const {
+		// VDInfoの比較
+		return _vdInfo == vd._vdInfo;
+	}
+	bool VDecl::operator != (const VDecl& vd) const {
+		return !(this->operator == (vd));
 	}
 
 	// ----------------- TPStructR -----------------

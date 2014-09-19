@@ -88,6 +88,9 @@ namespace rs {
 						bNormalize,		//!< OpenGLが正規化するか(bool)
 						elemSize,		//!< 要素数
 						semID;			//!< 頂点セマンティクスID
+
+				bool operator == (const VDInfo& v) const;
+				bool operator != (const VDInfo& v) const;
 			};
 			using VDInfoV = std::vector<VDInfo>;
 		private:
@@ -107,6 +110,8 @@ namespace rs {
 			VDecl(std::initializer_list<VDInfo> il);
 			//! OpenGLへ頂点位置を設定
 			void apply(const VData& vdata) const;
+			bool operator == (const VDecl& vd) const;
+			bool operator != (const VDecl& vd) const;
 	};
 
 	using UniIDSet = std::unordered_set<GLint>;
