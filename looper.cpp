@@ -42,7 +42,7 @@ namespace rs {
 	}
 
 	void Looper::Prepare() {
-		Assert(Trap, &tls_looper.get() == nullptr)
+		Assert(Trap, !tls_looper)
 		tls_looper = SPLooper(new Looper());
 	}
 

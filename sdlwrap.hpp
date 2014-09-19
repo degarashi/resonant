@@ -265,6 +265,9 @@ namespace rs {
 			const T& get() const {
 				return this->operator*();
 			}
+			explicit operator bool() const {
+				return _getPtr() != nullptr;
+			}
 			bool initialized() const {
 				return _getPtr() != nullptr;
 			}
