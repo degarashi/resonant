@@ -324,7 +324,7 @@ namespace rs {
 				popValues2<CT, sizeof...(Ret)-1>(dst, -1, typename spn::NType<0, sizeof...(Ret)>::less());
 			}
 			template <class CT, int N, class TUP>
-			void popValues2(TUP& dst, int pos, std::false_type) {}
+			void popValues2(TUP& /*dst*/, int /*pos*/, std::false_type) {}
 			template <class CT, int N, class TUP>
 			void popValues2(TUP& dst, int pos, std::true_type) {
 				std::get<N>(dst) = toValue<typename CT::template At<N>::type>(pos);
@@ -681,15 +681,15 @@ namespace rs {
 	template <class... Ts0>
 	struct FuncCall {
 		template <class CB, class... Ts1>
-		static auto callCB(CB cb, lua_State* ls, int idx, Ts1&&... ts1) -> decltype(cb(std::forward<Ts1>(ts1)...)) {
+		static auto callCB(CB cb, lua_State* /*ls*/, int /*idx*/, Ts1&&... ts1) -> decltype(cb(std::forward<Ts1>(ts1)...)) {
 			return cb(std::forward<Ts1>(ts1)...);
 		}
 		template <class T, class RT, class FT, class... Args, class... Ts1>
-		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (FT::*func)(Args...), Ts1&&... ts1) {
+		static RT procMethod(lua_State* /*ls*/, T* ptr, int /*idx*/, RT (FT::*func)(Args...), Ts1&&... ts1) {
 			return (ptr->*func)(std::forward<Ts1>(ts1)...);
 		}
 		template <class RT, class... Args, class... Ts1>
-		static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
+		static RT proc(lua_State* /*ls*/, int /*idx*/, RT (*func)(Args...), Ts1&&... ts1) {
 			return func(std::forward<Ts1>(ts1)...);
 		}
 	};
@@ -754,7 +754,7 @@ namespace rs {
 	struct RetSize<void> {
 		constexpr static int size = 0;
 		template <class CB>
-		static int proc(lua_State* ls, CB cb) {
+		static int proc(lua_State* /*ls*/, CB cb) {
 			cb();
 			return size;
 		}

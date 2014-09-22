@@ -101,7 +101,7 @@ namespace rs {
 			bool isDead() const { return _bDestroy; }
 			virtual void destroy() { _bDestroy = true; }
 			bool onUpdateUpd();
-			virtual LCValue recvMsg(GMessageID id, const LCValue& arg=LCValue()) { return LCValue(); }
+			virtual LCValue recvMsg(GMessageID /*id*/, const LCValue& /*arg*/=LCValue()) { return LCValue(); }
 			//! 各Objが実装するアップデート処理
 			virtual void onUpdate() = 0;
 			virtual void onDestroy() {}
@@ -117,23 +117,23 @@ namespace rs {
 		public:
 			virtual const char* getLuaName() const { return "Object"; }
 			//! 描画セッティング等をチェックして適切なタグを出力
-			virtual void getDTag(DTagCollect& dst) const {}
+			virtual void getDTag(DTagCollect& /*dst*/) const {}
 			//! 描画タグに記載がしてある類の描画セッティングをする
 			virtual void prepareDraw() const {}
 			//! オブジェクト描画用メソッド
 			virtual void onDraw() const {}
 
 			virtual Form getForm() const { return Form::Invalid; }
-			virtual void onHitEnter(HGbj hGbj) {}		//!< 初回衝突
-			virtual void onHit(HGbj hGbj, int n) {}		//!< 2フレーム目以降
+			virtual void onHitEnter(HGbj /*hGbj*/) {}		//!< 初回衝突
+			virtual void onHit(HGbj /*hGbj*/, int /*n*/) {}		//!< 2フレーム目以降
 			//! 衝突が終わった最初のフレーム
 			/*! 既にオブジェクトが存在しない可能性がある為弱ハンドルを渡す */
-			virtual void onHitExit(WGbj whGbj, int n) {}
+			virtual void onHitExit(WGbj /*whGbj*/, int /*n*/) {}
 
 			virtual ObjTypeID getTypeID() const = 0;					//!< オブジェクトの識別IDを取得
 			// ---------- Scene用メソッド ----------
 			virtual void onDraw() {}
-			virtual void onDown(ObjTypeID prevID, const LCValue& arg) {}
+			virtual void onDown(ObjTypeID /*prevID*/, const LCValue& /*arg*/) {}
 			virtual void onPause() {}
 			virtual void onStop() {}
 			virtual void onResume() {}
@@ -284,20 +284,20 @@ namespace rs {
 			struct State {
 				virtual ~State() {}
 				virtual ObjTypeID getStateID() const = 0;
-				virtual void onUpdate(T& self) {}
-				virtual LCValue recvMsg(T& self, GMessageID msg, const LCValue& arg) { return LCValue(); }
-				virtual void onEnter(T& self, ObjTypeID prevID) {}
-				virtual void onExit(T& self, ObjTypeID nextID) {}
-				virtual void onHitEnter(T& self, HGbj hGbj) {}
-				virtual void onHit(T& self, HGbj hGbj, int n) {}
-				virtual void onHitExit(T& self, WGbj whGbj, int n) {}
+				virtual void onUpdate(T& /*self*/) {}
+				virtual LCValue recvMsg(T& /*self*/, GMessageID /*msg*/, const LCValue& /*arg*/) { return LCValue(); }
+				virtual void onEnter(T& /*self*/, ObjTypeID /*prevID*/) {}
+				virtual void onExit(T& /*self*/, ObjTypeID /*nextID*/) {}
+				virtual void onHitEnter(T& /*self*/, HGbj /*hGbj*/) {}
+				virtual void onHit(T& /*self*/, HGbj /*hGbj*/, int /*n*/) {}
+				virtual void onHitExit(T& /*self*/, WGbj /*whGbj*/, int /*n*/) {}
 				// --------- Scene用メソッド ---------
-				virtual void onDraw(T& self) {}
-				virtual void onDown(T& self, ObjTypeID prevID, const LCValue& arg) {}
-				virtual void onPause(T& self) {}
-				virtual void onStop(T& self) {}
-				virtual void onResume(T& self) {}
-				virtual void onReStart(T& self) {}
+				virtual void onDraw(T& /*self*/) {}
+				virtual void onDown(T& /*self*/, ObjTypeID /*prevID*/, const LCValue& /*arg*/) {}
+				virtual void onPause(T& /*self*/) {}
+				virtual void onStop(T& /*self*/) {}
+				virtual void onResume(T& /*self*/) {}
+				virtual void onReStart(T& /*self*/) {}
 			};
 			template <class ST>
 			struct StateT : State, ObjectIDT<ST> {
@@ -332,7 +332,7 @@ namespace rs {
 			}
 			ObjTypeID getTypeID() const override { return ObjectIDT<T>::ID; }
 
-			ObjectT(Priority prio=0): _state(FPState(&_nullState, false)) {}
+			ObjectT(Priority /*prio*/=0): _state(FPState(&_nullState, false)) {}
 			T& getRef() { return *reinterpret_cast<T*>(this); }
 			void setState(FPState&& st) {
 				// もし既に有効なステートがセットされていたら無視 | nullステートは常に適用

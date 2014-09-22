@@ -94,7 +94,7 @@ namespace rs {
 	//! 何もしないデリータ
 	template <class T>
 	struct Del_Nothing {
-		void operator()(T* p) const {}
+		void operator()(T* /*p*/) const {}
 	};
 	//! リソースハンドルを解放
 	template <class HDL>
