@@ -129,7 +129,7 @@ void MyMain::_initCam() {
 	lk->hlCam = mgr_cam.emplace();
 	rs::CamData& cd = lk->hlCam.ref();
 	cd.setOffset({0,0,-3});
-	cd.setFOV(spn::DEGtoRAD(60));
+	cd.setFOV(spn::DegF(60));
 	cd.setZPlane(0.01f, 500.f);
 }
 void MyMain::_initEffect() {
@@ -198,8 +198,8 @@ bool MyMain::runU() {
 	if(_bPress) {
 		float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
 			yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
-		cd.addRot(spn::Quat::RotationY(spn::DEGtoRAD(-xv)));
-		cd.addRot(spn::Quat::RotationX(spn::DEGtoRAD(-yv)));
+		cd.addRot(spn::Quat::RotationY(spn::DegF(-xv)));
+		cd.addRot(spn::Quat::RotationX(spn::DegF(-yv)));
 	}
 	fx.setTechnique(_techID, true);
 

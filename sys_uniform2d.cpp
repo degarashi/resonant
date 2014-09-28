@@ -32,7 +32,7 @@ namespace rs {
 	uint32_t SystemUniform2D::_refresh(spn::Mat32& dst, Transform2D*) const {
 		const auto& s = getViewScale();
 		auto m = spn::Mat33::Scaling(s.x, s.y, 1);
-		m *= spn::Mat22::Rotation(spn::DEGtoRAD(getViewRotation())).convert33();
+		m *= spn::Mat22::Rotation(getViewRotation()).convert33();
 		m *= spn::Mat33::Translation(getViewOffset());
 		m.convert(dst);
 		return 0;

@@ -19,7 +19,7 @@ namespace rs {
 	/*! 姿勢の保持はPose3Dクラスが行い，カメラ固有の変数だけを持つ */
 	class CamData : public Pose3D, public spn::CheckAlign<16, CamData> {
 		GAP_MATRIX_DEF(mutable, _matV, 4,3,
-					   (((float, _fov)))
+					   (((spn::RadF, _fov)))
 					   (((float, _aspect)))
 					   (((float, _nearZ)))
 					   (((float, _farZ)))
@@ -52,9 +52,9 @@ namespace rs {
 			//! サイド移動(軸フリー)
 			void moveSide3D(float speed);
 			//! 方向転換(軸指定)
-			void turnAxis(const Vec3& axis, float rad);
+			void turnAxis(const Vec3& axis, spn::RadF rad);
 			//! Yaw Pitch Roll指定の回転
-			void turnYPR(float yaw, float pitch, float roll);
+			void turnYPR(spn::RadF yaw, spn::RadF pitch, spn::RadF roll);
 			//! 差分入力
 			void addRot(const Quat& q);
 			//! 補間付き回転
@@ -65,7 +65,7 @@ namespace rs {
 
 			// アスペクト，FOV，Z平面
 			void setAspect(float ap);
-			void setFOV(float fv);
+			void setFOV(spn::RadF fv);
 			void setZPlane(float n, float f);
 			void setNearDist(float n);
 			void setFarDist(float f);
@@ -77,7 +77,7 @@ namespace rs {
 			const AMat43& getViewMatrix() const;
 			const AMat44& getViewProjInv() const;
 			// 各パラメータ取得
-			float getFOV() const;
+			spn::RadF getFOV() const;
 			float getAspect() const;
 			float getFarDist() const;
 			float getNearDist() const;

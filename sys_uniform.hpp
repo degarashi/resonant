@@ -79,7 +79,7 @@ namespace rs {
 			#define SEQ_SYSUNI2D \
 				((ViewOffset)(spn::Vec2)) \
 				((ViewScale)(spn::Vec2)) \
-				((ViewRotation)(float)) \
+				((ViewRotation)(spn::DegF)) \
 				((Transform2D)(spn::Mat32)(ViewOffset)(ViewScale)(ViewRotation))
 			RFLAG_S(SystemUniform2D, SEQ_SYSUNI2D)
 		public:

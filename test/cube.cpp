@@ -69,7 +69,7 @@ Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex), _techID(-1), _passID(-1) {
 }
 void Cube::draw(rs::GLEffect& glx) {
 	const spn::AQuat& q = this->getRot();
-	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), 0.01f));
+	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
 	if(_techID < 0) {
 		_techID = *glx.getTechID("TheCube");
 		glx.setTechnique(_techID, true);

@@ -51,7 +51,7 @@ namespace rs {
 	{
 		_nearZ = 1.f;
 		_farZ = 1e5f;
-		_fov = spn::DEGtoRAD(90.0f);
+		_fov = spn::DegF(90.0f);
 		_aspect = 1.4f / 1.f;
 	}
 	CamData::CamData(const CamData& c): Pose3D(static_cast<const Pose3D&>(c)), _matV() {
@@ -77,12 +77,12 @@ namespace rs {
 	void CamData::moveSide3D(float speed) {
 		addOffset(getRight() * speed);
 	}
-	void CamData::turnAxis(const Vec3& axis, float rad) {
+	void CamData::turnAxis(const Vec3& axis, spn::RadF ang) {
 		Quat q = getRot();
-		q.rotate(axis, rad);
+		q.rotate(axis, ang);
 		setRot(q);
 	}
-	void CamData::turnYPR(float yaw, float pitch, float roll) {
+	void CamData::turnYPR(spn::RadF yaw, spn::RadF pitch, spn::RadF roll) {
 		Quat q = getRot();
 		q >>= Quat::RotationYPR(yaw, pitch, roll);
 		setRot(q);
@@ -105,7 +105,7 @@ namespace rs {
 		_aspect = ap;
 		++_accum;
 	}
-	void CamData::setFOV(float fv) {
+	void CamData::setFOV(spn::RadF fv) {
 		_fov = fv;
 		++_accum;
 	}
@@ -140,7 +140,7 @@ namespace rs {
 		return _matVPInv;
 	}
 
-	float CamData::getFOV() const {
+	spn::RadF CamData::getFOV() const {
 		return _fov;
 	}
 	float CamData::getAspect() const {
@@ -190,13 +190,13 @@ namespace rs {
 		xA.y = 0;
 		if(xA.len_sq() < 1e-5f) {
 			// Xが真上か真下を向いている
-			float ang;
+			spn::DegF ang;
 			if(rm.ma[0][1] > 0) {
 				// 真上 = Z軸周りに右へ90度回転
-				ang = spn::DEGtoRAD(90);
+				ang = spn::DegF(90);
 			} else {
 				// 真下 = 左へ90度
-				ang = spn::DEGtoRAD(-90);
+				ang = spn::DegF(-90);
 			}
 			setRot(AQuat::RotationZ(ang) * q);
 		} else {
@@ -212,7 +212,7 @@ namespace rs {
 	// カメラの変換手順としては offset -> rotation だがPose3Dの変換は rotation -> offsetなので注意！
 	Frustum CamData::getNearFrustum() const {
 		Frustum fr;
-		float t = std::tan(_fov/2);
+		float t = std::tan(_fov->get()/2);
 		fr.setScale({t*_aspect, t, getNearDist()*8});
 		fr.setRot(getRot());
 		fr.setOffset(getOffset());
