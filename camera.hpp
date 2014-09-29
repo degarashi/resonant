@@ -32,7 +32,6 @@ namespace rs {
 							_acMat,
 							_acMatInv,
 							_acVFrus;
-		constexpr static float TURN_THRESHOLD = 1e-5f;
 		bool _checkAC(uint32_t& acDst) const;
 		void _calcMatrices() const;				// View,Proj,(Both)
 		void _calcVPInv() const;				// InverseMat(VP)
@@ -43,23 +42,6 @@ namespace rs {
 			CamData();
 			CamData(const CamData& c);
 
-			//! 前方への移動(XZ平面限定)
-			void moveFwd2D(float speed);
-			//! サイド移動(XZ平面限定)
-			void moveSide2D(float speed);
-			//! 前方への移動(軸フリー)
-			void moveFwd3D(float speed);
-			//! サイド移動(軸フリー)
-			void moveSide3D(float speed);
-			//! 方向転換(軸指定)
-			void turnAxis(const Vec3& axis, spn::RadF rad);
-			//! Yaw Pitch Roll指定の回転
-			void turnYPR(spn::RadF yaw, spn::RadF pitch, spn::RadF roll);
-			//! 差分入力
-			void addRot(const Quat& q);
-			//! 補間付き回転
-			/*! 3軸の目標距離を合計した物が閾値以下ならtrueを返す */
-			bool lerpTurn(const Quat& q_tgt, float t);
 			//! accumulation counter
 			uint32_t getAccum() const;
 
@@ -69,8 +51,6 @@ namespace rs {
 			void setZPlane(float n, float f);
 			void setNearDist(float n);
 			void setFarDist(float f);
-			//! Upベクトルをrollが0になるよう補正
-			void adjustNoRoll();
 			// 各カメラ行列参照
 			const AMat44& getViewProjMatrix() const;
 			const AMat44& getProjMatrix() const;

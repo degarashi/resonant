@@ -59,44 +59,6 @@ namespace rs {
 				src = reinterpret_cast<uintptr_t>(&c) + sizeof(Pose3D);
 		std::memcpy(reinterpret_cast<void*>(ths), reinterpret_cast<const void*>(src), sizeof(CamData)-sizeof(Pose3D));
 	}
-	void CamData::moveFwd2D(float speed) {
-		Vec3 vZ = getDir();
-		vZ.y = 0;
-		vZ.normalize();
-		addOffset(vZ * speed);
-	}
-	void CamData::moveSide2D(float speed) {
-		Vec3 vX = getRight();
-		vX.y = 0;
-		vX.normalize();
-		addOffset(vX * speed);
-	}
-	void CamData::moveFwd3D(float speed) {
-		addOffset(getDir() * speed);
-	}
-	void CamData::moveSide3D(float speed) {
-		addOffset(getRight() * speed);
-	}
-	void CamData::turnAxis(const Vec3& axis, spn::RadF ang) {
-		Quat q = getRot();
-		q.rotate(axis, ang);
-		setRot(q);
-	}
-	void CamData::turnYPR(spn::RadF yaw, spn::RadF pitch, spn::RadF roll) {
-		Quat q = getRot();
-		q >>= Quat::RotationYPR(yaw, pitch, roll);
-		setRot(q);
-	}
-	void CamData::addRot(const Quat& q) {
-		Quat q0 = getRot();
-		q0 >>= q;
-		setRot(q0);
-	}
-	bool CamData::lerpTurn(const Quat& q_tgt, float t) {
-		Quat q = getRot();
-		q.slerp(q_tgt, t);
-		return q.distance(q_tgt) < TURN_THRESHOLD;
-	}
 	uint32_t CamData::getAccum() const {
 		return _accum + ((Pose3D*)this)->getAccum();
 	}
@@ -177,33 +139,6 @@ namespace rs {
 		setOffset(ps.getOffset());
 		setRot(ps.getRot());
 		// (スケールは適用しない)
-	}
-	void CamData::adjustNoRoll() {
-		// X軸のY値が0になればいい
-
-		// 回転を一旦行列に直して軸を再計算
-		const auto& q = getRot();
-		auto rm = q.asMat33();
-		// Zはそのままに，X軸のY値を0にしてY軸を復元
-		Vec3 zA = rm.getRow(2),
-			xA = rm.getRow(0);
-		xA.y = 0;
-		if(xA.len_sq() < 1e-5f) {
-			// Xが真上か真下を向いている
-			spn::DegF ang;
-			if(rm.ma[0][1] > 0) {
-				// 真上 = Z軸周りに右へ90度回転
-				ang = spn::DegF(90);
-			} else {
-				// 真下 = 左へ90度
-				ang = spn::DegF(-90);
-			}
-			setRot(AQuat::RotationZ(ang) * q);
-		} else {
-			xA.normalize();
-			Vec3 yA = zA % xA;
-			setRot(Quat::FromAxis(xA, yA, zA));
-		}
 	}
 	Plane CamData::getNearPlane() const {
 		Vec3 dir = getDir();
