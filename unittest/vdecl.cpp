@@ -12,7 +12,7 @@ namespace rs {
 		TEST_F(VDeclTest, Serialization) {
 			auto rd = VDeclTest::getRand();
 			auto makeIntRandom = [&rd](int from, int to, int mult=1) {
-				return [&rd,from,to,mult](){ return rd.template getUniformRange<int>(from, to) * mult; };
+				return [&rd,from,to,mult](){ return rd.template getUniform<int>({from, to}) * mult; };
 			};
 			auto rdNStream = makeIntRandom(1,VData::MAX_STREAM);
 			auto rdNValue = makeIntRandom(0,8);

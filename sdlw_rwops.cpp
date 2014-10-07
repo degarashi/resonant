@@ -368,10 +368,10 @@ namespace rs {
 		auto rnd = mgr_random.get(RANDOMIZER_ID);
 		int retry_count = MAX_RETRY_COUNT;
 		while(--retry_count >= 0) {
-			int length = rnd.getUniformRange<int>(RANDOMLEN_MIN, RANDOMLEN_MAX);
+			int length = rnd.getUniform<int>({RANDOMLEN_MIN, RANDOMLEN_MAX});
 			int csize = c_charVec.size();
 			for(int i=0 ; i<length ; i++)
-				str.append(1, c_charVec.get(rnd.getUniformRange<int>(0, csize-1)));
+				str.append(1, c_charVec.get(rnd.getUniform<int>({0, csize-1})));
 			// 同名のファイルが既に存在しないかチェック
 			spn::Dir dir(tmpdir);
 			dir.pushBack(str);
