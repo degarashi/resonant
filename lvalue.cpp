@@ -12,9 +12,9 @@ namespace rs {
 	// ------------------- LCValue -------------------
 	// --- LCV<boost::blank> = LUA_TNONE
 	void LCV<boost::blank>::operator()(lua_State* ls, boost::blank) const {
-		assert(false); }
+		Assert(Trap, false); }
 	boost::blank LCV<boost::blank>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
-		assert(false); }
+		Assert(Trap, false); throw 0; }
 	std::ostream& LCV<boost::blank>::operator()(std::ostream& os, boost::blank) const {
 		return os << "(none)"; }
 	LuaType LCV<boost::blank>::operator()() const {

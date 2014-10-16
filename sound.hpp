@@ -127,6 +127,7 @@ namespace rs {
 	class ASource {
 		private:
 			struct FadeCB {
+				virtual ~FadeCB() {}
 				virtual void onFadeEnd(ASource& s) = 0;
 			};
 			template <class State>
