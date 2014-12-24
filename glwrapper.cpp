@@ -109,14 +109,12 @@ namespace rs {
 		DEF_SINGLE_METHOD(ret_type, name, args, argnames) \
 		DEF_SINGLE_METHOD(ret_type, BOOST_PP_CAT(name, _NC), args, argnames)
 
-		#ifndef ANDROID
-			#ifdef ANDROID
-				#include "android_gl.inc"
-			#elif defined(WIN32)
-				#include "mingw_gl.inc"
-			#else
-				#include "linux_gl.inc"
-			#endif
+		#ifdef ANDROID
+			#include "android_gl.inc"
+		#elif defined(WIN32)
+			#include "mingw_gl.inc"
+		#else
+			#include "linux_gl.inc"
 		#endif
 
 	#undef DEF_SINGLE_METHOD

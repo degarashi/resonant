@@ -64,14 +64,12 @@ namespace rs {
 		Assert(Warn, GLWrap::name != nullptr, "could not load OpenGL function: %1%", #name)
 		void GLWrap::loadGLFunc() {
 			// 各種API関数
-			#ifndef ANDROID
-				#ifdef ANDROID
-					#include "android_gl.inc"
-				#elif defined(WIN32)
-					#include "mingw_gl.inc"
-				#else
-					#include "linux_gl.inc"
-				#endif
+			#ifdef ANDROID
+				#include "android_gl.inc"
+			#elif defined(WIN32)
+				#include "mingw_gl.inc"
+			#else
+				#include "linux_gl.inc"
 			#endif
 			// その他OS依存なAPI関数
 			LoadGLAux();

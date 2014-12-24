@@ -5,6 +5,12 @@ namespace rs {
 		SetGLAttributes(SDL_GL_CONTEXT_MAJOR_VERSION, major,
 						SDL_GL_CONTEXT_MINOR_VERSION, minor,
 						SDL_GL_DOUBLEBUFFER, 1,
+						SDL_GL_CONTEXT_PROFILE_MASK,
+						#ifdef USE_OPENGLES2
+							SDL_GL_CONTEXT_PROFILE_ES,
+						#else
+							SDL_GL_CONTEXT_PROFILE_CORE,
+						#endif
 						SDL_GL_DEPTH_SIZE, depth);
 	}
 	SPWindow Window::Create(const std::string& title, int w, int h, uint32_t flag) {

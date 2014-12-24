@@ -409,7 +409,7 @@ namespace rs {
 			OPGLint getUniformID(const std::string& name) const;
 
 			//! 単体Uniform変数セット
-			template <class T, class = std::enable_if_t< !std::is_pointer<T>::value >>
+			template <class T, class = typename std::enable_if< !std::is_pointer<T>::value >::type>
 			void setUniform(GLint id, const T& t, bool bT=false) {
 				setUniform(id, &t, 1, bT); }
 			//! 配列Uniform変数セット

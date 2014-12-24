@@ -67,7 +67,9 @@ namespace rs {
 	using OPGLint = spn::Optional<GLint>;
 	using OPGLuint = spn::Optional<GLuint>;
 	using OPGLfloat = spn::Optional<GLfloat>;
+	#ifndef USE_OPENGLES2
 	using OPGLdouble = spn::Optional<GLdouble>;
+	#endif
 
 	// ------------------ GL例外クラス ------------------
 	using GLGetIV = decltype(&IGL::glGetShaderiv);

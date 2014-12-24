@@ -153,7 +153,7 @@ namespace rs {
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
 				auto u = tmp.use();
 				tmp.attach(GLFBuffer::COLOR0, _idTex);
-				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.toBase, info.toType, &_buff->operator[](0));
+				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.baseType, info.elementType, &_buff->operator[](0));
 				tmp.attach(GLFBuffer::COLOR0, 0);
 	#else
 				auto u = use();

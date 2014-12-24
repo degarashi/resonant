@@ -364,6 +364,10 @@ namespace rs {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
+		#ifdef ANDROID
+			// egl関数がロードされてないとのエラーが出る為
+			SDL_GL_LoadLibrary("libEGL.so");
+		#endif
 		Window::SetStdGLAttributes(param.verMajor, param.verMinor, param.depth);
 		SPWindow _spWindow = Window::Create(param.title, param.width, param.height, param.flag);
 		rs::SDLMouse::SetWindow(_spWindow->getWindow());
