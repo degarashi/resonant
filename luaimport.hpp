@@ -27,8 +27,6 @@
 			const char* LuaName(clazz*) { return #clazz; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
-				using base_clazz = typename mgr::data_type; \
-				\
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(::rs::luaNS::ObjectBase); \
 				lsc.call(1,1); \
@@ -38,11 +36,11 @@
 				\
 				lsc.getField(-1, ::rs::luaNS::objBase::ValueR); \
 				lsc.getField(-2, ::rs::luaNS::objBase::ValueW); \
-				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (base_clazz)(clazz), seq_member) \
+				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, static_cast<typename mgr::data_type>(clazz), seq_member) \
 				lsc.pop(2); \
 				\
 				lsc.getField(-1, ::rs::luaNS::objBase::Func); \
-				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (base_clazz)(clazz), seq_method) \
+				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, static_cast<typename mgr::data_type>(clazz), seq_method) \
 				lsc.pop(1); \
 				\
 				lsc.setGlobal(#clazz); \

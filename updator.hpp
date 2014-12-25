@@ -371,7 +371,7 @@ namespace rs {
 				setNullState();
 			}
 			//! 毎フレームの描画 (Scene用)
-			void onDraw() {
+			void onDraw() override {
 				_state->onDraw(getRef());
 				AssertP(Trap, !_bSwState)
 			}

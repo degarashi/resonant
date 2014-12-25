@@ -98,7 +98,7 @@ namespace rs {
 		public:
 			using JoypadDep::JoypadDep;
 
-			InputType getType() const;
+			InputType getType() const override;
 			bool scan() override;
 			int getButton(int num) const override;
 			int getAxis(int num) const override;
@@ -124,7 +124,7 @@ namespace rs {
 		RecvPtrGroup	_group;
 		public:
 			using TouchDep::TouchDep;
-			InputType getType() const;
+			InputType getType() const override;
 			bool scan() override;
 			WPtr getPointer() const override;
 
