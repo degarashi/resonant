@@ -368,8 +368,8 @@ namespace rs {
 			// egl関数がロードされてないとのエラーが出る為
 			SDL_GL_LoadLibrary("libEGL.so");
 		#endif
-		Window::SetStdGLAttributes(param.verMajor, param.verMinor, param.depth);
-		SPWindow _spWindow = Window::Create(param.title, param.width, param.height, param.flag);
+		param.gparam.setStdAttributes();
+		SPWindow _spWindow = Window::Create(param.wparam);
 		rs::SDLMouse::SetWindow(_spWindow->getWindow());
 
 		// メインスレッドのメッセージキューを初期化

@@ -22,15 +22,17 @@ int main(int argc, char **argv) {
 					[](){ return new MyDraw; });
 
 	rs::GLoopInitParam param;
-	param.title = TITLE;
-	param.depth = 24;
-	param.width = RESOLUTION_X;
-	param.height = RESOLUTION_Y;
-	param.verMajor = 2;
-	param.verMinor = 0;
+	auto& wp = param.wparam;
+	wp.title = TITLE;
+	wp.width = RESOLUTION_X;
+	wp.height = RESOLUTION_Y;
+	wp.flag = SDL_WINDOW_SHOWN;
+	auto& gp = param.gparam;
+	gp.depth = 24;
+	gp.verMajor = 2;
+	gp.verMinor = 0;
 	param.pathfile = argv[1];
 	param.app_name = APP_NAME;
 	param.organization = ORG_NAME;
-	param.flag = SDL_WINDOW_SHOWN;
 	return gloop.run(param);
 }

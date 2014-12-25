@@ -647,6 +647,25 @@ namespace rs {
 				Fullscreen,
 				Shown
 			};
+			//! OpenGL初期化パラメータ
+			struct GLParam {
+				int			verMajor, verMinor;			//!< OpenGLバージョン(メジャー & マイナー)
+				int			red, green, blue, depth;	//!< 色深度(RGB + Depth)
+				int			doublebuffer;				//!< ダブルバッファフラグ
+
+				GLParam();
+				void setStdAttributes() const;
+				void getStdAttributes();
+			};
+			//! Window初期化パラメータ
+			struct Param {
+				std::string	title;						//!< ウィンドウタイトル
+				int			posx, posy,					//!< ウィンドウ位置
+							width, height;				//!< ウィンドウサイズ
+				uint32_t	flag;						//!< その他のフラグ
+
+				Param();
+			};
 		private:
 			SDL_Window*	_window;
 			Stat		_stat;
@@ -654,14 +673,22 @@ namespace rs {
 
 			void _checkState();
 		public:
-			template <class... Ts>
-			static void SetGLAttributes(Ts... /*ts*/) {}
+			static void SetGLAttributes() {}
+			// SDL_GLパラメータ設定(可変引数バージョン)
 			template <class... Ts>
 			static void SetGLAttributes(SDL_GLattr attr, int value, Ts... ts) {
 				SDL_GL_SetAttribute(attr, value);
 				SetGLAttributes(ts...);
 			}
-			static void SetStdGLAttributes(int major, int minor, int depth);
+			static void GetGLAttributes() {}
+			// SDL_GLパラメータ取得(可変引数バージョン)
+			template <class... Ts>
+			static void GetGLAttributes(SDL_GLattr attr, int& dst, Ts&&... ts) {
+				SDL_GL_GetAttribute(attr, &dst);
+				GetGLAttributes(std::forward<Ts>(ts)...);
+			}
+
+			static SPWindow Create(const Param& p);
 			static SPWindow Create(const std::string& title, int w, int h, uint32_t flag=0);
 			static SPWindow Create(const std::string& title, int x, int y, int w, int h, uint32_t flag=0);
 			~Window();

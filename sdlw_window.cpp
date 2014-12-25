@@ -1,20 +1,63 @@
 #include "sdlwrap.hpp"
 
 namespace rs {
-	void Window::SetStdGLAttributes(int major, int minor, int depth) {
-		SetGLAttributes(SDL_GL_CONTEXT_MAJOR_VERSION, major,
-						SDL_GL_CONTEXT_MINOR_VERSION, minor,
-						SDL_GL_DOUBLEBUFFER, 1,
-						SDL_GL_CONTEXT_PROFILE_MASK,
+	// --------------------- Param ---------------------
+	Window::Param::Param() {
+		posx = posy = SDL_WINDOWPOS_UNDEFINED;
+		width = 640;
+		height = 480;
+		flag = SDL_WINDOW_SHOWN;
+	}
+	Window::GLParam::GLParam() {
+		verMajor = 2;
+		verMinor = 0;
+		red = green = blue = 5;
+		depth = 16;
+		doublebuffer = 1;
+	}
+	namespace {
+		const SDL_GLattr c_AttrId[] = {
+			SDL_GL_CONTEXT_MAJOR_VERSION,
+			SDL_GL_CONTEXT_MINOR_VERSION,
+			SDL_GL_DOUBLEBUFFER,
+			SDL_GL_RED_SIZE,
+			SDL_GL_GREEN_SIZE,
+			SDL_GL_BLUE_SIZE,
+			SDL_GL_DEPTH_SIZE
+		};
+		using IPtr = int (Window::GLParam::*);
+		const IPtr c_AttrPtr[] = {
+			&Window::GLParam::verMajor,
+			&Window::GLParam::verMinor,
+			&Window::GLParam::doublebuffer,
+			&Window::GLParam::red,
+			&Window::GLParam::green,
+			&Window::GLParam::blue,
+			&Window::GLParam::depth
+		};
+	}
+	void Window::GLParam::getStdAttributes() {
+		for(int i=0 ; i<countof(c_AttrId) ; i++)
+			Window::GetGLAttributes(c_AttrId[i], this->*c_AttrPtr[i]);
+	}
+	void Window::GLParam::setStdAttributes() const {
+		for(int i=0 ; i<countof(c_AttrId) ; i++)
+			Window::SetGLAttributes(c_AttrId[i], this->*c_AttrPtr[i]);
+
+		SetGLAttributes(SDL_GL_CONTEXT_PROFILE_MASK,
 						#ifdef USE_OPENGLES2
 							SDL_GL_CONTEXT_PROFILE_ES,
 						#else
 							SDL_GL_CONTEXT_PROFILE_CORE,
 						#endif
-						SDL_GL_DEPTH_SIZE, depth);
+						SDL_GL_ACCELERATED_VISUAL, 1);
+	}
+	// --------------------- Window ---------------------
+	SPWindow Window::Create(const Param& p) {
+		return Create(p.title, p.posx, p.posy, p.width, p.height, p.flag);
 	}
 	SPWindow Window::Create(const std::string& title, int w, int h, uint32_t flag) {
-		return Create(title, 128, 128, w, h, flag|SDL_WINDOW_OPENGL);
+		return Create(title, 128, 128, w, h, flag);
 	}
 	SPWindow Window::Create(const std::string& title, int x, int y, int w, int h, uint32_t flag) {
 		return SPWindow(new Window(SDLEC_P(Warn, SDL_CreateWindow, title.c_str(), x, y, w, h, flag|SDL_WINDOW_OPENGL)));

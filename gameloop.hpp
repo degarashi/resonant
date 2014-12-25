@@ -142,16 +142,11 @@ namespace rs {
 		int getFPS() const;
 	};
 	struct GLoopInitParam {
-		std::string	pathfile,
-					title,
-					organization,
-					app_name;
-		int			width,
-					height,
-					depth,
-					verMajor,
-					verMinor;
-		uint32_t	flag;
+		std::string		pathfile,		//!< パス記述ファイル名
+						organization,	//!< 組織名(一時ファイル用)
+						app_name;		//!< アプリケション名(一時ファイル用)
+		Window::Param	wparam;
+		Window::GLParam	gparam;
 	};
 	//! メインスレッド
 	class MainThread : public spn::Singleton<MainThread>,
