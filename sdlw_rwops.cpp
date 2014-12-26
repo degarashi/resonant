@@ -351,8 +351,12 @@ namespace rs {
 	};
 	using SDLPtr = std::unique_ptr<void, SDLDeleter>;
 	std::string RWMgr::makeFilePath(const std::string& dirName) const {
-		SDLPtr str(SDL_GetPrefPath(_orgName.c_str(), _appName.c_str()));
-		std::string path(reinterpret_cast<const char*>(str.get()));
+		#ifdef ANDROID
+			std::string path(SDL_AndroidGetInternalStoragePath());
+		#else
+			SDLPtr str(SDL_GetPrefPath(_orgName.c_str(), _appName.c_str()));
+			std::string path(reinterpret_cast<const char*>(str.get()));
+		#endif
 		if(!dirName.empty())
 			path.append(dirName);
 		return std::move(path);

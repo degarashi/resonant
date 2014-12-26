@@ -364,6 +364,7 @@ namespace rs {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
+		tls_threadID = SDL_GetThreadID(nullptr);
 		#ifdef ANDROID
 			// egl関数がロードされてないとのエラーが出る為
 			SDL_GL_LoadLibrary("libEGL.so");
