@@ -3,9 +3,9 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC(act, ...)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALEC_Chk(act)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define ALCEC(act, ...)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ALCError(SoundMgr_depAL::_ref().getDevice()), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC(act, ...)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ::rs::ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define ALEC_Chk(act)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ::rs::ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define ALCEC(act, ...)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ::rs::ALCError(::rs::SoundMgr_depAL::_ref().getDevice()), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
 #ifdef DEBUG
 	#define ALEC_P(act, ...) ALEC(act, __VA_ARGS__)
 	#define ALCEC_P(act, ...) ALCEC(act, __VA_ARGS__)

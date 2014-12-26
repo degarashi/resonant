@@ -21,13 +21,13 @@
 #include "handle.hpp"
 #include "sdlformat.hpp"
 
-#define SDLEC_Base(act, ...)	::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Base0(act)		::spn::EChk_base(act, SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
+#define SDLEC_Base(act, ...)	::spn::EChk_base(act, ::rs::SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define SDLEC_Base0(act)		::spn::EChk_base(act, ::rs::SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
 #define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
 
-#define IMGEC_Base(act, ...)	::spn::EChk_base(act, IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define IMGEC_Base0(act)		::spn::EChk_base(act, IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define IMGEC_Base(act, ...)	::spn::EChk_base(act, ::rs::IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
+#define IMGEC_Base0(act)		::spn::EChk_base(act, ::rs::IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define IMGEC(act, ...)			IMGEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
 #define IMGEC_Chk(act)			IMGEC_Base0(AAct_##act<std::runtime_error>())
 
