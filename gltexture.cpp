@@ -33,18 +33,18 @@ namespace rs {
 		return RUser<IGLTexture>(*this);
 	}
 	void IGLTexture::use_begin() const {
-		GLEC_P(Trap, glActiveTexture, GL_TEXTURE0 + _actID);
-		GLEC_P(Trap, glBindTexture, _texFlag, _idTex);
-		GLEC_ChkP(Trap);
+		GLEC_D(Trap, glActiveTexture, GL_TEXTURE0 + _actID);
+		GLEC_D(Trap, glBindTexture, _texFlag, _idTex);
+		GLEC_Chk_D(Trap);
 	}
 	void IGLTexture::use_end() const {
-		GLEC_ChkP(Trap);
-		GLEC_P(Trap, glBindTexture, _texFlag, 0);
+		GLEC_Chk_D(Trap);
+		GLEC_D(Trap, glBindTexture, _texFlag, 0);
 	}
 
 	bool IGLTexture::_onDeviceReset() {
 		if(_idTex == 0) {
-			GLEC_P(Warn, glGenTextures, 1, &_idTex);
+			GLEC_D(Warn, glGenTextures, 1, &_idTex);
 			return true;
 		}
 		return false;
@@ -108,7 +108,7 @@ namespace rs {
 			GL.glDeleteTextures(1, &_idTex);
 			_idTex = 0;
 			_bReset = false;
-			GLEC_ChkP(Warn);
+			GLEC_Chk_D(Warn);
 		}
 	}
 	void IGLTexture::setUVWrap(GLuint s, GLuint t) {
@@ -194,7 +194,7 @@ namespace rs {
 				use_begin();
 				GL.glTexImage2D(GL_TEXTURE_2D, 0, tfm.get(), sz.width, sz.height,
 								0, tfm.get(), srcFmt.get(), pbuff->data());
-				GLEC_ChkP(Trap);
+				GLEC_Chk_D(Trap);
 			};
 		} else {
 			if(_bRestore) {

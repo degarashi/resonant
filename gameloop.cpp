@@ -238,7 +238,7 @@ namespace rs {
 					auto dur = ntp - tp;
 					if(dur >= microseconds(1000)) {
 						// 時間に余裕があるならスリープをかける
-						SDLEC_P(Warn, SDL_Delay, duration_cast<milliseconds>(dur).count() - 1);
+						SDLEC_D(Warn, SDL_Delay, duration_cast<milliseconds>(dur).count() - 1);
 					}
 					// スピンウェイト
 					while(Clock::now() < ntp);

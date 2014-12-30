@@ -9,12 +9,9 @@
 #include "spinner/error.hpp"
 #include "handle.hpp"
 
-#define FTEC(act, func, ...)	::spn::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::FTError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
-#ifdef DEBUG
-	#define FTEC_P(act, ...)	FTEC(act, __VA_ARGS__)
-#else
-	#define FTEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
-#endif
+#define FTEC_Base(flag, act, ...)	::spn::EChk_code##flag(AAct_##act<std::runtime_error>(), ::rs::FTError(), SOURCEPOS, __VA_ARGS__)
+#define FTEC(...)					FTEC_Base(_a, __VA_ARGS__)
+#define FTEC_D(...)					FTEC_Base(_d, __VA_ARGS__)
 
 namespace rs {
 	struct FTError {

@@ -91,7 +91,11 @@ namespace rs {
 					glFUNC_NC = チェック無し */
 	#define DEF_DRAW_GLEC(act, func, seq) \
 		if((uintptr_t)GLWrap::func != (uintptr_t)GLWrap::glGetError) \
-			return GLEC_Base(AAct_##act<::rs::GLE_Error>(), [&](){return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));}); \
+			return GLEC_Base(_a, \
+						decltype(GLWrap::func(BOOST_PP_SEQ_ENUM(seq))), \
+						act, \
+						[&](){return GLWrap::func(BOOST_PP_SEQ_ENUM(seq));} \
+					); \
 		return GLCall(func, seq)
 #else
 	#define DEF_DRAW_GLEC(act, func, seq) \

@@ -21,27 +21,19 @@
 #include "handle.hpp"
 #include "sdlformat.hpp"
 
-#define SDLEC_Base(act, ...)	::spn::EChk_base(act, ::rs::SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define SDLEC_Base0(act)		::spn::EChk_base(act, ::rs::SDLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define SDLEC(act, ...)			SDLEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
-#define SDLEC_Chk(act)			SDLEC_Base0(AAct_##act<std::runtime_error>())
+#define SDLEC_Base(flag, act, ...)		::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::SDLError(), SOURCEPOS, __VA_ARGS__)
+#define SDLEC_Base0(flag, act)			::spn::EChk##flag(AAct_##act<std::runtime_error>(), ::rs::SDLError(), SOURCEPOS);
+#define SDLEC(...)						SDLEC_Base(_a, __VA_ARGS__)
+#define SDLEC_Chk(act)					SDLEC_Base0(_a, act)
+#define SDLEC_D(...)					SDLEC_Base(_d, __VA_ARGS__)
+#define SDLEC_Chk_D(act)				SDLEC_Base0(_d, act)
 
-#define IMGEC_Base(act, ...)	::spn::EChk_base(act, ::rs::IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define IMGEC_Base0(act)		::spn::EChk_base(act, ::rs::IMGError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define IMGEC(act, ...)			IMGEC_Base(AAct_##act<std::runtime_error>(), __VA_ARGS__)
-#define IMGEC_Chk(act)			IMGEC_Base0(AAct_##act<std::runtime_error>())
-
-#ifdef DEBUG
-	#define SDLEC_P(act, ...)	SDLEC(act, __VA_ARGS__)
-	#define SDLEC_ChkP(act)		SDLEC_Chk(act)
-	#define IMGEC_P(act, ...)	IMGEC(act, __VA_ARGS__)
-	#define IMGEC_ChkP(act)		IMGEC_Chk(act)
-#else
-	#define SDLEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
-	#define SDLEC_ChkP(act)
-	#define IMGEC_P(act, ...)	::spn::EChk_pass(__VA_ARGS__)
-	#define IMGEC_ChkP(act)
-#endif
+#define IMGEC_Base(flag, act, ...)		::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::IMGError(), SOURCEPOS, __VA_ARGS__)
+#define IMGEC_Base0(flag, act)			::spn::EChk##flag(AAct_##act<std::runtime_error>(), ::rs::IMGError(), SOURCEPOS)
+#define IMGEC(act, ...)					IMGEC_Base(_a, act, __VA_ARGS__)
+#define IMGEC_Chk(act)					IMGEC_Base0(_a, act)
+#define IMGEC_D(act, ...)				IMGEC_Base(_d, act, __VA_ARGS__)
+#define IMGEC_Chk_D(act)				IMGEC_Base0(_d, act)
 
 namespace rs {
 	//! RAII形式でSDLの初期化 (for spn::MInitializer)
@@ -235,7 +227,7 @@ namespace rs {
 
 		public:
 			TLS() {
-				_tlsID = SDLEC_P(Trap, SDL_TLSCreate);
+				_tlsID = SDLEC_D(Trap, SDL_TLSCreate);
 			}
 			template <class... Args>
 			TLS(Args&&... args): TLS() {

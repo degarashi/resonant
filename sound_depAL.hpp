@@ -3,18 +3,16 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC(act, ...)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ::rs::ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define ALEC_Chk(act)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ::rs::ALError(), __FILE__, __PRETTY_FUNCTION__, __LINE__);
-#define ALCEC(act, ...)	::spn::EChk_base(AAct_##act<std::runtime_error>(), ::rs::ALCError(::rs::SoundMgr_depAL::_ref().getDevice()), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#ifdef DEBUG
-	#define ALEC_P(act, ...) ALEC(act, __VA_ARGS__)
-	#define ALCEC_P(act, ...) ALCEC(act, __VA_ARGS__)
-	#define OVEC_P(act, ...) OVEC(act, __VA_ARGS__)
-#else
-	#define ALEC_P(act, ...) ::spn::EChk_pass(__VA_ARGS__)
-	#define ALCEC_P(act, ...) ::spn::EChk_pass(__VA_ARGS__)
-	#define OVEC_P(act, ...) ::spn::EChk_pass(__VA_ARGS__)
-#endif
+#define ALEC_Base(flag, act, ...)	::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::ALError(), SOURCEPOS, __VA_ARGS__)
+#define ALEC_Chk_Base(flag, act)	::spn::EChk##flag(AAct_##act<std::runtime_error>(), ::rs::ALError(), SOURCEPOS);
+#define ALCEC_Base(flag, act, ...)	::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::ALCError(::rs::SoundMgr_depAL::_ref().getDevice()), SOURCEPOS, __VA_ARGS__)
+
+#define ALEC(...)					ALEC_Base(_a, __VA_ARGS__)
+#define ALCEC(...)					ALCEC_Base(_a, __VA_ARGS__)
+#define OVEC(...)					OVEC_Base(_a, __VA_ARGS__)
+#define ALEC_D(...)					ALEC_Base(_d, __VA_ARGS__)
+#define ALCEC_D(...)				ALCEC_Base(_d, __VA_ARGS__)
+#define OVEC_D(...)					OVEC_Base(_d, __VA_ARGS__)
 
 namespace rs {
 	struct ALError {

@@ -8,12 +8,9 @@
 #include <boost/serialization/level.hpp>
 #include <boost/serialization/access.hpp>
 
-#define OVEC(act, ...) ::spn::EChk_baseA1(AAct_##act<std::runtime_error>(), OVError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__);
-#ifdef DEBUG
-	#define OVEC_P(act, ...) OVEC(act, __VA_ARGS__)
-#else
-	#define OVEC_P(act, ...) ::spn::EChk_pass(__VA_ARGS__)
-#endif
+#define OVEC_Base(flag, act, ...)	::spn::EChk_code##flag(AAct_##act<std::runtime_error>(), OVError(), SOURCEPOS, __VA_ARGS__);
+#define OVEC(...)					OVEC_Base(_a, __VA_ARGS__)
+#define OVEC_D(...)					OVEC_Base(_d, __VA_ARGS__)
 
 namespace rs {
 	struct OVError {

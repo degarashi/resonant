@@ -24,16 +24,16 @@ namespace rs {
 	}
 	bool SDLMouse::dep_scan(TPos2D& t) {
 		int x, y;
-		_state = SDLEC_P(Trap, SDL_GetMouseState, &x, &y);
+		_state = SDLEC_D(Trap, SDL_GetMouseState, &x, &y);
 		// ウィンドウからカーソルが出ない様にする
 		if(s_window) {
 			if(_mode == MouseMode::Relative) {
 				// カーソルを常にウィンドウ中央へセット
 				int wx, wy;
-				SDLEC_P(Trap, SDL_GetWindowSize, s_window, &wx, &wy);
+				SDLEC_D(Trap, SDL_GetWindowSize, s_window, &wx, &wy);
 				wx >>= 1;
 				wy >>= 1;
-				SDLEC_P(Trap, SDL_WarpMouseInWindow, s_window, wx, wy);
+				SDLEC_D(Trap, SDL_WarpMouseInWindow, s_window, wx, wy);
 				t.setNewRel(spn::Vec2(x - wx, y - wy));
 				return true;
 			}
@@ -48,12 +48,12 @@ namespace rs {
 	void SDLMouse::dep_setMode(MouseMode mode, TPos2D& t) {
 		_mode = mode;
 		SDL_bool b = mode!=MouseMode::Absolute ? SDL_TRUE : SDL_FALSE;
-		SDLEC_P(Trap, SDL_SetWindowGrab, s_window, b);
-		SDLEC_P(Trap, SDL_ShowCursor, mode==MouseMode::Relative ? SDL_DISABLE : SDL_ENABLE);
+		SDLEC_D(Trap, SDL_SetWindowGrab, s_window, b);
+		SDLEC_D(Trap, SDL_ShowCursor, mode==MouseMode::Relative ? SDL_DISABLE : SDL_ENABLE);
 		if(mode == MouseMode::Relative) {
 			int wx, wy;
-			SDLEC_P(Trap, SDL_GetWindowSize, s_window, &wx, &wy);
-			SDLEC_P(Trap, SDL_WarpMouseInWindow, s_window, wx/2, wy/2);
+			SDLEC_D(Trap, SDL_GetWindowSize, s_window, &wx, &wy);
+			SDLEC_D(Trap, SDL_WarpMouseInWindow, s_window, wx/2, wy/2);
 			// カーソルをウィンドウ中央へセットした後に相対移動距離をリセット
 			t.absPos = spn::Vec2(wx/2, wy/2);
 			t.relPos = spn::Vec2(0);

@@ -191,18 +191,13 @@ namespace rs {
 
 #include "spinner/error.hpp"
 // OpenGLに関するアサート集
-#define GLEC_Base(act, ...)				::spn::EChk_base(act, ::rs::GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, __VA_ARGS__)
-#define GLEC_Base0(act)					::spn::EChk_base(act, ::rs::GLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define GLEC(act, func, ...)			GLEC_Base(AAct_##act<::rs::GLE_Error>(), [&](){return GL.func(__VA_ARGS__);})
-#define GLEC_Chk(act)					GLEC_Base0(AAct_##act<::rs::GLE_Error>());
+#define GLEC_Base(flag, rt, act, ...)		::spn::EChk_memory##flag<rt>(AAct_##act<::rs::GLE_Error>(), ::rs::GLError(), SOURCEPOS, __VA_ARGS__)
+#define GLEC_Base0(flag, act)				::spn::EChk##flag(AAct_##act<::rs::GLE_Error>(), ::rs::GLError(), SOURCEPOS)
 
-#ifdef DEBUG
-	#define GLEC_P(act, ...)			GLEC(act, __VA_ARGS__)
-	#define GLEC_ChkP(act)				GLEC_Chk(act)
-#else
-    #define GLEC_P(act, func, ...)		::spn::EChk_pass([&](){return GL.func(__VA_ARGS__);})
-	#define GLEC_ChkP(act)
-#endif
+#define GLEC(act, func, ...)			GLEC_Base(_a, decltype(GL.func(__VA_ARGS__)), act, [&](){return GL.func(__VA_ARGS__);})
+#define GLEC_Chk(act)					GLEC_Base0(_a, act);
+#define GLEC_D(act, func, ...)			GLEC_Base(_d, decltype(GL.func(__VA_ARGS__)), act, [&](){return GL.func(__VA_ARGS__);})
+#define GLEC_Chk_D(act)					GLEC_Base0(_d, act);
 
 namespace rs {
 	//! OpenGLエラーIDとその詳細メッセージ

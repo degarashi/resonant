@@ -10,19 +10,19 @@ namespace rs {
 	}
 	GLContext::~GLContext() {
 		makeCurrent();
-		SDLEC_P(Trap, SDL_GL_DeleteContext, _ctx);
+		SDLEC_D(Trap, SDL_GL_DeleteContext, _ctx);
 	}
 	void GLContext::makeCurrent(const SPWindow& w) {
-		SDLEC_P(Trap, SDL_GL_MakeCurrent, w->getWindow(), _ctx);
+		SDLEC_D(Trap, SDL_GL_MakeCurrent, w->getWindow(), _ctx);
 		_spWindow = w;
 	}
 	void GLContext::makeCurrent() {
-		SDLEC_P(Trap, SDL_GL_MakeCurrent, nullptr, nullptr);
+		SDLEC_D(Trap, SDL_GL_MakeCurrent, nullptr, nullptr);
 		_spWindow = nullptr;
 	}
 	void GLContext::swapWindow() {
 		if(_spWindow)
-			SDLEC_P(Warn, SDL_GL_SwapWindow, _spWindow->getWindow());
+			SDLEC_D(Warn, SDL_GL_SwapWindow, _spWindow->getWindow());
 	}
 	int GLContext::SetSwapInterval(int n) {
 		return SDL_GL_SetSwapInterval(n);

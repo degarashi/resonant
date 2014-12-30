@@ -3,14 +3,13 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
-#define SLEC(act, func, ...)			::spn::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::SLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, func(__VA_ARGS__))
-#define SLEC_M(act, obj, method, ...)	::spn::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::SLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj, __VA_ARGS__))
-#define SLEC_M0(act, obj, method)		::spn::EChk_baseA2(AAct_##act<std::runtime_error>(), ::rs::SLError(), __FILE__, __PRETTY_FUNCTION__, __LINE__, (*obj)->method(obj))
-#ifdef DEBUG
-	#define SLECA(act, ...) SLEC(act, __VA_ARGS__)
-#else
-	#define SLECA(act, ...) ::spn::EChk_pass(__VA_ARGS__)
-#endif
+#define SLEC_Base(flag, act, code)		::spn::EChk_usercode##flag(AAct_##act<std::runtime_error>(), ::rs::SLError(), SOURCEPOS, code)
+#define SLEC(act, func, ...)			SLEC_Base(_a, act, func(__VA_ARGS__))
+#define SLEC_M(act, obj, method, ...)	SLEC_Base(_a, act, (*obj)->method(obj, __VA_ARGS__))
+#define SLEC_M0(act, obj, method)		SLEC_Base(_a, act, (*obj)->method(obj))
+
+#define SLECA(...)						SLEC_Base(_d, __VA_ARGS__)
+
 namespace rs {
 	struct SLError {
 		static const char* errorDesc(SLresult result);

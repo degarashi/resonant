@@ -29,7 +29,7 @@ namespace rs {
 	}
 	FTLibrary::~FTLibrary() {
 		if(_lib)
-			FTEC_P(Trap, FT_Done_FreeType, _lib);
+			FTEC_D(Trap, FT_Done_FreeType, _lib);
 	}
 	HLFT FTLibrary::newFace(HRW hRW, int index) {
 		FT_Face face;
@@ -52,7 +52,7 @@ namespace rs {
 	}
 	FTFace::~FTFace() {
 		if(_face)
-			FTEC_P(Trap, FT_Done_Face, _face);
+			FTEC_D(Trap, FT_Done_Face, _face);
 	}
 	// met.width>>6 == bitmap.width
 	// met.height>>6 == bitmap.height

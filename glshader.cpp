@@ -112,7 +112,7 @@ namespace rs {
 			// Geometryシェーダー以外は必須
 			if(sh.valid()) {
 				GL.glAttachShader(_idProg, sh.cref()->getShaderID());
-				GLEC_ChkP(Trap)
+				GLEC_Chk_D(Trap)
 			} else {
 				AssertT(Trap, i==ShType::GEOMETRY, (GLE_Error)(const char*), "missing shader elements (vertex or fragment)")
 			}

@@ -448,7 +448,7 @@ namespace rs {
 			LogOutput("GLEffect exception: %1%", e.what());
 			throw;
 		}
-		GLEC_ChkP(Trap)
+		GLEC_Chk_D(Trap)
 	}
 	void GLEffect::onDeviceLost() {
 		if(_bInit) {
@@ -540,7 +540,7 @@ namespace rs {
 			GLint curI = 0;
 			cur.texIndex.clear();
 			for(GLint i=0 ; i<nUnif ; i++) {
-				GLEC_P(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
+				GLEC_D(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
 				auto opInfo = GLFormat::QueryGLSLInfo(typ);
 				if(opInfo->type == GLSLType::TextureT) {
 					// GetActiveUniformでのインデックスとGetUniformLocationIDは異なる場合があるので・・
@@ -704,7 +704,7 @@ namespace rs {
 			// ElementArrayをシェーダーに設定
 			if(_opIb)
 				_opIb->use_begin();
-			GLEC_ChkP(Trap)
+			GLEC_Chk_D(Trap)
 
 			// Programをセットした後にPreFuncを実行
 			Tag::exec();
@@ -714,14 +714,14 @@ namespace rs {
 		DrawCall::DrawCall(GLenum mode, GLint first, GLsizei count): Token(HRes()), _mode(mode), _first(first), _count(count) {}
 		void DrawCall::exec() {
 			GL.glDrawArrays(_mode, _first, _count);
-			GLEC_ChkP(Trap);
+			GLEC_Chk_D(Trap);
 		}
 
 		// -------------- DrawCallI --------------
 		DrawCallI::DrawCallI(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset): Token(HRes()), _mode(mode), _count(count), _sizeF(sizeF), _offset(offset) {}
 		void DrawCallI::exec() {
 			GL.glDrawElements(_mode, _count, _sizeF, reinterpret_cast<const GLvoid*>(_offset));
-			GLEC_ChkP(Trap);
+			GLEC_Chk_D(Trap);
 		}
 
 		// -------------- Uniforms --------------

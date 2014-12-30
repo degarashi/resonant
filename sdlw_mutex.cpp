@@ -11,13 +11,13 @@ namespace rs {
 			SDL_DestroyMutex(_mutex);
 	}
 	bool Mutex::lock() {
-		return SDLEC_P(Trap, SDL_LockMutex, _mutex) == 0;
+		return SDLEC_D(Trap, SDL_LockMutex, _mutex) == 0;
 	}
 	bool Mutex::try_lock() {
-		return SDLEC_P(Trap, SDL_TryLockMutex, _mutex) == 0;
+		return SDLEC_D(Trap, SDL_TryLockMutex, _mutex) == 0;
 	}
 	void Mutex::unlock() {
-		SDLEC_P(Trap, SDL_UnlockMutex, _mutex);
+		SDLEC_D(Trap, SDL_UnlockMutex, _mutex);
 	}
 	SDL_mutex* Mutex::getMutex() {
 		return _mutex;
@@ -77,15 +77,15 @@ namespace rs {
 		SDL_DestroyCond(_cond);
 	}
 	void CondV::wait(UniLock& u) {
-		SDLEC_P(Trap, SDL_CondWait, _cond, u.getMutex());
+		SDLEC_D(Trap, SDL_CondWait, _cond, u.getMutex());
 	}
 	bool CondV::wait_for(UniLock& u, uint32_t msec) {
-		return SDLEC_P(Trap, SDL_CondWaitTimeout, _cond, u.getMutex(), msec) == 0;
+		return SDLEC_D(Trap, SDL_CondWaitTimeout, _cond, u.getMutex(), msec) == 0;
 	}
 	void CondV::signal() {
-		SDLEC_P(Trap, SDL_CondSignal, _cond);
+		SDLEC_D(Trap, SDL_CondSignal, _cond);
 	}
 	void CondV::signal_all() {
-		SDLEC_P(Trap, SDL_CondBroadcast, _cond);
+		SDLEC_D(Trap, SDL_CondBroadcast, _cond);
 	}
 }

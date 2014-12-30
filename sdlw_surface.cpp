@@ -73,12 +73,12 @@ namespace rs {
 	}
 	uint32_t Surface::Map(uint32_t format, RGBA rgba) {
 		auto fmt = MakeUPFormat(format);
-		return SDLEC_P(Trap, SDL_MapRGBA, fmt.get(), rgba.r, rgba.g, rgba.b, rgba.a);
+		return SDLEC_D(Trap, SDL_MapRGBA, fmt.get(), rgba.r, rgba.g, rgba.b, rgba.a);
 	}
 	RGBA Surface::Get(uint32_t format, uint32_t pixel) {
 		auto fmt = MakeUPFormat(format);
 		RGBA ret;
-		SDLEC_P(Trap, SDL_GetRGBA, pixel, fmt.get(), &ret.r, &ret.g, &ret.b, &ret.a);
+		SDLEC_D(Trap, SDL_GetRGBA, pixel, fmt.get(), &ret.r, &ret.g, &ret.b, &ret.a);
 		return ret;
 	}
 	const std::string& Surface::GetFormatString(uint32_t format) {
@@ -128,22 +128,22 @@ namespace rs {
 		r.y = rect.y0;
 		r.w = rect.width();
 		r.h = rect.height();
-		SDLEC_P(Trap, SDL_FillRect, _sfc, &r, color);
+		SDLEC_D(Trap, SDL_FillRect, _sfc, &r, color);
 	}
 	Surface::LockObj Surface::lock() const {
 		_mutex.lock();
-		SDLEC_P(Trap, SDL_LockSurface, _sfc);
+		SDLEC_D(Trap, SDL_LockSurface, _sfc);
 		return LockObj(*this, _sfc->pixels, _sfc->pitch);
 	}
 	Surface::LockObj Surface::try_lock() const {
 		if(_mutex.try_lock()) {
-			SDLEC_P(Trap, SDL_LockSurface, _sfc);
+			SDLEC_D(Trap, SDL_LockSurface, _sfc);
 			return LockObj(*this, _sfc->pixels, _sfc->pitch);
 		}
 		return LockObj(*this, nullptr, 0);
 	}
 	void Surface::_unlock() const {
-		SDLEC_P(Trap, SDL_UnlockSurface, _sfc);
+		SDLEC_D(Trap, SDL_UnlockSurface, _sfc);
 		_mutex.unlock();
 	}
 	spn::Size Surface::getSize() const {
