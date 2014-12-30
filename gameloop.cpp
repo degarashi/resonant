@@ -392,6 +392,17 @@ namespace rs {
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
+		auto logOld = g_logOut;
+		g_logOut = [logOld](const std::string& s) {
+			// スレッド番号を出力
+			boost::format msg("thread=%1%, %2%");
+			if(tls_threadName.initialized())
+				logOld((msg % *tls_threadName % s).str());
+			else {
+				auto thId = SDL_GetThreadID(nullptr);
+				logOld((msg % thId % s).str());
+			}
+		};
 		tls_threadID = SDL_GetThreadID(nullptr);
 		tls_threadName = "GuiThread";
 		#ifdef ANDROID
