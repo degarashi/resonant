@@ -10,9 +10,7 @@ namespace rs {
 		std::memcpy(&_state[0], SDL_GetKeyboardState(nullptr), SDL_NUM_SCANCODES);
 		return true;
 	}
-	void SDLKeyboard::Update() {
-		SDL_PumpEvents();
-	}
+	void SDLKeyboard::Update() {}
 	void SDLKeyboard::Terminate() {
 		s_hlInput.release();
 	}
