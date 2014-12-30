@@ -3,6 +3,7 @@
 
 namespace rs {
 	TLS<SDL_threadID> tls_threadID(~0);
+	TLS<std::string> tls_threadName("john doe");
 	// -------------------- SDLInitializer --------------------
 	SDLInitializer::SDLInitializer(uint32_t flag) {
 		SDL_Init(flag);

@@ -81,7 +81,8 @@ namespace rs {
 
 	template <class T>
 	class TLS;
-	extern TLS<SDL_threadID> tls_threadID;
+	extern TLS<SDL_threadID>	tls_threadID;
+	extern TLS<std::string>		tls_threadName;
 	//! 実行環境に関する情報を取得
 	class Spec : public spn::Singleton<Spec> {
 		public:
@@ -441,6 +442,7 @@ namespace rs {
 							*_condP;		//!< 親スレッドがクラス変数にスレッドポインタを格納した事を示す
 		Mutex				_mtxC,
 							_mtxP;
+		std::string			_name;
 
 		static int ThreadFunc(void* p) {
 			DER* ths = reinterpret_cast<DER*>(p);
@@ -454,6 +456,7 @@ namespace rs {
 
 			// この時点でスレッドのポインタは有効な筈
 			tls_threadID = SDL_GetThreadID(ths->_thread);
+			tls_threadName = ths->_name;
 			Stat stat;
 			try {
 				ths->_holder->inorder([ths](Args&&... args){ ths->runIt(std::forward<Args>(args)...); });
@@ -488,13 +491,13 @@ namespace rs {
 		public:
 			_Thread(_Thread&& th): _atmInt(std::move(th._atmInt)), _thread(th._thread), _holder(std::move(th._holder)),
 				_atmStat(std::move(th._atmStat)), _condC(th._condC), _condP(th._condP),
-				_mtxC(std::move(th._mtxC)), _mtxP(std::move(th._mtxP))
+				_mtxC(std::move(th._mtxC)), _mtxP(std::move(th._mtxP)), _name(std::move(th._name))
 			{
 				th._clean();
 			}
 			_Thread(const _Thread& t) = delete;
 			_Thread& operator = (const _Thread& t) = delete;
-			_Thread(): _thread(nullptr) {
+			_Thread(const std::string& name): _thread(nullptr), _name(name) {
 				_condC = SDL_CreateCond();
 				_condP = SDL_CreateCond();
 				// 中断フラグに0をセット
@@ -518,7 +521,7 @@ namespace rs {
 
 				_mtxC.lock();
 				// 一旦クラス内部に変数を参照で取っておく
-				SDL_Thread* th = SDL_CreateThread(ThreadFunc, nullptr, this);
+				SDL_Thread* th = SDL_CreateThread(ThreadFunc, _name.c_str(), this);
 				// 子スレッドが開始されるまで待つ
 				SDL_CondWait(_condC, _mtxC.getMutex());
 				_mtxC.unlock();
@@ -588,6 +591,9 @@ namespace rs {
 				if(_eptr)
 					std::rethrow_exception(_eptr);
 #endif
+			}
+			const std::string& getName() const {
+				return _name;
 			}
 	};
 	template <class SIG>

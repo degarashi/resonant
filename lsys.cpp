@@ -23,6 +23,7 @@ namespace rs {
 		_mutex.unlock();
 		_thread.join();
 	}
+	LSysFunc::LoadThread::LoadThread(): Thread("LoadThread") {}
 	void LSysFunc::LoadThread::run(LSysFunc& self) {
 		UniLock lk(self._mutex);
 		while(self._bLoop) {

@@ -8,6 +8,8 @@ namespace rs {
 		class LoadThread : public Thread<void (LSysFunc&)> {
 			protected:
 				void run(LSysFunc& self) override;
+			public:
+				LoadThread();
 		};
 		struct Block {
 			using Pair = std::pair<std::string, spn::URI>;

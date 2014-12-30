@@ -67,6 +67,10 @@ namespace rs {
 		struct ResumeReq : MsgBase<ResumeReq> {};
 		struct StopReq : MsgBase<StopReq> {};
 		struct ReStartReq : MsgBase<ReStartReq> {};
+		//! OpenGLコンテキスト生成リクエスト(Main -> Draw)
+		struct MakeContext : MsgBase<MakeContext> {};
+		//! OpenGLコンテキスト破棄リクエスト(Main -> Draw)
+		struct DestroyContext : MsgBase<DestroyContext> {};
 
 		//! 描画リクエスト
 		struct DrawReq : MsgBase<DrawReq> {
@@ -109,7 +113,7 @@ namespace rs {
 	#define draw_thread (::rs::DrawThread::_ref())
 	//! 描画スレッド
 	class DrawThread : public spn::Singleton<DrawThread>,
-						public ThreadL<void (const SPLooper&, SPGLContext, const SPWindow&, IDrawProc*)>
+						public ThreadL<void (const SPLooper&, const SPWindow&, IDrawProc*)>
 	{
 		public:
 			enum class State {
@@ -117,15 +121,17 @@ namespace rs {
 				Drawing
 			};
 		private:
-			using base = ThreadL<void (Looper&, SPGLContext, const SPWindow&, IDrawProc*)>;
+			using base = ThreadL<void (Looper&, const SPWindow&, IDrawProc*)>;
 			struct Info {
 				State		state = State::Idle;	//!< 現在の動作状態(描画中か否か)
 				uint64_t	accum = 0;				//!< 描画が終わったフレーム番号
+				SPGLContext	ctx;
 			};
 			SpinLock<Info>		_info;
 		protected:
-			void runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, IDrawProc*) override;
+			void runL(const SPLooper& mainLooper, const SPWindow& w, IDrawProc*) override;
 		public:
+			DrawThread();
 			auto getInfo() -> decltype(_info.lock()) { return _info.lock(); }
 			auto getInfo() const -> decltype(_info.lockC()) { return _info.lockC(); }
 	};

@@ -35,16 +35,18 @@ namespace rs {
 	int FPSCounter::getFPS() const { return _fps; }
 
 	// --------------------- DrawThread ---------------------
-	void DrawThread::runL(const SPLooper& mainLooper, SPGLContext ctx_b, const SPWindow& w, IDrawProc* dproc) {
+	DrawThread::DrawThread(): ThreadL("DrawThread") {}
+	void DrawThread::runL(const SPLooper& mainLooper, const SPWindow& w, IDrawProc* dproc) {
 		Handler mainHandler(mainLooper);
-
-		SPGLContext ctx(std::move(ctx_b));
-		ctx->makeCurrent(w);
+		{	// msg::MakeContext と動作は同じ
+			auto lk = _info.lock();
+			lk->ctx = GLContext::CreateContext(w, false);
+			lk->ctx->makeCurrent(w);
+		}
 		Handler drawHandler(Looper::GetLooper());
 		GLW.initializeDrawThread(drawHandler);
 		GLW.loadGLFunc();
-		mgr_gl.onDeviceReset();
-		GL.setSwapInterval(0);
+		// ここで一旦MainThreadにOpenGLコンテキストの初期化が終ったことを通知
 		mainHandler.postArgs(msg::DrawInit());
 		UPDrawProc up(dproc);
 
@@ -58,17 +60,37 @@ namespace rs {
 					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
 					if(up->runU(p->id, p->bSkip))
-						ctx->swapWindow();
+						_info.lock()->ctx->swapWindow();
 					GL.glFinish();
 					{
 						auto lk = _info.lock();
 						lk->state = State::Idle;
 						lk->accum = p->id;
 					}
-				}
-				if(static_cast<msg::QuitReq*>(*m)) {
+				} else if(static_cast<msg::QuitReq*>(*m)) {
 					bLoop = false;
 					break;
+				} else if(static_cast<msg::MakeContext*>(*m)) {
+					{
+						auto lk = _info.lock();
+						auto& ctx = lk->ctx;
+						if(!ctx) {
+	// 						Assert(Warn, !static_cast<bool>(lk->ctx), "initialized OpenGL context twice")
+							// OpenGLコンテキストを再度作成
+							ctx = GLContext::CreateContext(w, false);
+							ctx->makeCurrent(w);
+						}
+					}
+					// OpenGLリソースの再確保
+					mgr_gl.onDeviceReset();
+					GL.glFlush();
+					GL.setSwapInterval(0);
+				} else if(static_cast<msg::DestroyContext*>(*m)) {
+					mgr_gl.onDeviceLost();
+					GL.glFlush();
+					auto lk = _info.lock();
+					Assert(Warn, static_cast<bool>(lk->ctx), "OpenGL context is not initialized")
+					lk->ctx.reset();
 				}
 			}
 		} while(bLoop && !isInterrupted());
@@ -91,7 +113,7 @@ namespace rs {
 
 	constexpr bool MULTICONTEXT = false;
 	// --------------------- MainThread ---------------------
-	MainThread::MainThread(MPCreate mcr, DPCreate dcr): _mcr(mcr), _dcr(dcr) {
+	MainThread::MainThread(MPCreate mcr, DPCreate dcr): ThreadL("MainThread"), _mcr(mcr), _dcr(dcr) {
 		auto lk = _info.lock();
 		lk->accumUpd = lk->accumDraw = 0;
 		lk->tmBegin = Clock::now();
@@ -101,17 +123,32 @@ namespace rs {
 		UPtr<GLWrap>	glw;
 		// Looper::atPanic
 		try {
-			SPGLContext ctx = GLContext::CreateContext(w, false),
-						ctxD;
-			if(MULTICONTEXT) {
-				ctxD = GLContext::CreateContext(w, true);
-				ctxD->makeCurrent();
-				ctx->makeCurrent(w);
-			} else {
-				ctx->makeCurrent();
-				std::swap(ctxD, ctx);
-			}
 			glw.reset(new GLWrap(MULTICONTEXT));
+			// 描画スレッドを先に初期化
+			opDth = spn::construct();
+			opDth->start(std::ref(getLooper()), w, _dcr());
+			// 描画スレッドの初期化完了を待つ
+			while(auto m = getLooper()->wait()) {
+				if(static_cast<msg::DrawInit*>(*m))
+					break;
+			}
+			GLW.initializeMainThread();
+
+			SPGLContext ctx;
+			auto fnMakeContext = [&opDth, &ctx, &w](){
+				// ポーリングでコンテキスト初期化の完了を検知
+				for(;;) {
+					if(opDth->getInfo()->ctx)
+						break;
+					SDL_Delay(0);
+				}
+				if(MULTICONTEXT) {
+					ctx = GLContext::CreateContext(w, true);
+					ctx->makeCurrent(w);
+				}
+			};
+			fnMakeContext();
+
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
@@ -130,26 +167,18 @@ namespace rs {
 			UPtr<UpdRep>		urep(new UpdRep());
 			UPtr<ObjRep>		orep(new ObjRep());
 			sndP->makeCurrent();
-			// 描画スレッドを先に初期化
-			opDth = spn::construct();
-			opDth->start(std::ref(getLooper()), std::move(ctxD), w, _dcr());
-			// 描画スレッドの初期化完了を待つ
-			while(auto m = getLooper()->wait()) {
-				if(static_cast<msg::DrawInit*>(*m))
-					break;
-			}
-			GLW.initializeMainThread();
+			using UPHandler = UPtr<Handler>;
+			UPHandler drawHandler(new Handler(opDth->getLooper()));
+			drawHandler->postArgs(msg::MakeContext());
 
 			// 続いてメインスレッドを初期化
 			UPMainProc mp(_mcr(w));
-			using UPHandler = UPtr<Handler>;
 			UPHandler guiHandler(new Handler(guiLooper, [](){
+				// メッセージを受け取る度にSDLイベントを発生させる
 				SDL_Event e;
 				e.type = EVID_SIGNAL;
 				SDL_PushEvent(&e);
 			}));
-
-			UPHandler drawHandler(new Handler(opDth->getLooper()));
 			guiHandler->postArgs(msg::MainInit());
 
 			const spn::FracI fracInterval(50000, 3);
@@ -197,9 +226,8 @@ namespace rs {
 								break;
 							} else if(static_cast<msg::StopReq*>(*m)) {
 								mp->onStop();
-								// OpenGLリソースの解放
-								mgr_gl.onDeviceLost();
-								GL.glFlush();
+								// OpenGLリソースの解放をDrawThreadで行う
+								drawHandler->postArgs(msg::DestroyContext());
 								// サウンドデバイスのバックアップ
 								boost::archive::binary_oarchive oa(buffer);
 	// 							oa << mgr_rw;
@@ -221,9 +249,9 @@ namespace rs {
 								sndP->makeCurrent();
 								std::cout << "------------";
 								sndP->update();
-								// OpenGLリソースの再確保
-								mgr_gl.onDeviceReset();
-								GL.glFlush();
+								// DrawThreadでOpenGLの復帰処理を行う
+								drawHandler->postArgs(msg::MakeContext());
+								fnMakeContext();
 								mp->onReStart();
 							}
 						}
@@ -365,6 +393,7 @@ namespace rs {
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
 		tls_threadID = SDL_GetThreadID(nullptr);
+		tls_threadName = "GuiThread";
 		#ifdef ANDROID
 			// egl関数がロードされてないとのエラーが出る為
 			SDL_GL_LoadLibrary("libEGL.so");
