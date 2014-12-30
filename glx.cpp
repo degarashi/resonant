@@ -634,7 +634,9 @@ namespace rs {
 				diff = _curWrite - _curRead;
 				Assert(Trap, diff >= 0)
 			}
-			refWriteEnt().clear();
+			auto& we = refWriteEnt();
+			lk.unlock();
+			we.clear();
 		}
 		void Task::endTask() {
 			GL.glFinish();
