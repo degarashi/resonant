@@ -15,37 +15,11 @@ namespace rs {
 		bool g_bglfuncInit = false;
 	}
 	#define GLGETPROC(name) SDL_GL_GetProcAddress(BOOST_PP_STRINGIZE(name))
-	#if defined(_WIN32)
-		namespace {
-			using SetSwapInterval_t = bool APIENTRY (*)(int);
-			SetSwapInterval_t g_setswapinterval = nullptr;
-		}
-		void LoadGLAux() {
-			g_setswapinterval = (SetSwapInterval_t)GLGETPROC(wglSwapIntervalEXT);
-		}
-	#else
-		namespace {
-			#ifdef __ANDROID__
-				using SetSwapInterval_t = void GL_APIENTRY (*)(int);
-			#else
-				using SetSwapInterval_t = void APIENTRY (*)(int);
-			#endif
-			SetSwapInterval_t g_setswapinterval = nullptr;
-		}
-		void LoadGLAux() {
-			// EXTかSGIのどちらかが存在する事を期待
-			try {
-				g_setswapinterval = (SetSwapInterval_t)GLGETPROC(glXSwapIntervalSGI);
-			} catch(const std::runtime_error& e) {
-				g_setswapinterval = (SetSwapInterval_t)GLGETPROC(glXSwapIntervalEXT);
-			}
-		}
-	#endif
 	bool GLWrap::isGLFuncLoaded() {
 		return g_bglfuncInit;
 	}
 	void IGL_Draw::setSwapInterval(int n) {
-		g_setswapinterval(n);
+		SDL_GL_SetSwapInterval(n);
 	}
 	void IGL_OtherSingle::setSwapInterval(int n) {
 		GLW.getDrawHandler().postExec([=](){
@@ -72,7 +46,6 @@ namespace rs {
 				#include "linux_gl.inc"
 			#endif
 			// その他OS依存なAPI関数
-			LoadGLAux();
 			g_bglfuncInit = true;
 		}
 	#undef DEF_GLMETHOD
