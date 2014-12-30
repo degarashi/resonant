@@ -103,9 +103,11 @@ namespace rs {
 
 	#define GLW	(::rs::GLWrap::_ref())
 	#ifdef WIN32
-		#define STDCALL __attribute__((stdcall))
+		#define APICALL __attribute__((stdcall))
+	#elif defined(ANDROID)
+		#define APICALL	GL_APICALL
 	#else
-		#define STDCALL
+		#define APICALL GLAPI
 	#endif
 	class Handler;
 	//! OpenGL APIラッパー
@@ -122,7 +124,7 @@ namespace rs {
 		public:
 			#define GLDEFINE(...)
 			#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
-				using t_##name = ret_type STDCALL(*)(BOOST_PP_SEQ_ENUM(args)); \
+				using t_##name = ret_type APICALL(*)(BOOST_PP_SEQ_ENUM(args)); \
 				static t_##name name;
 
 			#ifdef ANDROID
@@ -146,7 +148,7 @@ namespace rs {
 			Handler& getDrawHandler();
 			Shared& refShared();
 	};
-	#undef STDCALL
+	#undef APICALL
 	template <class T>
 	struct GLSharedData {
 		GLSharedData() {
