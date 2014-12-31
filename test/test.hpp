@@ -14,13 +14,11 @@
 #include "input.hpp"
 #include "sound.hpp"
 #include "font.hpp"
+#include "prochelper.hpp"
 
-// MainThread と DrawThread 間のデータ置き場
-// リソースハンドルはメインスレッド
-struct Mth_DthData {
-	rs::HLFx	hlFx;
-	rs::HLInput	hlIk,
-				hlIm;
+// ゲーム通しての(MainThread, DrawThread含めた)グローバル変数
+// リソースハンドルはメインスレッドで参照する -> メインスレッドハンドラに投げる
+struct SharedValue {
 	rs::HLAct	actQuit,
 				actLeft,
 				actRight,
@@ -33,13 +31,12 @@ struct Mth_DthData {
 				actPlay,
 				actStop;
 	rs::HLCam	hlCam;
-	rs::SPWindow	spWin;
-	rs::FPSCounter	fps;
 };
-#define shared (Mth_Dth::_ref())
-class Mth_Dth : public spn::Singleton<Mth_Dth>, public rs::GLSharedData<Mth_DthData> {};
+#define shared	(::SharedValueC::_ref())
+constexpr int Id_SharedValueC = 0xf0000001;
+class SharedValueC : public spn::Singleton<SharedValueC>, public rs::GLSharedData<SharedValue, Id_SharedValueC> {};
 
-class MyDraw : public rs::IDrawProc {
+class MyDraw : public rs::DrawProc {
 	public:
 		bool runU(uint64_t accum, bool bSkip) override;
 };
@@ -68,15 +65,15 @@ class CubeObj : public rs::ObjectT<CubeObj>, public spn::CheckAlign<16, CubeObj>
 };
 
 extern spn::Optional<Cube>		g_cube;
-// class TScene2 : public rs::Scene<TScene2> {
-// 	class MySt : public StateT<MySt> {
-// 		public:
-// 			void onUpdate(TScene2& self) override;
-// 	};
-// 	public:
-// 		TScene2();
-// 		~TScene2();
-// };
+class TScene2 : public rs::Scene<TScene2> {
+	class MySt : public StateT<MySt> {
+		public:
+			void onUpdate(TScene2& self) override;
+	};
+	public:
+		TScene2();
+		~TScene2();
+};
 
 extern const rs::GMessageID MSG_CallFunc;
 extern const rs::GMessageID MSG_GetStatus;
@@ -108,32 +105,23 @@ class TScene : public rs::Scene<TScene> {
 		void onDestroy() override;
 };
 
-class MyMain : public rs::IMainProc {
-	Mth_Dth 	_mth;
-	spn::Size	_size;
-	bool		_bPress;
 
-	// ---- テスト描画用 ----
-	rs::HLVb		_hlVb;
-	rs::HLIb 		_hlIb;
-	rs::HLTex 		_hlTex;
-	std::u32string	_infotext;
-	rs::CCoreID		_charID;
-	rs::HLText		_hlText;
-	GLint			_techID,
-					_passView,
-					_passText;
+class MyMain : public rs::MainProc {
+	private:
+		SharedValueC	_svalue;
+		bool			_bPress;
+		GLint			_techID,
+						_passView,
+						_passText;
+		std::u32string	_infotext;
+		rs::CCoreID		_charID;
+		rs::HLText		_hlText;
 
-	void _initInput();
-	void _initDraw();
-	void _initCam();
-	void _initEffect();
-
+		void	_initInput();
+		void	_initText();
+		void	_initEffect();
+		void	_initCam();
 	public:
 		MyMain(const rs::SPWindow& sp);
 		bool runU() override;
-		void onPause() override;
-		void onResume() override;
-		void onStop() override;
-		void onReStart() override;
 };

@@ -327,12 +327,15 @@ namespace rs {
 		struct InnerP {
 			SpinLockP&	_s;
 			bool		_bLocked;
+			InnerP(InnerP&& p): _s(p._s), _bLocked(p._bLocked) {
+				p._bLocked = false;
+			}
 			InnerP(SpinLockP& s): _s(s) {
 				_bLocked = _s._put();
 			}
 			~InnerP() {
 				if(_bLocked)
-					_s._put_wait();
+					_s._put_reset();
 			}
 		};
 		using Inner = SpinInner<SpinLockP<T>, T>;
@@ -369,7 +372,7 @@ namespace rs {
 			}
 			return I(*this, nullptr);
 		}
-		void _put_wait() {
+		void _put_reset() {
 			_mutex.lock();
 			_lockID = *tls_threadID;
 			_lockCount = _tlsCount.get()-1;

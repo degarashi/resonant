@@ -23,37 +23,37 @@ namespace rs {
 	}
 
 	void IGL_OtherSingle::stencilFuncFront(int func, int ref, int mask) {
-		auto p = GLW.refShared().put();
+		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilFuncFront(func, ref, mask);
 		});
 	}
 	void IGL_OtherSingle::stencilFuncBack(int func, int ref, int mask) {
-		auto p = GLW.refShared().put();
+		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilFuncBack(func, ref, mask);
 		});
 	}
 	void IGL_OtherSingle::stencilOpFront(int sfail, int dpfail, int dppass) {
-		auto p = GLW.refShared().put();
+		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilOpFront(sfail, dpfail, dppass);
 		});
 	}
 	void IGL_OtherSingle::stencilOpBack(int sfail, int dpfail, int dppass) {
-		auto p = GLW.refShared().put();
+		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilOpBack(sfail, dpfail, dppass);
 		});
 	}
 	void IGL_OtherSingle::stencilMaskFront(int mask) {
-		auto p = GLW.refShared().put();
+		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilMaskFront(mask);
 		});
 	}
 	void IGL_OtherSingle::stencilMaskBack(int mask) {
-		auto p = GLW.refShared().put();
+		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilMaskBack(mask);
 		});
@@ -83,7 +83,7 @@ namespace rs {
 	#define GLCall(func, seq)	GLWrap::func(BOOST_PP_SEQ_ENUM(seq));
 	#define DEF_SINGLE_METHOD(ret_type, name, args, argnames) \
 		ret_type IGL_OtherSingle::name(BOOST_PP_SEQ_ENUM(args)) { \
-			auto p = GLW.refShared().put(); \
+			auto p = GLW.putShared(); \
 			return CallHandler<ret_type>()(GLW.getDrawHandler(), [=](){ \
 				return IGL_Draw().name(BOOST_PP_SEQ_ENUM(argnames)); }); }
 #ifdef DEBUG
@@ -128,9 +128,7 @@ namespace rs {
 	#undef DEF_DRAW_GLEC
 	#undef GLCall
 
-	GLWrap::GLWrap(bool bShareEnabled): _bShare(bShareEnabled), _drawHandler(nullptr) {
-		*_pShared.lock() = nullptr;
-	}
+	GLWrap::GLWrap(bool bShareEnabled): _bShare(bShareEnabled), _drawHandler(nullptr) {}
 
 	void GLWrap::initializeMainThread() {
 		Assert(Trap, !tls_GL.initialized())
@@ -156,5 +154,16 @@ namespace rs {
 	}
 	GLWrap::Shared& GLWrap::refShared() {
 		return _pShared;
+	}
+	GLWrap::PutCall GLWrap::putShared() {
+		if(!tls_shared)
+			tls_shared = SharedPutV();
+		auto& sh = *tls_shared;
+		for(auto& s : _pShared)
+			sh.emplace_back(s.second.put());
+		return PutCall(this);
+	}
+	void GLWrap::_putReset() {
+		(*tls_shared).clear();
 	}
 }

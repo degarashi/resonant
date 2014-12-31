@@ -19,24 +19,24 @@ void TScene::MySt::onUpdate(TScene& self) {
 void TScene::MySt::CheckQuit() {
 	auto lk = shared.lock();
 	if(mgr_input.isKeyPressed(lk->actQuit)) {
-		LogOutput("TScene::onUpdate::Quit");
+		PrintLog;
 		mgr_scene.setPopScene(1);
 	}
 }
 void TScene::MySt::onDown(TScene& self, rs::ObjTypeID prevID, const rs::LCValue& arg) {
-	LogOutput("TScene::onDown");
+	PrintLog;
 }
 void TScene::MySt::onPause(TScene& self) {
-	LogOutput("TScene::onPause");
+	PrintLog;
 }
 void TScene::MySt::onResume(TScene& self) {
-	LogOutput("TScene::onResume");
+	PrintLog;
 }
 void TScene::MySt::onStop(TScene& self) {
-	LogOutput("TScene::onStop");
+	PrintLog;
 }
 void TScene::MySt::onReStart(TScene& self) {
-	LogOutput("TScene::onReStart");
+	PrintLog;
 }
 rs::LCValue TScene::MySt::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
 	if(msg == MSG_CallFunc)
@@ -67,7 +67,7 @@ rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageID msg, const r
 
 // ------------------------ TScene ------------------------
 TScene::TScene(): Scene(0) {
-	LogOutput("TScene::ctor");
+	PrintLog;
 	// サウンド読み込み
 	spn::PathBlock pb(mgr_path.getPath(rs::AppPath::Type::Sound));
 	pb <<= "the_thunder.ogg";
@@ -82,29 +82,29 @@ TScene::TScene(): Scene(0) {
 	setStateNew<MySt>();
 }
 void TScene::_drawCube() {
-	auto lk = shared.lock();
+	auto lk = sharedbase.lock();
 	rs::GLEffect& glx = *lk->hlFx.ref();
 	g_cube->draw(glx);
 }
 void TScene::onDestroy() {
-	LogOutput("TScene::onDestroy");
+	PrintLog;
 	g_cube = spn::none;
 }
 TScene::~TScene() {
-	LogOutput("TScene::dtor");
+	PrintLog;
 }
 
 // ------------------------ TScene2 ------------------------
-// TScene2::TScene2() {
-// 	setStateNew<MySt>();
-// 	LogOutput("TScene2::ctor");
-// }
-// TScene2::~TScene2() {
-// 	LogOutput("TScene2::dtor");
-// }
-// void TScene2::MySt::onUpdate(TScene2& self) {
-// 	auto lk = shared.lock();
-// 	if(mgr_input.isKeyPressed(lk->actRight)) {
-// 		mgr_scene.setPopScene(1);
-// 	}
-// }
+TScene2::TScene2() {
+	setStateNew<MySt>();
+	PrintLog;
+}
+TScene2::~TScene2() {
+	PrintLog;
+}
+void TScene2::MySt::onUpdate(TScene2& self) {
+	auto lk = shared.lock();
+	if(mgr_input.isKeyPressed(lk->actRight)) {
+		mgr_scene.setPopScene(1);
+	}
+}

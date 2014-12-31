@@ -118,8 +118,19 @@ namespace rs {
 		Handler*			_drawHandler;
 
 		// ---- Context共有データ ----
-		using Shared = SpinLockP<void*>;
-		Shared				_pShared;
+		using SharedP = SpinLockP<void*>;
+		using Shared = std::unordered_map<int, SharedP>;
+		Shared		_pShared;
+
+		using SharedPutV = std::vector<decltype(std::declval<SharedP>().put())>;
+		TLS<SharedPutV>		tls_shared;
+		struct Put {
+			void operator()(GLWrap* g) const {
+				g->_putReset();
+			}
+		};
+		using PutCall = std::unique_ptr<GLWrap, Put>;
+		void _putReset();
 
 		public:
 			#define GLDEFINE(...)
@@ -147,25 +158,33 @@ namespace rs {
 
 			Handler& getDrawHandler();
 			Shared& refShared();
+			PutCall putShared();
 	};
+
 	#undef APICALL
-	template <class T>
-	struct GLSharedData {
-		GLSharedData() {
-			auto lk = _lock();
-			*lk = new T();
-		}
-		~GLSharedData() {
-			auto lk = _lock();
-			delete reinterpret_cast<T*>(*lk);
-		}
-		decltype(GLW.refShared().lock().castAndMove<T*>()) _lock() {
-			return GLW.refShared().lock().castAndMove<T*>();
-		}
-		decltype(GLW.refShared().lock().castAndMoveDeRef<T>()) lock() {
-			return GLW.refShared().lock().castAndMoveDeRef<T>();
-		}
+	template <class T, int ID>
+	class GLSharedData {
+		const static int Id;
+		private:
+			decltype(GLW.refShared()[Id].lock().castAndMove<T*>()) _lock() {
+				return GLW.refShared()[Id].lock().castAndMove<T*>();
+			}
+
+		public:
+			GLSharedData() {
+				auto lk = _lock();
+				*lk = new T();
+			}
+			~GLSharedData() {
+				auto lk = _lock();
+				delete reinterpret_cast<T*>(*lk);
+			}
+			decltype(GLW.refShared()[Id].lock().castAndMoveDeRef<T>()) lock() {
+				return GLW.refShared()[Id].lock().castAndMoveDeRef<T>();
+			}
 	};
+	template <class T, int ID>
+	const int GLSharedData<T,ID>::Id = ID;
 }
 
 #include <memory>
