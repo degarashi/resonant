@@ -1,8 +1,9 @@
 #pragma once
-#include "updator.hpp"
+#include "updater.hpp"
 #include "luaimport.hpp"
 
 namespace rs {
+	struct SceneBase;
 	#define mgr_scene (::rs::SceneMgr::_ref())
 	class SceneMgr : public spn::Singleton<SceneMgr> {
 		using StStack = std::vector<HLGbj>;
@@ -16,9 +17,10 @@ namespace rs {
 
 		public:
 			bool isEmpty() const;
+			SceneBase& getSceneBase(int n=0) const;
 			//! getScene(0)と同義
 			HGbj getTop() const;
-			HGbj getScene(int n) const;
+			HGbj getScene(int n=0) const;
 			void setPushScene(HGbj hSc, bool bPop=false);
 			void setPopScene(int nPop, const LCValue& arg=LCValue());
 			//! フレーム更新のタイミングで呼ぶ
@@ -31,22 +33,42 @@ namespace rs {
 			void onReStart();
 	};
 
+	constexpr static uint32_t SCENE_INTERFACE_ID = 0xf0000000;
+	struct SceneBase {
+		/*	Updateの優先度はPriority(数値)で表現する
+			Drawはグループ分けした上でUpdateと同じようにソート */
+		UpdGroup	 update,
+					 draw;
+		using GroupM = SHandleMap<std::string, HUpd>;
+		GroupM		update_m,
+					draw_m;
+
+		SceneBase(): update(0), draw(0) {}
+	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
 	class Scene : public ObjectT<T> {
-		using base = ObjectT<T>;
-		protected:
-			UpdGroup _update, _draw;
+		private:
+			using base = ObjectT<T>;
+			SceneBase	_sbase;
 		public:
-			Scene(Priority prio=0): ObjectT<T>(prio), _update(0), _draw(0) {}
+			Scene(Priority prio=0): ObjectT<T>(prio) {}
 			void onUpdate() override final {
 				base::onUpdate();
-				if(!ObjectT<T>::isDead())
-					_update.onUpdate();
+				if(!base::isDead())
+					_sbase.update.onUpdate();
 			}
 			void onDraw() override final {
 				base::onDraw();
-				_draw.onUpdate();
+				_sbase.draw.onUpdate();
+			}
+			SceneBase& getBase() {
+				return _sbase;
+			}
+			void* getInterface(uint32_t id) override {
+				if(id == SCENE_INTERFACE_ID)
+					return &_sbase;
+				return base::getInterface(id);
 			}
 			#define DEF_ADAPTOR(name) void name() override final { \
 				base::getState()->name(base::getRef()); \

@@ -1,6 +1,6 @@
 #pragma once
 #include "spinner/size.hpp"
-#include "updator.hpp"
+#include "updater.hpp"
 #include "scene.hpp"
 #include "gameloop.hpp"
 #include "glhead.hpp"
@@ -29,12 +29,14 @@ namespace rs {
 			SharedBaseValueC	_sbvalue;
 			bool				_bFirstScene;
 			void	_initInput();
-		protected:
-			void	_pushFirstScene(HGbj hGbj);
 			bool	_beginProc();
 			void	_endProc();
+		protected:
+			void	_pushFirstScene(HGbj hGbj);
+			virtual bool userRunU() = 0;
 		public:
 			MainProc(const SPWindow& sp, bool bInitInput);
+			bool runU(IMainProc::Query& q) override final;
 			void onPause() override;
 			void onResume() override;
 			void onStop() override;

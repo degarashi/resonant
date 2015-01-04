@@ -98,7 +98,18 @@ namespace rs {
 	};
 	using UPDrawProc = UPtr<IDrawProc>;
 	struct IMainProc {
-		virtual bool runU() = 0;
+		class Query {
+			private:
+				bool		_bDraw;
+				Timepoint	_tp;
+				int			_skip;
+			public:
+				Query(Timepoint tp, int skip);
+				bool canDraw() const;
+				void setDraw(bool bDraw);
+				bool getDraw() const;
+		};
+		virtual bool runU(Query& q) = 0;		//!< 毎フレームのアップデート処理
 		virtual void onPause() {}
 		virtual void onResume() {}
 		virtual void onStop() {}

@@ -6,7 +6,7 @@
 #include "spinner/pose.hpp"
 #include "spinner/vector.hpp"
 #include "gameloop.hpp"
-#include "updator.hpp"
+#include "updater.hpp"
 #include "scene.hpp"
 #include "glx.hpp"
 #include "camera.hpp"
@@ -19,6 +19,7 @@
 // ゲーム通しての(MainThread, DrawThread含めた)グローバル変数
 // リソースハンドルはメインスレッドで参照する -> メインスレッドハンドラに投げる
 struct SharedValue {
+	rs::GLEffect*	pFx;
 	rs::HLAct	actQuit,
 				actLeft,
 				actRight,
@@ -44,27 +45,70 @@ class MyDraw : public rs::DrawProc {
 class Cube : public spn::Pose3D {
 	rs::HLVb	_hlVb;
 	rs::HLTex	_hlTex;
-	GLint		_techID, _passID;
 
 	public:
 		Cube(float s, rs::HTex hTex);
 		void draw(rs::GLEffect& glx);
 };
-
-//! キューブの描画
+//! キューブObj(Update)
 class CubeObj : public rs::ObjectT<CubeObj>, public spn::CheckAlign<16, CubeObj> {
-	Cube _cube;
-	class MySt : public StateT<MySt> {
-		public:
-			void onUpdate(CubeObj& self);
-	};
+	private:
+		//! キューブObj(Draw)
+		class CubeDraw : public rs::ObjectT<CubeDraw> {
+			private:
+				Cube&	_cube;
+				GLint	_techId,
+						_passId;
+			public:
+				CubeDraw(Cube& cube, GLint techId, GLint passId);
+				void onUpdate() override;
+		};
+
+		// 本当はCubeTech等はグローバルに定義
+		GLint		_techId,
+					_passId;
+		Cube		_cube;
+		rs::HLGbj	_hlDraw;
+		class MySt : public StateT<MySt> {
+			public:
+				void onUpdate(CubeObj& self);
+		};
 	public:
-		CubeObj(rs::HTex hTex);
+		CubeObj(rs::HTex hTex, GLint techId, GLint passId);
 		~CubeObj();
-		void onDestroy() override;
+		void onCreate(rs::UpdChild* uc) override;
+		void onDestroy(rs::UpdChild* uc) override;
+};
+extern const rs::GMessageID MSG_Visible;
+class InfoShow : public rs::ObjectT<InfoShow> {
+	private:
+		bool			_bShow;
+		class InfoDraw : public rs::ObjectT<InfoDraw> {
+			private:
+				const InfoShow&	_info;
+				rs::HLText		_hlText;
+			public:
+				InfoDraw(const InfoShow& is);
+				void onUpdate() override;
+		};
+
+		GLint			_techId,
+						_passId;
+		std::u32string	_infotext;
+		rs::CCoreID		_charId;
+
+		rs::HLGbj		_hlDraw;
+		class MySt : public StateT<MySt> {
+			public:
+				void onUpdate(InfoShow& self) override;
+				rs::LCValue recvMsg(InfoShow& self, rs::GMessageID msg, const rs::LCValue& arg) override;
+		};
+	public:
+		InfoShow(GLint techId, GLint passId);
+		void onCreate(rs::UpdChild* uc) override;
+		void onDestroy(rs::UpdChild* uc) override;
 };
 
-extern spn::Optional<Cube>		g_cube;
 class TScene2 : public rs::Scene<TScene2> {
 	class MySt : public StateT<MySt> {
 		public:
@@ -75,7 +119,6 @@ class TScene2 : public rs::Scene<TScene2> {
 		~TScene2();
 };
 
-extern const rs::GMessageID MSG_CallFunc;
 extern const rs::GMessageID MSG_GetStatus;
 class TScene : public rs::Scene<TScene> {
 	rs::HLAb	_hlAb;
@@ -98,30 +141,23 @@ class TScene : public rs::Scene<TScene> {
 			void onUpdate(TScene& self) override;
 			rs::LCValue recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) override;
 	};
-	void _drawCube();
 	public:
 		TScene();
 		~TScene();
-		void onDestroy() override;
+		void onCreate(rs::UpdChild* uc) override;
+		void onDestroy(rs::UpdChild* uc) override;
 };
-
 
 class MyMain : public rs::MainProc {
 	private:
 		SharedValueC	_svalue;
 		bool			_bPress;
-		GLint			_techID,
-						_passView,
-						_passText;
-		std::u32string	_infotext;
-		rs::CCoreID		_charID;
-		rs::HLText		_hlText;
 
 		void	_initInput();
-		void	_initText();
 		void	_initEffect();
 		void	_initCam();
 	public:
 		MyMain(const rs::SPWindow& sp);
-		bool runU() override;
+		bool userRunU() override;
 };
+

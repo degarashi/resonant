@@ -1,7 +1,7 @@
 #include "test.hpp"
 
 // ---------------------- Cube ----------------------
-Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex), _techID(-1), _passID(-1) {
+Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	setScale({s,s,s});
 	using spn::Vec2;
 	using spn::Vec3;
@@ -70,13 +70,6 @@ Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex), _techID(-1), _passID(-1) {
 void Cube::draw(rs::GLEffect& glx) {
 	const spn::AQuat& q = this->getRot();
 	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
-	if(_techID < 0) {
-		_techID = *glx.getTechID("TheCube");
-		glx.setTechnique(_techID, true);
-		_passID = *glx.getPassID("P0");
-	}
-	glx.setTechnique(_techID, true);
-	glx.setPass(_passID);
 	// 頂点フォーマット定義
 	rs::SPVDecl decl(new rs::VDecl{
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
@@ -97,15 +90,41 @@ void Cube::draw(rs::GLEffect& glx) {
 	glx.draw(GL_TRIANGLES, 0, 6*6);
 }
 
-// ---------------------- CubeObj ----------------------
+// ---------------------- CubeObj::MySt ----------------------
 void CubeObj::MySt::onUpdate(CubeObj& self) {}
-CubeObj::CubeObj(rs::HTex hTex): _cube(1.f, hTex) {
-	LogOutput("TestObj::ctor");
+// ---------------------- CubeObj ----------------------
+CubeObj::CubeObj(rs::HTex hTex, GLint techId, GLint passId):
+	_techId(techId),
+	_passId(passId),
+	_cube(1.f, hTex)
+{
+	PrintLog;
 	setStateNew<MySt>();
 }
 CubeObj::~CubeObj() {
-	LogOutput("TestObj::dtor");
+	PrintLog;
 }
-void CubeObj::onDestroy() {
-	LogOutput("TestObj::onDestroy");
+void CubeObj::onCreate(rs::UpdChild*) {
+	_hlDraw = mgr_gobj.makeObj<CubeDraw>(_cube, _techId, _passId);
+
+	auto& sb = mgr_scene.getSceneBase();
+	rs::HUpd hUpd = sb.draw_m.getObj("default");
+	hUpd.ref()->addObj(0x00, _hlDraw);
 }
+void CubeObj::onDestroy(rs::UpdChild*) {
+	PrintLog;
+}
+// ---------------------- CubeDraw ----------------------
+CubeObj::CubeDraw::CubeDraw(Cube& cube, GLint techId, GLint passId):
+	_cube(cube),
+	_techId(techId),
+	_passId(passId)
+{}
+void CubeObj::CubeDraw::onUpdate() {
+	auto lk = shared.lock();
+	auto& fx = *lk->pFx;
+	fx.setTechnique(_techId, true);
+	fx.setPass(_passId);
+	_cube.draw(fx);
+}
+

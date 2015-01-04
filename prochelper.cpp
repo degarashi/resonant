@@ -8,10 +8,8 @@ namespace rs {
 	bool DrawProc::runU(uint64_t accum, bool bSkip) {
 		auto lk = sharedbase.lock();
 		auto& fx = *lk->hlFx.ref();
-		if(!bSkip) {
+		if(!bSkip)
 			lk->fps.update();
-			mgr_scene.onDraw();
-		}
 		fx.execTask(bSkip);
 		return !bSkip;
 	}
@@ -40,6 +38,19 @@ namespace rs {
 		mouse.setDeadZone(0, 1.f, 0.f);
 		mouse.setDeadZone(1, 1.f, 0.f);
 	}
+
+	bool MainProc::runU(Query& q) {
+		if(!MainProc::_beginProc())
+			return false;
+
+		bool b = userRunU();
+		if(b && q.canDraw()) {
+			mgr_scene.onDraw();
+			q.setDraw(true);
+		}
+		_endProc();
+		return b;
+	}
 	bool MainProc::_beginProc() {
 		Assert(Trap, _bFirstScene, "not pushed first scene yet")
 
@@ -49,8 +60,10 @@ namespace rs {
 		rs::GLEffect& fx = *lk->hlFx.ref();
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
 		fx.beginTask();
-		if(mgr_scene.onUpdate())
+		if(mgr_scene.onUpdate()) {
+			_endProc();
 			return false;
+		}
 
 		// 画面のサイズとアスペクト比合わせ
 		auto& scs = lk->screenSize;

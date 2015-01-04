@@ -2,7 +2,6 @@
 #include "font.hpp"
 #include "sound.hpp"
 #include "glresource.hpp"
-#include "gpu.hpp"
 #include "camera.hpp"
 #include "input.hpp"
 #include "adaptsdl.hpp"
@@ -27,36 +26,18 @@ MyMain::MyMain(const rs::SPWindow& sp): MainProc(sp, true) {
 	mgr_rw.getHandler().addHandler(0x00, sph);
 
 	_initInput();
-	_initText();
 	_initCam();
 	_initEffect();
 	_pushFirstScene(mgr_gobj.makeObj<TScene>());
 }
-void MyMain::_initText() {
-	//  フォント読み込み
-	_charID = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
-
-	rs::GPUInfo info;
-	info.onDeviceReset();
-	std::stringstream ss;
-	ss << "Version: " << info.version() << std::endl
-			<< "GLSL Version: " << info.glslVersion() << std::endl
-			<< "Vendor: " << info.vendor() << std::endl
-			<< "Renderer: " << info.renderer() << std::endl
-			<< "DriverVersion: " << info.driverVersion() << std::endl;
-	_infotext = spn::Text::UTFConvertTo32(ss.str());
-}
 void MyMain::_initEffect() {
-	auto lk = sharedbase.lock();
+	auto lkb = sharedbase.lock();
+	auto lk = shared.lock();
 	spn::URI uriFx("file", mgr_path.getPath(rs::AppPath::Type::Effect));
 	uriFx <<= "test.glx";
-	lk->hlFx = mgr_gl.loadEffect(uriFx, [](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
-	auto& pFx = *lk->hlFx.ref();
-	_techID = *pFx.getTechID("TheTech");
-	pFx.setTechnique(_techID, true);
-
-	_passView = *pFx.getPassID("P0");
-	_passText = *pFx.getPassID("P1");
+	lkb->hlFx = mgr_gl.loadEffect(uriFx, [](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
+	auto& pFx = *lkb->hlFx.ref();
+	lk->pFx = &pFx;
 }
 void MyMain::_initCam() {
 	auto lk = shared.lock();
@@ -103,10 +84,7 @@ void MyMain::_initInput() {
 	mgr_input.link(lk->actPress, rs::InF::AsButton(lkb->hlIm, 0));
 	_bPress = false;
 }
-bool MyMain::runU() {
-	if(!MainProc::_beginProc())
-		return false;
-
+bool MyMain::userRunU() {
 	auto lkb = sharedbase.lock();
 	auto lk = shared.lock();
 	// カメラ操作
@@ -126,7 +104,6 @@ bool MyMain::runU() {
 	if(mgr_input.isKeyPressing(lk->actRight))
 		mvS += speed;
 
-	auto& fx = *(lkb->hlFx.ref());
 	auto& cd = lk->hlCam.ref();
 	cd.moveFwd3D(mvF);
 	cd.moveSide3D(mvS);
@@ -136,29 +113,6 @@ bool MyMain::runU() {
 		cd.addRot(spn::Quat::RotationY(spn::DegF(-xv)));
 		cd.addRot(spn::Quat::RotationX(spn::DegF(-yv)));
 	}
-	fx.setTechnique(_techID, true);
-
-	fx.setPass(_passText);
-	auto tsz = lkb->screenSize;
-	auto fn = [tsz](int x, int y, float r) {
-		float rx = spn::Rcp22Bit(tsz.width/2),
-			  ry = spn::Rcp22Bit(tsz.height/2);
-		return spn::Mat33(rx*r,		0,			0,
-						0,			ry*r, 		0,
-						-1.f+x*rx,	1.f-y*ry,	1);
-	};
-	fx.setUniform(*fx.getUniformID("mText"), fn(0,0,1), true);
-
-	int fps = lkb->fps.getFPS();
-	std::stringstream ss;
-	ss << "FPS: " << fps << std::endl;
-	rs::Object& obj = *mgr_scene.getScene(0).ref();
-	auto var = obj.recvMsg(MSG_GetStatus);
-	ss << "Status: " << var.toCStr() << std::endl;
-
-	_hlText = mgr_text.createText(_charID, _infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
-	_hlText.ref().draw(&fx);
-
-	MainProc::_endProc();
 	return true;
 }
+

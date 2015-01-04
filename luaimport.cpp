@@ -1,5 +1,5 @@
 #include "luaw.hpp"
-#include "updator_lua.hpp"
+#include "updater_lua.hpp"
 #include <boost/preprocessor.hpp>
 #include <boost/regex.hpp>
 #include "sdlwrap.hpp"

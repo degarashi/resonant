@@ -1,5 +1,5 @@
 #pragma once
-#include "updator.hpp"
+#include "updater.hpp"
 #include "luaw.hpp"
 
 namespace rs {

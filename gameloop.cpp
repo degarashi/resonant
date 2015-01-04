@@ -3,7 +3,7 @@
 #include "font.hpp"
 #include "spinner/frac.hpp"
 #include "camera.hpp"
-#include "updator.hpp"
+#include "updater.hpp"
 #include "scene.hpp"
 #include "sound.hpp"
 #include <sstream>
@@ -111,6 +111,26 @@ namespace rs {
 		std::cout << "DrawThread destructor ended" << std::endl;
 	}
 
+	namespace {
+		constexpr int MAX_SKIPFRAME = 3;
+		constexpr int DRAW_THRESHOLD_USEC = 2000;
+	}
+	// --------------------- IMainProc::Query ---------------------
+	IMainProc::Query::Query(Timepoint tp, int skip):
+		_bDraw(false), _tp(tp), _skip(skip) {}
+	bool IMainProc::Query::canDraw() const {
+		return true;
+		using namespace std::chrono;
+		auto dur = Clock::now() - _tp;
+		return _skip >= MAX_SKIPFRAME || dur <= microseconds(DRAW_THRESHOLD_USEC);
+	}
+	void IMainProc::Query::setDraw(bool bDraw) {
+		_bDraw = bDraw;
+	}
+	bool IMainProc::Query::getDraw() const {
+		return _bDraw;
+	}
+
 	constexpr bool MULTICONTEXT = false;
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr, DPCreate dcr): ThreadL("MainThread"), _mcr(mcr), _dcr(dcr) {
@@ -185,8 +205,7 @@ namespace rs {
 			spn::FracI frac(0,1);
 			Timepoint prevtime = Clock::now();
 			int skip = 0;
-			constexpr int MAX_SKIPFRAME = 3;
-			constexpr int DRAW_THRESHOLD_USEC = 2000;
+PrintLog;
 
 			using namespace std::chrono;
 			// ゲームの進行や更新タイミングを図って描画など
@@ -276,15 +295,16 @@ namespace rs {
 				// ゲーム進行
 				++getInfo()->accumUpd;
 				mgr_input.update();
-				if(!mp->runU()) {
-					std::cout << "MainLoop END" << std::endl;
+PrintLog;
+				IMainProc::Query q(tp, skip);
+				if(!mp->runU(q)) {
+					PrintLogMsg("MainLoop END");
 					break;
 				}
-
+PrintLog;
 				// 時間が残っていれば描画
 				// 最大スキップフレームを超過してたら必ず描画
-				auto dur = Clock::now() - tp;
-				bool bSkip = (skip < MAX_SKIPFRAME && dur <= microseconds(DRAW_THRESHOLD_USEC));
+				bool bSkip = !q.getDraw();
 				if(!bSkip)
 					skip = 0;
 				else

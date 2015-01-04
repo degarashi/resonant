@@ -33,11 +33,11 @@ namespace rs {
 		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う
 		template <class T, class... Ts>
 		LHdl _makeObj(std::false_type, Ts&&... ts) {
-			return base::acquire(std::move(UPObject(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>)));
+			return base::acquire(UPObject(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>));
 		}
 		template <class T, class... Ts>
 		LHdl _makeObj(std::true_type, Ts&&... ts) {
-			return base::acquire(std::move(T::NewUF_Args(std::forward<Ts>(ts)...)));
+			return base::acquire(T::NewUF_Args(std::forward<Ts>(ts)...));
 		}
 
 		public:
@@ -102,9 +102,13 @@ namespace rs {
 			virtual void destroy() { _bDestroy = true; }
 			bool onUpdateUpd();
 			virtual LCValue recvMsg(GMessageID /*id*/, const LCValue& /*arg*/=LCValue()) { return LCValue(); }
+			//! UpdChildに登録された時に呼ばれる
+			virtual void onCreate(UpdChild* uc) {}
 			//! 各Objが実装するアップデート処理
 			virtual void onUpdate() = 0;
-			virtual void onDestroy() {}
+			//! UpdChildから削除される時に呼ばれる
+			virtual void onDestroy(UpdChild* uc) {}
+			virtual void* getInterface(uint32_t /*id*/) { return nullptr; }
 			virtual ~GOBase() {}
 	};
 
@@ -191,7 +195,7 @@ namespace rs {
 	class ObjRep : public spn::Singleton<ObjRep>, public WHandleMap<std::string, WGbj> {};
 
 	//! UpdBase(Child)の集合体
-	class UpdChild {
+	class UpdChild : public spn::EnableFromThis {
 		UpdList		_child;			//!< このクラスがOwnershipを持つポインタリスト
 		int			_nGroup = 0;	//!< 子要素にグループが幾つあるか
 		std::string	_name;
@@ -200,6 +204,7 @@ namespace rs {
 			UpdChild(const std::string& name = std::string());
 			const std::string& getName() const;
 			void addObj(UpdBase* upd);
+			void addObj(Priority prio, HGbj hGbj);
 			//! このリストから外し、メモリも開放する UpdGroupから呼ぶ
 			void remObjs(const UpdArray& ar);
 			UpdGroup* findGroup(GroupID id) const;
@@ -270,8 +275,9 @@ namespace rs {
 			UpdGroup* findGroup(GroupID id) const override;
 			UpdBase* _clone() const override;
 			// ----------- 以下はGobjのアダプタメソッド -----------
+			void onCreate(UpdChild* uc) override;
 			void onUpdate() override;
-			void onDestroy() override;
+			void onDestroy(UpdChild* uc) override;
 			LCValue recvMsg(GMessageID msg, const LCValue& arg) override;
 	};
 

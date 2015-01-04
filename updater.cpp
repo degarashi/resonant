@@ -1,4 +1,4 @@
-#include "updator.hpp"
+#include "updater.hpp"
 
 namespace rs {
 	ObjID GenerateObjTypeID() {
@@ -43,8 +43,11 @@ namespace rs {
 	// -------------------- UpdProxy --------------------
 	UpdProxy::UpdProxy(Priority prio, HGbj hGbj): UpdBase(prio), _hlGbj(hGbj) {}
 	bool UpdProxy::isNode() const { return false; }
-	void UpdProxy::onDestroy() {
-		_hlGbj.get().ref()->onDestroy();
+	void UpdProxy::onCreate(UpdChild* uc) {
+		_hlGbj.get().ref()->onCreate(uc);
+	}
+	void UpdProxy::onDestroy(UpdChild* uc) {
+		_hlGbj.get().ref()->onDestroy(uc);
 	}
 	void UpdProxy::proc(Priority prioBegin, Priority prioEnd, const IUpdProc* p) {
 		p->updateProc(this);
@@ -81,6 +84,9 @@ namespace rs {
 		return nullptr;
 	}
 	const std::string& UpdChild::getName() const { return _name; }
+	void UpdChild::addObj(Priority prio, HGbj hGbj) {
+		addObj(new UpdProxy(prio, hGbj));
+	}
 	void UpdChild::addObj(UpdBase* upd) {
 		if(upd->isNode())
 			++_nGroup;
@@ -89,14 +95,13 @@ namespace rs {
 		auto itr = _child.begin();
 		Priority prio = upd->getPriority();
 		while(itr != _child.end()) {
-			if(prio < (*itr)->getPriority()) {
-				_child.insert(itr, upd);
-				return;
-			}
+			if(prio < (*itr)->getPriority())
+				break;
 			++itr;
 		}
-		_child.push_back(upd);
+		_child.insert(itr, upd);
 		upd->setParent(this);
+		upd->onCreate(this);
 	}
 	void UpdChild::remObjs(const UpdArray& ar) {
 		for(auto* p : ar) {
@@ -105,7 +110,7 @@ namespace rs {
 				if(p->isNode())
 					--_nGroup;
 				else
-					p->onDestroy();
+					p->onDestroy(this);
 				delete p;
 				_child.erase(itr);
 			}

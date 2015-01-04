@@ -1,7 +1,6 @@
 #include "test.hpp"
+#include "../updater.hpp"
 
-spn::Optional<Cube> g_cube;
-const rs::GMessageID MSG_CallFunc = rs::GMessage::RegMsgID("call_base");
 const rs::GMessageID MSG_GetStatus = rs::GMessage::RegMsgID("get_status");
 // ------------------------ TScene::MySt ------------------------
 void TScene::MySt::onEnter(TScene& self, rs::ObjTypeID prevID) {
@@ -13,7 +12,6 @@ void TScene::MySt::onUpdate(TScene& self) {
 	if(mgr_input.isKeyPressed(lk->actPlay)) {
 		self.setStateNew<MySt_Play>();
 	}
-	self._drawCube();
 	CheckQuit();
 }
 void TScene::MySt::CheckQuit() {
@@ -39,9 +37,7 @@ void TScene::MySt::onReStart(TScene& self) {
 	PrintLog;
 }
 rs::LCValue TScene::MySt::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
-	if(msg == MSG_CallFunc)
-		self._drawCube();
-	else if(msg == MSG_GetStatus)
+	if(msg == MSG_GetStatus)
 		return "Idle";
 	return rs::LCValue();
 }
@@ -57,7 +53,6 @@ void TScene::MySt_Play::onUpdate(TScene& self) {
 	if(mgr_input.isKeyPressed(lk->actStop))
 		self.setStateNew<MySt>();
 	MySt::CheckQuit();
-	self._drawCube();
 }
 rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
 	if(msg == MSG_GetStatus)
@@ -73,22 +68,34 @@ TScene::TScene(): Scene(0) {
 	pb <<= "the_thunder.ogg";
 	_hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile(pb.plain_utf8(), rs::RWops::Read));
 	_hlSg = mgr_sound.createSourceGroup(1);
-	// Cube初期化
+
+	auto& sb = getBase();
+	sb.update_m.setObj("default", sb.update.getChild());
+	sb.draw_m.setObj("default", sb.draw.getChild());
+	setStateNew<MySt>();
+}
+void TScene::onCreate(rs::UpdChild*) {
+	auto lk = shared.lock();
+	auto& fx = *lk->pFx;
+	auto techId = *fx.getTechID("TheCube");
+	fx.setTechnique(techId, true);
+	auto passId = *fx.getPassID("P0");
+
 	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
 	uriTex <<= "brick.jpg";
 	rs::HLTex hlTex = mgr_gl.loadTexture(uriTex);
-	g_cube = spn::construct(1.f, hlTex);
 
-	setStateNew<MySt>();
+	rs::HLGbj hlGbj = mgr_gobj.makeObj<CubeObj>(hlTex, techId, passId);
+	getBase().draw.addObj(0x00, hlGbj);
+
+	techId = *fx.getTechID("TheTech");
+	fx.setTechnique(techId, true);
+	passId = *fx.getPassID("P1");
+	rs::HLGbj hlInfo = mgr_gobj.makeObj<InfoShow>(techId, passId);
+	getBase().draw.addObj(0x00, hlInfo);
 }
-void TScene::_drawCube() {
-	auto lk = sharedbase.lock();
-	rs::GLEffect& glx = *lk->hlFx.ref();
-	g_cube->draw(glx);
-}
-void TScene::onDestroy() {
+void TScene::onDestroy(rs::UpdChild*) {
 	PrintLog;
-	g_cube = spn::none;
 }
 TScene::~TScene() {
 	PrintLog;

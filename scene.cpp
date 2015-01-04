@@ -2,6 +2,12 @@
 
 namespace rs {
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
+	SceneBase& SceneMgr::getSceneBase(int n) const {
+		HGbj hGbj = getScene(n);
+		auto* ptr = hGbj.ref()->getInterface(SCENE_INTERFACE_ID);
+		Assert(Trap, ptr)
+		return *static_cast<SceneBase*>(ptr);
+	}
 	HGbj SceneMgr::getTop() const {
 		return getScene(0);
 	}
@@ -11,9 +17,10 @@ namespace rs {
 		return HGbj();
 	}
 	void SceneMgr::setPushScene(HGbj hSc, bool bPop) {
-		if(_scene.empty())
+		if(_scene.empty()) {
 			_scene.push_back(HLGbj(hSc));
-		else {
+			_scene.back()->get()->onCreate(nullptr);
+		} else {
 			_scNext = HLGbj(hSc);
 			_scNPop = bPop ? 1 : 0;
 			_scArg = LCValue();
@@ -41,7 +48,7 @@ namespace rs {
 				auto& sc = _scene.back().ref();
 				sc->destroy();
 				sc->onUpdate();			// nullステートへ移行させる
-				sc->onDestroy();
+				sc->onDestroy(nullptr);
 				_scene.pop_back();
 			}
 			// Sceneスタックが空ならここで終わり
@@ -50,9 +57,11 @@ namespace rs {
 
 			_scOp = false;
 			// 直後に積むシーンがあればそれを積む
-			if(_scNext.valid())
+			if(_scNext.valid()) {
 				_scene.push_back(_scNext);
-			else {
+				_scNext.ref()->onCreate(nullptr);
+				_scNext.release();
+			} else {
 				// 降りた先のシーンに戻り値を渡す
 				_scene.back().ref()->onDown(id, _scArg);
 				_scArg = LCValue();
@@ -70,6 +79,9 @@ namespace rs {
 		return _scene.empty();
 	}
 	void SceneMgr::onDraw() {
+		if(_scene.empty())
+			return;
+
 		_scene.back().ref()->onDraw();
 		// DrawフェーズでのSceneOpは許可されない
 		AssertP(Trap, !_scOp)
