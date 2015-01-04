@@ -19,7 +19,10 @@ bool MyDraw::runU(uint64_t accum, bool bSkip) {
 }
 
 // ------------------------------ MyMain ------------------------------
-MyMain::MyMain(const rs::SPWindow& sp): MainProc(sp, true) {
+MyMain::MyMain(const rs::SPWindow& sp):
+	MainProc(sp, true),
+	_yaw(0), _pitch(0), _roll(0)
+{
 	auto lkb = sharedbase.lock();
 	lkb->hlIk.ref();
 	rs::SPUriHandler sph = std::make_shared<rs::UriH_File>(u8"/");
@@ -108,10 +111,13 @@ bool MyMain::userRunU() {
 	cd.moveFwd3D(mvF);
 	cd.moveSide3D(mvS);
 	if(_bPress) {
-		float xv = mgr_input.getKeyValue(lk->actMoveX)/4.f,
-			yv = mgr_input.getKeyValue(lk->actMoveY)/4.f;
-		cd.addRot(spn::Quat::RotationY(spn::DegF(-xv)));
-		cd.addRot(spn::Quat::RotationX(spn::DegF(-yv)));
+		float xv = mgr_input.getKeyValue(lk->actMoveX)/6.f,
+			yv = mgr_input.getKeyValue(lk->actMoveY)/6.f;
+		_yaw += spn::DegF(xv);
+		_pitch += spn::DegF(-yv);
+		_yaw.single();
+		_pitch.rangeValue(-89, 89);
+		cd.setRot(spn::AQuat::RotationYPR(_yaw, _pitch, _roll));
 	}
 	return true;
 }

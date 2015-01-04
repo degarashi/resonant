@@ -152,6 +152,7 @@ class MyMain : public rs::MainProc {
 	private:
 		SharedValueC	_svalue;
 		bool			_bPress;
+		spn::DegF		_yaw, _pitch, _roll;
 
 		void	_initInput();
 		void	_initEffect();
