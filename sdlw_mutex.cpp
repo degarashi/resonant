@@ -14,7 +14,7 @@ namespace rs {
 		return SDLEC_D(Trap, SDL_LockMutex, _mutex) == 0;
 	}
 	bool Mutex::try_lock() {
-		return SDLEC_D(Trap, SDL_TryLockMutex, _mutex) == 0;
+		return SDLEC_D(Warn, SDL_TryLockMutex, _mutex) == 0;
 	}
 	void Mutex::unlock() {
 		SDLEC_D(Trap, SDL_UnlockMutex, _mutex);
