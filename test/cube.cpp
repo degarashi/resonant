@@ -104,14 +104,13 @@ CubeObj::CubeObj(rs::HTex hTex, GLint techId, GLint passId):
 CubeObj::~CubeObj() {
 	PrintLog;
 }
-void CubeObj::onCreate(rs::UpdChild*) {
-	_hlDraw = mgr_gobj.makeObj<CubeDraw>(_cube, _techId, _passId);
+void CubeObj::onConnected(rs::HGroup) {
+	_hlDraw = rs_mgr_obj.makeDrawable<CubeDraw>(_cube, _techId, _passId);
 
 	auto& sb = mgr_scene.getSceneBase();
-	rs::HUpd hUpd = sb.draw_m.getObj("default");
-	hUpd.ref()->addObj(0x00, _hlDraw);
+	sb.draw->get()->addObj(_hlDraw);
 }
-void CubeObj::onDestroy(rs::UpdChild*) {
+void CubeObj::onDisconnected(rs::HGroup) {
 	PrintLog;
 }
 // ---------------------- CubeDraw ----------------------
@@ -120,7 +119,7 @@ CubeObj::CubeDraw::CubeDraw(Cube& cube, GLint techId, GLint passId):
 	_techId(techId),
 	_passId(passId)
 {}
-void CubeObj::CubeDraw::onUpdate() {
+void CubeObj::CubeDraw::onDraw() const {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
 	fx.setTechnique(_techId, true);

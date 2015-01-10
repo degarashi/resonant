@@ -151,10 +151,10 @@ namespace rs {
 	}
 	int LuaImport::RecvMsg(lua_State* ls) {
 		Object* obj = LI_GetHandle<typename ObjMgr::data_type>()(ls, 1);
-		auto msgID = GMessage::GetMsgID(LCV<std::string>()(2, ls));
-		if(msgID) {
+		auto msgId = GMessage::GetMsgId(LCV<std::string>()(2, ls));
+		if(msgId) {
 			// Noneで無ければ有効な戻り値とする
-			LCValue lcv = obj->recvMsg(*msgID, LCV<LCValue>()(3, ls));
+			LCValue lcv = obj->recvMsg(*msgId, LCV<LCValue>()(3, ls));
 			if(lcv.type() != LuaType::LNone) {
 				lcv.push(ls);
 				return 1;

@@ -178,7 +178,7 @@ namespace rs {
 	}
 	CCoreID& TextObj::refCoreID() { return _coreID; }
 	const SPString& TextObj::getFaceName() const { return _faceName; }
-	void TextObj::draw(GLEffect* gle) {
+	void TextObj::draw(GLEffect* gle) const {
 		gle->setVDecl(cs_vDecl);
 		auto& str = unif::texture::Diffuse;
 		auto id = gle->getUniformID(str);

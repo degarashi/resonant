@@ -82,13 +82,17 @@ namespace rs {
 	DEF_AHANDLE(SGroupMgr, Sg, AGroup, AGroup)
 	
 	class Object;
-	using UPObject = std::unique_ptr<Object, void (*)(void*)>;	// Alignedメモリ対応の為 デリータ指定
+	class UpdGroup;
+	class DrawableObj;
+	class DrawGroup;
+	using ObjectUP = std::unique_ptr<Object, void (*)(void*)>;	// Alignedメモリ対応の為 デリータ指定
+	using GroupUP = std::unique_ptr<UpdGroup, void (*)(void*)>;
+	using DrawableUP = std::unique_ptr<DrawableObj, void (*)(void*)>;
+	using DrawGroupUP = std::unique_ptr<DrawGroup, void (*)(void*)>;
 	class ObjMgr;
-	DEF_AHANDLE(ObjMgr, Gbj, UPObject, UPObject)
-
-	class UpdMgr;
-	class UpdChild;
-	using UPUpdCh = std::unique_ptr<UpdChild>;
-	DEF_AHANDLE(UpdMgr, Upd, UPUpdCh, UPUpdCh)
+	DEF_AHANDLE(ObjMgr, Obj, ObjectUP, ObjectUP)
+	DEF_AHANDLE(ObjMgr, Group, ObjectUP, GroupUP)
+	DEF_AHANDLE(ObjMgr, DObj, ObjectUP, DrawableUP)
+	DEF_AHANDLE(ObjMgr, DGroup, ObjectUP, DrawGroupUP)
 }
 

@@ -84,7 +84,7 @@ namespace rs {
 			CCoreID& refCoreID();
 			const SPString& getFaceName() const;
 			// 上位クラスで位置調整など行列をセットしてからメソッドを呼ぶ
-			void draw(GLEffect* gle);
+			void draw(GLEffect* gle) const;
 			const spn::SizeF& getSize() const;
 	};
 	#define mgr_text (::rs::FontGen::_ref())

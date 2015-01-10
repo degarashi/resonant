@@ -6,11 +6,11 @@ namespace rs {
 	struct SceneBase;
 	#define mgr_scene (::rs::SceneMgr::_ref())
 	class SceneMgr : public spn::Singleton<SceneMgr> {
-		using StStack = std::vector<HLGbj>;
+		using StStack = std::vector<HLObj>;
 		StStack		_scene;
 		bool		_scOp = false;		//!< SceneOpが有効か
 		int			_scNPop;
-		HLGbj		_scNext;
+		HLObj		_scNext;
 		LCValue		_scArg;
 
 		void _doSceneOp();
@@ -19,9 +19,9 @@ namespace rs {
 			bool isEmpty() const;
 			SceneBase& getSceneBase(int n=0) const;
 			//! getScene(0)と同義
-			HGbj getTop() const;
-			HGbj getScene(int n=0) const;
-			void setPushScene(HGbj hSc, bool bPop=false);
+			HObj getTop() const;
+			HObj getScene(int n=0) const;
+			void setPushScene(HObj hSc, bool bPop=false);
 			void setPopScene(int nPop, const LCValue& arg=LCValue());
 			//! フレーム更新のタイミングで呼ぶ
 			bool onUpdate();
@@ -35,15 +35,13 @@ namespace rs {
 
 	constexpr static uint32_t SCENE_INTERFACE_ID = 0xf0000000;
 	struct SceneBase {
-		/*	Updateの優先度はPriority(数値)で表現する
-			Drawはグループ分けした上でUpdateと同じようにソート */
-		UpdGroup	 update,
-					 draw;
-		using GroupM = SHandleMap<std::string, HUpd>;
-		GroupM		update_m,
-					draw_m;
+		DefineGroupT(Update, UpdGroup)
+		DefineGroupT(Draw, DrawGroup)
 
-		SceneBase(): update(0), draw(0) {}
+		HLGroup		update;
+		HLDGroup	draw;
+
+		SceneBase();
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
@@ -56,11 +54,11 @@ namespace rs {
 			void onUpdate() override final {
 				base::onUpdate();
 				if(!base::isDead())
-					_sbase.update.onUpdate();
+					_sbase.update->get()->onUpdate();
 			}
-			void onDraw() override final {
+			void onDraw() const override final {
 				base::onDraw();
-				_sbase.draw.onUpdate();
+				_sbase.draw->get()->onDraw();
 			}
 			SceneBase& getBase() {
 				return _sbase;

@@ -133,7 +133,9 @@ namespace rs {
 			//! コピー禁止
 			void operator = (const FlagPtr& p) const = delete;
 			T* operator -> () { return _ptr; }
+			const T* operator -> () const { return _ptr; }
 			T* get() { return _ptr; }
+			const T* get() const { return _ptr; }
 			bool operator == (const FlagPtr& fp) const {
 				return _ptr == fp._ptr;
 			}

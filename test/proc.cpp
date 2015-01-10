@@ -31,7 +31,7 @@ MyMain::MyMain(const rs::SPWindow& sp):
 	_initInput();
 	_initCam();
 	_initEffect();
-	_pushFirstScene(mgr_gobj.makeObj<TScene>());
+	_pushFirstScene(rs_mgr_obj.makeObj<TScene>());
 }
 void MyMain::_initEffect() {
 	auto lkb = sharedbase.lock();

@@ -4,7 +4,7 @@
 // ---------------------- InfoShow::InfoDraw ----------------------
 InfoShow::InfoDraw::InfoDraw(const InfoShow& is):
 	_info(is) {}
-void InfoShow::InfoDraw::onUpdate() {
+void InfoShow::InfoDraw::onDraw() const {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
 	fx.setTechnique(_info._techId, true);
@@ -30,7 +30,7 @@ void InfoShow::InfoDraw::onUpdate() {
 	ss << "Status: " << var.toCStr() << std::endl;
 
 	_hlText = mgr_text.createText(_info._charId, _info._infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
-	_hlText.ref().draw(&fx);
+	_hlText.cref().draw(&fx);
 }
 
 // ---------------------- InfoShow ----------------------
@@ -51,14 +51,13 @@ InfoShow::InfoShow(GLint techId, GLint passId):
 			<< "DriverVersion: " << info.driverVersion() << std::endl;
 	_infotext = spn::Text::UTFConvertTo32(ss.str());
 }
-void InfoShow::onCreate(rs::UpdChild*) {
-	_hlDraw = mgr_gobj.makeObj<InfoDraw>(*this);
+void InfoShow::onConnected(rs::HGroup) {
+	_hlDraw = rs_mgr_obj.makeDrawable<InfoDraw>(*this);
 
 	auto& sb = mgr_scene.getSceneBase();
-	rs::HUpd hUpd = sb.draw_m.getObj("default");
-	hUpd.ref()->addObj(0x00, _hlDraw);
+	sb.draw->get()->addObj(_hlDraw);
 }
-void InfoShow::onDestroy(rs::UpdChild*) {
+void InfoShow::onDisconnected(rs::HGroup) {
 	PrintLog;
 }
 

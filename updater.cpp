@@ -1,238 +1,286 @@
 #include "updater.hpp"
 
 namespace rs {
-	ObjID GenerateObjTypeID() {
-		static ObjID s_id(0);
-		return s_id++;
-	}
-	GMessage& GMessage::Ref() {
-		static GMessage m;
-		return m;
-	}
-	GMessageID GMessage::RegMsgID(const GMessageStr& msg) {
-		GMessage& m = Ref();
-		auto itr = m._msgMap.find(msg);
-		if(itr != m._msgMap.end())
-			return itr->second;
-		auto id = m._msgIDCur++;
-		m._msgMap.insert(std::make_pair(msg, id));
-		return id;
-	}
-	spn::Optional<GMessageID> GMessage::GetMsgID(const GMessageStr& msg) {
-		GMessage& m = Ref();
-		auto itr = m._msgMap.find(msg);
-		if(itr == m._msgMap.end())
-			return spn::none;
-		return itr->second;
+	const ObjTypeId InvalidObjId(~0);
+	namespace {
+		const std::string cs_objname("Object"),
+						cs_updgroupname("UpdGroup"),
+						cs_updtaskname("UpdTask"),
+						cs_drawgroupname("DrawGroup");
 	}
 
-	// -------------------- UpdBase --------------------
-	UpdBase::UpdBase() {}
-	UpdBase::UpdBase(Priority prio): _priority(prio) {}
-	bool GOBase::onUpdateUpd() {
+	// -------------------- Object --------------------
+	Object::Object(): _bDestroy(false) {}
+	Priority Object::getPriority() const {
+		return 0;
+	}
+
+	bool Object::isDead() const {
+		return _bDestroy;
+	}
+	bool Object::onUpdateUpd() {
 		if(isDead())
 			return true;
 		onUpdate();
 		return isDead();
 	}
-	Priority UpdBase::getPriority() const { return _priority; }
-	UpdChild* UpdBase::getParent() const { return _parent; }
-	void UpdBase::setParent(UpdChild* uc) {
-		_parent = uc;
-	}
-	// -------------------- UpdProxy --------------------
-	UpdProxy::UpdProxy(Priority prio, HGbj hGbj): UpdBase(prio), _hlGbj(hGbj) {}
-	bool UpdProxy::isNode() const { return false; }
-	void UpdProxy::onCreate(UpdChild* uc) {
-		_hlGbj.get().ref()->onCreate(uc);
-	}
-	void UpdProxy::onDestroy(UpdChild* uc) {
-		_hlGbj.get().ref()->onDestroy(uc);
-	}
-	void UpdProxy::proc(Priority prioBegin, Priority prioEnd, const IUpdProc* p) {
-		p->updateProc(this);
-	}
-	void UpdProxy::proc(const IUpdProc* p) {
-		p->updateProc(this);
-	}
-	UpdGroup* UpdProxy::findGroup(GroupID id) const {
+	void* Object::getInterface(InterfaceId /*id*/) {
 		return nullptr;
 	}
-	UpdBase* UpdProxy::_clone() const {
-		return new UpdProxy(getPriority(), _hlGbj.get());
+	const void* Object::getInterface(InterfaceId id) const {
+		return const_cast<Object*>(this)->getInterface(id);
 	}
-	void UpdProxy::onUpdate() {
-		auto& p = _hlGbj.get().ref();
-		p->onUpdate();
-		if(p->isDead())
-			destroy();
+	void Object::onConnected(HGroup /*hGroup*/) {}
+	void Object::onDisconnected(HGroup /*hGroup*/) {}
+	void Object::onUpdate() {}
+	void Object::destroy() {
+		_bDestroy = true;
 	}
-	LCValue UpdProxy::recvMsg(GMessageID msg, const LCValue& arg) {
-		return _hlGbj.get().ref()->recvMsg(msg, arg);
+	const std::string& Object::getName() const {
+		return cs_objname;
 	}
+	Object::Form Object::getForm() const {
+		return Form::Invalid;
+	}
+	void Object::onHitEnter(HObj /*hObj*/) {}				//!< 初回衝突
+	void Object::onHit(HObj /*hObj*/, int /*n*/) {}			//!< 2フレーム目以降
+	void Object::onHitExit(WObj /*whObj*/, int /*n*/) {}
 
-	// -------------------- UpdChild --------------------
-	UpdChild::UpdChild(const std::string& name): _name(name) {}
-	UpdGroup* UpdChild::findGroup(GroupID id) const {
-		if(_nGroup > 0) {
-			for(auto* p : _child) {
-				auto* res = p->findGroup(id);
-				if(res)
-					return res;
+	void Object::enumGroup(CBFindGroup /*cb*/, GroupTypeId /*id*/, int /*depth*/) const {
+		Assert(Warn, "not supported operation")
+	}
+	LCValue Object::recvMsg(GMessageId /*id*/, const LCValue& /*arg*/) {
+		return LCValue();
+	}
+	void Object::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
+		Assert(Warn, "not supported operation")
+	}
+	void Object::onDraw() const {}
+	void Object::onDown(ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
+	void Object::onPause() {}
+	void Object::onStop() {}
+	void Object::onResume() {}
+	void Object::onReStart() {}
+
+	// -------------------- UpdGroup --------------------
+	UpdGroup::UpdGroup(Priority p):
+		_priority(p),
+		_nParent(0)
+	{}
+	Priority UpdGroup::getPriority() const {
+		return _priority;
+	}
+	bool UpdGroup::isNode() const {
+		return true;
+	}
+	void UpdGroup::enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const {
+		for(auto& h : _groupV) {
+			if(h->get()->getTypeId() == id)
+				cb(h);
+		}
+		if(depth > 0) {
+			--depth;
+			for(auto& h : _groupV) {
+				h->get()->enumGroup(cb, id, depth);
 			}
 		}
-		return nullptr;
 	}
-	const std::string& UpdChild::getName() const { return _name; }
-	void UpdChild::addObj(Priority prio, HGbj hGbj) {
-		addObj(new UpdProxy(prio, hGbj));
+	const std::string& UpdGroup::getName() const {
+		return cs_updgroupname;
 	}
-	void UpdChild::addObj(UpdBase* upd) {
-		if(upd->isNode())
-			++_nGroup;
+	void UpdGroup::addObj(HObj hObj) {
+		auto* p = hObj->get();
+		if(p->isNode()) {
+			// Groupリスト自体はソートしない
+			_groupV.emplace_back(rs_mgr_obj.CastToGroup(hObj));
+		}
 
 		// 単純挿入ソート
-		auto itr = _child.begin();
-		Priority prio = upd->getPriority();
-		while(itr != _child.end()) {
-			if(prio < (*itr)->getPriority())
-				break;
-			++itr;
-		}
-		_child.insert(itr, upd);
-		upd->setParent(this);
-		upd->onCreate(this);
+		// 末尾に追加してソートをかける
+		_objV.emplace_back(hObj);
+		// TODO: insertion sort
+		// insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
+		//		return hl0->get()->getPriority() < hl1->get()->getPriority(); });
+		HLObj h;
+		handleFromThis(h);
+		p->onConnected(rs_mgr_obj.CastToGroup(h.get()));
 	}
-	void UpdChild::remObjs(const UpdArray& ar) {
-		for(auto* p : ar) {
-			auto itr = std::find(_child.begin(), _child.end(), p);
-			if(itr != _child.end()) {
-				if(p->isNode())
-					--_nGroup;
-				else
-					p->onDestroy(this);
-				delete p;
-				_child.erase(itr);
+	int UpdGroup::remObj(const ObjVH& ar) {
+		int count = 0;
+		for(auto& h : ar) {
+			// 後でonUpdateの時に削除する
+			if(std::find(_remObj.begin(), _remObj.end(), h) == _remObj.end()) {
+				_remObj.emplace_back(h);
+				++count;
 			}
 		}
+		return count;
 	}
-	const UpdList& UpdChild::getList() const { return _child; }
-	UpdList& UpdChild::getList() { return _child; }
-	void UpdChild::clear() {
-		std::for_each(_child.begin(), _child.end(), [](UpdBase* p) { delete p; });
-		_child.clear();
-		_nGroup = 0;
+	void UpdGroup::remObj(HObj hObj) {
+		remObj(ObjVH{hObj});
 	}
-
-	// UpdChildは名前を付けて登録 = 参照カウントによる
-	// Objectは名前を付けて登録, 上書き可, ハンドルの管理はしない
-	// staticな名前をID登録, IDに対して値を割り当て
-	// Obj[値は上書き可で、解放処理なし, 参照カウントなし, get時に有効化を判定して無効なら削除] = WHGBJ
-	// UpdChild[値を上書き不可で、解放処理あり, entryがあれば有効] = UpdChild*
-	// -------------------- UpdGroup --------------------
-	UpdGroup::UGVec UpdGroup::s_ug;
-	void UpdGroup::_doRemove() {
-		_child.get().ref()->remObjs(_remObj);
-		_remObj.clear();
+	const UpdGroup::ObjV& UpdGroup::getList() const {
+		return _objV;
 	}
-	UpdGroup::UpdGroup(Priority prio, HUpd hUpd): UpdBase(prio), _child(hUpd) {}
-	UpdGroup::UpdGroup(Priority prio): _child(
-		UpdMgr::_ref().acquire(UPUpdCh(new UpdChild()))
-	) {}
+	UpdGroup::ObjV& UpdGroup::getList() {
+		return _objV;
+	}
 	void UpdGroup::clear() {
-		_child.get().ref()->clear();
+		_remObj.clear();
+		_groupV.clear();
+		_objV.clear();
 	}
-	void UpdGroup::addObj(Priority prio, HGbj hGbj) {
-		addObj(new UpdProxy(prio, hGbj));
+	void UpdGroup::onDraw() const {
+		// DrawUpdate中のオブジェクト追加削除はナシ
+		for(auto& h : _objV)
+			h->get()->onDraw();
 	}
-	void UpdGroup::addObj(UpdBase* upd) {
-		_child.get().ref()->addObj(upd);
-	}
-	void UpdGroup::remObj(UpdBase* upd) {
-		// 後でonUpdateの時に削除する
-		if(std::find(_remObj.begin(), _remObj.end(), upd) == _remObj.end())
-			_remObj.push_back(upd);
-	}
-	const std::string& UpdGroup::getGroupName() const { return _child.get().cref()->getName(); }
-	void UpdGroup::setIdle(int nFrame) {
-		_idleCount = nFrame;
-	}
-	int UpdGroup::getAccum() const { return _accum; }
 	void UpdGroup::onUpdate() {
-		// アイドル時間チェック
-		if(_idleCount > 0)
-			--_idleCount;
-		else {
-			for(auto ent : _child.get().ref()->getList()) {
-				auto b = ent->onUpdateUpd();
-				if(b) {
-					// 次のフレーム直前で消す
-					remObj(ent);
-				}
+		for(auto& h : _objV) {
+			auto* ent = h->get();
+			auto b = ent->onUpdateUpd();
+			if(b) {
+				// 次のフレーム直前で消す
+				remObj(h.get());
 			}
 		}
-		++_accum;
 		// 何か削除するノードを持つグループを登録
 		if(!_remObj.empty())
 			s_ug.push_back(this);
 
 		// ルートノードで一括してオブジェクトの削除
-		if(!getParent() && !s_ug.empty()) {
+		if(_nParent == 0 && !s_ug.empty()) {
 			for(auto ent : s_ug)
 				ent->_doRemove();
 			s_ug.clear();
 		}
 	}
-	UpdGroup* UpdGroup::findGroup(GroupID id) const {
-		return _child.get().cref()->findGroup(id);
+	void UpdGroup::onConnected(HGroup hGroup) {
+		++_nParent;
+		for(auto& h : _objV)
+			h->get()->onConnected(hGroup);
 	}
-	void UpdGroup::proc(Priority prioBegin, Priority prioEnd, const IUpdProc* p) {
-		auto& ls = _child.get().ref()->getList();
-		if(ls.empty())
+	void UpdGroup::onDisconnected(HGroup hGroup) {
+		--_nParent;
+		Assert(Trap, _nParent >= 0)
+		for(auto& h : _objV)
+			h->get()->onDisconnected(hGroup);
+	}
+	void UpdGroup::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
+		if(_objV.empty())
 			return;
 
-		auto itr = ls.begin(),
-			itrE = ls.end();
+		auto itr = _objV.begin(),
+			itrE = _objV.end();
 		// prBeginの優先度までスキップ
 		for(;;) {
 			if(itr == itrE)
 				return;
-			if((*itr)->getPriority() >= prioBegin)
+			if((*itr)->get()->getPriority() >= prioBegin)
 				break;
 			++itr;
 		}
 		// prEndに達したらそれ以上処理しない
 		do {
-			if(itr == itrE || (*itr)->getPriority() > prioEnd)
+			if(itr == itrE || (*itr)->get()->getPriority() > prioEnd)
 				return;
-			(*itr)->proc(p);
+			(*itr)->get()->proc(p, bRecursive);
 			++itr;
 		} while(itr != itrE);
 	}
-	void UpdGroup::proc(const IUpdProc* p) {
-		for(auto ent : _child.get().ref()->getList())
-			ent->proc(p);
-	}
-	LCValue UpdGroup::recvMsg(GMessageID msg, const LCValue& arg) {
-		for(auto ent : _child.get().ref()->getList())
-			ent->recvMsg(msg, arg);
+	LCValue UpdGroup::recvMsg(GMessageId msg, const LCValue& arg) {
+		for(auto& h : _objV)
+			h->get()->recvMsg(msg, arg);
 		return LCValue();
 	}
-	HLUpd UpdGroup::clone() const {
-		// UpdProxyは複製, UpdGroupは参照コピー
-		auto& c = _child.get().cref()->getList();
-		HLUpd hlUpd(UpdMgr::_ref().acquire(UPUpdCh(new UpdChild())));
-		auto& nc = hlUpd.get().ref()->getList();
-		for(auto* u : c)
-			nc.push_back(u->_clone());
-		return std::move(hlUpd);
+	UpdGroup::UGVec UpdGroup::s_ug;
+	void UpdGroup::_doRemove() {
+		HLObj hThis0;
+		handleFromThis(hThis0);
+		HGroup hThis = rs_mgr_obj.CastToGroup(hThis0.get());
+		for(auto& h : _remObj) {
+			auto* p = h->get();
+			if(p->isNode()) {
+				auto itr = std::find_if(_groupV.begin(), _groupV.end(), [&h](const HLGroup& hl){
+											return hl.get() == h;
+										});
+				if(itr != _groupV.end())
+					_groupV.erase(itr);
+				else
+					continue;
+			}
+			auto itr = std::find_if(_objV.begin(), _objV.end(), [&h](const HLObj& hl){
+										return hl.get() == h;
+									});
+			if(itr != _objV.end()) {
+				p->onDisconnected(hThis);
+				_objV.erase(itr);
+			}
+		}
+		_remObj.clear();
 	}
-	UpdBase* UpdGroup::_clone() const {
-		// Child参照をそのまま返す
-		auto* p = new UpdGroup(getPriority(), _child.get());
-		p->_idleCount = _idleCount;
-		return p;
+	// -------------------- UpdTask --------------------
+	UpdTask::UpdTask(Priority p, HGroup hGroup):
+		_idleCount(0), _accum(0),
+		_hlGroup(hGroup)
+	{}
+	bool UpdTask::isNode() const {
+		return true;
 	}
-	HUpd UpdGroup::getChild() const { return _child.get(); }
-	bool UpdGroup::isNode() const { return true; }
+	void UpdTask::onConnected(HGroup hGroup) {
+		_hlGroup->get()->onConnected(hGroup);
+	}
+	void UpdTask::onDisconnected(HGroup hGroup) {
+		_hlGroup->get()->onDisconnected(hGroup);
+	}
+	void UpdTask::enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const {
+		_hlGroup->get()->enumGroup(cb, id, depth);
+	}
+	void UpdTask::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
+		_hlGroup->get()->proc(p, bRecursive, prioBegin, prioEnd);
+	}
+	LCValue UpdTask::recvMsg(GMessageId msg, const LCValue& arg) {
+		return _hlGroup->get()->recvMsg(msg, arg);
+	}
+
+	const std::string& UpdTask::getName() const {
+		return cs_updtaskname;
+	}
+	void UpdTask::onUpdate() {
+		// アイドル時間チェック
+		if(_idleCount > 0)
+			--_idleCount;
+		else
+			_hlGroup->get()->onUpdate();
+		++_accum;
+	}
+	void UpdTask::setIdle(int nFrame) {
+		_idleCount = nFrame;
+	}
+	int UpdTask::getAccum() const {
+		return _accum;
+	}
+
+	// -------------------- DrawableObj --------------------
+	const DrawTag& DrawableObj::getDTag() const {
+		return _dtag;
+	}
+	// -------------------- DrawGroup --------------------
+	DrawGroup::DrawGroup(const DSortV& ds, bool bSort):
+		_dsort(ds), _bSort(bSort) {}
+	void DrawGroup::addObj(HDObj hObj) {
+		UpdGroup::addObj(hObj);
+		if(!_bSort) {
+			//TODO: insertion_sort
+		}
+	}
+	void DrawGroup::remObj(HDObj hObj) {
+		UpdGroup::remObj(hObj);
+	}
+	const std::string& DrawGroup::getName() const {
+		return cs_drawgroupname;
+	}
+	void DrawGroup::onUpdate() {
+		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
+	}
 }

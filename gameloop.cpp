@@ -181,7 +181,7 @@ namespace rs {
 			UPtr<PointerMgr>	pmP(new PointerMgr());
 			UPtr<InputMgr>		inpP(new InputMgr());
 			UPtr<ObjMgr>		objP(new ObjMgr());
-			UPtr<UpdMgr>		updP(new UpdMgr());
+PrintLog;
 			UPtr<SceneMgr>		scP(new SceneMgr());
 			UPtr<SoundMgr>		sndP(new SoundMgr(44100));
 			UPtr<UpdRep>		urep(new UpdRep());
@@ -328,7 +328,6 @@ PrintLog;
 			urep.reset();
 			sndP.reset();
 			scP.reset();
-			updP.reset();
 			objP.reset();
 			inpP.reset();
 			camP.reset();

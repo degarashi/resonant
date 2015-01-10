@@ -1,34 +1,39 @@
 #include "scene.hpp"
 
 namespace rs {
+	SceneBase::SceneBase():
+		update(rs_mgr_obj.makeGroup<Update>()),
+		draw(rs_mgr_obj.makeDrawGroup<Draw>())
+	{}
+
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
 	SceneBase& SceneMgr::getSceneBase(int n) const {
-		HGbj hGbj = getScene(n);
-		auto* ptr = hGbj.ref()->getInterface(SCENE_INTERFACE_ID);
+		HObj hObj = getScene(n);
+		auto* ptr = hObj.ref()->getInterface(SCENE_INTERFACE_ID);
 		Assert(Trap, ptr)
 		return *static_cast<SceneBase*>(ptr);
 	}
-	HGbj SceneMgr::getTop() const {
+	HObj SceneMgr::getTop() const {
 		return getScene(0);
 	}
-	HGbj SceneMgr::getScene(int n) const {
+	HObj SceneMgr::getScene(int n) const {
 		if(_scene.size() > n)
 			return _scene.at(_scene.size()-1-n);
-		return HGbj();
+		return HObj();
 	}
-	void SceneMgr::setPushScene(HGbj hSc, bool bPop) {
+	void SceneMgr::setPushScene(HObj hSc, bool bPop) {
 		if(_scene.empty()) {
-			_scene.push_back(HLGbj(hSc));
-			_scene.back()->get()->onCreate(nullptr);
+			_scene.push_back(HLObj(hSc));
+			_scene.back()->get()->onConnected(HGroup());
 		} else {
-			_scNext = HLGbj(hSc);
+			_scNext = HLObj(hSc);
 			_scNPop = bPop ? 1 : 0;
 			_scArg = LCValue();
 			_scOp = true;
 		}
 	}
 	void SceneMgr::setPopScene(int nPop, const LCValue& arg) {
-		_scNext = HLGbj();
+		_scNext = HLObj();
 		_scNPop = nPop;
 		_scArg = arg;
 		_scOp = true;
@@ -40,7 +45,7 @@ namespace rs {
 		}
 		while(_scOp) {
 			// Update中に指示されたScene操作タスクを実行
-			ObjTypeID id = _scene.back().ref()->getTypeID();
+			ObjTypeId id = _scene.back().ref()->getTypeId();
 
 			int nPop = std::min(_scNPop, static_cast<int>(_scene.size()));
 			_scNPop = 0;
@@ -48,7 +53,7 @@ namespace rs {
 				auto& sc = _scene.back().ref();
 				sc->destroy();
 				sc->onUpdate();			// nullステートへ移行させる
-				sc->onDestroy(nullptr);
+				sc->onDisconnected(HGroup());
 				_scene.pop_back();
 			}
 			// Sceneスタックが空ならここで終わり
@@ -59,7 +64,7 @@ namespace rs {
 			// 直後に積むシーンがあればそれを積む
 			if(_scNext.valid()) {
 				_scene.push_back(_scNext);
-				_scNext.ref()->onCreate(nullptr);
+				_scNext.ref()->onConnected(HGroup());
 				_scNext.release();
 			} else {
 				// 降りた先のシーンに戻り値を渡す

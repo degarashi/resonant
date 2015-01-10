@@ -1,9 +1,9 @@
 #include "test.hpp"
 #include "../updater.hpp"
 
-const rs::GMessageID MSG_GetStatus = rs::GMessage::RegMsgID("get_status");
+const rs::GMessageId MSG_GetStatus = rs::GMessage::RegMsgId("get_status");
 // ------------------------ TScene::MySt ------------------------
-void TScene::MySt::onEnter(TScene& self, rs::ObjTypeID prevID) {
+void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
 	s.clear();
 }
@@ -21,7 +21,7 @@ void TScene::MySt::CheckQuit() {
 		mgr_scene.setPopScene(1);
 	}
 }
-void TScene::MySt::onDown(TScene& self, rs::ObjTypeID prevID, const rs::LCValue& arg) {
+void TScene::MySt::onDown(TScene& self, rs::ObjTypeId prevId, const rs::LCValue& arg) {
 	PrintLog;
 }
 void TScene::MySt::onPause(TScene& self) {
@@ -36,14 +36,14 @@ void TScene::MySt::onStop(TScene& self) {
 void TScene::MySt::onReStart(TScene& self) {
 	PrintLog;
 }
-rs::LCValue TScene::MySt::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
+rs::LCValue TScene::MySt::recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) {
 	if(msg == MSG_GetStatus)
 		return "Idle";
 	return rs::LCValue();
 }
 
 // ------------------------ TScene::MySt_Play ------------------------
-void TScene::MySt_Play::onEnter(TScene& self, rs::ObjTypeID prevID) {
+void TScene::MySt_Play::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
 	s.clear();
 	s.play(self._hlAb, 0);
@@ -54,7 +54,7 @@ void TScene::MySt_Play::onUpdate(TScene& self) {
 		self.setStateNew<MySt>();
 	MySt::CheckQuit();
 }
-rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) {
+rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) {
 	if(msg == MSG_GetStatus)
 		return "Playing";
 	return rs::LCValue();
@@ -69,12 +69,9 @@ TScene::TScene(): Scene(0) {
 	_hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile(pb.plain_utf8(), rs::RWops::Read));
 	_hlSg = mgr_sound.createSourceGroup(1);
 
-	auto& sb = getBase();
-	sb.update_m.setObj("default", sb.update.getChild());
-	sb.draw_m.setObj("default", sb.draw.getChild());
 	setStateNew<MySt>();
 }
-void TScene::onCreate(rs::UpdChild*) {
+void TScene::onConnected(rs::HGroup) {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
 	auto techId = *fx.getTechID("TheCube");
@@ -85,16 +82,16 @@ void TScene::onCreate(rs::UpdChild*) {
 	uriTex <<= "brick.jpg";
 	rs::HLTex hlTex = mgr_gl.loadTexture(uriTex);
 
-	rs::HLGbj hlGbj = mgr_gobj.makeObj<CubeObj>(hlTex, techId, passId);
-	getBase().draw.addObj(0x00, hlGbj);
+	rs::HLObj hlObj = rs_mgr_obj.makeObj<CubeObj>(hlTex, techId, passId);
+	getBase().update->get()->addObj(hlObj);
 
 	techId = *fx.getTechID("TheTech");
 	fx.setTechnique(techId, true);
 	passId = *fx.getPassID("P1");
-	rs::HLGbj hlInfo = mgr_gobj.makeObj<InfoShow>(techId, passId);
-	getBase().draw.addObj(0x00, hlInfo);
+	rs::HLObj hlInfo = rs_mgr_obj.makeObj<InfoShow>(techId, passId);
+	getBase().update->get()->addObj(hlInfo);
 }
-void TScene::onDestroy(rs::UpdChild*) {
+void TScene::onDisconnected(rs::HGroup) {
 	PrintLog;
 }
 TScene::~TScene() {

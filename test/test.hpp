@@ -54,21 +54,21 @@ class Cube : public spn::Pose3D {
 class CubeObj : public rs::ObjectT<CubeObj>, public spn::CheckAlign<16, CubeObj> {
 	private:
 		//! キューブObj(Draw)
-		class CubeDraw : public rs::ObjectT<CubeDraw> {
+		class CubeDraw : public rs::DrawableObjT<CubeDraw> {
 			private:
 				Cube&	_cube;
 				GLint	_techId,
 						_passId;
 			public:
 				CubeDraw(Cube& cube, GLint techId, GLint passId);
-				void onUpdate() override;
+				void onDraw() const override;
 		};
 
 		// 本当はCubeTech等はグローバルに定義
 		GLint		_techId,
 					_passId;
 		Cube		_cube;
-		rs::HLGbj	_hlDraw;
+		rs::HLDObj	_hlDraw;
 		class MySt : public StateT<MySt> {
 			public:
 				void onUpdate(CubeObj& self);
@@ -76,20 +76,20 @@ class CubeObj : public rs::ObjectT<CubeObj>, public spn::CheckAlign<16, CubeObj>
 	public:
 		CubeObj(rs::HTex hTex, GLint techId, GLint passId);
 		~CubeObj();
-		void onCreate(rs::UpdChild* uc) override;
-		void onDestroy(rs::UpdChild* uc) override;
+		void onConnected(rs::HGroup hGroup) override;
+		void onDisconnected(rs::HGroup hGroup) override;
 };
-extern const rs::GMessageID MSG_Visible;
+extern const rs::GMessageId MSG_Visible;
 class InfoShow : public rs::ObjectT<InfoShow> {
 	private:
 		bool			_bShow;
-		class InfoDraw : public rs::ObjectT<InfoDraw> {
+		class InfoDraw : public rs::DrawableObjT<InfoDraw> {
 			private:
-				const InfoShow&	_info;
-				rs::HLText		_hlText;
+				const InfoShow&		_info;
+				mutable rs::HLText	_hlText;
 			public:
 				InfoDraw(const InfoShow& is);
-				void onUpdate() override;
+				void onDraw() const override;
 		};
 
 		GLint			_techId,
@@ -97,16 +97,16 @@ class InfoShow : public rs::ObjectT<InfoShow> {
 		std::u32string	_infotext;
 		rs::CCoreID		_charId;
 
-		rs::HLGbj		_hlDraw;
+		rs::HLDObj		_hlDraw;
 		class MySt : public StateT<MySt> {
 			public:
 				void onUpdate(InfoShow& self) override;
-				rs::LCValue recvMsg(InfoShow& self, rs::GMessageID msg, const rs::LCValue& arg) override;
+				rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 		};
 	public:
 		InfoShow(GLint techId, GLint passId);
-		void onCreate(rs::UpdChild* uc) override;
-		void onDestroy(rs::UpdChild* uc) override;
+		void onConnected(rs::HGroup hGroup) override;
+		void onDisconnected(rs::HGroup hGroup) override;
 };
 
 class TScene2 : public rs::Scene<TScene2> {
@@ -119,33 +119,33 @@ class TScene2 : public rs::Scene<TScene2> {
 		~TScene2();
 };
 
-extern const rs::GMessageID MSG_GetStatus;
+extern const rs::GMessageId MSG_GetStatus;
 class TScene : public rs::Scene<TScene> {
 	rs::HLAb	_hlAb;
 	rs::HLSg	_hlSg;
 	class MySt : public StateT<MySt> {
 		public:
-			void onEnter(TScene& self, rs::ObjTypeID prevID) override;
+			void onEnter(TScene& self, rs::ObjTypeId prevId) override;
 			void onUpdate(TScene& self) override;
-			void onDown(TScene& self, rs::ObjTypeID prevID, const rs::LCValue& arg) override;
+			void onDown(TScene& self, rs::ObjTypeId prevId, const rs::LCValue& arg) override;
 			void onPause(TScene& self) override;
 			void onResume(TScene& self) override;
 			void onStop(TScene& self) override;
 			void onReStart(TScene& self) override;
-			rs::LCValue recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) override;
+			rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 			static void CheckQuit();
 	};
 	class MySt_Play : public StateT<MySt_Play> {
 		public:
-			void onEnter(TScene& self, rs::ObjTypeID prevID) override;
+			void onEnter(TScene& self, rs::ObjTypeId prevId) override;
 			void onUpdate(TScene& self) override;
-			rs::LCValue recvMsg(TScene& self, rs::GMessageID msg, const rs::LCValue& arg) override;
+			rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	};
 	public:
 		TScene();
 		~TScene();
-		void onCreate(rs::UpdChild* uc) override;
-		void onDestroy(rs::UpdChild* uc) override;
+		void onConnected(rs::HGroup hGroup) override;
+		void onDisconnected(rs::HGroup hGroup) override;
 };
 
 class MyMain : public rs::MainProc {
