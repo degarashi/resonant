@@ -88,6 +88,12 @@ namespace rs {
 	const std::string& UpdGroup::getName() const {
 		return cs_updgroupname;
 	}
+	void UpdGroup::_addCb(Object* obj, HGroup hThis) {
+		obj->onConnected(hThis);
+	}
+	void UpdGroup::_removeCb(Object* obj, HGroup hThis) {
+		obj->onDisconnected(hThis);
+	}
 	void UpdGroup::addObj(HObj hObj) {
 		auto* p = hObj->get();
 		if(p->isNode()) {
@@ -101,13 +107,16 @@ namespace rs {
 		// TODO: insertion sort
 		// insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
 		//		return hl0->get()->getPriority() < hl1->get()->getPriority(); });
-		HLObj h;
-		handleFromThis(h);
-		p->onConnected(rs_mgr_obj.CastToGroup(h.get()));
+
+		auto h = handleFromThis();
+		_addCb(p, rs_mgr_obj.CastToGroup(h.get()));
 	}
 	int UpdGroup::remObj(const ObjVH& ar) {
+		if(_remObj.empty())
+			s_ug.push_back(this);
 		int count = 0;
 		for(auto& h : ar) {
+			// すぐ削除するとリスト巡回が不具合起こすので後で一括削除
 			// 後でonUpdateの時に削除する
 			if(std::find(_remObj.begin(), _remObj.end(), h) == _remObj.end()) {
 				_remObj.emplace_back(h);
@@ -144,15 +153,14 @@ namespace rs {
 				remObj(h.get());
 			}
 		}
-		// 何か削除するノードを持つグループを登録
-		if(!_remObj.empty())
-			s_ug.push_back(this);
-
 		// ルートノードで一括してオブジェクトの削除
-		if(_nParent == 0 && !s_ug.empty()) {
-			for(auto ent : s_ug)
-				ent->_doRemove();
-			s_ug.clear();
+		if(_nParent == 0) {
+			while(!s_ug.empty()) {
+				decltype(s_ug) tmp;
+				tmp.swap(s_ug);
+				for(auto ent : tmp)
+					ent->_doRemove();
+			}
 		}
 	}
 	void UpdGroup::onConnected(HGroup hGroup) {
@@ -195,9 +203,7 @@ namespace rs {
 	}
 	UpdGroup::UGVec UpdGroup::s_ug;
 	void UpdGroup::_doRemove() {
-		HLObj hThis0;
-		handleFromThis(hThis0);
-		HGroup hThis = rs_mgr_obj.CastToGroup(hThis0.get());
+		auto hThis = handleFromThis();
 		for(auto& h : _remObj) {
 			auto* p = h->get();
 			if(p->isNode()) {
@@ -213,7 +219,7 @@ namespace rs {
 										return hl.get() == h;
 									});
 			if(itr != _objV.end()) {
-				p->onDisconnected(hThis);
+				_removeCb(p, hThis);
 				_objV.erase(itr);
 			}
 		}
@@ -268,6 +274,10 @@ namespace rs {
 	// -------------------- DrawGroup --------------------
 	DrawGroup::DrawGroup(const DSortV& ds, bool bSort):
 		_dsort(ds), _bSort(bSort) {}
+	void DrawGroup::_addCb(Object* obj, HGroup hGroup) {}
+	void DrawGroup::_removeCb(Object* obj, HGroup hGroup) {}
+	void DrawGroup::onConnected(HGroup hGroup) {}
+	void DrawGroup::onDisconnected(HGroup hGroup) {}
 	void DrawGroup::addObj(HDObj hObj) {
 		UpdGroup::addObj(hObj);
 		if(!_bSort) {

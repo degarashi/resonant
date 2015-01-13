@@ -1,16 +1,14 @@
 #include "test.hpp"
 #include "gpu.hpp"
 
-// ---------------------- InfoShow::InfoDraw ----------------------
-InfoShow::InfoDraw::InfoDraw(const InfoShow& is):
-	_info(is) {}
-void InfoShow::InfoDraw::onDraw() const {
+// ---------------------- InfoShow::MySt ----------------------
+void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
-	fx.setTechnique(_info._techId, true);
-	fx.setPass(_info._passId);
+	fx.setTechnique(self._techId, true);
+	fx.setPass(self._passId);
 
-	fx.setPass(_info._passId);
+	fx.setPass(self._passId);
 	auto lkb = sharedbase.lock();
 	auto tsz = lkb->screenSize;
 	auto fn = [tsz](int x, int y, float r) {
@@ -29,8 +27,21 @@ void InfoShow::InfoDraw::onDraw() const {
 	auto var = obj.recvMsg(MSG_GetStatus);
 	ss << "Status: " << var.toCStr() << std::endl;
 
-	_hlText = mgr_text.createText(_info._charId, _info._infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
-	_hlText.cref().draw(&fx);
+	self._hlText = mgr_text.createText(self._charId, self._infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
+	self._hlText.cref().draw(&fx);
+}
+void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
+	auto lh = self.handleFromThis();
+	auto& d = mgr_scene.getSceneBase().draw;
+	d->get()->addObj(lh);
+}
+void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
+	auto lh = self.handleFromThis();
+	auto& d = mgr_scene.getSceneBase().draw;
+	d->get()->remObj(lh);
+}
+rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) {
+	return rs::LCValue();
 }
 
 // ---------------------- InfoShow ----------------------
@@ -50,14 +61,6 @@ InfoShow::InfoShow(GLint techId, GLint passId):
 			<< "Renderer: " << info.renderer() << std::endl
 			<< "DriverVersion: " << info.driverVersion() << std::endl;
 	_infotext = spn::Text::UTFConvertTo32(ss.str());
-}
-void InfoShow::onConnected(rs::HGroup) {
-	_hlDraw = rs_mgr_obj.makeDrawable<InfoDraw>(*this);
-
-	auto& sb = mgr_scene.getSceneBase();
-	sb.draw->get()->addObj(_hlDraw);
-}
-void InfoShow::onDisconnected(rs::HGroup) {
-	PrintLog;
+	setStateNew<MySt>();
 }
 

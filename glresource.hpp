@@ -265,7 +265,7 @@ namespace rs {
 	};
 	//! OpenGL関連のリソース
 	/*! Android用にデバイスロスト対応 */
-	struct IGLResource : spn::EnableFromThis {
+	struct IGLResource : spn::EnableFromThis<HRes> {
 		virtual void onDeviceLost() {}
 		virtual void onDeviceReset() {}
 		virtual ~IGLResource() {}

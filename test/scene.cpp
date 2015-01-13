@@ -6,6 +6,36 @@ const rs::GMessageId MSG_GetStatus = rs::GMessage::RegMsgId("get_status");
 void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
 	s.clear();
+
+	auto lk = shared.lock();
+	auto& fx = *lk->pFx;
+	// ---- make info ----
+	auto techId = *fx.getTechID("TheTech");
+	fx.setTechnique(techId, true);
+	auto passId = *fx.getPassID("P1");
+	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(techId, passId);
+	self.getBase().update->get()->addObj(hlInfo.get());
+	self._hInfo = hlInfo;
+
+	// ---- make cube ----
+	techId = *fx.getTechID("TheCube");
+	fx.setTechnique(techId, true);
+	passId = *fx.getPassID("P0");
+
+	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
+	uriTex <<= "brick.jpg";
+	rs::HLTex hlTex = mgr_gl.loadTexture(uriTex);
+
+	rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<CubeObj>(hlTex, techId, passId);
+	self.getBase().update->get()->addObj(hlObj.get());
+	self._hCube = hlObj;
+}
+void TScene::MySt::onExit(TScene& self, rs::ObjTypeId nextId) {
+	auto* p = self.getBase().update->get();
+	p->remObj(self._hCube);
+	p->remObj(self._hInfo);
+	self._hCube = rs::HDObj();
+	self._hInfo = rs::HDObj();
 }
 void TScene::MySt::onUpdate(TScene& self) {
 	auto lk = shared.lock();
@@ -61,7 +91,7 @@ rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageId msg, const r
 }
 
 // ------------------------ TScene ------------------------
-TScene::TScene(): Scene(0) {
+TScene::TScene() {
 	PrintLog;
 	// サウンド読み込み
 	spn::PathBlock pb(mgr_path.getPath(rs::AppPath::Type::Sound));
@@ -70,29 +100,6 @@ TScene::TScene(): Scene(0) {
 	_hlSg = mgr_sound.createSourceGroup(1);
 
 	setStateNew<MySt>();
-}
-void TScene::onConnected(rs::HGroup) {
-	auto lk = shared.lock();
-	auto& fx = *lk->pFx;
-	auto techId = *fx.getTechID("TheCube");
-	fx.setTechnique(techId, true);
-	auto passId = *fx.getPassID("P0");
-
-	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
-	uriTex <<= "brick.jpg";
-	rs::HLTex hlTex = mgr_gl.loadTexture(uriTex);
-
-	rs::HLObj hlObj = rs_mgr_obj.makeObj<CubeObj>(hlTex, techId, passId);
-	getBase().update->get()->addObj(hlObj);
-
-	techId = *fx.getTechID("TheTech");
-	fx.setTechnique(techId, true);
-	passId = *fx.getPassID("P1");
-	rs::HLObj hlInfo = rs_mgr_obj.makeObj<InfoShow>(techId, passId);
-	getBase().update->get()->addObj(hlInfo);
-}
-void TScene::onDisconnected(rs::HGroup) {
-	PrintLog;
 }
 TScene::~TScene() {
 	PrintLog;

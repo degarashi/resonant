@@ -92,6 +92,25 @@ void Cube::draw(rs::GLEffect& glx) {
 
 // ---------------------- CubeObj::MySt ----------------------
 void CubeObj::MySt::onUpdate(CubeObj& self) {}
+void CubeObj::MySt::onConnected(CubeObj& self, rs::HGroup) {
+	auto& d = mgr_scene.getSceneBase().draw;
+	auto hl = self.handleFromThis();
+	d->get()->addObj(hl);
+	PrintLog;
+}
+void CubeObj::MySt::onDisconnected(CubeObj& self, rs::HGroup) {
+	auto& d = mgr_scene.getSceneBase().draw;
+	auto hl = self.handleFromThis();
+	d->get()->remObj(hl);
+	PrintLog;
+}
+void CubeObj::MySt::onDraw(const CubeObj& self) const {
+	auto lk = shared.lock();
+	auto& fx = *lk->pFx;
+	fx.setTechnique(self._techId, true);
+	fx.setPass(self._passId);
+	self._cube.draw(fx);
+}
 // ---------------------- CubeObj ----------------------
 CubeObj::CubeObj(rs::HTex hTex, GLint techId, GLint passId):
 	_techId(techId),
@@ -103,27 +122,5 @@ CubeObj::CubeObj(rs::HTex hTex, GLint techId, GLint passId):
 }
 CubeObj::~CubeObj() {
 	PrintLog;
-}
-void CubeObj::onConnected(rs::HGroup) {
-	_hlDraw = rs_mgr_obj.makeDrawable<CubeDraw>(_cube, _techId, _passId);
-
-	auto& sb = mgr_scene.getSceneBase();
-	sb.draw->get()->addObj(_hlDraw);
-}
-void CubeObj::onDisconnected(rs::HGroup) {
-	PrintLog;
-}
-// ---------------------- CubeDraw ----------------------
-CubeObj::CubeDraw::CubeDraw(Cube& cube, GLint techId, GLint passId):
-	_cube(cube),
-	_techId(techId),
-	_passId(passId)
-{}
-void CubeObj::CubeDraw::onDraw() const {
-	auto lk = shared.lock();
-	auto& fx = *lk->pFx;
-	fx.setTechnique(_techId, true);
-	fx.setPass(_passId);
-	_cube.draw(fx);
 }
 

@@ -194,7 +194,7 @@ namespace rs {
 	#define rs_rep_obj (::rs::ObjRep::_ref())
 
 	//! Objectのグループ管理
-	class UpdGroup : public Object, public spn::EnableFromThis {
+	class UpdGroup : public Object, public spn::EnableFromThis<HGroup> {
 		private:
 			using UGVec = std::vector<UpdGroup*>;
 			static UGVec	s_ug;
@@ -210,7 +210,12 @@ namespace rs {
 			int			_nParent;
 
 			//! オブジェクト又はグループを実際に削除
+			/*! onUpdate内で暗黙的に呼ばれる */
 			void _doRemove();
+
+		protected:
+			virtual void _addCb(Object* obj, HGroup hThis);
+			virtual void _removeCb(Object* obj, HGroup hThis);
 		public:
 			UpdGroup(Priority p=0);
 			Priority getPriority() const override;
@@ -321,13 +326,17 @@ namespace rs {
 		private:
 			const DSortV	_dsort;		//!< ソートアルゴリズム優先度リスト
 			const bool		_bSort;		//!< 毎フレームソートするか
-
+		protected:
+			void _addCb(Object* obj, HGroup hGroup) override;
+			void _removeCb(Object* obj, HGroup hGroup) override;
 		public:
 			// 描画ソート方式を指定
 			DrawGroup(const DSortV& ds=DSortV{}, bool bSort=false);
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
+			void onConnected(HGroup hGroup) override;
+			void onDisconnected(HGroup hGroup) override;
 			const std::string& getName() const override;
 
 			// onUpdateは無効化
@@ -340,6 +349,7 @@ namespace rs {
 			Sceneと共用 */
 		template <class T, class Base>
 		class ObjectT : public Base, public ::rs::ObjectIdT<T, ::rs::idtag::Object> {
+			using ThisT = ObjectT<T,Base>;
 			using IdT = ::rs::ObjectIdT<T, ::rs::idtag::Object>;
 			protected:
 				struct State {
@@ -352,6 +362,8 @@ namespace rs {
 					virtual void onHitEnter(T& /*self*/, HObj /*hObj*/) {}
 					virtual void onHit(T& /*self*/, HObj /*hObj*/, int /*n*/) {}
 					virtual void onHitExit(T& /*self*/, WObj /*whObj*/, int /*n*/) {}
+					virtual void onConnected(T& /*self*/, HGroup /*hGroup*/) {}
+					virtual void onDisconnected(T& /*self*/, HGroup /*hGroup*/) {}
 					// --------- Scene用メソッド ---------
 					virtual void onDraw(const T& /*self*/) const {}
 					virtual void onDown(T& /*self*/, ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
@@ -404,12 +416,32 @@ namespace rs {
 				void setState(FPState&& st) {
 					// もし既に有効なステートがセットされていたら無視 | nullステートは常に適用
 					if(!st.get() || !_bSwState) {
-						// 初回のステート設定だったら即適用
 						_bSwState = true;
 						_nextState.swap(st);
-						if(_state == &_nullState)
-							_doSwitchState();
 					}
+				}
+				//! 前後をdoSwitchStateで挟む
+				/*! not void バージョン */
+				template <class CB>
+				auto _callWithSwitchState(CB&& cb, std::false_type) {
+					// 前後をdoSwitchStateで挟む
+					_doSwitchState();
+					auto ret = std::forward<CB>(cb)();
+					_doSwitchState();
+					return std::move(ret);
+				}
+				//! 前後をdoSwitchStateで挟む
+				/*! void バージョン */
+				template <class CB>
+				void _callWithSwitchState(CB&& cb, std::true_type) {
+					_doSwitchState();
+					std::forward<CB>(cb)();
+					_doSwitchState();
+				}
+				template <class CB>
+				auto _callWithSwitchState(CB&& cb) {
+					using Rt = typename std::is_same<void, decltype(std::forward<CB>(cb)())>::type;
+					return _callWithSwitchState(std::forward<CB>(cb), Rt());
 				}
 				void _doSwitchState() {
 					if(_bSwState) {
@@ -439,35 +471,36 @@ namespace rs {
 				}
 				//! 毎フレームの描画 (Scene用)
 				void onDraw() const override {
+					// ステート遷移はナシ
 					_state->onDraw(getRef());
-					AssertP(Trap, !_bSwState)
 				}
 				//! 上の層のシーンから抜ける時に戻り値を渡す (Scene用)
 				void onDown(ObjTypeId prevId, const LCValue& arg) override final {
-					_state->onDown(getRef(), prevId, arg);
-					_doSwitchState();
+					_callWithSwitchState([&](){ _state->onDown(getRef(), prevId, arg); });
 				}
 				// ----------- 以下はStateのアダプタメソッド -----------
 				void onUpdate() override {
-					_state->onUpdate(getRef());
-					_doSwitchState();
+					_callWithSwitchState([&](){ return _state->onUpdate(getRef()); });
 				}
 				void onHitEnter(HObj hObj) override final {
-					_state->onHitEnter(getRef(), hObj);
-					_doSwitchState();
+					_callWithSwitchState([&](){ return _state->onHitEnter(getRef(), hObj); });
 				}
 				void onHit(HObj hObj, int n) override final {
-					_state->onHit(getRef(), hObj, n);
-					_doSwitchState();
+					_callWithSwitchState([&](){ return _state->onHit(getRef(), hObj, n); });
 				}
 				void onHitExit(WObj wObj, int n) override final {
-					_state->onHitExit(getRef(), wObj, n);
-					_doSwitchState();
+					_callWithSwitchState([&](){ return _state->onHitExit(getRef(), wObj, n); });
 				}
 				LCValue recvMsg(GMessageId msg, const LCValue& arg) override final {
-					LCValue ret(_state->recvMsg(getRef(), msg, arg));
-					_doSwitchState();
-					return std::move(ret);
+					return _callWithSwitchState([&](){ return _state->recvMsg(getRef(), msg, arg); });
+				}
+				//! Updaterノードツリーに追加された時に呼ばれる
+				/*! DrawGroupに登録された時は呼ばれない( */
+				void onConnected(HGroup hGroup) override final {
+					return _callWithSwitchState([&](){ return _state->onConnected(getRef(), hGroup); });
+				}
+				void onDisconnected(HGroup hGroup) override final {
+					return _callWithSwitchState([&](){ return _state->onDisconnected(getRef(), hGroup); });
 				}
 		};
 		template <class T, class Base>

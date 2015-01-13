@@ -1,10 +1,10 @@
 #include "scene.hpp"
 
 namespace rs {
-	SceneBase::SceneBase():
-		update(rs_mgr_obj.makeGroup<Update>()),
-		draw(rs_mgr_obj.makeDrawGroup<Draw>())
-	{}
+	SceneBase::SceneBase(HGroup hUpd, HDGroup hDraw) {
+		update = hUpd ? hUpd : rs_mgr_obj.makeGroup<Update>().get();
+		draw = hDraw ? hDraw : rs_mgr_obj.makeDrawGroup<Draw>().get();
+	}
 
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
 	SceneBase& SceneMgr::getSceneBase(int n) const {

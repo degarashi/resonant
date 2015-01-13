@@ -41,7 +41,7 @@ namespace rs {
 		HLGroup		update;
 		HLDGroup	draw;
 
-		SceneBase();
+		SceneBase(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup());
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
@@ -50,7 +50,8 @@ namespace rs {
 			using base = ObjectT<T>;
 			SceneBase	_sbase;
 		public:
-			Scene(Priority prio=0): ObjectT<T>(prio) {}
+			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
+				ObjectT<T>(0), _sbase(hUpd, hDraw) {}
 			void onUpdate() override final {
 				base::onUpdate();
 				if(!base::isDead())
