@@ -347,9 +347,9 @@ namespace rs {
 		//! オブジェクト基底
 		/*! UpdatableなオブジェクトやDrawableなオブジェクトはこれから派生して作る
 			Sceneと共用 */
-		template <class T, class Base>
+		template <class T, class Base, Priority P>
 		class ObjectT : public Base, public ::rs::ObjectIdT<T, ::rs::idtag::Object> {
-			using ThisT = ObjectT<T,Base>;
+			using ThisT = ObjectT<T,Base,P>;
 			using IdT = ::rs::ObjectIdT<T, ::rs::idtag::Object>;
 			protected:
 				struct State {
@@ -410,7 +410,7 @@ namespace rs {
 				ObjTypeId getTypeId() const override {
 					return IdT::Id;
 				}
-				ObjectT(Priority /*prio*/=0): _state(FPState(&_nullState, false)) {}
+				ObjectT(): _state(FPState(&_nullState, false)) {}
 				T& getRef() { return *reinterpret_cast<T*>(this); }
 				const T& getRef() const { return *reinterpret_cast<const T*>(this); }
 				void setState(FPState&& st) {
@@ -464,6 +464,9 @@ namespace rs {
 					return _state.get();
 				}
 			public:
+				Priority getPriority() const override {
+					return P;
+				}
 				void destroy() override {
 					Base::destroy();
 					// nullステートに移行
@@ -503,15 +506,17 @@ namespace rs {
 					return _callWithSwitchState([&](){ return _state->onDisconnected(getRef(), hGroup); });
 				}
 		};
-		template <class T, class Base>
-		typename ObjectT<T, Base>::template StateT<void> ObjectT<T, Base>::_nullState;
+		template <class T, class Base, Priority P>
+		typename ObjectT<T, Base, P>::template StateT<void> ObjectT<T, Base, P>::_nullState;
 	}
-	template <class T>
-	class ObjectT : public detail::ObjectT<T, Object> {
-		using detail::ObjectT<T, Object>::ObjectT;
+	// Priority値をテンプレート指定
+	template <class T, Priority P>
+	class ObjectT : public detail::ObjectT<T, Object, P> {
+		using detail::ObjectT<T, Object, P>::ObjectT;
 	};
-	template <class T>
-	class DrawableObjT : public detail::ObjectT<T, DrawableObj> {
-		using detail::ObjectT<T, DrawableObj>::ObjectT;
+	// PriorityはUpdateObjと兼用の場合に使われる
+	template <class T, Priority P=0>
+	class DrawableObjT : public detail::ObjectT<T, DrawableObj, P> {
+		using detail::ObjectT<T, DrawableObj, P>::ObjectT;
 	};
 }

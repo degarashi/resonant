@@ -51,7 +51,7 @@ class Cube : public spn::Pose3D {
 		void draw(rs::GLEffect& glx);
 };
 //! キューブObj(Update)
-class CubeObj : public rs::DrawableObjT<CubeObj>, public spn::CheckAlign<16, CubeObj>, public spn::EnableFromThis<rs::HDObj> {
+class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>, public spn::CheckAlign<16, CubeObj>, public spn::EnableFromThis<rs::HDObj> {
 	private:
 		// 本当はCubeTech等はグローバルに定義
 		GLint			_techId,
@@ -69,7 +69,7 @@ class CubeObj : public rs::DrawableObjT<CubeObj>, public spn::CheckAlign<16, Cub
 		~CubeObj();
 };
 extern const rs::GMessageId MSG_Visible;
-class InfoShow : public rs::DrawableObjT<InfoShow>, public spn::EnableFromThis<rs::HDObj> {
+class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>, public spn::EnableFromThis<rs::HDObj> {
 	private:
 		GLint				_techId,
 							_passId;

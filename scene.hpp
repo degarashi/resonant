@@ -45,13 +45,13 @@ namespace rs {
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
-	class Scene : public ObjectT<T> {
+	class Scene : public ObjectT<T,0> {
 		private:
-			using base = ObjectT<T>;
+			using base = ObjectT<T,0>;
 			SceneBase	_sbase;
 		public:
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
-				ObjectT<T>(0), _sbase(hUpd, hDraw) {}
+				_sbase(hUpd, hDraw) {}
 			void onUpdate() override final {
 				base::onUpdate();
 				if(!base::isDead())

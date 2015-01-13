@@ -1,4 +1,5 @@
 #include "updater.hpp"
+#include "spinner/sort.hpp"
 
 namespace rs {
 	const ObjTypeId InvalidObjId(~0);
@@ -104,9 +105,8 @@ namespace rs {
 		// 単純挿入ソート
 		// 末尾に追加してソートをかける
 		_objV.emplace_back(hObj);
-		// TODO: insertion sort
-		// insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
-		//		return hl0->get()->getPriority() < hl1->get()->getPriority(); });
+		spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
+				return hl0->get()->getPriority() < hl1->get()->getPriority(); });
 
 		auto h = handleFromThis();
 		_addCb(p, rs_mgr_obj.CastToGroup(h.get()));
