@@ -9,6 +9,11 @@ namespace rs {
 						cs_updtaskname("UpdTask"),
 						cs_drawgroupname("DrawGroup");
 	}
+	const DSortSP cs_dsort_z_asc = std::make_shared<DSort_Z_Asc>(),
+					cs_dsort_z_desc = std::make_shared<DSort_Z_Desc>(),
+					cs_dsort_techpass = std::make_shared<DSort_TechPass>(),
+					cs_dsort_texture = std::make_shared<DSort_Texture>(),
+					cs_dsort_buffer = std::make_shared<DSort_Buffer>();
 
 	// -------------------- Object --------------------
 	Object::Object(): _bDestroy(false) {}
@@ -89,12 +94,6 @@ namespace rs {
 	const std::string& UpdGroup::getName() const {
 		return cs_updgroupname;
 	}
-	void UpdGroup::_addCb(Object* obj, HGroup hThis) {
-		obj->onConnected(hThis);
-	}
-	void UpdGroup::_removeCb(Object* obj, HGroup hThis) {
-		obj->onDisconnected(hThis);
-	}
 	void UpdGroup::addObj(HObj hObj) {
 		auto* p = hObj->get();
 		if(p->isNode()) {
@@ -102,14 +101,14 @@ namespace rs {
 			_groupV.emplace_back(rs_mgr_obj.CastToGroup(hObj));
 		}
 
-		// 単純挿入ソート
 		// 末尾に追加してソートをかける
 		_objV.emplace_back(hObj);
+		// 優先度値は変化しないので多分、単純挿入ソートが最適
 		spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
 				return hl0->get()->getPriority() < hl1->get()->getPriority(); });
 
 		auto h = handleFromThis();
-		_addCb(p, rs_mgr_obj.CastToGroup(h.get()));
+		p->onConnected(rs_mgr_obj.CastToGroup(h.get()));
 	}
 	int UpdGroup::remObj(const ObjVH& ar) {
 		if(_remObj.empty())
@@ -219,7 +218,7 @@ namespace rs {
 										return hl.get() == h;
 									});
 			if(itr != _objV.end()) {
-				_removeCb(p, hThis);
+				p->onDisconnected(hThis);
 				_objV.erase(itr);
 			}
 		}
@@ -274,23 +273,50 @@ namespace rs {
 	// -------------------- DrawGroup --------------------
 	DrawGroup::DrawGroup(const DSortV& ds, bool bSort):
 		_dsort(ds), _bSort(bSort) {}
-	void DrawGroup::_addCb(Object* obj, HGroup hGroup) {}
-	void DrawGroup::_removeCb(Object* obj, HGroup hGroup) {}
-	void DrawGroup::onConnected(HGroup hGroup) {}
-	void DrawGroup::onDisconnected(HGroup hGroup) {}
+	bool DrawGroup::isNode() const {
+		// DrawGroupの下に別のGroupは含めない
+		return false;
+	}
 	void DrawGroup::addObj(HDObj hObj) {
-		UpdGroup::addObj(hObj);
-		if(!_bSort) {
-			//TODO: insertion_sort
+		auto* pObj = hObj->get();
+		if(pObj->isNode()) {
+			Assert(Warn, false, "DrawGroup can't have any groups")
+			return;
 		}
+
+		auto* dtag = &pObj->getDTag();
+		_dobj.emplace_back(dtag, hObj);
+		// 毎フレームソートする設定でない時はここでソートする
+		if(!_bSort)
+			_doDrawSort();
 	}
 	void DrawGroup::remObj(HDObj hObj) {
-		UpdGroup::remObj(hObj);
+		auto itr = std::find_if(_dobj.begin(), _dobj.end(), [hObj](const auto& p){
+			return p.second.get() == hObj;
+		});
+		if(itr == _dobj.end()) {
+			Assert(Warn, "object not found")
+			return;
+		}
+		_dobj.erase(itr);
+	}
+	void DrawGroup::_doDrawSort() {
+		DSort::DoSort(_dsort, 0, _dobj.begin(), _dobj.end());
 	}
 	const std::string& DrawGroup::getName() const {
 		return cs_drawgroupname;
 	}
 	void DrawGroup::onUpdate() {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
+	}
+	void DrawGroup::onDraw() const {
+		if(_bSort) {
+			// 微妙な実装
+			const_cast<DrawGroup*>(this)->_doDrawSort();
+		}
+		// ソート済みの描画オブジェクトを1つずつ処理していく
+		for(auto& d : _dobj) {
+			d.second->get()->onDraw();
+		}
 	}
 }

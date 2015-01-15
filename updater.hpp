@@ -5,6 +5,7 @@
 #include "clock.hpp"
 #include "luaw.hpp"
 #include "handle.hpp"
+#include "spinner/structure/valuearray.hpp"
 
 namespace rs {
 	using Priority = uint32_t;
@@ -213,9 +214,6 @@ namespace rs {
 			/*! onUpdate内で暗黙的に呼ばれる */
 			void _doRemove();
 
-		protected:
-			virtual void _addCb(Object* obj, HGroup hThis);
-			virtual void _removeCb(Object* obj, HGroup hThis);
 		public:
 			UpdGroup(Priority p=0);
 			Priority getPriority() const override;
@@ -251,8 +249,8 @@ namespace rs {
 				return IdT::Id;
 			}
 	};
-	#define DefineGroupT(name, base)	class name : public GroupT<name, base> { \
-		using GroupT<name, base>::GroupT; };
+	#define DefineGroupT(name, base)	class name : public ::rs::GroupT<name, base> { \
+		using ::rs::GroupT<name, base>::GroupT; };
 
 	//! UpdGroupにフレームカウンタやアイドル機能をつけたクラス
 	/*! 中身は別のUpdGroupを使用 */
@@ -283,10 +281,12 @@ namespace rs {
 	};
 
 	struct DrawTag {
-		uint16_t	idTechPass,
-					idVBuffer[4],
-					idIBuffer,
-					idTex[8];
+		template <int N>
+		using Var = spn::ValueArray<uint16_t, N>;
+
+		uint16_t	idTechPass;
+		Var<5>		idBuffer;		// Index[0] + Vertex[1 - 4]
+		Var<4>		idTex;
 		float		zOffset;
 	};
 	// GLX::prepareDraw(DTag)
@@ -297,50 +297,62 @@ namespace rs {
 		public:
 			const DrawTag& getDTag() const;
 	};
-	using DObjV = std::vector<HDObj>;
+	using DLObjP = std::pair<const DrawTag*, HLDObj>;
+	using DLObjV = std::vector<DLObjP>;
 
-	// ---- Draw sort algorithms ----
-	struct DSort {
-		virtual bool compare(const DrawableObj& d0, const DrawableObj& d1) const = 0;
-		void doSort(const DSort* pNext, typename DObjV::iterator itr0, typename DObjV::iterator itr1) const;
-	};
-	struct DSort_Z_Asc : DSort {
-		bool compare(const DrawableObj& d0, const DrawableObj& d1) const override;
-	};
-	struct DSort_Z_Desc : DSort {
-		bool compare(const DrawableObj& d0, const DrawableObj& d1) const override;
-	};
-	struct DSort_TechPass : DSort {
-		bool compare(const DrawableObj& d0, const DrawableObj& d1) const override;
-	};
-	struct DSort_Texture : DSort {
-		bool compare(const DrawableObj& d0, const DrawableObj& d1) const override;
-	};
-	struct DSort_Buffer : DSort {
-		bool compare(const DrawableObj& d0, const DrawableObj& d1) const override;
-	};
+	struct DSort;
 	using DSortSP = std::shared_ptr<DSort>;
 	using DSortV = std::vector<DSortSP>;
 
-	class DrawGroup : public UpdGroup {
+	// ---- Draw sort algorithms ----
+	struct DSort {
+		virtual bool compare(const DrawTag& d0, const DrawTag& d1) const = 0;
+		static void DoSort(const DSortV& alg, int cursor, typename DLObjV::iterator itr0, typename DLObjV::iterator itr1);
+	};
+	//! 描画ソート: Z距離の昇順
+	struct DSort_Z_Asc : DSort {
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	//! 描画ソート: Z距離の降順
+	struct DSort_Z_Desc : DSort {
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	//! 描画ソート: Tech&Pass Id
+	struct DSort_TechPass : DSort {
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	//! 描画ソート: Texture
+	struct DSort_Texture : DSort {
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	//! 描画ソート: Vertex&Index Buffer
+	struct DSort_Buffer : DSort {
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	extern const DSortSP	cs_dsort_z_asc,
+							cs_dsort_z_desc,
+							cs_dsort_techpass,
+							cs_dsort_texture,
+							cs_dsort_buffer;
+
+	class DrawGroup : public Object {
 		private:
 			const DSortV	_dsort;		//!< ソートアルゴリズム優先度リスト
 			const bool		_bSort;		//!< 毎フレームソートするか
-		protected:
-			void _addCb(Object* obj, HGroup hGroup) override;
-			void _removeCb(Object* obj, HGroup hGroup) override;
+			DLObjV			_dobj;
+
+			void _doDrawSort();
 		public:
 			// 描画ソート方式を指定
 			DrawGroup(const DSortV& ds=DSortV{}, bool bSort=false);
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
-			void onConnected(HGroup hGroup) override;
-			void onDisconnected(HGroup hGroup) override;
-			const std::string& getName() const override;
-
-			// onUpdateは無効化
 			void onUpdate() override;
+
+			bool isNode() const override;
+			void onDraw() const override;
+			const std::string& getName() const override;
 	};
 
 	namespace detail {

@@ -93,6 +93,7 @@ void Cube::draw(rs::GLEffect& glx) {
 // ---------------------- CubeObj::MySt ----------------------
 void CubeObj::MySt::onUpdate(CubeObj& self) {}
 void CubeObj::MySt::onConnected(CubeObj& self, rs::HGroup) {
+	self._dtag.zOffset = 1.f;
 	auto& d = mgr_scene.getSceneBase().draw;
 	auto hl = self.handleFromThis();
 	d->get()->addObj(hl);

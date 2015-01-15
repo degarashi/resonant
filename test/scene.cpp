@@ -90,9 +90,11 @@ rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageId msg, const r
 	return rs::LCValue();
 }
 
+DefineGroupT(MyDrawGroup, rs::DrawGroup)
 // ------------------------ TScene ------------------------
 TScene::TScene() {
-	PrintLog;
+	// 描画グループを初期化 (Z-sort)
+	getBase().draw = rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_z_desc}, false);
 	// サウンド読み込み
 	spn::PathBlock pb(mgr_path.getPath(rs::AppPath::Type::Sound));
 	pb <<= "the_thunder.ogg";

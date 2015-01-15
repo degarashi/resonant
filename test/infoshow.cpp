@@ -31,6 +31,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	self._hlText.cref().draw(&fx);
 }
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
+	self._dtag.zOffset = 0.f;
 	auto lh = self.handleFromThis();
 	auto& d = mgr_scene.getSceneBase().draw;
 	d->get()->addObj(lh);
