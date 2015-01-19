@@ -93,8 +93,8 @@ namespace rs {
 
 	// ---------------------- draw::Program ----------------------
 	namespace draw {
-		Program::Program(HProg hProg):
-			Token(hProg), _idProg(hProg.ref()->getProgramID()) {}
+		Program::Program(HRes hRes, GLuint idProg):
+			Token(hRes), _idProg(idProg) {}
 		void Program::exec() {
 			GL.glUseProgram(_idProg);
 		}
@@ -191,6 +191,9 @@ namespace rs {
 	}
 	void GLProgram::use() const {
 		GL.glUseProgram(getProgramID());
+	}
+	draw::SPProg_Token GLProgram::getDrawToken() const {
+		return std::make_shared<draw::Program>(handleFromThis(), getProgramID());
 	}
 	// ------------------ GLParamInfo ------------------
 	GLParamInfo::GLParamInfo(const GLSLFormatDesc& desc): GLSLFormatDesc(desc) {}

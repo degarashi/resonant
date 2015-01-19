@@ -10,17 +10,17 @@ void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
 	// ---- make info ----
-	auto techId = *fx.getTechID("TheTech");
+	auto techId = *fx.getTechId("TheTech");
 	fx.setTechnique(techId, true);
-	auto passId = *fx.getPassID("P1");
+	auto passId = *fx.getPassId("P1");
 	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(techId, passId);
 	self.getBase().update->get()->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
 
 	// ---- make cube ----
-	techId = *fx.getTechID("TheCube");
+	techId = *fx.getTechId("TheCube");
 	fx.setTechnique(techId, true);
-	passId = *fx.getPassID("P0");
+	passId = *fx.getPassId("P0");
 
 	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
 	uriTex <<= "brick.jpg";

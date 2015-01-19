@@ -18,15 +18,15 @@ namespace rs {
 	#define FUNC_MOVE(z, data, elem)	(elem(std::move(data.elem)))
 	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_actID)\
 						(_mipLevel)(_texFlag)(_faceFlag)(_coeff)(_size)(_format)(_bReset)
-	#define SEQ_TEXTURE_M	SEQ_TEXTURE(_preFunc)
+	#define SEQ_TEXTURE_M	SEQ_TEXTURE(_userTask)
 	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_MOVE, t, SEQ_TEXTURE_M)) {
 		t._idTex = 0;
 		t._bReset = false;
-		t._preFunc = nullptr;
+		t._userTask = nullptr;
 	}
 	IGLTexture::IGLTexture(const IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {
 		// PreFuncを持っている状態ではコピー禁止
-		Assert(Trap, !static_cast<bool>(t._preFunc))
+		Assert(Trap, !static_cast<bool>(t._userTask))
 	}
 
 	RUser<IGLTexture> IGLTexture::use() const {
@@ -118,14 +118,14 @@ namespace rs {
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
 	}
-	draw::SPToken IGLTexture::getDrawToken(IPreFunc& pf, GLint id, int index, int actID, HRes hRes) {
-		if(_preFunc)
-			pf.addPreFunc(std::move(_preFunc));
+	draw::SPToken IGLTexture::getDrawToken(IUserTaskReceiver& r, GLint id, int index, int actID) {
+		if(_userTask)
+			r.addTask(std::move(_userTask));
 		if(_bReset) {
 			_bReset = false;
 			_reallocate();
 		}
-		draw::SPToken ret = std::make_shared<draw::Texture>(hRes, id, index, actID, *this);
+		draw::SPToken ret = std::make_shared<draw::Texture>(handleFromThis(), id, index, actID, *this);
 		return std::move(ret);
 	}
 
@@ -188,7 +188,7 @@ namespace rs {
 		if(_idTex != 0) {
 			// テクスチャに転送
 			std::shared_ptr<spn::ByteBuff> pbuff(new spn::ByteBuff(buff.moveTo()));
-			_preFunc = [this, srcFmt, pbuff]() {
+			_userTask = [this, srcFmt, pbuff]() {
 				auto& tfm = getFormat();
 				auto& sz = getSize();
 				use_begin();
@@ -210,11 +210,11 @@ namespace rs {
 		int height = sz / (width * bs);
 		if(_idTex != 0) {
 			std::shared_ptr<spn::ByteBuff> pbuff(new spn::ByteBuff(buff.moveTo()));
-			std::shared_ptr<PreFunc> pf(new PreFunc(std::move(_preFunc)));
+			std::shared_ptr<UserTask> task(new UserTask(std::move(_userTask)));
 			auto& fmt = getFormat();
-			_preFunc = [=]() {
-				if(*pf)
-					(*pf)();
+			_userTask = [=]() {
+				if(*task)
+					(*task)();
 				auto u = use();
 				// GLテクスチャに転送
 				GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;

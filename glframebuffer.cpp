@@ -261,9 +261,8 @@ namespace rs {
 	void GLFBuffer::detach(AttID att) {
 		_attachment[att] = boost::none;
 	}
-	draw::FrameBuff GLFBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
-		draw::FrameBuff fb(hRes, _idFbo, _attachment);
-		return std::move(fb);
+	draw::SPFb_Token GLFBuffer::getDrawToken() const {
+		return std::make_shared<draw::FrameBuff>(handleFromThis(), _idFbo, _attachment);
 	}
 	const GLFBuffer::Res& GLFBuffer::getAttachment(AttID att) const {
 		return _attachment[att];

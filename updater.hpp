@@ -5,7 +5,6 @@
 #include "clock.hpp"
 #include "luaw.hpp"
 #include "handle.hpp"
-#include "spinner/structure/valuearray.hpp"
 
 namespace rs {
 	using Priority = uint32_t;
@@ -280,17 +279,18 @@ namespace rs {
 			UpdTask& operator = (const UpdTask&) = delete;
 	};
 
+	//! Tech:Pass の組み合わせを表す
+	using GL16Id = std::array<uint8_t, 2>;
 	struct DrawTag {
-		template <int N>
-		using Var = spn::ValueArray<uint16_t, N>;
+		using TexAr = std::array<HTex, 4>;
+		using VBuffAr = std::array<HVb, 4>;
 
-		uint16_t	idTechPass;
-		Var<5>		idBuffer;		// Index[0] + Vertex[1 - 4]
-		Var<4>		idTex;
+		GL16Id		idTechPass;
+		VBuffAr		idVBuffer;
+		HIb			idIBuffer;
+		TexAr		idTex;
 		float		zOffset;
 	};
-	// GLX::prepareDraw(DTag)
-
 	class DrawableObj : public Object {
 		protected:
 			DrawTag		_dtag;
@@ -304,9 +304,11 @@ namespace rs {
 	using DSortSP = std::shared_ptr<DSort>;
 	using DSortV = std::vector<DSortSP>;
 
+	class GLEffect;
 	// ---- Draw sort algorithms ----
 	struct DSort {
 		virtual bool compare(const DrawTag& d0, const DrawTag& d1) const = 0;
+		virtual void apply(const DrawTag& d, GLEffect& glx);
 		static void DoSort(const DSortV& alg, int cursor, typename DLObjV::iterator itr0, typename DLObjV::iterator itr1);
 	};
 	//! 描画ソート: Z距離の昇順
@@ -320,14 +322,62 @@ namespace rs {
 	//! 描画ソート: Tech&Pass Id
 	struct DSort_TechPass : DSort {
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+		void apply(const DrawTag& d, GLEffect& glx) override;
 	};
+	namespace detail {
+		class DSort_UniformPairBase {
+			private:
+				GLEffect*	_pFx = nullptr;
+			protected:
+				//! UniformIdがまだ取得されて無ければ or 前回と違うEffectの時にIdを更新
+				void _refreshUniformId(GLEffect& glx, const std::string* name, int* id, size_t length);
+		};
+		template <size_t N>
+		class DSort_UniformPair : public DSort_UniformPairBase {
+			private:
+				using ArStr = std::array<std::string, N>;
+				using ArId = std::array<int, N>;
+				//! Index -> Uniform名の対応表
+				ArStr	_strUniform;
+				ArId	_unifId;
+
+				void _init(int) {}
+				template <class T, class... Ts>
+				void _init(int cursor, T&& t, Ts&&... ts) {
+					Assert(Trap, cursor < countof(_strUniform))
+					_strUniform[cursor] = std::forward<T>(t);
+					_init(++cursor, std::forward<Ts>(ts)...);
+				}
+			protected:
+				constexpr static int length = N;
+				const ArId& _getUniformId(GLEffect& glx) {
+					_refreshUniformId(glx, _strUniform.data(), _unifId.data(), N);
+					return _unifId;
+				}
+				template <class... Ts>
+				DSort_UniformPair(Ts&&... ts) {
+					_init(0, std::forward<Ts>(ts)...);
+				}
+		};
+	}
 	//! 描画ソート: Texture
-	struct DSort_Texture : DSort {
-		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	class DSort_Texture :
+		public DSort,
+		public detail::DSort_UniformPair<std::tuple_size<DrawTag::TexAr>::value>
+	{
+		using base_t = detail::DSort_UniformPair<std::tuple_size<DrawTag::TexAr>::value>;
+		public:
+			using base_t::base_t;
+			bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+			void apply(const DrawTag& d, GLEffect& glx) override;
 	};
+
 	//! 描画ソート: Vertex&Index Buffer
 	struct DSort_Buffer : DSort {
+		constexpr static int length = std::tuple_size<DrawTag::VBuffAr>::value;
+
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+		void apply(const DrawTag& d, GLEffect& glx) override;
 	};
 	extern const DSortSP	cs_dsort_z_asc,
 							cs_dsort_z_desc,

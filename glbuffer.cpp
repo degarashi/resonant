@@ -47,7 +47,7 @@ namespace rs {
 	}
 	void GLBuffer::_initData() {
 		if(getBuffID() > 0) {
-			_preFunc = [this]() {
+			_userTask = [this]() {
 				use_begin();
 				GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 			};
@@ -64,7 +64,7 @@ namespace rs {
 				ofs = offset*_stride;
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
 		if(getBuffID() > 0) {
-			_preFunc = [=]() {
+			_userTask = [=]() {
 				use_begin();
 				GL.glBufferSubData(_buffType, ofs, szCopy, src);
 			};
@@ -76,16 +76,16 @@ namespace rs {
 	GLuint GLBuffer::getNElem() const {
 		return _buffSize / _stride;
 	}
-	draw::Buffer GLBuffer::getDrawToken(IPreFunc& pf, HRes hRes) const {
+	draw::Buffer GLBuffer::getDrawToken(IUserTaskReceiver& r) const {
 		Assert(Trap, getBuffID() > 0);
-		if(_preFunc) {
-			PreFunc pfunc(std::move(const_cast<GLBuffer*>(this)->_preFunc));
-			HLRes hlRes(hRes);
-			pf.addPreFunc([pfunc, hlRes]() {
-				pfunc();
+		HLRes hlRes(handleFromThis());
+		if(_userTask) {
+			UserTask task(std::move(const_cast<GLBuffer*>(this)->_userTask));
+			r.addTask([task, hlRes]() {
+				task();
 			});
 		}
-		return draw::Buffer(*this, hRes);
+		return draw::Buffer(*this, hlRes);
 	}
 
 	// --------------------------- GLVBuffer ---------------------------

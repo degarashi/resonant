@@ -11,42 +11,24 @@
 #include "spinner/error.hpp"
 #include "spinner/chunk.hpp"
 #include "sdlwrap.hpp"
+#include <array>
 
 namespace rs {
 	//! Tech:Pass の組み合わせを表す
-	struct GL16ID {
-		union {
-			uint16_t	value;
-			uint8_t		id[2];
-		};
-		GL16ID() = default;
-		GL16ID(int id0, int id1): id{static_cast<uint8_t>(id0),static_cast<uint8_t>(id1)} {}
-		bool operator < (const GL16ID& t) const { return value < t.value; }
-		bool operator == (const GL16ID& t) const { return value == t.value; }
-		operator uint_fast16_t() const { return value; }
-	};
+	using GL16Id = std::array<uint8_t, 2>;
 	//! ある(Tech:Pass)から別の(Tech:Pass)への遷移を表す
-	struct GLDiffID {
-		struct Pair { GL16ID fromID, toID; };
-		union {
-			uint32_t	value;
-			Pair		id;
-		};
-		GLDiffID() = default;
-		GLDiffID(GL16ID id0, GL16ID id1): id{id0, id1} {}
-		bool operator < (const GLDiffID& t) const { return value < t.value; }
-		bool operator == (const GLDiffID& t) const { return value == t.value; }
-	};
+	using GLDiffId = std::array<GL16Id, 2>;
 }
 namespace std {
-	template <> struct hash<rs::GL16ID> {
-		size_t operator() (const rs::GL16ID& id) const {
-			return id.value;
+	template <> struct hash<::rs::GL16Id> {
+		size_t operator() (const ::rs::GL16Id& id) const {
+			return (id[1] << 8) | id[0];
 		}
 	};
-	template <> struct hash<rs::GLDiffID> {
-		size_t operator() (const rs::GLDiffID& id) const {
-			return id.value;
+	template <> struct hash<::rs::GLDiffId> {
+		size_t operator() (const ::rs::GLDiffId& id) const {
+			return (hash<::rs::GL16Id>()(id[1]) << 16)
+					| (hash<::rs::GL16Id>()(id[0]));
 		}
 	};
 }
@@ -200,9 +182,8 @@ namespace rs {
 
 	using Priority = uint32_t;
 	using Priority64 = uint64_t;
-	using PreFunc = std::function<void ()>;
+	using UserTask = std::function<void ()>;
 	namespace draw {
-		// とりあえず描画ソートの事は考えない
 		struct Token {
 			HLRes	_hlRes;
 			Token(HRes hRes): _hlRes(hRes) {}
@@ -211,7 +192,7 @@ namespace rs {
 			virtual void exec() = 0;
 		};
 		using SPToken = std::shared_ptr<Token>;
-		using TokenL = std::vector<SPToken>;
+		using TokenV = std::vector<SPToken>;
 
 		struct Uniform : Token {
 			GLint	idUnif;
@@ -259,9 +240,9 @@ namespace rs {
 				}
 		};
 	}
-	struct IPreFunc {
-		virtual ~IPreFunc() {}
-		virtual void addPreFunc(PreFunc pf) = 0;
+	struct IUserTaskReceiver {
+		virtual ~IUserTaskReceiver() {}
+		virtual void addTask(UserTask t) = 0;
 	};
 	//! OpenGL関連のリソース
 	/*! Android用にデバイスロスト対応 */
@@ -319,12 +300,19 @@ namespace rs {
 		class Program : public Token {
 			GLuint		_idProg;
 			public:
-				Program(HProg hProg);
+				Program(HRes hRes, GLuint idProg);
 
 				void exec() override;
 		};
+		using SPProg_Token = std::shared_ptr<Program>;
 	}
 
+	/*	getDrawTokenの役割:
+		描画時にしか必要ないAPI呼び出しを纏める
+		ただしDrawThreadからはリソースハンドルの参照が出来ないのでOpenGLの番号をそのまま格納 */
+	/*	何故バッファへのデータ転送をわざわざUserTaskとしてるかというと
+		MultiContextの時にセットしようとしているデータがDrawThreadで実行される時に
+		まだ存在している事が保証出来ない為 (要改善) */
 	template <class T>
 	struct is_vector { constexpr static int value = 0; };
 	template <class T>
@@ -332,7 +320,7 @@ namespace rs {
 	//! OpenGLバッファクラス
 	class GLBuffer : public IGLResource, public GLBufferCore {
 		using SPBuff = std::shared_ptr<void>;
-		PreFunc			_preFunc;
+		UserTask		_userTask;
 		SPBuff			_buff;			//!< 再構築の際に必要となるデータ実体(std::vector<T>)
 		void*			_pBuffer;		//!< bufferの先頭ポインタ
 		GLuint			_buffSize;		//!< bufferのバイトサイズ
@@ -375,8 +363,10 @@ namespace rs {
 
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-			draw::Buffer getDrawToken(IPreFunc& pf, HRes hRes) const;
+			draw::Buffer getDrawToken(IUserTaskReceiver& r) const;
 	};
+	// バッファのDrawTokenはVDeclとの兼ね合いからそのままリストに積まずに
+	// StreamTagで一旦処理するのでスマートポインタではなく直接出力する
 
 	//! 頂点バッファ
 	class GLVBuffer : public GLBuffer {
@@ -431,7 +421,7 @@ namespace rs {
 			~GLProgram() override;
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-			draw::Program getDrawToken(IPreFunc& pf, HRes hRes) const;
+			draw::SPProg_Token getDrawToken() const;
 			const HLSh& getShader(ShType type) const;
 			OPGLint getUniformID(const std::string& name) const;
 			OPGLint getAttribID(const std::string& name) const;
@@ -477,7 +467,7 @@ namespace rs {
 			spn::Size			_size;
 			OPInCompressedFmt	_format;	//!< 値が無効 = 不定
 			bool				_bReset;
-			PreFunc				_preFunc;
+			UserTask			_userTask;
 			Mutex				_mutex;		//!< _reallocate用
 
 			bool _onDeviceReset();
@@ -516,7 +506,7 @@ namespace rs {
 			/*! \param[in] uniform変数の番号
 				\param[in] index idで示されるuniform変数配列のインデックス(デフォルト=0)
 				\param[in] hRes 自身のリソースハンドル */
-			draw::SPToken getDrawToken(IPreFunc& pf, GLint id, int index, int actID, HRes hRes);
+			draw::SPToken getDrawToken(IUserTaskReceiver& r, GLint id, int index, int actID);
 	};
 	namespace draw {
 		// 連番テクスチャはUniformID + Indexとして設定
@@ -789,6 +779,7 @@ namespace rs {
 
 				void exec() override;
 		};
+		using SPFb_Token = std::shared_ptr<FrameBuff>;
 	}
 	//! OpenGL: FrameBufferObjectインタフェース
 	class GLFBuffer : public GLFBufferCore, public IGLResource {
@@ -804,7 +795,7 @@ namespace rs {
 
 			void onDeviceReset() override;
 			void onDeviceLost() override;
-			draw::FrameBuff getDrawToken(IPreFunc& pf, HRes hRes) const;
+			draw::SPFb_Token getDrawToken() const;
 			const Res& getAttachment(AttID att) const;
 	};
 }

@@ -74,129 +74,6 @@ namespace rs {
 	GLEffect::EC_FileNotFound::EC_FileNotFound(const std::string& fPath):
 		EC_Base((boost::format("file path: \"%1%\" was not found.") % fPath).str()) {}
 
-	// ----------------- VDecl::VDInfo -----------------
-	bool VDecl::VDInfo::operator == (const VDInfo& v) const {
-		return ((streamID ^ v.streamID)
-				| (offset ^ v.offset)
-				| (elemFlag ^ v.elemFlag)
-				| (bNormalize ^ v.bNormalize)
-				| (elemSize ^ v.elemSize)
-				| (semID ^ v.semID)) == 0;
-	}
-	bool VDecl::VDInfo::operator != (const VDInfo& v) const {
-		return !(this->operator == (v));
-	}
-	// ----------------- VDecl -----------------
-	VDecl::VDecl() {}
-	VDecl::VDecl(const VDInfoV& vl) {
-		_vdInfo = vl;
-		_init();
-	}
-	VDecl::VDecl(std::initializer_list<VDInfo> il) {
-		int n = il.size();
-		_vdInfo.resize(n);
-		// 一旦Vectorに変換
-		auto itr = il.begin();
-		for(int i=0 ; i<n ; i++)
-			_vdInfo[i] = *itr++;
-		_init();
-	}
-	void VDecl::_init() {
-		// StreamID毎に集計
-		std::vector<VDInfo> tmp[VData::MAX_STREAM];
-		for(auto& v : _vdInfo)
-			tmp[v.streamID].push_back(v);
-
-		// 頂点定義のダブり確認
-		for(auto& t : tmp) {
-			// オフセットでソート
-			std::sort(t.begin(), t.end(), [](const VDInfo& v0, const VDInfo& v1) { return v0.offset < v1.offset; });
-
-			unsigned int ofs = 0;
-			for(auto& t2 : t) {
-				AssertT(Trap, ofs<=t2.offset, (GLE_Error)(const char*), "invalid vertex offset")
-				ofs += GLFormat::QuerySize(t2.elemFlag) * t2.elemSize;
-			}
-		}
-
-		_func.resize(_vdInfo.size());
-		int cur = 0;
-		for(int i=0 ; i<countof(tmp) ; i++) {
-			_nEnt[i] = cur;
-			for(auto& t2 : tmp[i]) {
-				_func[cur] = [t2](GLuint stride, const VData::AttrA& attr) {
-					auto attrID = attr[t2.semID];
-					if(attrID < 0)
-						return;
-					GL.glEnableVertexAttribArray(attrID);
-					#ifndef USE_OPENGLES2
-						auto typ = GLFormat::QueryGLSLInfo(t2.elemFlag)->type;
-						if(typ == GLSLType::BoolT || typ == GLSLType::IntT) {
-							// PCにおけるAMDドライバの場合、Int値はIPointerでセットしないと値が化けてしまう為
-							GL.glVertexAttribIPointer(attrID, t2.elemSize, t2.elemFlag, stride, reinterpret_cast<const GLvoid*>(t2.offset));
-						} else
-					#endif
-							GL.glVertexAttribPointer(attrID, t2.elemSize, t2.elemFlag, t2.bNormalize, stride, reinterpret_cast<const GLvoid*>(t2.offset));
-				};
-				++cur;
-			}
-		}
-		_nEnt[VData::MAX_STREAM] = _nEnt[VData::MAX_STREAM-1];
-	}
-	void VDecl::apply(const VData& vdata) const {
-		for(int i=0 ; i<VData::MAX_STREAM ; i++) {
-			auto& ovb = vdata.buff[i];
-			// VStreamが設定されていればBindする
-			if(ovb) {
-				auto& vb = *ovb;
-				vb.use_begin();
-				GLuint stride = vb.getStride();
-				for(int j=_nEnt[i] ; j<_nEnt[i+1] ; j++)
-					_func[j](stride, vdata.attrID);
-			}
-		}
-	}
-	bool VDecl::operator == (const VDecl& vd) const {
-		// VDInfoの比較
-		return _vdInfo == vd._vdInfo;
-	}
-	bool VDecl::operator != (const VDecl& vd) const {
-		return !(this->operator == (vd));
-	}
-
-	// ----------------- TPStructR -----------------
-	TPStructR::TPStructR() {}
-	TPStructR::TPStructR(TPStructR&& tp) {
-		swap(tp);
-	}
-	#define TPR_SWAP(z,data,elem) boost::swap(elem, data.elem);
-	#define SEQ_TPR_SWAP (_prog)(_vAttrID)(_setting)(_noDefValue)(_defaultValue)(_bInit)(_attrL)(_varyL)(_constL)(_unifL)
-	void TPStructR::swap(TPStructR& t) noexcept {
-		BOOST_PP_SEQ_FOR_EACH(TPR_SWAP, t, SEQ_TPR_SWAP)
-	}
-	bool TPStructR::findSetting(const Setting& s) const {
-		auto itr = std::find(_setting.begin(), _setting.end(), s);
-		return itr!=_setting.end();
-	}
-	SettingList TPStructR::CalcDiff(const TPStructR& from, const TPStructR& to) {
-		// toと同じ設定がfrom側にあればスキップ
-		// fromに無かったり、異なっていればエントリに加える
-		SettingList ret;
-		for(auto& s : to._setting) {
-			if(!from.findSetting(s)) {
-				ret.push_back(s);
-			}
-		}
-		return std::move(ret);
-	}
-
-	void ShStruct::swap(ShStruct& a) noexcept {
-		std::swap(type, a.type);
-		std::swap(version_str, a.version_str);
-		std::swap(name, a.name);
-		std::swap(args, a.args);
-		std::swap(info, a.info);
-	}
 	// ----------------- ArgChecker -----------------
 	ArgChecker::ArgChecker(std::ostream& ost, const std::string& shName, const std::vector<ArgItem>& args):_shName(shName), _ost(ost) {
 		int nA = args.size();
@@ -253,142 +130,6 @@ namespace rs {
 	namespace {
 		boost::regex re_comment(R"(//[^\n$]+)"),		//!< 一行コメント
 					re_comment2(R"(/\*[^\*]*\*/)");		//!< 範囲コメント
-
-		class TPSDupl {
-			private:
-				using TPList = std::vector<const TPStruct*>;
-				const GLXStruct &_glx;
-				const TPStruct &_tTech, &_tPass;
-				//! 優先度順に並べたTPStructのポインタリスト [Pass][Tech][Tech(Base0)][Tech(Base1)]...
-				TPList _tpList;
-
-				void _listupBlocks(TPList& dst, const TPStruct* tp) const {
-					dst.push_back(tp);
-					auto& tpL = _glx.tpL;
-					for(auto& name : tp->derive) {
-						auto itr = std::find_if(tpL.begin(),
-												tpL.end(),
-												[&name](const boost::recursive_wrapper<TPStruct>& t){
-													return t.get().name == name;
-												});
-						// 継承Techは必ずGLEffectが持っている筈
-						Assert(Trap, itr!=tpL.end());
-						_listupBlocks(dst, &(*itr));
-					}
-				}
-				template <class ST>
-				void _extractBlocks(std::vector<const ST*>& dst, const ST* attr, const NameMap<ST> (GLXStruct::*mfunc)) const {
-					for(auto itr=attr->derive.rbegin() ; itr!=attr->derive.rend() ; itr++) {
-						Assert(Trap, (_glx.*mfunc).count(*itr)==1)
-						auto* der = &(_glx.*mfunc).at(*itr);
-						_extractBlocks(dst, der, mfunc);
-					}
-					if(std::find(dst.begin(), dst.end(), attr) == dst.end())
-						dst.push_back(attr);
-				}
-			public:
-				TPSDupl(const GLXStruct& gs, int tech, int pass):
-					_glx(gs),
-					_tTech(gs.tpL.at(tech)),
-					_tPass(_tTech.tpL.at(pass).get())
-				{
-					// 継承関係をリストアップ
-					// Pass, Tech, Tech(Base0) ... Tech(BaseN) の順番
-					_tpList.push_back(&_tPass);
-					_listupBlocks(_tpList, &_tTech);
-				}
-
-				template <class ST, class ENT>
-				std::vector<const ENT*> exportEntries(uint32_t blockID, const std::map<std::string,ST> (GLXStruct::*mfunc)) const {
-					// 使用されるAttributeブロックを収集
-					std::vector<const ST*> tmp, tmp2;
-					// 配列末尾から処理をする = Pass, Tech, TechBase... の順
-					for(auto itr=_tpList.rbegin() ; itr!=_tpList.rend() ; itr++) {
-						const TPStruct* tp = (*itr);
-						// ブロックは順方向で操作 ( Block = A,B,C ならAが優先 )
-						for(auto& blk : tp->blkL) {
-							if(blk.type == blockID) {
-								// += 演算子でないならエントリを初期化
-								if(!blk.bAdd)
-									tmp.clear();
-								for(auto& name : blk.name) {
-									Assert(Trap, (_glx.*mfunc).count(name)==1)
-									tmp.push_back(&(_glx.*mfunc).at(name));
-								}
-							}
-						}
-					}
-					// ブロック継承展開
-					for(auto& p : tmp) {
-						// 既に同じブロックが登録されていたら何もしない(エントリの重複を省く)
-						_extractBlocks(tmp2, p, mfunc);
-					}
-					// エントリ抽出: 同じ名前のエントリがあればエラー = 異なるエントリに同じ変数が存在している
-					std::vector<const ENT*> ret;
-					for(auto& p : tmp2) {
-						for(auto& e : p->entry) {
-							if(std::find_if(ret.begin(), ret.end(), [&e](const ENT* tmp){return e.name==tmp->name;}) != ret.end())
-								throw GLE_LogicalError((boost::format("duplication of entry \"%1%\"") % e.name).str());
-							ret.push_back(&e);
-						}
-					}
-					return ret;
-				}
-				using MacroMap = TPStructR::MacroMap;
-				using MacroPair = MacroMap::value_type;
-				MacroMap exportMacro() const {
-					MacroMap mm;
-					for(auto itr=_tpList.rbegin() ; itr!=_tpList.rend() ; itr++) {
-						for(auto& mc : (*itr)->mcL) {
-							MacroPair mp(mc.fromStr, mc.toStr ? (*mc.toStr) : std::string());
-							mm.insert(std::move(mp));
-						}
-					}
-					return std::move(mm);
-				}
-				SettingList exportSetting() const {
-					std::vector<ValueSettingR> vsL;
-					std::vector<BoolSettingR> bsL;
-					for(auto itr=_tpList.rbegin() ; itr!=_tpList.rend() ; itr++) {
-						const TPStruct* tp = (*itr);
-						// フラグ設定エントリ
-						for(auto& bs : tp->bsL) {
-							// 実行時形式に変換してからリストに追加
-							BoolSettingR bsr(bs);
-							auto itr=std::find(bsL.begin(), bsL.end(), bsr);
-							if(itr == bsL.end()) {
-								// 新規に追加
-								bsL.push_back(bsr);
-							} else {
-								// 既存の項目を上書き
-								*itr = bsr;
-							}
-						}
-
-						// 値設定エントリ
-						for(auto& vs : tp->vsL) {
-							ValueSettingR vsr(vs);
-							auto itr=std::find(vsL.begin(), vsL.end(), vsr);
-							if(itr == vsL.end())
-								vsL.push_back(vsr);
-							else
-								*itr = vsr;
-						}
-					}
-					SettingList ret;
-					for(auto& b : bsL)
-						ret.push_back(b);
-					for(auto& v : vsL)
-						ret.push_back(v);
-					return std::move(ret);
-				}
-		};
-		template <class DST, class SRC>
-		void OutputS(DST& dst, const SRC& src) {
-			for(auto& p : src) {
-				dst << *p << std::endl;
-			}
-		}
 	}
 	// ----------------- GLEffect -----------------
 	GLEffect::GLEffect(spn::AdaptStream& s) {
@@ -441,7 +182,7 @@ namespace rs {
 				nmm[0] = tpTech.name;
 				for(int passID=0 ; passID<nJ ; passID++) {
 					nmm[passID+1] = tpTech.tpL.at(passID).get().name;
-					_techMap.insert(std::make_pair(GL16ID(techID, passID), TPStructR(_result, techID, passID)));
+					_techMap.insert(std::make_pair(GL16Id{{uint8_t(techID), uint8_t(passID)}}, TPStructR(_result, techID, passID)));
 				}
 			}
 		} catch(const std::exception& e) {
@@ -450,20 +191,173 @@ namespace rs {
 		}
 		GLEC_Chk_D(Trap)
 	}
+
+	// -------------- GLEffect::Current::Vertex --------------
+	GLEffect::Current::Vertex::Vertex(): _bChanged(true) {}
+	void GLEffect::Current::Vertex::reset() {
+		_spVDecl.reset();
+		for(auto& v : _vbuff)
+			v.setNull();
+		_bChanged = true;
+	}
+	void GLEffect::Current::Vertex::setVDecl(const SPVDecl& v) {
+		if(_spVDecl != v) {
+			_bChanged = true;
+			_spVDecl = v;
+		}
+	}
+	void GLEffect::Current::Vertex::setVBuffer(HVb hVb, int n) {
+		if(_vbuff[n].get() != hVb) {
+			_bChanged = true;
+			_vbuff[n] = hVb;
+		}
+	}
+	draw::SPToken GLEffect::Current::Vertex::makeToken(IUserTaskReceiver& r, TPStructR::VAttrID vAttrId) {
+		if(_bChanged) {
+			_bChanged = false;
+			Assert(Trap, _spVDecl, "VDecl is not set")
+			return std::make_unique<draw::VStream>(r, _vbuff, _spVDecl, vAttrId);
+		}
+		return nullptr;
+	}
+
+	// -------------- GLEffect::Current::Index --------------
+	GLEffect::Current::Index::Index(): _bChanged(true) {}
+	void GLEffect::Current::Index::reset() {
+		_ibuff.setNull();
+		_bChanged = true;
+	}
+	void GLEffect::Current::Index::setIBuffer(HIb hIb) {
+		if(_ibuff.get() != hIb) {
+			_bChanged = true;
+			_ibuff = hIb;
+		}
+	}
+	HIb GLEffect::Current::Index::getIBuffer() const {
+		return _ibuff;
+	}
+	draw::SPToken GLEffect::Current::Index::makeToken(IUserTaskReceiver& r) {
+		if(_bChanged) {
+			_bChanged = false;
+			if(_ibuff)
+				return std::make_shared<draw::Buffer>(_ibuff->get()->getDrawToken(r));
+		}
+		return nullptr;
+	}
+
+	// -------------- GLEffect::Current --------------
+	GLEffect::Current::Current() {
+		tagProc = std::make_unique<draw::Tag_Proc>();
+	}
+	void GLEffect::Current::reset() {
+		vertex.reset();
+		index.reset();
+		bDefaultParam = false;
+		tech = spn::none;
+		_clean_drawvalue();
+	}
+	void GLEffect::Current::_clean_drawvalue() {
+		pass = spn::none;
+		tps = spn::none;
+		// セットされているUniform変数を未セット状態にする
+		uniMap.clear();
+		texIndex.clear();
+	}
+	void GLEffect::Current::setTech(GLint idTech, bool bDefault) {
+		if(!tech || *tech != idTech) {
+			// TechIDをセットしたらPassIDは無効になる
+			tech = idTech;
+			bDefaultParam = bDefault;
+			_clean_drawvalue();
+		}
+	}
+	void GLEffect::Current::setPass(GLint idPass, TechMap& tmap) {
+		// TechIdをセットせずにPassIdをセットするのは禁止
+		AssertT(Trap, tech, (GLE_Error)(const char*), "tech is not selected")
+//		if(!cur.pass || *cur.pass != passId) {
+			_clean_drawvalue();
+			pass = idPass;
+
+			// TPStructRの参照をTech,Pass Idから検索してセット
+			GL16Id id{{uint8_t(*tech), uint8_t(*pass)}};
+			Assert(Trap, tmap.count(id)==1)
+			tps = tmap.at(id);
+
+			// デフォルト値読み込み
+			if(bDefaultParam) {
+				auto& def = tps->getUniformDefault();
+				uniMap = def;
+			}
+			// テクスチャインデックスリスト作成
+			GLuint pid = tps->getProgram().cref()->getProgramID();
+			GLint nUnif;
+			GL.glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
+
+			GLsizei len;
+			int size;
+			GLenum typ;
+			GLchar cbuff[0x100];	// GLSL変数名の最大がよくわからない (ので、数は適当)
+			// Sampler2D変数が見つかった順にテクスチャIdを割り振る
+			GLint curI = 0;
+			texIndex.clear();
+			for(GLint i=0 ; i<nUnif ; i++) {
+				GLEC_D(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
+				auto opInfo = GLFormat::QueryGLSLInfo(typ);
+				if(opInfo->type == GLSLType::TextureT) {
+					// GetActiveUniformでのインデックスとGetUniformLocationIDは異なる場合があるので・・
+					GLint id = GL.glGetUniformLocation(pid, cbuff);
+					Assert(Trap, id>=0)
+					texIndex.insert(std::make_pair(id, curI++));
+				}
+			}
+
+			tagProc->addTask([&tp_tmp = *tps](){
+				tp_tmp.applySetting();
+			});
+//		}
+	}
+	draw::UPTagDraw GLEffect::Current::outputDrawTag() {
+		auto ret = std::make_unique<draw::Tag_Draw>();
+
+		// set Program
+		ret->addToken(tps->getProgram()->get()->getDrawToken());
+		// set VBuffer(VDecl)
+		ret->addToken(vertex.makeToken(*tagProc, tps->getVAttrID()));
+		// set IBuffer
+		if(auto t = index.makeToken(*tagProc))
+			ret->addToken(t);
+
+		GLEC_Chk_D(Trap)
+		// set uniform value
+		if(!uniMap.empty()) {
+			// 中身shared_ptrなのでコピーする
+			for(auto& sp : uniMap)
+				ret->addToken(sp.second);
+			uniMap.clear();
+		}
+		return std::move(ret);
+	}
+	draw::UPTagProc GLEffect::Current::outputProcTag() {
+		if(!tagProc->isEmpty()) {
+			auto ret = std::move(tagProc);
+			tagProc.reset(new draw::Tag_Proc);
+			return std::move(ret);
+		}
+		return nullptr;
+	}
+	draw::UPTagDraw GLEffect::_exportTags() {
+		if(auto t = _current.outputProcTag())
+			_task.pushTag(std::move(t));
+		return _current.outputDrawTag();
+	}
+
 	void GLEffect::onDeviceLost() {
 		if(_bInit) {
 			_bInit = false;
 			for(auto& p : _techMap)
 				p.second.ts_onDeviceLost();
 
-			auto& cur = _current;
-			cur.tech = spn::none;
-			cur.pass = spn::none;
-			_bDefaultParam = true;
-			cur.tps = spn::none;
-			cur.texIndex.clear();
-			// セットされているUniform変数を未セット状態にする
-			cur.uniMap.clear();
+			_current.reset();
 		}
 	}
 	void GLEffect::onDeviceReset() {
@@ -473,89 +367,22 @@ namespace rs {
 				p.second.ts_onDeviceReset(*this);
 		}
 	}
-	// Tech, Pass, 他InitTagの内容を変更したらフラグを立て、
 	void GLEffect::setVDecl(const SPVDecl& decl) {
-		auto& it = _current.init;
-		if(!it._spVDecl || it._spVDecl != decl) {
-			_current.bInit = true;
-			it._spVDecl = decl;
-		}
+		_current.vertex.setVDecl(decl);
 	}
 	void GLEffect::setVStream(HVb vb, int n) {
-		auto& it = _current.init;
-		if(!it._opVb[n] || it._opVb[n]->getBuffID() != vb.ref()->getBuffID()) {
-			_current.bInit = true;
-			HRes hRes = vb;
-			it._opVb[n] = vb.ref()->getDrawToken(_current.init, hRes);
-		}
+		_current.vertex.setVBuffer(vb, n);
 	}
 	void GLEffect::setIStream(HIb ib) {
-		auto& it = _current.init;
-		if(!it._opIb || it._opIb->getBuffID() != ib.ref()->getBuffID()) {
-			_current.bInit = true;
-			HRes hRes = ib;
-			it._opIb = ib.ref()->getDrawToken(_current.init, hRes);
-		}
+		_current.index.setIBuffer(ib);
 	}
-	void GLEffect::setTechnique(int techID, bool bDefault) {
-		// TechIDをセットしたらPassIDは無効になる
-		auto& cur = _current;
-		if(!cur.tech || *cur.tech != techID) {
-			cur.tech = techID;
-			cur.pass = spn::none;
-			_bDefaultParam = bDefault;
-			cur.bInit = true;
-		}
+	void GLEffect::setTechnique(int techId, bool bDefault) {
+		_current.setTech(techId, bDefault);
 	}
-	void GLEffect::setPass(int passID) {
-		// TechIDをセットせずにPassIDをセットするのは禁止
-		AssertT(Trap, _current.tech, (GLE_Error)(const char*), "tech is not selected")
-		auto& cur = _current;
-//		if(!cur.pass || *cur.pass != passID) {
-			cur.pass = passID;
-			GL16ID id(*cur.tech, *cur.pass);
-			Assert(Trap, _techMap.count(id)==1)
-			cur.tps = _techMap.at(id);
-			cur.bInit = true;
-			auto& tps = *cur.tps;
-			cur.init._opProgram = spn::construct(tps.getProgram().get());
-			cur.init._opVAttrID = tps.getVAttrID();
-			// UnifMapをクリア
-			cur.uniMap.clear();
-			// デフォルト値読み込み
-			if(_bDefaultParam) {
-				auto& def = tps.getUniformDefault();
-				cur.uniMap = def;
-			}
-			// テクスチャインデックスリスト作成
-			GLuint pid = tps.getProgram().cref()->getProgramID();
-			GLint nUnif;
-			GL.glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
-
-			GLsizei len;
-			int size;
-			GLenum typ;
-			GLchar cbuff[0x100];	// GLSL変数名の最大がよくわからない
-			// Sampler2D変数が見つかった順にテクスチャIDを割り振る
-			GLint curI = 0;
-			cur.texIndex.clear();
-			for(GLint i=0 ; i<nUnif ; i++) {
-				GLEC_D(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
-				auto opInfo = GLFormat::QueryGLSLInfo(typ);
-				if(opInfo->type == GLSLType::TextureT) {
-					// GetActiveUniformでのインデックスとGetUniformLocationIDは異なる場合があるので・・
-					GLint id = GL.glGetUniformLocation(pid, cbuff);
-					Assert(Trap, id>=0)
-					cur.texIndex.insert(std::make_pair(id, curI++));
-				}
-			}
-
-			cur.init.addPreFunc([&tps](){
-				tps.applySetting();
-			});
-//		}
+	void GLEffect::setPass(int passId) {
+		_current.setPass(passId, _techMap);
 	}
-	OPGLint GLEffect::getTechID(const std::string& tech) const {
+	OPGLint GLEffect::getTechId(const std::string& tech) const {
 		int nT = _techName.size();
 		for(int i=0 ; i<nT ; i++) {
 			if(_techName[i][0] == tech)
@@ -563,7 +390,7 @@ namespace rs {
 		}
 		return spn::none;
 	}
-	OPGLint GLEffect::getPassID(const std::string& pass) const {
+	OPGLint GLEffect::getPassId(const std::string& pass) const {
 		AssertT(Trap, _current.tech, (GLE_Error)(const char*), "tech is not selected")
 		auto& tech = _techName[*_current.tech];
 		int nP = tech.size();
@@ -573,56 +400,62 @@ namespace rs {
 		}
 		return spn::none;
 	}
-	OPGLint GLEffect::getCurPassID() const {
+	OPGLint GLEffect::getCurPassId() const {
 		return _current.pass;
 	}
-	OPGLint GLEffect::getCurTechID() const {
+	OPGLint GLEffect::getCurTechId() const {
 		return _current.tech;
 	}
-	HLProg GLEffect::getProgram(int techID, int passID) const {
-		if(techID < 0) {
+	HLProg GLEffect::getProgram(int techId, int passId) const {
+		if(techId < 0) {
 			if(!_current.tech)
 				return HLProg();
-			techID = *_current.tech;
+			techId = *_current.tech;
 		}
-		if(passID < 0) {
+		if(passId < 0) {
 			if(!_current.pass)
 				return HLProg();
-			passID = *_current.pass;
+			passId = *_current.pass;
 		}
-		auto itr = _techMap.find(GL16ID(techID, passID));
+		auto itr = _techMap.find(GL16Id{{uint8_t(techId), uint8_t(passId)}});
 		if(itr != _techMap.end())
 			return itr->second.getProgram();
 		return HLProg();
 	}
 
-	void GLEffect::_exportInitTag() {
-		// もしInitTagが有効ならそれを出力
-		if(_current.bInit) {
-			_current.bInit = false;
-			// 後続の描画コールのためにコピーを手元に残す
-			_task.pushTag(new draw::InitTag(_current.init));
-			_current.init.clearTags();
-		}
-	}
-
 	namespace draw {
-		void Tag::clearTags() {
-			_funcL.clear();
+		// -------------- VStream --------------
+		VStream::VStream(IUserTaskReceiver& r,
+						const HLVb (&vb)[VData::MAX_STREAM],
+						const SPVDecl& vdecl,
+						TPStructR::VAttrID vAttrId):
+			Token(HRes()),
+			_spVDecl(vdecl),
+			_vAttrId(vAttrId)
+		{
+			for(int i=0 ; i<countof(_vbuff) ; i++) {
+				if(vb[i]) {
+					_vbuff[i] = vb[i]->get()->getDrawToken(r);
+				}
+			}
 		}
+		void VStream::exec() {
+			_spVDecl->apply(VData{_vbuff, _vAttrId});
+		}
+
 		// -------------- Task --------------
 		Task::Task(): _curWrite(0), _curRead(0) {}
-		Task::UPTagL& Task::refWriteEnt() {
+		Task::UPTagV& Task::refWriteEnt() {
 			UniLock lk(_mutex);
 			return _entry[_curWrite % NUM_ENTRY];
 		}
-		Task::UPTagL& Task::refReadEnt() {
+		Task::UPTagV& Task::refReadEnt() {
 			UniLock lk(_mutex);
 			return _entry[_curRead % NUM_ENTRY];
 		}
-		void Task::pushTag(Tag* tag) {
+		void Task::pushTag(UPTag tag) {
 			// DThとアクセスするエントリが違うからemplace_back中の同期をとらなくて良い
-			refWriteEnt().emplace_back(tag);
+			refWriteEnt().emplace_back(std::move(tag));
 		}
 		void Task::beginTask() {
 			UniLock lk(_mutex);
@@ -665,10 +498,9 @@ namespace rs {
 			Assert(Trap, diff >= 0)
 			if(diff > 0) {
 				lk = spn::none;
-				void (Tag::*func)() = (bSkip) ? &Tag::cancel : &Tag::exec;
 				// MThとアクセスするエントリが違うから同期をとらなくて良い
 				for(auto& ent : refReadEnt())
-					((*ent).*func)();
+					ent->exec(bSkip);
 				GL.glFlush();
 				lk = spn::construct(std::ref(_mutex));
 				++_curRead;
@@ -676,40 +508,30 @@ namespace rs {
 			}
 		}
 
-		// -------------- Tag --------------
-		void Tag::exec() {
-			cancel();
-		}
-		void Tag::cancel() {
-			if(!_funcL.empty()) {
-				for(auto& f : _funcL)
+		// -------------- Tag_Proc --------------
+		void Tag_Proc::exec(bool bSkip) {
+			if(!_task.empty()) {
+				for(auto& f : _task)
 					f();
 				// ここではまだ開放しない
 			}
 		}
-		void Tag::addPreFunc(PreFunc pf) {
-			_funcL.push_back(std::move(pf));
+		void Tag_Proc::addTask(UserTask t) {
+			_task.push_back(std::move(t));
+		}
+		bool Tag_Proc::isEmpty() const {
+			return _task.empty();
 		}
 
-		// -------------- NormalTag --------------
-		void NormalTag::exec() {
-			Tag::exec();
-			for(auto& f : _tokenL)
-				f->exec();
+		// -------------- Tag_Draw --------------
+		void Tag_Draw::exec(bool bSkip) {
+			if(!bSkip) {
+				for(auto& t : _token)
+					t->exec();
+			}
 		}
-
-		// -------------- InitTag --------------
-		void InitTag::exec() {
-			_opProgram->exec();
-			// VertexAttribをシェーダーに設定
-			_spVDecl->apply(VData(_opVb, *_opVAttrID));
-			// ElementArrayをシェーダーに設定
-			if(_opIb)
-				_opIb->use_begin();
-			GLEC_Chk_D(Trap)
-
-			// Programをセットした後にPreFuncを実行
-			Tag::exec();
+		void Tag_Draw::addToken(const SPToken& token) {
+			_token.emplace_back(token);
 		}
 
 		// -------------- DrawCall --------------
@@ -784,61 +606,43 @@ namespace rs {
 			}
 		};
 	}
-	bool GLEffect::_exportUniform() {
-		// 何かUniform変数がセットされていたらNormalTagとして出力
-		auto& cur = _current;
-		if(!cur.uniMap.empty()) {
-			// 中身shared_ptrなのでコピーする
-			for(auto& sp : cur.uniMap)
-				cur.normal._tokenL.push_back(sp.second);
-			cur.uniMap.clear();
-			return true;
-		}
-		return false;
-	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
-		_exportInitTag();
-		_exportUniform();
-		// NormalTagにDrawCallTokenを加えた後に出力
-		_current.normal._tokenL.emplace_back(new draw::DrawCall(mode, first, count));
-		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
-		_current.bNormal = false;
+		auto t = _exportTags();
+		// DrawTagにDrawCallTokenを加えた後に出力
+		t->addToken(std::make_shared<draw::DrawCall>(mode, first, count));
+		_task.pushTag(std::move(t));
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
-		_exportInitTag();
-		_exportUniform();
-		draw::Buffer& ib = *_current.init._opIb;
-		auto str = ib.getStride();
+		auto t = _exportTags();
+		HIb hIb = _current.index.getIBuffer();
+		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
-		_current.normal._tokenL.emplace_back(new draw::DrawCallI(mode, count, szF, offsetElem * str));
-		_task.pushTag(new draw::NormalTag(std::move(_current.normal)));
-		_current.bNormal = false;
-	}
-	void GLEffect::setUserPriority(Priority p) {
-		_current.prio.userP = p;
+		t->addToken(std::make_shared<draw::DrawCallI>(mode, count, szF, offsetElem * str));
+		_task.pushTag(std::move(t));
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const bool* b, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const bool* b, int n, bool bT) const {
 		int tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<int>(b[i]);
-		_makeUniformToken(dstToken, pf, id, static_cast<const int*>(tmp), 1, bT);
+		_makeUniformToken(dstToken, r, id, static_cast<const int*>(tmp), 1, bT);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& /*pf*/, GLint id, const int* iv, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& /*r*/, GLint id, const int* iv, int n, bool /*bT*/) const {
 		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n));
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& /*pf*/, GLint id, const float* fv, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& /*r*/, GLint id, const float* fv, int n, bool /*bT*/) const {
 		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n));
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const double* dv, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const double* dv, int n, bool bT) const {
 		float tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<float>(dv[i]);
-		_makeUniformToken(dstToken, pf, id, static_cast<const float*>(tmp), n, bT);
+		_makeUniformToken(dstToken, r, id, static_cast<const float*>(tmp), n, bT);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
 		// テクスチャユニット番号を検索
 		auto itr = _current.texIndex.find(id);
+		Assert(Warn, itr != _current.texIndex.end(), "texture index not found")
 		if(itr != _current.texIndex.end()) {
 			auto aID = itr->second;
 			if(n > 1) {
@@ -852,20 +656,20 @@ namespace rs {
 			}
 			AssertP(Trap, n==1)
 			HTex hTex2(*hTex);
-			dstToken.emplace(id, hTex2.ref()->getDrawToken(pf, id, 0, aID, *hTex));
+			dstToken.emplace(id, hTex2.ref()->getDrawToken(r, id, 0, aID));
 		}
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IPreFunc& pf, GLint id, const HLTex* hlTex, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const HLTex* hlTex, int n, bool bT) const {
 		if(n > 1) {
 			std::vector<HLTex> hTexA(n);
 			for(int i=0 ; i<n ; i++)
 				hTexA[i] = hlTex[i].get();
-			_makeUniformToken(dstToken, pf, id, hTexA.data(), n, bT);
+			_makeUniformToken(dstToken, r, id, hTexA.data(), n, bT);
 			return;
 		}
 		AssertP(Trap, n==1)
 		HTex hTex = hlTex->get();
-		_makeUniformToken(dstToken, pf, id, &hTex, 1, bT);
+		_makeUniformToken(dstToken, r, id, &hTex, 1, bT);
 	}
 	OPGLint GLEffect::getUniformID(const std::string& name) const {
 		AssertP(Trap, _current.tps, "Tech/Pass is not set")
@@ -876,11 +680,7 @@ namespace rs {
 	}
 	void GLEffect::beginTask() {
 		_task.beginTask();
-		_current.tech = spn::none;
-		_current.pass = spn::none;
-		_current.tps = spn::none;
-		_current.bInit = false;
-		_current.bNormal = false;
+		_current.reset();
 	}
 	void GLEffect::endTask() {
 		_task.endTask();
@@ -892,169 +692,12 @@ namespace rs {
 		_task.execTask(bSkip);
 	}
 
-	namespace {
-		struct Visitor : boost::static_visitor<>, IPreFunc {
-			GLuint		pgID;
-			GLint		uniID;
-			UniMap		result;
-			PreFuncL	funcL;
-			const GLEffect&	glx;
-			Visitor(const GLEffect& g): glx(g) {}
-
-			void addPreFunc(PreFunc pf) override {
-				funcL.push_back(pf);
-			}
-			bool setKey(const std::string& key) {
-				uniID = GL.glGetUniformLocation(pgID, key.c_str());
-				// ここでキーが見つからない = uniformブロックで宣言されているがGLSLコードで使われない場合なのでエラーではない
-				// Assert(Warn, uniID>=0, "Uniform argument \"%1%\" not found", key)
-				return uniID >= 0;
-			}
-			template <class T>
-			void _addResult(const T& t) {
-				if(uniID >= 0)
-					glx._makeUniformToken(result, *this, uniID, &t, 1, false);
-			}
-
-			void operator()(const std::vector<float>& v) {
-				if(v.size() == 3)
-					_addResult(spn::Vec3{v[0],v[1],v[2]});
-				else
-					_addResult(spn::Vec4{v[0],v[1],v[2],v[3]});
-			}
-			template <class T>
-			void operator()(const T& v) {
-				_addResult(v);
-			}
-		};
+	// ------------- ShStruct -------------
+	void ShStruct::swap(ShStruct& a) noexcept {
+		std::swap(type, a.type);
+		std::swap(version_str, a.version_str);
+		std::swap(name, a.name);
+		std::swap(args, a.args);
+		std::swap(info, a.info);
 	}
-	TPStructR::TPStructR(const GLXStruct& gs, int tech, int pass) {
-		auto& tp = gs.tpL.at(tech);
-		auto& tps = tp.tpL[pass].get();
-		const ShSetting* selectSh[ShType::NUM_SHTYPE] = {};
-		// PassかTechからシェーダー名を取ってくる
-		for(auto& a : tp.shL)
-			selectSh[a.type] = &a;
-		for(auto& a : tps.shL)
-			selectSh[a.type] = &a;
-
-		// VertexとPixelシェーダは必須、Geometryは任意
-		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::FRAGMENT]), (GLE_LogicalError)(const char*), "no vertex or fragment shader found")
-
-		std::stringstream ss;
-		TPSDupl dupl(gs, tech, pass);
-		HLSh shP[ShType::NUM_SHTYPE];
-		for(int i=0 ; i<countof(selectSh) ; i++) {
-			auto* shp = selectSh[i];
-			if(!shp)
-				continue;
-			Assert(Trap, gs.shM.count(shp->shName)==1)
-			const ShStruct& s = gs.shM.at(shp->shName);
-			// シェーダーバージョンを出力
-			ss << "#version " << s.version_str << std::endl;
-			{
-				// マクロを定義をGLSLソースに出力
-				auto mc = dupl.exportMacro();
-				for(auto& p : mc)
-					ss << "#define " << p.first << ' ' << p.second << std::endl;
-			}
-			if(i==ShType::VERTEX) {
-				// Attribute定義は頂点シェーダの時だけ出力
-				_attrL = dupl.exportEntries<AttrStruct,AttrEntry>(GLBlocktype_::attributeT, &GLXStruct::atM);
-				OutputS(ss, _attrL);
-			}
-			// それぞれ変数ブロックをGLSLソースに出力
-			// :Varying
-			_varyL = dupl.exportEntries<VaryStruct,VaryEntry>(GLBlocktype_::varyingT, &GLXStruct::varM);
-			OutputS(ss, _varyL);
-			// :Const
-			_constL = dupl.exportEntries<ConstStruct,ConstEntry>(GLBlocktype_::constT, &GLXStruct::csM);
-			OutputS(ss, _constL);
-			// :Uniform
-			_unifL = dupl.exportEntries<UnifStruct,UnifEntry>(GLBlocktype_::uniformT, &GLXStruct::uniM);
-			OutputS(ss, _unifL);
-
-			// シェーダー引数の型チェック
-			// ユーザー引数はグローバル変数として用意
-			ArgChecker acheck(ss, shp->shName, s.args);
-			for(auto& a : shp->args)
-				boost::apply_visitor(acheck, a);
-			acheck.finalizeCheck();
-
-			// 関数名はmain()に書き換え
-			ss << "void main() {" << s.info << '}' << std::endl;
-	#ifdef DEBUG
-			std::cout << ss.str();
-			std::cout.flush();
-	#endif
-			shP[i] = mgr_gl.makeShader(static_cast<ShType>(i), ss.str());
-
-			ss.str("");
-			ss.clear();
-		}
-		// シェーダーのリンク処理
-		_prog = mgr_gl.makeProgram(shP[0].get(), shP[1].get(), shP[2].get());
-		// OpenGLステート設定リストを形成
-		SettingList sl = dupl.exportSetting();
-		_setting.swap(sl);
-	}
-	void TPStructR::ts_onDeviceLost() {
-		AssertP(Trap, _bInit)
-		_bInit = false;
-		// OpenGLのリソースが絡んでる変数を消去
-		std::memset(_vAttrID, 0xff, sizeof(_vAttrID));
-		_noDefValue.clear();
-		_defaultValue.clear();
-	}
-	void TPStructR::ts_onDeviceReset(const GLEffect& glx) {
-		AssertP(Trap, !_bInit)
-		_bInit = true;
-		auto& prog = *_prog.cref();
-		prog.onDeviceReset();
-
-		// 頂点AttribIDを無効な値で初期化
-		for(auto& v : _vAttrID)
-			v = -2;	// 初期値=-2, クエリの無効値=-1
-		for(auto& p : _attrL) {
-			// 頂点セマンティクス対応リストを生成
-			// セマンティクスの重複はエラー
-			auto& atID = _vAttrID[p->sem];
-			AssertT(Throw, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
-			auto at = prog.getAttribID(p->name.c_str());
-			atID = (at) ? *at : -1;
-			// -1の場合は警告を出す(もしかしたらシェーダー内で使ってないだけかもしれない)
-		}
-
-		// Uniform変数にデフォルト値がセットしてある物をリストアップ
-		Visitor visitor(glx);
-		visitor.pgID = _prog.cref()->getProgramID();
-		for(const auto* p : _unifL) {
-			if(visitor.setKey(p->name)) {
-				if(p->defStr) {
-					// 変数名をIDに変換
-					boost::apply_visitor(visitor, *p->defStr);
-				} else
-					_noDefValue.insert(visitor.uniID);
-			}
-		}
-		_defaultValue.swap(visitor.result);
-	}
-
-	void TPStructR::applySetting() const {
-		struct Visitor : boost::static_visitor<> {
-			void operator()(const BoolSettingR& bs) const {
-				bs.action();
-			}
-			void operator()(const ValueSettingR& vs) const {
-				vs.action();
-			}
-		};
-		for(auto& st : _setting)
-			boost::apply_visitor(Visitor(), st);
-	}
-	const UniMap& TPStructR::getUniformDefault() const { return _defaultValue; }
-	const UniIDSet& TPStructR::getUniformEntries() const { return _noDefValue; }
-	const HLProg& TPStructR::getProgram() const { return _prog; }
-	TPStructR::VAttrID TPStructR::getVAttrID() const { return _vAttrID; }
-	const PreFuncL& TPStructR::getPreFunc() const { return _preFuncL; }
 }
