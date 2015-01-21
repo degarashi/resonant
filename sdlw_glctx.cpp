@@ -5,6 +5,8 @@ namespace rs {
 		_ctx = SDLEC(Trap, SDL_GL_CreateContext, w->getWindow());
 	}
 	SPGLContext GLContext::CreateContext(const SPWindow& w, bool bShare) {
+		// SharedContext設定なのにCurrentContextがセットされていない場合はエラー
+		Assert(Trap, !bShare || SDL_GL_GetCurrentContext(), "SharedContext flag has set, however there is no active context")
 		Window::SetGLAttributes(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, bShare ? 1 : 0);
 		return SPGLContext(new GLContext(w));
 	}
