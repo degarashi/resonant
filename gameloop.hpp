@@ -136,7 +136,9 @@ namespace rs {
 			struct Info {
 				State		state = State::Idle;	//!< 現在の動作状態(描画中か否か)
 				uint64_t	accum = 0;				//!< 描画が終わったフレーム番号
-				SPGLContext	ctx;
+				// SingleContext環境ではctxMainThread = nullptr
+				SPGLContext	ctxDrawThread,			//!< 描画スレッド用のGLコンテキスト
+							ctxMainThread;			//!< メインスレッド用のGLコンテキスト
 			};
 			SpinLock<Info>		_info;
 		protected:

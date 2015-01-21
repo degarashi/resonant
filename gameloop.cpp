@@ -34,15 +34,37 @@ namespace rs {
 	}
 	int FPSCounter::getFPS() const { return _fps; }
 
+	namespace {
+		constexpr bool MULTICONTEXT = true;
+	}
 	// --------------------- DrawThread ---------------------
 	DrawThread::DrawThread(): ThreadL("DrawThread") {}
 	void DrawThread::runL(const SPLooper& mainLooper, const SPWindow& w, IDrawProc* dproc) {
-		Handler mainHandler(mainLooper);
-		{	// msg::MakeContext と動作は同じ
+		auto fnMakeContext = [this, &w](bool bForce){
 			auto lk = _info.lock();
-			lk->ctx = GLContext::CreateContext(w, false);
-			lk->ctx->makeCurrent(w);
-		}
+			auto& ctxD = lk->ctxDrawThread;
+			auto& ctxM = lk->ctxMainThread;
+			if(bForce || !ctxD) {
+				ctxD = GLContext::CreateContext(w, false);
+				ctxD->makeCurrent(w);
+				if(MULTICONTEXT) {
+					ctxM = GLContext::CreateContext(w, true);
+					ctxD->makeCurrent(w);
+				}
+				return true;
+			}
+			return false;
+		};
+		auto fnDestroyContext = [this](){
+			auto lk = _info.lock();
+			Assert(Warn, static_cast<bool>(lk->ctxDrawThread), "OpenGL context is not initialized")
+			if(MULTICONTEXT)
+				lk->ctxMainThread.reset();
+			lk->ctxDrawThread.reset();
+		};
+
+		fnMakeContext(true);
+		Handler mainHandler(mainLooper);
 		Handler drawHandler(Looper::GetLooper());
 		GLW.initializeDrawThread(drawHandler);
 		GLW.loadGLFunc();
@@ -60,7 +82,7 @@ namespace rs {
 					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
 					if(up->runU(p->id, p->bSkip))
-						_info.lock()->ctx->swapWindow();
+						_info.lock()->ctxDrawThread->swapWindow();
 					GL.glFinish();
 					{
 						auto lk = _info.lock();
@@ -71,16 +93,10 @@ namespace rs {
 					bLoop = false;
 					break;
 				} else if(static_cast<msg::MakeContext*>(*m)) {
-					{
-						auto lk = _info.lock();
-						auto& ctx = lk->ctx;
-						if(!ctx) {
-	// 						Assert(Warn, !static_cast<bool>(lk->ctx), "initialized OpenGL context twice")
-							// OpenGLコンテキストを再度作成
-							ctx = GLContext::CreateContext(w, false);
-							ctx->makeCurrent(w);
-						}
-					}
+					// OpenGLコンテキストを再度作成
+					fnMakeContext(false);
+					// Assert(Warn, !b, "initialized OpenGL context twice")
+
 					// OpenGLリソースの再確保
 					mgr_gl.onDeviceReset();
 					GL.glFlush();
@@ -88,13 +104,11 @@ namespace rs {
 				} else if(static_cast<msg::DestroyContext*>(*m)) {
 					mgr_gl.onDeviceLost();
 					GL.glFlush();
-					auto lk = _info.lock();
-					Assert(Warn, static_cast<bool>(lk->ctx), "OpenGL context is not initialized")
-					lk->ctx.reset();
+					fnDestroyContext();
 				}
 			}
 		} while(bLoop && !isInterrupted());
-		std::cout << "DrawThread destructor begun" << std::endl;
+		LogOutput("DrawThread destructor begun");
 
 		up.reset();
 		// 後片付けフェーズ
@@ -107,8 +121,9 @@ namespace rs {
 				}
 			}
 		}
+		fnDestroyContext();
 		GLW.terminateDrawThread();
-		std::cout << "DrawThread destructor ended" << std::endl;
+		LogOutput("DrawThread destructor ended");
 	}
 
 	namespace {
@@ -131,7 +146,6 @@ namespace rs {
 		return _bDraw;
 	}
 
-	constexpr bool MULTICONTEXT = false;
 	// --------------------- MainThread ---------------------
 	MainThread::MainThread(MPCreate mcr, DPCreate dcr): ThreadL("MainThread"), _mcr(mcr), _dcr(dcr) {
 		auto lk = _info.lock();
@@ -155,19 +169,23 @@ namespace rs {
 			GLW.initializeMainThread();
 
 			SPGLContext ctx;
-			auto fnMakeContext = [&opDth, &ctx, &w](){
+			auto fnMakeCurrent = [&opDth, &ctx, &w](){
 				// ポーリングでコンテキスト初期化の完了を検知
 				for(;;) {
-					if(opDth->getInfo()->ctx)
-						break;
+					{
+						auto op = opDth->getInfo();
+						// DrawThreadContextが初期化されていたら同時にMainThread用も初期化されている筈
+						if(op->ctxDrawThread) {
+							// ただしSingleContext環境ではNullなのでmakeCurrentしない
+							if(MULTICONTEXT)
+								op->ctxMainThread->makeCurrent(w);
+							break;
+						}
+					}
 					SDL_Delay(0);
 				}
-				if(MULTICONTEXT) {
-					ctx = GLContext::CreateContext(w, true);
-					ctx->makeCurrent(w);
-				}
 			};
-			fnMakeContext();
+			fnMakeCurrent();
 
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
@@ -245,6 +263,9 @@ PrintLog;
 								break;
 							} else if(static_cast<msg::StopReq*>(*m)) {
 								mp->onStop();
+								// MultiContext環境ではContextの関連付けを解除
+								if(MULTICONTEXT)
+									opDth->getInfo()->ctxMainThread->makeCurrent();
 								// OpenGLリソースの解放をDrawThreadで行う
 								drawHandler->postArgs(msg::DestroyContext());
 								// サウンドデバイスのバックアップ
@@ -270,7 +291,7 @@ PrintLog;
 								sndP->update();
 								// DrawThreadでOpenGLの復帰処理を行う
 								drawHandler->postArgs(msg::MakeContext());
-								fnMakeContext();
+								fnMakeCurrent();
 								mp->onReStart();
 							}
 						}
@@ -309,6 +330,8 @@ PrintLog;
 					skip = 0;
 				else
 					++skip;
+
+				GL.glFlush();
 				drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw, bSkip));
 			} while(bLoop && !isInterrupted());
 			while(mgr_scene.getTop().valid()) {
@@ -336,6 +359,12 @@ PrintLog;
 			appPath.reset();
 			rwP.reset();
 			glrP.reset();
+
+			GL.glFlush();
+
+			// MultiContext環境ではContextの関連付けを解除
+			if(MULTICONTEXT)
+				opDth->getInfo()->ctxMainThread->makeCurrent();
 		} catch (const std::exception& e) {
 			LogOutput("MainThread: exception\n%s", e.what());
 		} catch (...) {

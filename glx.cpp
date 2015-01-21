@@ -549,6 +549,8 @@ namespace rs {
 		DrawCallI::DrawCallI(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset): Token(HRes()), _mode(mode), _count(count), _sizeF(sizeF), _offset(offset) {}
 		void DrawCallI::exec() {
 			GL.glDrawElements(_mode, _count, _sizeF, reinterpret_cast<const GLvoid*>(_offset));
+			GL.glBindBuffer(GL_ARRAY_BUFFER, 0);
+			GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			GLEC_Chk_D(Trap);
 		}
 
