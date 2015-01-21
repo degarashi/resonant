@@ -118,12 +118,10 @@ namespace rs {
 	//! [UniformID -> Token]
 	using UniMap = std::unordered_map<GLint, draw::SPToken>;
 
-	using UserTaskV = std::vector<UserTask>;
 	// OpenGLのレンダリング設定
 	using Setting = boost::variant<BoolSettingR, ValueSettingR>;
 	using SettingList = std::vector<Setting>;
 	//! Tech | Pass の分だけ作成
-	//MEMO: デフォルトテクスチャのPreFuncはどっかで事前に呼んで置かないとGPUに画素が転送されない
 	class TPStructR {
 		public:
 			using MacroMap = std::map<std::string, std::string>;
@@ -145,7 +143,6 @@ namespace rs {
 
 			UniIDSet		_noDefValue;	//!< Uniform非デフォルト値エントリIDセット (主にユーザーの入力チェック用)
 			UniMap			_defaultValue;	//!< Uniformデフォルト値と対応するID
-			UserTaskV		_userTaskV;
 			bool			_bInit = false;	//!< lost/resetのチェック用 (Debug)
 
 			// ----------- GLXStructから読んだデータ群 -----------
@@ -170,7 +167,6 @@ namespace rs {
 
 			const UniMap& getUniformDefault() const;
 			const UniIDSet& getUniformEntries() const;
-			const UserTaskV& getUserTask() const;
 			VAttrID getVAttrID() const;
 
 			const HLProg& getProgram() const;
@@ -214,28 +210,26 @@ namespace rs {
 	namespace draw {
 		struct ITag {
 			virtual ~ITag() {}
-			virtual void exec(bool bSkip) = 0;
+			virtual void exec() = 0;
 		};
-		//! 非描画系のオペレーション
-		/*! 描画がスキップされても実行されるAPI呼び出し */
-		class Tag_Proc : public ITag, public IUserTaskReceiver {
-			private:
-				UserTaskV	_task;
+		class Tag_Func : public ITag {
 			public:
-				void exec(bool bSkip) override;
-				void addTask(UserTask t) override;
-				bool isEmpty() const;
+				using Func = std::function<void ()>;
+			private:
+				Func	_func;
+			public:
+				Tag_Func(const Func& f);
+				void exec() override;
 		};
 		//! 描画オペレーション
 		class Tag_Draw : public ITag {
 			private:
 				TokenV		_token;
 			public:
-				void exec(bool bSkip) override;
+				void exec() override;
 				void addToken(const SPToken& token);
 		};
 		using UPTag = std::unique_ptr<ITag>;
-		using UPTagProc = std::unique_ptr<Tag_Proc>;
 		using UPTagDraw = std::unique_ptr<Tag_Draw>;
 
 		//! DrawToken: Stream(Vertex)
@@ -245,8 +239,7 @@ namespace rs {
 			SPVDecl				_spVDecl;
 			TPStructR::VAttrID	_vAttrId;
 
-			VStream(IUserTaskReceiver& r,
-					const HLVb (&vb)[VData::MAX_STREAM],
+			VStream(const HLVb (&vb)[VData::MAX_STREAM],
 					const SPVDecl& vdecl,
 					TPStructR::VAttrID vAttrId);
 			void exec() override;
@@ -297,7 +290,7 @@ namespace rs {
 				void endTask();
 				void clear();
 				// -------------- from DrawThread --------------
-				void execTask(bool bSkip);
+				void execTask();
 		};
 	}
 
@@ -330,7 +323,7 @@ namespace rs {
 						void setVDecl(const SPVDecl& v);
 						void setVBuffer(HVb hVb, int n);
 						void reset();
-						draw::SPToken makeToken(IUserTaskReceiver& r, TPStructR::VAttrID vAttrId);
+						draw::SPToken makeToken(TPStructR::VAttrID vAttrId);
 				} vertex;
 				class Index {
 					private:
@@ -341,7 +334,7 @@ namespace rs {
 						void setIBuffer(HIb hIb);
 						HIb getIBuffer() const;
 						void reset();
-						draw::SPToken makeToken(IUserTaskReceiver& r);
+						draw::SPToken makeToken();
 				} index;
 
 				// Tech, Pass何れかを変更したらDraw変数をクリア
@@ -352,21 +345,16 @@ namespace rs {
 				TPRef				tps;			//!< 現在使用中のTech
 				UniMap				uniMap;			//!< 現在設定中のUniform
 				TexIndex			texIndex;		//!< [UniformID : TextureIndex]
-				draw::UPTagProc		tagProc;		//!< 今の所、TextureのUserTask専用
+				draw::UPTag			upTagSetting;
 
-				Current();
 				void reset();
 				void _clean_drawvalue();
 				void setTech(GLint idTech, bool bDefault);
 				void setPass(GLint idPass, TechMap& tmap);
 				//! DrawCallに関連するAPI呼び出しTokenを出力
 				/*! Vertex,Index BufferやUniform変数など */
-				draw::UPTagDraw outputDrawTag();
-				//! DrawCallがキャンセルされても処理するToken
-				draw::UPTagProc outputProcTag();
+				draw::UPTagDraw outputDrawTag(draw::Task& task);
 			} _current;
-
-			draw::UPTagDraw _exportTags();
 
 		public:
 			//! Effectファイル(gfx)を読み込む
@@ -427,27 +415,27 @@ namespace rs {
 			//! 配列Uniform変数セット
 			template <class T>
 			void setUniform(GLint id, const T* t, int n, bool bT=false) {
-				_makeUniformToken(_current.uniMap, *_current.tagProc, id, t, n, bT); }
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const bool* b, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const float* fv, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const double* fv, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const int* iv, int n, bool) const;
+				_makeUniformToken(_current.uniMap, id, t, n, bT); }
+			void _makeUniformToken(UniMap& dstToken, GLint id, const bool* b, int n, bool) const;
+			void _makeUniformToken(UniMap& dstToken, GLint id, const float* fv, int n, bool) const;
+			void _makeUniformToken(UniMap& dstToken, GLint id, const double* fv, int n, bool) const;
+			void _makeUniformToken(UniMap& dstToken, GLint id, const int* iv, int n, bool) const;
 			template <int DN, bool A>
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& /*r*/, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
+			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
 				dstToken.emplace(id, std::make_shared<draw::Unif_Vec<float, DN>>(id, v, n)); }
 			template <int DM, int DN, bool A>
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) const {
+			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) const {
 				constexpr int DIM = spn::TValue<DM,DN>::great;
 				std::vector<spn::MatT<DIM,DIM,false>> tm(n);
 				for(int i=0 ; i<n ; i++)
 					m[i].convert(tm[i]);
-				_makeUniformToken(dstToken, r, id, tm.data(), n, bT);
+				_makeUniformToken(dstToken, id, tm.data(), n, bT);
 			}
 			template <int DN, bool A>
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& /*pf*/, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) const {
+			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) const {
 				dstToken.emplace(id, std::make_shared<draw::Unif_Mat<float, DN>>(id, m, n, bT)); }
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const HTex* hTex, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const HLTex* hlTex, int n, bool) const;
+			void _makeUniformToken(UniMap& dstToken, GLint id, const HTex* hTex, int n, bool) const;
+			void _makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool) const;
 
 			//! IStreamを使用して描画
 			/*! \param[in] mode 描画モードフラグ(OpenGL)
@@ -469,6 +457,6 @@ namespace rs {
 			//! OpenGLコマンドをFlushする
 			void endTask();
 			// ---- from DrawThread ----
-			void execTask(bool bSkip);
+			void execTask();
 	};
 }

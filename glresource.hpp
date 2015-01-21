@@ -182,7 +182,6 @@ namespace rs {
 
 	using Priority = uint32_t;
 	using Priority64 = uint64_t;
-	using UserTask = std::function<void ()>;
 	namespace draw {
 		struct Token {
 			HLRes	_hlRes;
@@ -240,10 +239,6 @@ namespace rs {
 				}
 		};
 	}
-	struct IUserTaskReceiver {
-		virtual ~IUserTaskReceiver() {}
-		virtual void addTask(UserTask t) = 0;
-	};
 	//! OpenGL関連のリソース
 	/*! Android用にデバイスロスト対応 */
 	struct IGLResource : spn::EnableFromThis<HRes> {
@@ -310,9 +305,6 @@ namespace rs {
 	/*	getDrawTokenの役割:
 		描画時にしか必要ないAPI呼び出しを纏める
 		ただしDrawThreadからはリソースハンドルの参照が出来ないのでOpenGLの番号をそのまま格納 */
-	/*	何故バッファへのデータ転送をわざわざUserTaskとしてるかというと
-		MultiContextの時にセットしようとしているデータがDrawThreadで実行される時に
-		まだ存在している事が保証出来ない為 (要改善) */
 	template <class T>
 	struct is_vector { constexpr static int value = 0; };
 	template <class T>
@@ -320,7 +312,6 @@ namespace rs {
 	//! OpenGLバッファクラス
 	class GLBuffer : public IGLResource, public GLBufferCore {
 		using SPBuff = std::shared_ptr<void>;
-		UserTask		_userTask;
 		SPBuff			_buff;			//!< 再構築の際に必要となるデータ実体(std::vector<T>)
 		void*			_pBuffer;		//!< bufferの先頭ポインタ
 		GLuint			_buffSize;		//!< bufferのバイトサイズ
@@ -363,7 +354,7 @@ namespace rs {
 
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-			draw::Buffer getDrawToken(IUserTaskReceiver& r) const;
+			draw::Buffer getDrawToken() const;
 	};
 	// バッファのDrawTokenはVDeclとの兼ね合いからそのままリストに積まずに
 	// StreamTagで一旦処理するのでスマートポインタではなく直接出力する
@@ -467,7 +458,6 @@ namespace rs {
 			spn::Size			_size;
 			OPInCompressedFmt	_format;	//!< 値が無効 = 不定
 			bool				_bReset;
-			UserTask			_userTask;
 			Mutex				_mutex;		//!< _reallocate用
 
 			bool _onDeviceReset();
@@ -506,7 +496,7 @@ namespace rs {
 			/*! \param[in] uniform変数の番号
 				\param[in] index idで示されるuniform変数配列のインデックス(デフォルト=0)
 				\param[in] hRes 自身のリソースハンドル */
-			draw::SPToken getDrawToken(IUserTaskReceiver& r, GLint id, int index, int actID);
+			draw::SPToken getDrawToken(GLint id, int index, int actID);
 	};
 	namespace draw {
 		// 連番テクスチャはUniformID + Indexとして設定

@@ -243,17 +243,13 @@ namespace rs {
 		_defaultValue.clear();
 	}
 	namespace {
-		struct Visitor : boost::static_visitor<>, IUserTaskReceiver {
+		struct Visitor : boost::static_visitor<> {
 			GLuint		pgID;
 			GLint		uniID;
 			UniMap		result;
-			UserTaskV	funcV;
 			const GLEffect&	glx;
 			Visitor(const GLEffect& g): glx(g) {}
 
-			void addTask(UserTask t) override {
-				funcV.push_back(t);
-			}
 			bool setKey(const std::string& key) {
 				uniID = GL.glGetUniformLocation(pgID, key.c_str());
 				// ここでキーが見つからない = uniformブロックで宣言されているがGLSLコードで使われない場合なのでエラーではない
@@ -263,7 +259,7 @@ namespace rs {
 			template <class T>
 			void _addResult(const T& t) {
 				if(uniID >= 0)
-					glx._makeUniformToken(result, *this, uniID, &t, 1, false);
+					glx._makeUniformToken(result, uniID, &t, 1, false);
 			}
 
 			void operator()(const std::vector<float>& v) {
@@ -328,6 +324,5 @@ namespace rs {
 	const UniIDSet& TPStructR::getUniformEntries() const { return _noDefValue; }
 	const HLProg& TPStructR::getProgram() const { return _prog; }
 	TPStructR::VAttrID TPStructR::getVAttrID() const { return _vAttrID; }
-	const UserTaskV& TPStructR::getUserTask() const { return _userTaskV; }
 }
 

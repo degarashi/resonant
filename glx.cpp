@@ -212,11 +212,11 @@ namespace rs {
 			_vbuff[n] = hVb;
 		}
 	}
-	draw::SPToken GLEffect::Current::Vertex::makeToken(IUserTaskReceiver& r, TPStructR::VAttrID vAttrId) {
+	draw::SPToken GLEffect::Current::Vertex::makeToken(TPStructR::VAttrID vAttrId) {
 		if(_bChanged) {
 			_bChanged = false;
 			Assert(Trap, _spVDecl, "VDecl is not set")
-			return std::make_unique<draw::VStream>(r, _vbuff, _spVDecl, vAttrId);
+			return std::make_unique<draw::VStream>(_vbuff, _spVDecl, vAttrId);
 		}
 		return nullptr;
 	}
@@ -236,19 +236,16 @@ namespace rs {
 	HIb GLEffect::Current::Index::getIBuffer() const {
 		return _ibuff;
 	}
-	draw::SPToken GLEffect::Current::Index::makeToken(IUserTaskReceiver& r) {
+	draw::SPToken GLEffect::Current::Index::makeToken() {
 		if(_bChanged) {
 			_bChanged = false;
 			if(_ibuff)
-				return std::make_shared<draw::Buffer>(_ibuff->get()->getDrawToken(r));
+				return std::make_shared<draw::Buffer>(_ibuff->get()->getDrawToken());
 		}
 		return nullptr;
 	}
 
 	// -------------- GLEffect::Current --------------
-	GLEffect::Current::Current() {
-		tagProc = std::make_unique<draw::Tag_Proc>();
-	}
 	void GLEffect::Current::reset() {
 		vertex.reset();
 		index.reset();
@@ -311,21 +308,24 @@ namespace rs {
 				}
 			}
 
-			tagProc->addTask([&tp_tmp = *tps](){
+			upTagSetting = std::make_unique<draw::Tag_Func>([&tp_tmp = *tps](){
 				tp_tmp.applySetting();
 			});
 //		}
 	}
-	draw::UPTagDraw GLEffect::Current::outputDrawTag() {
+	draw::UPTagDraw GLEffect::Current::outputDrawTag(draw::Task& task) {
+		if(upTagSetting)
+			task.pushTag(std::move(upTagSetting));
+
 		auto ret = std::make_unique<draw::Tag_Draw>();
 
 		// set Program
 		ret->addToken(tps->getProgram()->get()->getDrawToken());
 		// set VBuffer(VDecl)
-		if(auto t = vertex.makeToken(*tagProc, tps->getVAttrID()))
+		if(auto t = vertex.makeToken(tps->getVAttrID()))
 			ret->addToken(t);
 		// set IBuffer
-		if(auto t = index.makeToken(*tagProc))
+		if(auto t = index.makeToken())
 			ret->addToken(t);
 
 		GLEC_Chk_D(Trap)
@@ -337,19 +337,6 @@ namespace rs {
 			uniMap.clear();
 		}
 		return std::move(ret);
-	}
-	draw::UPTagProc GLEffect::Current::outputProcTag() {
-		if(!tagProc->isEmpty()) {
-			auto ret = std::move(tagProc);
-			tagProc.reset(new draw::Tag_Proc);
-			return std::move(ret);
-		}
-		return nullptr;
-	}
-	draw::UPTagDraw GLEffect::_exportTags() {
-		if(auto t = _current.outputProcTag())
-			_task.pushTag(std::move(t));
-		return _current.outputDrawTag();
 	}
 
 	void GLEffect::onDeviceLost() {
@@ -426,8 +413,7 @@ namespace rs {
 
 	namespace draw {
 		// -------------- VStream --------------
-		VStream::VStream(IUserTaskReceiver& r,
-						const HLVb (&vb)[VData::MAX_STREAM],
+		VStream::VStream(const HLVb (&vb)[VData::MAX_STREAM],
 						const SPVDecl& vdecl,
 						TPStructR::VAttrID vAttrId):
 			Token(HRes()),
@@ -436,7 +422,7 @@ namespace rs {
 		{
 			for(int i=0 ; i<countof(_vbuff) ; i++) {
 				if(vb[i]) {
-					_vbuff[i] = vb[i]->get()->getDrawToken(r);
+					_vbuff[i] = vb[i]->get()->getDrawToken();
 				}
 			}
 		}
@@ -480,21 +466,13 @@ namespace rs {
 		}
 		void Task::clear() {
 			UniLock lk(_mutex);
-			while(_curWrite >= _curRead) {
-				if(_curWrite == _curRead) {
-					++_curWrite;
-					execTask(false);
-					break;
-				}
-				execTask(false);
-				++_curRead;
-			}
+			_curWrite = _curRead+1;
 			GL.glFinish();
 			for(auto& e : _entry)
 				e.clear();
 			_curWrite = _curRead = 0;
 		}
-		void Task::execTask(bool bSkip) {
+		void Task::execTask() {
 			spn::Optional<UniLock> lk(_mutex);
 			auto diff = _curWrite - _curRead;
 			Assert(Trap, diff >= 0)
@@ -503,7 +481,7 @@ namespace rs {
 				lk = spn::none;
 				// MThとアクセスするエントリが違うから同期をとらなくて良い
 				for(auto& ent : readent)
-					ent->exec(bSkip);
+					ent->exec();
 				GL.glFlush();
 				lk = spn::construct(std::ref(_mutex));
 				++_curRead;
@@ -511,27 +489,15 @@ namespace rs {
 			}
 		}
 
-		// -------------- Tag_Proc --------------
-		void Tag_Proc::exec(bool bSkip) {
-			if(!_task.empty()) {
-				for(auto& f : _task)
-					f();
-				// ここではまだ開放しない
-			}
+		// -------------- Tag_Func --------------
+		Tag_Func::Tag_Func(const Func& f): _func(f) {}
+		void Tag_Func::exec() {
+			_func();
 		}
-		void Tag_Proc::addTask(UserTask t) {
-			_task.push_back(std::move(t));
-		}
-		bool Tag_Proc::isEmpty() const {
-			return _task.empty();
-		}
-
 		// -------------- Tag_Draw --------------
-		void Tag_Draw::exec(bool bSkip) {
-			if(!bSkip) {
-				for(auto& t : _token)
-					t->exec();
-			}
+		void Tag_Draw::exec() {
+			for(auto& t : _token)
+				t->exec();
 		}
 		void Tag_Draw::addToken(const SPToken& token) {
 			Assert(Trap, token, "null pointer detected")
@@ -613,13 +579,13 @@ namespace rs {
 		};
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
-		auto t = _exportTags();
+		auto t = _current.outputDrawTag(_task);
 		// DrawTagにDrawCallTokenを加えた後に出力
 		t->addToken(std::make_shared<draw::DrawCall>(mode, first, count));
 		_task.pushTag(std::move(t));
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
-		auto t = _exportTags();
+		auto t = _current.outputDrawTag(_task);
 		HIb hIb = _current.index.getIBuffer();
 		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
@@ -627,25 +593,25 @@ namespace rs {
 		_task.pushTag(std::move(t));
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const bool* b, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const bool* b, int n, bool bT) const {
 		int tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<int>(b[i]);
-		_makeUniformToken(dstToken, r, id, static_cast<const int*>(tmp), 1, bT);
+		_makeUniformToken(dstToken, id, static_cast<const int*>(tmp), 1, bT);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& /*r*/, GLint id, const int* iv, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const int* iv, int n, bool /*bT*/) const {
 		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n));
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& /*r*/, GLint id, const float* fv, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const float* fv, int n, bool /*bT*/) const {
 		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n));
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const double* dv, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const double* dv, int n, bool bT) const {
 		float tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<float>(dv[i]);
-		_makeUniformToken(dstToken, r, id, static_cast<const float*>(tmp), n, bT);
+		_makeUniformToken(dstToken, id, static_cast<const float*>(tmp), n, bT);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
 		// テクスチャユニット番号を検索
 		auto itr = _current.texIndex.find(id);
 		Assert(Warn, itr != _current.texIndex.end(), "texture index not found")
@@ -662,20 +628,20 @@ namespace rs {
 			}
 			AssertP(Trap, n==1)
 			HTex hTex2(*hTex);
-			dstToken.emplace(id, hTex2.ref()->getDrawToken(r, id, 0, aID));
+			dstToken.emplace(id, hTex2.ref()->getDrawToken(id, 0, aID));
 		}
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, IUserTaskReceiver& r, GLint id, const HLTex* hlTex, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool bT) const {
 		if(n > 1) {
 			std::vector<HLTex> hTexA(n);
 			for(int i=0 ; i<n ; i++)
 				hTexA[i] = hlTex[i].get();
-			_makeUniformToken(dstToken, r, id, hTexA.data(), n, bT);
+			_makeUniformToken(dstToken, id, hTexA.data(), n, bT);
 			return;
 		}
 		AssertP(Trap, n==1)
 		HTex hTex = hlTex->get();
-		_makeUniformToken(dstToken, r, id, &hTex, 1, bT);
+		_makeUniformToken(dstToken, id, &hTex, 1, bT);
 	}
 	OPGLint GLEffect::getUniformID(const std::string& name) const {
 		AssertP(Trap, _current.tps, "Tech/Pass is not set")
@@ -694,8 +660,8 @@ namespace rs {
 	void GLEffect::clearTask() {
 		_task.clear();
 	}
-	void GLEffect::execTask(bool bSkip) {
-		_task.execTask(bSkip);
+	void GLEffect::execTask() {
+		_task.execTask();
 	}
 
 	// ------------- ShStruct -------------

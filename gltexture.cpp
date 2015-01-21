@@ -18,16 +18,11 @@ namespace rs {
 	#define FUNC_MOVE(z, data, elem)	(elem(std::move(data.elem)))
 	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_actID)\
 						(_mipLevel)(_texFlag)(_faceFlag)(_coeff)(_size)(_format)(_bReset)
-	#define SEQ_TEXTURE_M	SEQ_TEXTURE(_userTask)
-	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_MOVE, t, SEQ_TEXTURE_M)) {
+	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_MOVE, t, SEQ_TEXTURE)) {
 		t._idTex = 0;
 		t._bReset = false;
-		t._userTask = nullptr;
 	}
-	IGLTexture::IGLTexture(const IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {
-		// PreFuncを持っている状態ではコピー禁止
-		Assert(Trap, !static_cast<bool>(t._userTask))
-	}
+	IGLTexture::IGLTexture(const IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {}
 
 	RUser<IGLTexture> IGLTexture::use() const {
 		return RUser<IGLTexture>(*this);
@@ -118,7 +113,7 @@ namespace rs {
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
 	}
-	draw::SPToken IGLTexture::getDrawToken(IUserTaskReceiver& r, GLint id, int index, int actID) {
+	draw::SPToken IGLTexture::getDrawToken(GLint id, int index, int actID) {
 		if(_bReset) {
 			_bReset = false;
 			_reallocate();

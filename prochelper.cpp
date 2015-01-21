@@ -8,9 +8,10 @@ namespace rs {
 	bool DrawProc::runU(uint64_t accum, bool bSkip) {
 		auto lk = sharedbase.lock();
 		auto& fx = *lk->hlFx.ref();
-		if(!bSkip)
+		if(!bSkip) {
 			lk->fps.update();
-		fx.execTask(bSkip);
+			fx.execTask();
+		}
 		return !bSkip;
 	}
 	// ------------------------------ MainProc ------------------------------

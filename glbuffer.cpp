@@ -72,7 +72,7 @@ namespace rs {
 	GLuint GLBuffer::getNElem() const {
 		return _buffSize / _stride;
 	}
-	draw::Buffer GLBuffer::getDrawToken(IUserTaskReceiver& r) const {
+	draw::Buffer GLBuffer::getDrawToken() const {
 		Assert(Trap, getBuffID() > 0);
 		HLRes hlRes(handleFromThis());
 		return draw::Buffer(*this, hlRes);
