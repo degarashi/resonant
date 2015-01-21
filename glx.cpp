@@ -497,9 +497,10 @@ namespace rs {
 			auto diff = _curWrite - _curRead;
 			Assert(Trap, diff >= 0)
 			if(diff > 0) {
+				auto& readent = refReadEnt();
 				lk = spn::none;
 				// MThとアクセスするエントリが違うから同期をとらなくて良い
-				for(auto& ent : refReadEnt())
+				for(auto& ent : readent)
 					ent->exec(bSkip);
 				GL.glFlush();
 				lk = spn::construct(std::ref(_mutex));
