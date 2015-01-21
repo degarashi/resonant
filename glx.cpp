@@ -322,7 +322,8 @@ namespace rs {
 		// set Program
 		ret->addToken(tps->getProgram()->get()->getDrawToken());
 		// set VBuffer(VDecl)
-		ret->addToken(vertex.makeToken(*tagProc, tps->getVAttrID()));
+		if(auto t = vertex.makeToken(*tagProc, tps->getVAttrID()))
+			ret->addToken(t);
 		// set IBuffer
 		if(auto t = index.makeToken(*tagProc))
 			ret->addToken(t);
@@ -454,6 +455,7 @@ namespace rs {
 			return _entry[_curRead % NUM_ENTRY];
 		}
 		void Task::pushTag(UPTag tag) {
+			Assert(Trap, tag, "null pointer detected")
 			// DThとアクセスするエントリが違うからemplace_back中の同期をとらなくて良い
 			refWriteEnt().emplace_back(std::move(tag));
 		}
@@ -532,6 +534,7 @@ namespace rs {
 			}
 		}
 		void Tag_Draw::addToken(const SPToken& token) {
+			Assert(Trap, token, "null pointer detected")
 			_token.emplace_back(token);
 		}
 
