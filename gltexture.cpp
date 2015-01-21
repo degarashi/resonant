@@ -119,8 +119,6 @@ namespace rs {
 		return getTextureID() == t.getTextureID();
 	}
 	draw::SPToken IGLTexture::getDrawToken(IUserTaskReceiver& r, GLint id, int index, int actID) {
-		if(_userTask)
-			r.addTask(std::move(_userTask));
 		if(_bReset) {
 			_bReset = false;
 			_reallocate();
@@ -187,15 +185,13 @@ namespace rs {
 		// DeviceLost中でなければすぐにテクスチャを作成するが、そうでなければ内部バッファにコピーするのみ
 		if(_idTex != 0) {
 			// テクスチャに転送
-			std::shared_ptr<spn::ByteBuff> pbuff(new spn::ByteBuff(buff.moveTo()));
-			_userTask = [this, srcFmt, pbuff]() {
-				auto& tfm = getFormat();
-				auto& sz = getSize();
-				use_begin();
-				GL.glTexImage2D(GL_TEXTURE_2D, 0, tfm.get(), sz.width, sz.height,
-								0, tfm.get(), srcFmt.get(), pbuff->data());
-				GLEC_Chk_D(Trap);
-			};
+			auto& tfm = getFormat();
+			auto& sz = getSize();
+			use_begin();
+			GL.glTexImage2D(GL_TEXTURE_2D, 0, tfm.get(), sz.width, sz.height,
+							0, tfm.get(), srcFmt.get(), buff.getPtr());
+			GLEC_Chk_D(Trap);
+			use_end();
 		} else {
 			if(_bRestore) {
 				// 内部バッファへmove
@@ -209,17 +205,11 @@ namespace rs {
 		auto sz = buff.getLength();
 		int height = sz / (width * bs);
 		if(_idTex != 0) {
-			std::shared_ptr<spn::ByteBuff> pbuff(new spn::ByteBuff(buff.moveTo()));
-			std::shared_ptr<UserTask> task(new UserTask(std::move(_userTask)));
 			auto& fmt = getFormat();
-			_userTask = [=]() {
-				if(*task)
-					(*task)();
-				auto u = use();
-				// GLテクスチャに転送
-				GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;
-				GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), pbuff->data());
-			};
+			auto u = use();
+			// GLテクスチャに転送
+			GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;
+			GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
 		} else {
 			// 内部バッファが存在すればそこに書き込んでおく
 			if(_buff) {
