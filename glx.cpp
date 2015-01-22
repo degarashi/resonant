@@ -212,13 +212,19 @@ namespace rs {
 			_vbuff[n] = hVb;
 		}
 	}
-	draw::SPToken GLEffect::Current::Vertex::makeToken(TPStructR::VAttrID vAttrId) {
+	void GLEffect::Current::Vertex::extractData(draw::VStream& dst,
+												TPStructR::VAttrID vAttrId) const
+	{
 		if(_bChanged) {
 			_bChanged = false;
 			Assert(Trap, _spVDecl, "VDecl is not set")
-			return std::make_unique<draw::VStream>(_vbuff, _spVDecl, vAttrId);
+			dst.spVDecl = _spVDecl;
+			for(int i=0 ; i<countof(_vbuff) ; i++) {
+				if(_vbuff[i])
+					dst.vbuff[i] = _vbuff[i]->get()->getDrawToken();
+			}
+			dst.vAttrId = vAttrId;
 		}
-		return nullptr;
 	}
 
 	// -------------- GLEffect::Current::Index --------------
@@ -236,13 +242,12 @@ namespace rs {
 	HIb GLEffect::Current::Index::getIBuffer() const {
 		return _ibuff;
 	}
-	draw::SPToken GLEffect::Current::Index::makeToken() {
+	void GLEffect::Current::Index::extractData(draw::VStream& dst) const {
 		if(_bChanged) {
 			_bChanged = false;
 			if(_ibuff)
-				return std::make_shared<draw::Buffer>(_ibuff->get()->getDrawToken());
+				dst.ibuff = spn::construct(_ibuff->get()->getDrawToken());
 		}
-		return nullptr;
 	}
 
 	// -------------- GLEffect::Current --------------
@@ -256,6 +261,7 @@ namespace rs {
 	void GLEffect::Current::_clean_drawvalue() {
 		pass = spn::none;
 		tps = spn::none;
+		tokenV.clear();
 		// セットされているUniform変数を未セット状態にする
 		uniMap.clear();
 		texIndex.clear();
@@ -308,35 +314,36 @@ namespace rs {
 				}
 			}
 
-			upTagSetting = std::make_unique<draw::Tag_Func>([&tp_tmp = *tps](){
+			tokenV.emplace_back(tps->getProgram()->get()->getDrawToken());
+			tokenV.emplace_back(new draw::UserFunc([&tp_tmp = *tps](){
 				tp_tmp.applySetting();
-			});
+			}));
 //		}
 	}
-	draw::UPTagDraw GLEffect::Current::outputDrawTag(draw::Task& task) {
-		if(upTagSetting)
-			task.pushTag(std::move(upTagSetting));
-
-		auto ret = std::make_unique<draw::Tag_Draw>();
-
-		// set Program
-		ret->addToken(tps->getProgram()->get()->getDrawToken());
-		// set VBuffer(VDecl)
-		if(auto t = vertex.makeToken(tps->getVAttrID()))
-			ret->addToken(t);
-		// set IBuffer
-		if(auto t = index.makeToken())
-			ret->addToken(t);
-
-		GLEC_Chk_D(Trap)
+	void GLEffect::Current::_outputDrawCall(draw::VStream& vs) {
 		// set uniform value
 		if(!uniMap.empty()) {
 			// 中身shared_ptrなのでコピーする
 			for(auto& sp : uniMap)
-				ret->addToken(sp.second);
+				tokenV.emplace_back(sp.second);
 			uniMap.clear();
 		}
-		return std::move(ret);
+		// set VBuffer(VDecl)
+		vertex.extractData(vs, tps->getVAttrID());
+		// set IBuffer
+		index.extractData(vs);
+	}
+	draw::UPTag GLEffect::Current::outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset) {
+		draw::VStream vs;
+		_outputDrawCall(vs);
+		return std::make_unique<draw::Tag_DrawI>(std::move(tokenV), std::move(vs),
+										mode, count, sizeF, offset);
+	}
+	draw::UPTag GLEffect::Current::outputDrawCall(GLenum mode, GLint first, GLsizei count) {
+		draw::VStream vs;
+		_outputDrawCall(vs);
+		return std::make_unique<draw::Tag_Draw>(std::move(tokenV), std::move(vs),
+										mode, first, count);
 	}
 
 	void GLEffect::onDeviceLost() {
@@ -413,21 +420,22 @@ namespace rs {
 
 	namespace draw {
 		// -------------- VStream --------------
-		VStream::VStream(const HLVb (&vb)[VData::MAX_STREAM],
-						const SPVDecl& vdecl,
-						TPStructR::VAttrID vAttrId):
-			Token(HRes()),
-			_spVDecl(vdecl),
-			_vAttrId(vAttrId)
-		{
-			for(int i=0 ; i<countof(_vbuff) ; i++) {
-				if(vb[i]) {
-					_vbuff[i] = vb[i]->get()->getDrawToken();
-				}
-			}
+		RUser<VStream> VStream::use() {
+			return RUser<VStream>(*this);
 		}
-		void VStream::exec() {
-			_spVDecl->apply(VData{_vbuff, _vAttrId});
+		void VStream::use_begin() const {
+			if(spVDecl)
+				spVDecl->apply(VData{vbuff, *vAttrId});
+			if(ibuff)
+				ibuff->use_begin();
+		}
+		void VStream::use_end() const {
+			if(spVDecl) {
+				GL.glBindBuffer(GL_ARRAY_BUFFER, 0);
+				GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			}
+			if(ibuff)
+				ibuff->use_end();
 		}
 
 		// -------------- Task --------------
@@ -489,34 +497,48 @@ namespace rs {
 			}
 		}
 
-		// -------------- Tag_Func --------------
-		Tag_Func::Tag_Func(const Func& f): _func(f) {}
-		void Tag_Func::exec() {
+		// -------------- UserFunc --------------
+		UserFunc::UserFunc(const Func& f):
+			Token(HRes()),
+			_func(f)
+		{}
+		void UserFunc::exec() {
 			_func();
 		}
-		// -------------- Tag_Draw --------------
-		void Tag_Draw::exec() {
+
+		// -------------- Tag_DrawBase --------------
+		Tag_DrawBase::Tag_DrawBase(TokenV&& t, VStream&& vs):
+			_token(std::move(t)),
+			_vstream(std::move(vs))
+		{}
+		RUser<VStream> Tag_DrawBase::use() {
 			for(auto& t : _token)
 				t->exec();
+			return _vstream.use();
 		}
-		void Tag_Draw::addToken(const SPToken& token) {
-			Assert(Trap, token, "null pointer detected")
-			_token.emplace_back(token);
-		}
-
-		// -------------- DrawCall --------------
-		DrawCall::DrawCall(GLenum mode, GLint first, GLsizei count): Token(HRes()), _mode(mode), _first(first), _count(count) {}
-		void DrawCall::exec() {
+		// -------------- Tag_Draw --------------
+		Tag_Draw::Tag_Draw(TokenV&& t, VStream&& vs, GLenum mode, GLint first, GLsizei count):
+			Tag_DrawBase(std::move(t), std::move(vs)),
+			_mode(mode),
+			_first(first),
+			_count(count)
+		{}
+		void Tag_Draw::exec() {
+			auto u = use();
 			GL.glDrawArrays(_mode, _first, _count);
 			GLEC_Chk_D(Trap);
 		}
-
-		// -------------- DrawCallI --------------
-		DrawCallI::DrawCallI(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset): Token(HRes()), _mode(mode), _count(count), _sizeF(sizeF), _offset(offset) {}
-		void DrawCallI::exec() {
+		// -------------- Tag_DrawI --------------
+		Tag_DrawI::Tag_DrawI(TokenV&& t, VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset):
+			Tag_DrawBase(std::move(t), std::move(vs)),
+			_mode(mode),
+			_count(count),
+			_sizeF(sizeF),
+			_offset(offset)
+		{}
+		void Tag_DrawI::exec() {
+			auto u = use();
 			GL.glDrawElements(_mode, _count, _sizeF, reinterpret_cast<const GLvoid*>(_offset));
-			GL.glBindBuffer(GL_ARRAY_BUFFER, 0);
-			GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			GLEC_Chk_D(Trap);
 		}
 
@@ -579,17 +601,14 @@ namespace rs {
 		};
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
-		auto t = _current.outputDrawTag(_task);
-		// DrawTagにDrawCallTokenを加えた後に出力
-		t->addToken(std::make_shared<draw::DrawCall>(mode, first, count));
+		auto t = _current.outputDrawCall(mode, first, count);
 		_task.pushTag(std::move(t));
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
-		auto t = _current.outputDrawTag(_task);
 		HIb hIb = _current.index.getIBuffer();
 		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
-		t->addToken(std::make_shared<draw::DrawCallI>(mode, count, szF, offsetElem * str));
+		auto t = _current.outputDrawCallIndexed(mode, count, szF, offsetElem*str);
 		_task.pushTag(std::move(t));
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力

@@ -212,64 +212,71 @@ namespace rs {
 			virtual ~ITag() {}
 			virtual void exec() = 0;
 		};
-		class Tag_Func : public ITag {
+		using UPTag = std::unique_ptr<ITag>;
+
+		class UserFunc : public Token {
 			public:
 				using Func = std::function<void ()>;
 			private:
 				Func	_func;
 			public:
-				Tag_Func(const Func& f);
+				UserFunc(const Func& f);
 				void exec() override;
 		};
-		//! 描画オペレーション
-		class Tag_Draw : public ITag {
+		//MEMO: ソースの改変を経ている為、少し実装が回りくどいと思われる
+		class VStream {
+			private:
+				friend class RUser<VStream>;
+				void use_begin() const;
+				void use_end() const;
+			public:
+				using OPBuffer = spn::Optional<Buffer>;
+				using OPVAttrId = spn::Optional<TPStructR::VAttrID>;
+				// vertex stream
+				SPVDecl		spVDecl;
+				OPBuffer	vbuff[VData::MAX_STREAM];
+				OPVAttrId	vAttrId;
+				// index stream
+				OPBuffer	ibuff;
+
+				RUser<VStream> use();
+		};
+		class Tag_DrawBase : public ITag {
 			private:
 				TokenV		_token;
+				VStream		_vstream;
+			protected:
+				Tag_DrawBase(TokenV&& t, VStream&& vs);
+				RUser<VStream> use();
+		};
+		//! Draw token (without index)
+		class Tag_Draw : public Tag_DrawBase {
+			private:
+				GLenum		_mode;
+				GLint		_first;
+				GLsizei		_count;
 			public:
+				Tag_Draw(TokenV&& t, VStream&& vs, GLenum mode, GLint first, GLsizei count);
 				void exec() override;
-				void addToken(const SPToken& token);
 		};
-		using UPTag = std::unique_ptr<ITag>;
-		using UPTagDraw = std::unique_ptr<Tag_Draw>;
-
-		//! DrawToken: Stream(Vertex)
-		struct VStream : Token {
-			using OPBuffer = spn::Optional<draw::Buffer>;
-			OPBuffer			_vbuff[VData::MAX_STREAM];
-			SPVDecl				_spVDecl;
-			TPStructR::VAttrID	_vAttrId;
-
-			VStream(const HLVb (&vb)[VData::MAX_STREAM],
-					const SPVDecl& vdecl,
-					TPStructR::VAttrID vAttrId);
-			void exec() override;
+		//! Draw token (with index)
+		class Tag_DrawI : public Tag_DrawBase {
+			private:
+				GLenum		_mode;
+				GLsizei		_count;
+				GLenum		_sizeF;
+				GLuint		_offset;
+			public:
+				/*! \param[in] mode 描画モードフラグ(OpenGL)
+					\param[in] count 描画に使用される要素数
+					\param[in] sizeF 1要素のサイズを表すフラグ
+					\param[in] offset オフセットバイト数 */
+				Tag_DrawI(TokenV&& t, VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
+				void exec() override;
 		};
-		//! DrawToken: DrawCall
-		struct DrawCall : Token {
-			GLenum	_mode;
-			GLint	_first;
-			GLsizei	_count;
 
-			DrawCall(GLenum mode, GLint first, GLsizei count);
-			void exec() override;
-		};
-		//! DrawToken: DrawCall(Indexed)
-		struct DrawCallI : Token {
-			GLenum	_mode;
-			GLsizei	_count;
-			GLenum	_sizeF;
-			GLuint	_offset;
-
-			/*! \param[in] mode 描画モードフラグ(OpenGL)
-				\param[in] count 描画に使用される要素数
-				\param[in] sizeF 1要素のサイズを表すフラグ
-				\param[in] offset オフセットバイト数 */
-			DrawCallI(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
-			void exec() override;
-		};
 		/*! PreFuncとして(TPStructR::applySettingsを追加)
 			[Program, FrameBuff, RenderBuff] */
-
 		class Task {
 			constexpr static int NUM_ENTRY = 3;
 			//! 描画エントリのリングバッファ
@@ -315,26 +322,26 @@ namespace rs {
 			struct Current {
 				class Vertex {
 					private:
-						SPVDecl		_spVDecl;
-						HLVb		_vbuff[VData::MAX_STREAM];
-						bool		_bChanged;
+						SPVDecl			_spVDecl;
+						HLVb			_vbuff[VData::MAX_STREAM];
+						mutable bool	_bChanged;
 					public:
 						Vertex();
 						void setVDecl(const SPVDecl& v);
 						void setVBuffer(HVb hVb, int n);
 						void reset();
-						draw::SPToken makeToken(TPStructR::VAttrID vAttrId);
+						void extractData(draw::VStream& dst, TPStructR::VAttrID vAttrId) const;
 				} vertex;
 				class Index {
 					private:
-						HLIb	_ibuff;
-						bool	_bChanged;
+						HLIb			_ibuff;
+						mutable bool	_bChanged;
 					public:
 						Index();
 						void setIBuffer(HIb hIb);
 						HIb getIBuffer() const;
 						void reset();
-						draw::SPToken makeToken();
+						void extractData(draw::VStream& dst) const;
 				} index;
 
 				// Tech, Pass何れかを変更したらDraw変数をクリア
@@ -345,15 +352,17 @@ namespace rs {
 				TPRef				tps;			//!< 現在使用中のTech
 				UniMap				uniMap;			//!< 現在設定中のUniform
 				TexIndex			texIndex;		//!< [UniformID : TextureIndex]
-				draw::UPTag			upTagSetting;
+				draw::TokenV		tokenV;
 
 				void reset();
 				void _clean_drawvalue();
 				void setTech(GLint idTech, bool bDefault);
 				void setPass(GLint idPass, TechMap& tmap);
+				void _outputDrawCall(draw::VStream& vs);
 				//! DrawCallに関連するAPI呼び出しTokenを出力
 				/*! Vertex,Index BufferやUniform変数など */
-				draw::UPTagDraw outputDrawTag(draw::Task& task);
+				draw::UPTag outputDrawCall(GLenum mode, GLint first, GLsizei count);
+				draw::UPTag outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 			} _current;
 
 		public:

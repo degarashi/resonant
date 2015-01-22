@@ -47,7 +47,7 @@ namespace rs {
 	}
 	void GLBuffer::_initData() {
 		if(getBuffID() > 0) {
-			use_begin();
+			auto u = use();
 			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
 		}
 	}
@@ -62,7 +62,7 @@ namespace rs {
 				ofs = offset*_stride;
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
 		if(getBuffID() > 0) {
-			use_begin();
+			auto u = use();
 			GL.glBufferSubData(_buffType, ofs, szCopy, src);
 		}
 	}

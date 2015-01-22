@@ -35,13 +35,25 @@ namespace std {
 namespace rs {
 	template <class T>
 	class RUser {
-		const T& _t;
+		const T&	_t;
+		bool		_bRelease;
 		public:
-			RUser(const T& t): _t(t) {
+			RUser(RUser&& r):
+				_t(r._t),
+				_bRelease(true)
+			{
+				r._bRelease = false;
+			}
+			RUser(const RUser&) = delete;
+			RUser(const T& t):
+				_t(t),
+				_bRelease(true)
+			{
 				_t.use_begin();
 			}
 			~RUser() {
-				_t.use_end();
+				if(_bRelease)
+					_t.use_end();
 			}
 	};
 
@@ -266,7 +278,17 @@ namespace rs {
 			void onDeviceReset() override;
 	};
 
+	namespace draw {
+		class Buffer;
+		class VStream;
+	}
 	class GLBufferCore {
+		private:
+			friend class RUser<GLBufferCore>;
+			friend class draw::Buffer;
+			friend class draw::VStream;
+			void use_begin() const;
+			void use_end() const;
 		protected:
 			GLuint		_buffType,			//!< VERTEX_BUFFERなど
 						_drawType,			//!< STATIC_DRAWなどのフラグ
@@ -277,8 +299,6 @@ namespace rs {
 			virtual ~GLBufferCore() {}
 
 			RUser<GLBufferCore> use() const;
-			void use_begin() const;
-			void use_end() const;
 
 			GLuint getBuffID() const;
 			GLuint getBuffType() const;
@@ -433,6 +453,10 @@ namespace rs {
 		Num
 	};
 
+	namespace draw {
+		class Texture;
+		class TextureA;
+	}
 	//! OpenGLテクスチャインタフェース
 	/*!	フィルターはNEARESTとLINEARしか無いからboolで管理 */
 	class IGLTexture : public IGLResource {
@@ -442,6 +466,12 @@ namespace rs {
 				MipmapNear,
 				MipmapLinear
 			};
+			friend class RUser<IGLTexture>;
+			friend class draw::Texture;
+			friend class draw::TextureA;
+
+			void use_begin() const;
+			void use_end() const;
 		protected:
 			GLuint		_idTex;
 			int			_iLinearMag,	//!< Linearの場合は1, Nearestは0
@@ -474,8 +504,6 @@ namespace rs {
 			void setUVWrap(GLuint s, GLuint t);
 
 			RUser<IGLTexture> use() const;
-			void use_begin() const;
-			void use_end() const;
 
 			const spn::Size& getSize() const;
 			GLint getTextureID() const;
@@ -678,6 +706,9 @@ namespace rs {
 				RESTORE,	//!< 事前に保存しておいた内容で復元
 				NUM_ONLOST
 			};
+			friend class RUser<GLRBuffer>;
+			void use_begin() const;
+			void use_end() const;
 			// OpenGL ES2.0だとglDrawPixelsが使えない
 		private:
 			using F_LOST = std::function<void (GLFBufferTmp&,GLRBuffer&)>;
@@ -702,8 +733,6 @@ namespace rs {
 			void onDeviceLost() override;
 
 			RUser<GLRBuffer> use() const;
-			void use_begin() const;
-			void use_end() const;
 
 			void setOnLost(OnLost beh, const spn::Vec4* color=nullptr);
 			GLuint getBufferID() const;
@@ -714,6 +743,10 @@ namespace rs {
 
 	class GLFBufferCore {
 		public:
+			friend class RUser<GLFBufferCore>;
+			void use_begin() const;
+			void use_end() const;
+
 			enum AttID {
 				COLOR0,
 #ifndef USE_OPENGLES2
@@ -740,8 +773,6 @@ namespace rs {
 			GLuint getBufferID() const;
 
 			RUser<GLFBufferCore> use() const;
-			void use_begin() const;
-			void use_end() const;
 	};
 	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
 	class GLFBufferTmp : public GLFBufferCore {

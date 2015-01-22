@@ -76,7 +76,7 @@ namespace rs {
 			// VStreamが設定されていればBindする
 			if(ovb) {
 				auto& vb = *ovb;
-				vb.use_begin();
+				auto u = vb.use();
 				GLuint stride = vb.getStride();
 				for(int j=_nEnt[i] ; j<_nEnt[i+1] ; j++)
 					_func[j](stride, vdata.attrID);

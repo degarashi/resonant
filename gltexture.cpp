@@ -182,11 +182,10 @@ namespace rs {
 			// テクスチャに転送
 			auto& tfm = getFormat();
 			auto& sz = getSize();
-			use_begin();
+			auto u = use();
 			GL.glTexImage2D(GL_TEXTURE_2D, 0, tfm.get(), sz.width, sz.height,
 							0, tfm.get(), srcFmt.get(), buff.getPtr());
 			GLEC_Chk_D(Trap);
-			use_end();
 		} else {
 			if(_bRestore) {
 				// 内部バッファへmove
