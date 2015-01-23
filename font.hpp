@@ -7,6 +7,7 @@
 #include "spinner/abstbuff.hpp"
 #include "font_base.hpp"
 #include "font_ft_dep.hpp"
+#include "vertex.hpp"
 
 namespace rs {
 	//! CharCodeとフォントテクスチャ対応付け (全Face共通)
@@ -37,6 +38,22 @@ namespace rs {
 		const CharPos* getCharPos(CharID cid);
 		DepPair& getDepPair(CCoreID coreID);
 	};
+
+	namespace drawtag {
+		//! フォント描画用セッティング Tag
+		struct text {};
+	}
+	namespace vertex {
+		//! 文字列描画用頂点
+		struct text {
+			spn::Vec2	pos;
+			spn::Vec3	uvt;
+		};
+	}
+}
+DefineVDecl(drawtag::text)
+
+namespace rs {
 	//! 文章の描画に必要なフォントや頂点を用意
 	/*! TriangleList形式。とりあえず改行だけ対応
 		折り返し表示機能は無し
@@ -45,12 +62,6 @@ namespace rs {
 		---------------- Uniform変数 ----------------
 		Texture: EUnif::Diffuse */
 	class TextObj {
-		//! 文字列表示用頂点
-		const static SPVDecl cs_vDecl;
-		struct TextV {
-			spn::Vec2	pos;
-			spn::Vec3	uvt;
-		};
 		using CPosL = std::vector<const CharPos*>;
 		struct DrawSet {
 			HTex	hTex;

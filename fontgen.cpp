@@ -82,13 +82,15 @@ namespace rs {
 		return &cp;
 	}
 
-	// --------------------------- TextObj ---------------------------
-	const SPVDecl TextObj::cs_vDecl(
-		new VDecl {
+	// --------------------------- VDecl for text ---------------------------
+	const SPVDecl& DrawDecl<drawtag::text>::GetVDecl() {
+		static SPVDecl vd(new VDecl({
 			{0, 0, GL_FLOAT, GL_FALSE, 2, (GLuint)VSem::POSITION},
 			{0, 8, GL_FLOAT, GL_FALSE, 3, (GLuint)VSem::TEXCOORD0}
-		}
-	);
+		}));
+		return vd;
+	}
+	// --------------------------- TextObj ---------------------------
 	TextObj::TextObj(Face& face, CCoreID coreID, std::u32string&& s): _text(std::move(s)), _coreID(coreID), _faceName(face.faceName) {
 		_init(face);
 	}
@@ -138,9 +140,9 @@ namespace rs {
 				vbase = 0;
 
 			// フォント配置
-			spn::ByteBuff vbuff(nC * 4 * sizeof(TextV));
+			spn::ByteBuff vbuff(nC * 4 * sizeof(vertex::text));
 			spn::U16Buff ibuff(nC * 6);
-			auto* pv = reinterpret_cast<TextV*>(&vbuff[0]);
+			auto* pv = reinterpret_cast<vertex::text*>(&vbuff[0]);
 			auto* pi = &ibuff[0];
 			for(int i=0 ; i<nC ; i++) {
 				auto& cp = cpl[i];
@@ -162,7 +164,7 @@ namespace rs {
 			ds.nChar = nC;
 			// GLバッファにセット
 			ds.hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-			ds.hlVb.ref()->initData(std::move(vbuff), sizeof(TextV));
+			ds.hlVb.ref()->initData(std::move(vbuff), sizeof(vertex::text));
 			ds.hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 			ds.hlIb.ref()->initData(std::move(ibuff));
 		}
@@ -179,7 +181,7 @@ namespace rs {
 	CCoreID& TextObj::refCoreID() { return _coreID; }
 	const SPString& TextObj::getFaceName() const { return _faceName; }
 	void TextObj::draw(GLEffect* gle) const {
-		gle->setVDecl(cs_vDecl);
+		gle->setVDecl(DrawDecl<drawtag::text>::GetVDecl());
 		auto& str = unif::texture::Diffuse;
 		auto id = gle->getUniformID(str);
 		Assert(Warn, id, u8R"(uniform value %1% is not found)", str)
