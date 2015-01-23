@@ -6,13 +6,7 @@ Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	using spn::Vec2;
 	using spn::Vec3;
 	// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
-	struct TmpV {
-		Vec3 pos;
-		Vec2 tex;
-		Vec3 normal;
-	};
-
-	TmpV tmpV[6*6];
+	vertex::cube tmpV[6*6];
 	Vec3 tmpPos[8];
 	Vec2 tmpUV[4];
 	for(int i=0 ; i<0x8 ; i++) {
@@ -70,13 +64,7 @@ Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 void Cube::draw(rs::GLEffect& glx) {
 	const spn::AQuat& q = this->getRot();
 	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
-	// 頂点フォーマット定義
-	rs::SPVDecl decl(new rs::VDecl{
-		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
-		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0},
-		{0,20, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::NORMAL}
-	});
-	glx.setVDecl(std::move(decl));
+	glx.setVDecl(rs::DrawDecl<drawtag::cube>::GetVDecl());
 	glx.setUniform(*glx.getUniformID("tDiffuse"), _hlTex);
 	auto m = getToWorld();
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
@@ -88,6 +76,23 @@ void Cube::draw(rs::GLEffect& glx) {
 
 	glx.setUniform(*glx.getUniformID("vLitDir"), spn::Vec3(0,1,0), false);
 	glx.draw(GL_TRIANGLES, 0, 6*6);
+}
+// ---------------------- Cube頂点宣言 ----------------------
+const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
+	static rs::SPVDecl vd(new rs::VDecl{
+		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
+		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0},
+		{0,20, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::NORMAL}
+	});
+	return vd;
+}
+const rs::DrawParamSP& rs::DrawDecl<drawtag::cube>::GetDParam() {
+	static rs::DrawParamSP dp(new rs::DrawParam{
+		GetVDecl(),
+		GL_TRIANGLES,
+		"TheCube", "P0"
+	});
+	return dp;
 }
 
 // ---------------------- CubeObj::MySt ----------------------

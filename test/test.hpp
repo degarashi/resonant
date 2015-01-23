@@ -15,6 +15,20 @@
 #include "sound.hpp"
 #include "font.hpp"
 #include "prochelper.hpp"
+#include "vertex.hpp"
+
+namespace vertex {
+	//! キューブ描画用頂点
+	struct cube {
+		spn::Vec3	pos;
+		spn::Vec2	tex;
+		spn::Vec3	normal;
+	};
+}
+namespace drawtag {
+	struct cube {};
+}
+DefineDrawParam(::drawtag::cube)
 
 // ゲーム通しての(MainThread, DrawThread含めた)グローバル変数
 // リソースハンドルはメインスレッドで参照する -> メインスレッドハンドラに投げる
