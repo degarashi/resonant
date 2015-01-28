@@ -1,6 +1,10 @@
 #include "test.hpp"
 
+MyId g_myId;
 // ---------------------- Cube ----------------------
+const rs::IdValue Cube::U_diffuse = MyId::GenUnifId("tDiffuse"),
+					Cube::U_trans = MyId::GenUnifId("mTrans"),
+					Cube::U_litdir = MyId::GenUnifId("vLitDir");
 Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	setScale({s,s,s});
 	using spn::Vec2;
@@ -59,22 +63,22 @@ Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	}
 
 	_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-	_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(TmpV));
+	_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
 }
 void Cube::draw(rs::GLEffect& glx) {
 	const spn::AQuat& q = this->getRot();
 	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
 	glx.setVDecl(rs::DrawDecl<drawtag::cube>::GetVDecl());
-	glx.setUniform(*glx.getUniformID("tDiffuse"), _hlTex);
+	glx.setUniform(U_diffuse, _hlTex);
 	auto m = getToWorld();
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
 	auto lk = shared.lock();
 	rs::CamData& cd = lk->hlCam.ref();
 	m2 *= cd.getViewProjMatrix().convert44();
-	glx.setUniform(*glx.getUniformID("mTrans"), m2, true);
+	glx.setUniform(U_trans, m2, true);
 	glx.setVStream(_hlVb, 0);
 
-	glx.setUniform(*glx.getUniformID("vLitDir"), spn::Vec3(0,1,0), false);
+	glx.setUniform(U_litdir, spn::Vec3(0,1,0), false);
 	glx.draw(GL_TRIANGLES, 0, 6*6);
 }
 // ---------------------- Cube頂点宣言 ----------------------

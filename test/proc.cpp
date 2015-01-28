@@ -39,8 +39,10 @@ void MyMain::_initEffect() {
 	spn::URI uriFx("file", mgr_path.getPath(rs::AppPath::Type::Effect));
 	uriFx <<= "test.glx";
 	lkb->hlFx = mgr_gl.loadEffect(uriFx, [](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
-	auto& pFx = *lkb->hlFx.ref();
-	lk->pFx = &pFx;
+	auto* pFx = lkb->hlFx->get();
+	pFx->setConstantUniformList(&MyId::GetUnifList());
+	pFx->setConstantTechPassList(&MyId::GetTechList());
+	lk->pFx = pFx;
 }
 void MyMain::_initCam() {
 	auto lk = shared.lock();

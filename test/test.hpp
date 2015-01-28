@@ -16,6 +16,7 @@
 #include "font.hpp"
 #include "prochelper.hpp"
 #include "vertex.hpp"
+#include "glx_id.hpp"
 
 namespace vertex {
 	//! キューブ描画用頂点
@@ -56,14 +57,22 @@ class MyDraw : public rs::DrawProc {
 		bool runU(uint64_t accum, bool bSkip) override;
 };
 
-class Cube : public spn::Pose3D {
-	rs::HLVb	_hlVb;
-	rs::HLTex	_hlTex;
+struct myTag {};
+using MyId = rs::IdMgr_Glx<myTag>;
+extern MyId g_myId;
 
+class Cube : public spn::Pose3D {
+	private:
+		rs::HLVb	_hlVb;
+		rs::HLTex	_hlTex;
+		const static rs::IdValue	U_diffuse,
+									U_trans,
+									U_litdir;
 	public:
 		Cube(float s, rs::HTex hTex);
 		void draw(rs::GLEffect& glx);
 };
+
 //! キューブObj(Update)
 class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>, public spn::CheckAlign<16, CubeObj>, public spn::EnableFromThis<rs::HDObj> {
 	private:
