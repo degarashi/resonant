@@ -117,14 +117,12 @@ void CubeObj::MySt::onDisconnected(CubeObj& self, rs::HGroup) {
 void CubeObj::MySt::onDraw(const CubeObj& self) const {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
-	fx.setTechnique(self._techId, true);
-	fx.setPass(self._passId);
+	fx.setTechPassId(self._tpId);
 	self._cube.draw(fx);
 }
 // ---------------------- CubeObj ----------------------
-CubeObj::CubeObj(rs::HTex hTex, GLint techId, GLint passId):
-	_techId(techId),
-	_passId(passId),
+CubeObj::CubeObj(rs::HTex hTex, rs::IdValue tpId):
+	_tpId(tpId),
 	_cube(1.f, hTex)
 {
 	PrintLog;

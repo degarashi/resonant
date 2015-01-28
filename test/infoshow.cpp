@@ -5,10 +5,7 @@
 void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
-	fx.setTechnique(self._techId, true);
-	fx.setPass(self._passId);
-
-	fx.setPass(self._passId);
+	fx.setTechPassId(self._tpId);
 	auto lkb = sharedbase.lock();
 	auto tsz = lkb->screenSize;
 	auto fn = [tsz](int x, int y, float r) {
@@ -46,9 +43,8 @@ rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs
 }
 
 // ---------------------- InfoShow ----------------------
-InfoShow::InfoShow(GLint techId, GLint passId):
-	_techId(techId),
-	_passId(passId)
+InfoShow::InfoShow(rs::IdValue tpId):
+	_tpId(tpId)
 {
 	//  フォント読み込み
 	_charId = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));

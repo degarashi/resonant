@@ -76,9 +76,7 @@ class Cube : public spn::Pose3D {
 //! キューブObj(Update)
 class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>, public spn::CheckAlign<16, CubeObj>, public spn::EnableFromThis<rs::HDObj> {
 	private:
-		// 本当はCubeTech等はグローバルに定義
-		GLint			_techId,
-						_passId;
+		rs::IdValue		_tpId;
 		mutable Cube	_cube;
 		class MySt : public StateT<MySt> {
 			public:
@@ -88,14 +86,13 @@ class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>, public spn::CheckAlign
 				void onDraw(const CubeObj& self) const override;
 		};
 	public:
-		CubeObj(rs::HTex hTex, GLint techId, GLint passId);
+		CubeObj(rs::HTex hTex, rs::IdValue tpId);
 		~CubeObj();
 };
 extern const rs::GMessageId MSG_Visible;
 class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>, public spn::EnableFromThis<rs::HDObj> {
 	private:
-		GLint				_techId,
-							_passId;
+		rs::IdValue			_tpId;
 		std::u32string		_infotext;
 		rs::CCoreID			_charId;
 		mutable rs::HLText	_hlText;
@@ -108,7 +105,7 @@ class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>, public spn::EnableFr
 				void onDraw(const InfoShow& self) const override;
 		};
 	public:
-		InfoShow(GLint techId, GLint passId);
+		InfoShow(rs::IdValue tpId);
 };
 
 class TScene2 : public rs::Scene<TScene2> {
@@ -123,6 +120,8 @@ class TScene2 : public rs::Scene<TScene2> {
 
 extern const rs::GMessageId MSG_GetStatus;
 class TScene : public rs::Scene<TScene> {
+	const static rs::IdValue	T_Info,
+								T_Cube;
 	rs::HLAb	_hlAb;
 	rs::HLSg	_hlSg;
 	rs::HDObj	_hInfo;

@@ -2,6 +2,8 @@
 #include "../updater.hpp"
 
 const rs::GMessageId MSG_GetStatus = rs::GMessage::RegMsgId("get_status");
+const rs::IdValue TScene::T_Info = MyId::GenTechId("TheTech", "P1"),
+				TScene::T_Cube = MyId::GenTechId("TheCube", "P0");
 // ------------------------ TScene::MySt ------------------------
 void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
@@ -10,23 +12,16 @@ void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto lk = shared.lock();
 	auto& fx = *lk->pFx;
 	// ---- make info ----
-	auto techId = *fx.getTechId("TheTech");
-	fx.setTechnique(techId, true);
-	auto passId = *fx.getPassId("P1");
-	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(techId, passId);
+	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(T_Info);
 	self.getBase().update->get()->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
 
 	// ---- make cube ----
-	techId = *fx.getTechId("TheCube");
-	fx.setTechnique(techId, true);
-	passId = *fx.getPassId("P0");
-
 	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
 	uriTex <<= "brick.jpg";
 	rs::HLTex hlTex = mgr_gl.loadTexture(uriTex);
 
-	rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<CubeObj>(hlTex, techId, passId);
+	rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<CubeObj>(hlTex, T_Cube);
 	self.getBase().update->get()->addObj(hlObj.get());
 	self._hCube = hlObj;
 }
