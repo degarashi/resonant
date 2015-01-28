@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <boost/lexical_cast.hpp>
+#include "glx_id.hpp"
 
 namespace rs {
 	//! OpenGLの値設定関数代理クラス
@@ -365,7 +366,30 @@ namespace rs {
 				draw::UPTag outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 			} _current;
 
+			using UnifIdV = std::vector<GLint>;
+			using UnifIdM = std::unordered_map<GL16Id, UnifIdV>;
+			using IdPair = std::pair<int,int>;
+			using TechIdV = std::vector<IdPair>;
+
+			struct {
+				const StrV*			src = nullptr;
+				UnifIdM				result;		// [Tech|Pass]->[size(src)]
+				const UnifIdV*		resultCur;	// current tech-pass entry
+			} _unifId;
+
+			struct {
+				const StrPairV*		src = nullptr;
+				TechIdV				result;
+			} _techId;
+
+			OPGLint _getPassId(int techId, const std::string& pass) const;
+			GLint _getUnifId(IdValue id) const;
+			IdPair _getTechPassId(IdValue id) const;
+
 		public:
+			void setConstantUniformList(const StrV* src);
+			void setConstantTechPassList(const StrPairV* src);
+
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
 			GLEffect(spn::AdaptStream& s);
@@ -398,6 +422,7 @@ namespace rs {
 			//! Technique
 			OPGLint getTechId(const std::string& tech) const;
 			OPGLint getPassId(const std::string& pass) const;
+			OPGLint getPassId(const std::string& tech, const std::string& pass) const;
 			OPGLint getCurTechId() const;
 			OPGLint getCurPassId() const;
 			//! TechID, PassIDに該当するProgramハンドルを返す
@@ -417,6 +442,11 @@ namespace rs {
 			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
 			OPGLint getUniformID(const std::string& name) const;
 
+			void setTechPassId(IdValue id);
+			template <class T>
+			void setUniform(IdValue id, T&& t, bool bT=false) {
+				setUniform(_getUnifId(id), std::forward<T>(t), bT);
+			}
 			//! 単体Uniform変数セット
 			template <class T, class = typename std::enable_if< !std::is_pointer<T>::value >::type>
 			void setUniform(GLint id, const T& t, bool bT=false) {
