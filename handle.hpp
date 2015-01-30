@@ -60,6 +60,12 @@ namespace rs {
 	using UPInput = std::unique_ptr<IInput>;
 	DEF_AHANDLE(InputMgrBase, Input, UPInput, UPInput)
 
+	namespace detail {
+		class ActMgr;
+		class Action;
+	}
+	DEF_NHANDLE(detail::ActMgr, Act, detail::Action, detail::Action)
+
 	class FTLibrary;
 	class FTFace;
 	DEF_AHANDLE(FTLibrary, FT, FTFace, FTFace)

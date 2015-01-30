@@ -204,53 +204,59 @@ namespace rs {
 				_fManip == f._fManip;
 	}
 
-	// ----------------- Action -----------------
-	InputMgr::Action::Action(): _state(0), _value(0) {}
-	InputMgr::Action::Action(Action&& a) noexcept: _link(std::move(a._link)), _state(a._state), _value(a._value) {}
-	void InputMgr::Action::update() {
-		int sum = 0;
-		// linkの値を加算合成
-		for(auto& l : _link)
-			sum += l.getValue();
-		sum = spn::Saturate(sum, InputRange);
-		_advanceState(sum);
-	}
-	void InputMgr::Action::_advanceState(int val) {
-		if(val >= InputRangeHalf) {
-			if(_state <= 0)
-				_state = 1;
-			else {
-				// オーバーフロー対策
-				_state = std::max(_state+1, _state);
-			}
-		} else {
-			if(_state > 0)
-				_state = 0;
-			else {
-				// アンダーフロー対策
-				_state = std::min(_state-1, _state);
-			}
+	namespace detail {
+		// ----------------- Action -----------------
+		Action::Action(): _state(0), _value(0) {}
+		Action::Action(Action&& a) noexcept: _link(std::move(a._link)), _state(a._state), _value(a._value) {}
+		void Action::update() {
+			int sum = 0;
+			// linkの値を加算合成
+			for(auto& l : _link)
+				sum += l.getValue();
+			sum = spn::Saturate(sum, InputRange);
+			_advanceState(sum);
 		}
-		_value = val;
-	}
-	void InputMgr::Action::addLink(const InF& inF) {
-		auto itr = std::find(_link.begin(), _link.end(), inF);
-		if(itr == _link.end())
-			_link.push_back(inF);
-	}
-	void InputMgr::Action::remLink(const InF& inF) {
-		auto itr = std::find(_link.begin(), _link.end(), inF);
-		if(itr != _link.end())
-			_link.erase(itr);
-	}
-	int InputMgr::Action::getState() const {
-		return _state;
-	}
-	int InputMgr::Action::getValue() const {
-		return _value;
+		void Action::_advanceState(int val) {
+			if(val >= InputRangeHalf) {
+				if(_state <= 0)
+					_state = 1;
+				else {
+					// オーバーフロー対策
+					_state = std::max(_state+1, _state);
+				}
+			} else {
+				if(_state > 0)
+					_state = 0;
+				else {
+					// アンダーフロー対策
+					_state = std::min(_state-1, _state);
+				}
+			}
+			_value = val;
+		}
+		void Action::addLink(const InF& inF) {
+			auto itr = std::find(_link.begin(), _link.end(), inF);
+			if(itr == _link.end())
+				_link.push_back(inF);
+		}
+		void Action::remLink(const InF& inF) {
+			auto itr = std::find(_link.begin(), _link.end(), inF);
+			if(itr != _link.end())
+				_link.erase(itr);
+		}
+		int Action::getState() const {
+			return _state;
+		}
+		int Action::getValue() const {
+			return _value;
+		}
 	}
 
 	// ----------------- InputMgr -----------------
+	template <class CHK>
+	bool InputMgr::_checkKeyValue(CHK chk, HAct hAct) const {
+		return chk(hAct.ref().getState());
+	}
 	bool InputMgr::isKeyPressed(HAct hAct) const {
 		return _checkKeyValue([](int st){ return st==1; }, hAct);
 	}
@@ -264,8 +270,8 @@ namespace rs {
 		return hAct.ref().getValue();
 	}
 
-	InputMgr::HLAct InputMgr::addAction(const std::string& name) {
-		HLAct ret = _act.acquire(name, Action()).first;
+	HLAct InputMgr::addAction(const std::string& name) {
+		HLAct ret = _act.acquire(name, detail::Action()).first;
 		_aset.insert(ret);
 		return std::move(ret);
 	}
@@ -318,7 +324,7 @@ namespace rs {
 		for(auto& h : *this)
 			h->scan();
 		for(auto& h : _aset) {
-			Action& a = h.get().ref();
+			detail::Action& a = h.get().ref();
 			a.update();
 		}
 	}

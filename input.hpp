@@ -163,38 +163,35 @@ namespace rs {
 			static InF AsHatY(HInput hI, int num);
 	};
 
+	namespace detail {
+		class Action {
+			using Link = std::vector<InF>;
+			Link		_link;
+			// ボタンを押している間は
+			// Pressed=1, Neutral=0, Released=-1, Pressing= n>=1
+			int			_state,
+						_value;
+			void _advanceState(int val);
+			public:
+				Action();
+				Action(Action&& a) noexcept;
+				void update();
+				void addLink(const InF& inF);
+				void remLink(const InF& inF);
+				int getState() const;
+				int getValue() const;
+		};
+		class ActMgr : public spn::ResMgrN<Action, ActMgr> {};
+	}
 	//! Actionとキーの割付とステート管理用
 	/*! ボタンステートはAction毎に用意 */
 	class InputMgr : protected InputMgrBase {
 		private:
-			using Link = std::vector<InF>;
-			class Action {
-				Link		_link;
-				// ボタンを押している間は
-				// Pressed=1, Neutral=0, Released=-1, Pressing= n>=1
-				int			_state,
-							_value;
-				void _advanceState(int val);
-				public:
-					Action();
-					Action(Action&& a) noexcept;
-					void update();
-					void addLink(const InF& inF);
-					void remLink(const InF& inF);
-					int getState() const;
-					int getValue() const;
-			};
-			class ActMgr : public spn::ResMgrN<Action, ActMgr> {} _act;
-		public:
-			using HLAct = ActMgr::AnotherLHandle<Action, true>;
-			using HAct = ActMgr::AnotherSHandle<Action>;
-		private:
 			using ActSet = std::unordered_set<HLAct>;
-			ActSet	_aset;
+			detail::ActMgr	_act;
+			ActSet			_aset;
 			template <class CHK>
-			bool _checkKeyValue(CHK chk, HAct hAct) const {
-				return chk(hAct.ref().getState());
-			}
+			bool _checkKeyValue(CHK chk, HAct hAct) const;
 		public:
 			InputMgr();
 			~InputMgr();
@@ -218,6 +215,4 @@ namespace rs {
 			// 次回の更新時に処理
 			void update();
 	};
-	using HLAct = InputMgr::HLAct;
-	using HAct = InputMgr::HAct;
 }
