@@ -7,3 +7,6 @@
 [submodule "glextract"]
 	path = glextract
 	url = ../glextract
+[submodule "crosscompile"]
+	path = crosscompile
+	url = ../crosscompile/

@@ -4,7 +4,7 @@ project(resonant)
 # Linux: BUILD_TYPE = Linux
 # MinGW: BUILD_TYPE = MinGW
 # Android:	BUILD_TYPE = AndroidX86 or AndroidArm
-include("spinner/${BUILD_TYPE}.cmake" require)
+include("crosscompile/${BUILD_TYPE}.cmake" require)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-function")
 
 # この辺は実際に使うOpenGLのバージョンに合わせて定義する
