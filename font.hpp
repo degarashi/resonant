@@ -142,14 +142,8 @@ namespace rs {
 			// 同じFaceの同じ文字列には同一のハンドルが返されるようにする
 			/*! \param[in] cid makeCoreIDで作成したFaceID設定済みID
 				\param[in] s 表示したい文字列 */
-			LHdl createText(CCoreID cid, spn::To32Str str) {
-				std::u32string str32(str.moveTo());
-				// CCoreIDを付加した文字列をキーにする
-				auto& ar = _getArray(cid);
-				auto tag = _MakeTextTag(cid, str32);
-				return acquire(std::move(tag),
-							[&](){ return TextObj(ar, cid, std::move(str32)); }).first;
-			}
+			LHdl createText(CCoreID cid, spn::To32Str str);
+
 			// デバイスロストで処理が必要なのはテクスチャハンドルだけなので、
 			// onDeviceLostやonDeviceResetは特に必要ない
 	};

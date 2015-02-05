@@ -259,4 +259,12 @@ namespace rs {
 		ss << boost::lexical_cast<std::u32string>(cid.value()) << U'_' << s;
 		return ss.str();
 	}
+	FontGen::LHdl FontGen::createText(CCoreID cid, spn::To32Str str) {
+		std::u32string str32(str.moveTo());
+		// CCoreIDを付加した文字列をキーにする
+		auto& ar = _getArray(cid);
+		auto tag = _MakeTextTag(cid, str32);
+		return acquire(std::move(tag),
+					[&](const auto&){ return TextObj(ar, cid, std::move(str32)); }).first;
+	}
 }

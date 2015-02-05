@@ -12,6 +12,7 @@
 #include "spinner/chunk.hpp"
 #include "sdlwrap.hpp"
 #include <array>
+#include "apppath.hpp"
 
 namespace rs {
 	//! Tech:Pass の組み合わせを表す
@@ -110,24 +111,30 @@ namespace rs {
 	struct AdaptSDL;
 	#define mgr_gl (::rs::GLRes::_ref())
 	//! OpenGL関連のリソースマネージャ
-	class GLRes : public spn::ResMgrN<UPResource, GLRes, std::allocator, std::string> {
-		using base_type = spn::ResMgrN<UPResource, GLRes, std::allocator, std::string>;
-		UPFBuffer						_upFb;
-		std::unique_ptr<GLFBufferTmp>	_tmpFb;
-		//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
-		/*! デバッグで色を変えたりしてチェックできる */
-		std::unique_ptr<AnotherLHandle<UPTexture, true>>	_hlEmptyTex;
-		//! DeviceLost/Resetの状態管理
-		bool	_bInit;
-		//! デストラクタ内の時はtrue
-		bool	_bInDtor;
+	class GLRes : public ResMgrApp<UPResource, GLRes> {
+		private:
+			using base_type = ResMgrApp<UPResource, GLRes>;
+			UPFBuffer						_upFb;
+			std::unique_ptr<GLFBufferTmp>	_tmpFb;
+			//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
+			/*! デバッグで色を変えたりしてチェックできる */
+			std::unique_ptr<AnotherLHandle<UPTexture, true>>	_hlEmptyTex;
+			//! DeviceLost/Resetの状態管理
+			bool	_bInit;
+			//! デストラクタ内の時はtrue
+			bool	_bInDtor;
 
-		//! 既にデバイスがアクティブだったらonDeviceResetを呼ぶ
-		template <class LHDL>
-		void initHandle(LHDL& lh) {
-			if(_bInit)
-				lh.ref()->onDeviceReset();
-		}
+			enum ResourceType {
+				Texture,
+				Effect,
+				_Num
+			};
+			const static std::string cs_rtname[ResourceType::_Num];
+			std::function<void (HRes)>	_cbInit;
+
+			//! キューブマップの区別のためのポストフィックス
+			spn::Optional<char>	_chPostfix;
+			spn::URI _modifyResourceName(spn::URI& key) const override;
 
 		public:
 			GLRes();
@@ -147,12 +154,18 @@ namespace rs {
 				\param[in] fmt OpenGLの内部フォーマット(not ファイルのフォーマット)<br>
 								指定しなければファイルから推定 */
 			HLTex loadTexture(const spn::URI& uri, OPInCompressedFmt fmt=spn::none);
+			HLTex loadTexture(const std::string& name, OPInCompressedFmt fmt=spn::none);
 			//! 連番ファイルからキューブテクスチャを作成
 			HLTex loadCubeTexture(const spn::URI& uri, OPInCompressedFmt fmt=spn::none);
+			HLTex loadCubeTexture(const std::string& name, OPInCompressedFmt fmt=spn::none);
 			//! 個別のファイルからキューブテクスチャを作成
 			/*! 画像サイズとフォーマットは全て一致していなければならない */
-			HLTex loadCubeTexture(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
-								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt);
+			HLTex _loadCubeTexture(OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5);
+			template <class... Ts>
+			HLTex loadCubeTexture(OPInCompressedFmt fmt, Ts&&... ts) {
+				return loadCubeTexture(fmt, _uriFromResourceName(std::forward<Ts>(ts))...);
+			}
 			//! 空のテクスチャを作成
 			/*! 領域だけ確保 */
 			HLTex createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore);
@@ -179,17 +192,17 @@ namespace rs {
 			// ------------ Buffer ------------
 			using CBCreateFx = std::function<GLEffect* (AdaptSDL&)>;
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri, CBCreateFx cb);
+			AnotherLHandle<UPEffect,true> loadEffect(const std::string& name, CBCreateFx cb);
 			//! 頂点バッファの確保
 			AnotherLHandle<UPVBuffer,true> makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
 			AnotherLHandle<UPIBuffer,true> makeIBuffer(GLuint dtype);
 
 			AnotherSHandle<UPTexture> getEmptyTexture() const;
-			LHdl _common(const std::string& key, std::function<UPResource()> cb);
+			LHdl _common(const std::string& key, std::function<UPResource(const spn::URI&)> cb);
 			GLFBufferTmp& getTmpFramebuffer() const;
 			// --- from ResMgrBase ---
-			spn::LHandle loadResource(spn::AdaptStream& ast, const spn::URI& uri);
+			spn::LHandle loadResource(spn::AdaptStream& ast, const spn::URI& uri) override;
 	};
 
 	using Priority = uint32_t;

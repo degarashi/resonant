@@ -16,9 +16,7 @@ void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	self._hInfo = hlInfo;
 
 	// ---- make cube ----
-	spn::URI uriTex("file", mgr_path.getPath(rs::AppPath::Type::Texture));
-	uriTex <<= "brick.jpg";
-	rs::HLTex hlTex = mgr_gl.loadTexture(uriTex);
+	rs::HLTex hlTex = mgr_gl.loadTexture("brick.jpg");
 
 	rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<CubeObj>(hlTex, T_Cube);
 	self.getBase().update->get()->addObj(hlObj.get());
@@ -90,9 +88,7 @@ TScene::TScene() {
 	// 描画グループを初期化 (Z-sort)
 	getBase().draw = rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_z_desc}, false);
 	// サウンド読み込み
-	spn::PathBlock pb(mgr_path.getPath(rs::AppPath::Type::Sound));
-	pb <<= "the_thunder.ogg";
-	_hlAb = mgr_sound.loadOggStream(mgr_rw.fromFile(pb.plain_utf8(), rs::RWops::Read));
+	_hlAb = mgr_sound.loadOggStream("the_thunder.ogg");
 	_hlSg = mgr_sound.createSourceGroup(1);
 
 	setStateNew<MySt>();

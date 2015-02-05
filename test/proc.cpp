@@ -36,9 +36,9 @@ MyMain::MyMain(const rs::SPWindow& sp):
 void MyMain::_initEffect() {
 	auto lkb = sharedbase.lock();
 	auto lk = shared.lock();
-	spn::URI uriFx("file", mgr_path.getPath(rs::AppPath::Type::Effect));
-	uriFx <<= "test.glx";
-	lkb->hlFx = mgr_gl.loadEffect(uriFx, [](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
+	std::string key;
+	lkb->hlFx = mgr_gl.loadEffect("test.glx",
+		[](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
 	auto* pFx = lkb->hlFx->get();
 	pFx->setConstantUniformList(&MyId::GetUnifList());
 	pFx->setConstantTechPassList(&MyId::GetTechList());

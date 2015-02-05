@@ -191,9 +191,12 @@ namespace rs {
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
-			appPath->setFromText(mgr_rw.fromFile(param.pathfile, RWops::Read));
+			appPath->setFromText(mgr_rw.fromFile(param.pathfile, RWops::Read), false);
 			UPtr<FontFamily>	fontP(new FontFamily());
-			fontP->loadFamilyWildCard(mgr_path.getPath(AppPath::Type::Font).plain_utf8());
+			appPath->enumPath("font", "*.tt(c|f)", [&fontP](const spn::Dir& d){
+				fontP->loadFamily(mgr_rw.fromFile(d.plain_utf8(), RWops::Read));
+				return true;
+			});
 			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
 			UPtr<CameraMgr>		camP(new CameraMgr());
 			UPtr<PointerMgr>	pmP(new PointerMgr());

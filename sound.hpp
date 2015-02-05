@@ -9,6 +9,7 @@
 #include "handle.hpp"
 #undef BOOST_NO_CXX11_SMART_PTR
 #include <boost/serialization/unique_ptr.hpp>
+#include "apppath.hpp"
 
 namespace rs {
 	Duration CalcTimeLength(int word_size, int ch, int hz, size_t buffLen);
@@ -41,7 +42,16 @@ namespace rs {
 			const AFormatF& getFormat() const { return _format; }
 			virtual void invalidate() {}
 	};
-	class ABufMgr : public spn::ResMgrA<UPABuff, ABufMgr> {};
+	class ABufMgr : public ResMgrApp<UPABuff, ABufMgr> {
+		private:
+			enum ResourceType {
+				Sound,
+				_Num
+			};
+			const static std::string cs_rtname[ResourceType::_Num];
+		public:
+			ABufMgr();
+	};
 
 	//! 固有サンプルデータソース
 	class ABufSub {
@@ -429,9 +439,9 @@ namespace rs {
 		public:
 			using SoundMgrDep::SoundMgrDep;
 			SoundMgr(const SoundMgr&) = delete;
-			HLAb loadWaveBatch(HRW hRw);
-			HLAb loadOggBatch(HRW hRw);
-			HLAb loadOggStream(HRW hRw);
+			HLAb loadWaveBatch(const std::string& name);
+			HLAb loadOggBatch(const std::string& name);
+			HLAb loadOggStream(const std::string& name);
 
 			HLSg createSourceGroup(int n);
 			HLSs createSource();

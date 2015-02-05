@@ -3,10 +3,29 @@
 #include "adaptsdl.hpp"
 
 namespace rs {
-	GLRes::GLRes() {
+	namespace {
+		template <class Tex_t, class... Ts>
+		auto MakeStaticTex(Ts&&... ts) {
+			return [&](const spn::URI& uri){
+				return UPResource(new Tex_t(uri, std::forward<Ts>(ts)...));
+			};
+		}
+	}
+
+	const std::string GLRes::cs_rtname[] = {
+		"texture",
+		"effect"
+	};
+	GLRes::GLRes(): ResMgrApp(cs_rtname) {
 		_bInit = false;
 		_bInDtor = false;
 		_upFb.reset(new GLFBuffer());
+		// 既にデバイスがアクティブだったらonDeviceResetを呼ぶ
+		_cbInit =
+			[&](auto h){
+				if(_bInit)
+					h.ref()->onDeviceReset();
+			};
 
 		// EmptyTexture = 1x1の単色テクスチャ
 		uint32_t buff1 = 0xffffffff;
@@ -17,71 +36,112 @@ namespace rs {
 		_bInDtor = true;
 		onDeviceLost();
 	}
-	GLRes::LHdl GLRes::_common(const std::string& key, std::function<UPResource ()> cb) {
-		LHdl lh = getFromKey(key);
-		if(!lh.valid())
-			lh = base_type::acquire(key, cb).first;
-		initHandle(lh);
-		return std::move(lh);
+	spn::URI GLRes::_modifyResourceName(spn::URI& key) const {
+		spn::URI key_k = base_type::_modifyResourceName(key);
+		// Cubeプリフィックスを持っている時は末尾に加える
+		if(_chPostfix) {
+			auto str = key_k.getLast_utf8();
+			str += *_chPostfix;
+			key_k.popBack();
+			key_k.pushBack(str);
+		}
+		return std::move(key_k);
+	}
+	HLTex GLRes::loadTexture(const std::string& name, OPInCompressedFmt fmt) {
+		_setResourceTypeId(ResourceType::Texture);
+		return loadTexture(_uriFromResourceName(name), fmt);
 	}
 	HLTex GLRes::loadTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
-		LHdl lh = _common(uri.plainUri_utf8(), [&](){return UPResource(new Texture_StaticURI(uri, fmt));});
-		return Cast<UPTexture>(std::move(lh));
+		_chPostfix = spn::none;
+		_setResourceTypeId(ResourceType::Texture);
+		return Cast<UPTexture>(
+			loadResourceApp(uri,
+				MakeStaticTex<Texture_StaticURI>(fmt),
+				_cbInit)
+		);
+	}
+	HLTex GLRes::loadCubeTexture(const std::string& name, OPInCompressedFmt fmt) {
+		_setResourceTypeId(ResourceType::Texture);
+		// 0を付加してリソース検索
+		spn::PathBlock pb(name);
+		pb.setPathNum([](auto num) -> spn::Int_OP{ return 0; });
+
+		pb = _uriFromResourceName(pb.plain_utf8()).path();
+		// 末尾の0を除く
+		pb.setPathNum([](auto) ->spn::Int_OP{ return spn::none; });
+		return loadCubeTexture(spn::URI("file", pb), fmt);
 	}
 	HLTex GLRes::loadCubeTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
-		LHdl lh = _common(uri.plainUri_utf8(), [&](){return UPResource(new Texture_StaticCubeURI(uri, fmt));});
-		return Cast<UPTexture>(std::move(lh));
+		// 連番CubeTexutreの場合はキーとなるURIの末尾に"@"を付加する
+		_chPostfix = '@';
+		// Uriの連番展開
+		return Cast<UPTexture>(
+					loadResourceApp(uri,
+						MakeStaticTex<Texture_StaticCubeURI>(fmt),
+						_cbInit)
+				);
 	}
-	HLTex GLRes::loadCubeTexture(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
-								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt)
+	// 連番キューブ: Key=(Path+@, ext) URI=(Path, ext)
+	//
+	HLTex GLRes::_loadCubeTexture(OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5)
 	{
+		_chPostfix = spn::none;
+		// 個別指定CubeTextureの場合はリソース名はUriを全部つなげた文字列とする
 		std::string tmp(uri0.plainUri_utf8());
 		auto fn = [&tmp](const spn::URI& u) { tmp.append(u.plainUri_utf8()); };
 		fn(uri1); fn(uri2); fn(uri3); fn(uri4); fn(uri5);
 
-		LHdl lh = _common(tmp, [&](){return UPResource(new Texture_StaticCubeURI(uri0,uri1,uri2,uri3,uri4,uri5,fmt));});
-		return Cast<UPTexture>(std::move(lh));
+		return Cast<UPTexture>(
+			loadResourceApp(spn::URI("file", tmp),
+				[&](const spn::URI&){ return UPResource(new Texture_StaticCubeURI(uri0,uri1,uri2,uri3,uri4,uri5,fmt)); },
+				_cbInit)
+		);
 	}
 	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore) {
 		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
 	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data) {
 		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore, srcFmt, data)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
 	HLSh GLRes::makeShader(ShType type, const std::string& src) {
 		LHdl lh = base_type::acquire(UPResource(new GLShader(type, src)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPShader>(std::move(lh));
 	}
-	HLFx GLRes::loadEffect(const spn::URI& uri, CBCreateFx cb) {
-		HLRW hlRW = mgr_rw.fromURI(uri, RWops::Read);
-		AdaptSDL as(hlRW.get());
-		LHdl lh = _common(uri.plainUri_utf8(), [&](){ return UPResource(cb(as)); });
+	HLFx GLRes::loadEffect(const std::string& name, CBCreateFx cb) {
+		_setResourceTypeId(ResourceType::Effect);
+		LHdl lh = loadResourceApp(name,
+				[&](const spn::URI& uri){
+					AdaptSDL as(mgr_rw.fromURI(uri, RWops::Read));
+					return UPResource(cb(as));
+				},
+				_cbInit);
 		return Cast<UPEffect>(std::move(lh));
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
 		LHdl lh = base_type::acquire(UPResource(new GLVBuffer(dtype)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPVBuffer>(std::move(lh));
 	}
 	HLIb GLRes::makeIBuffer(GLuint dtype) {
 		LHdl lh = base_type::acquire(UPResource(new GLIBuffer(dtype)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPIBuffer>(std::move(lh));
 	}
 
 	HLProg GLRes::makeProgram(HSh vsh, HSh psh) {
 		LHdl lh = base_type::acquire(UPResource(new GLProgram(vsh,psh)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPProg>(std::move(lh));
 	}
 	HLProg GLRes::makeProgram(HSh vsh, HSh gsh, HSh psh) {
 		LHdl lh = base_type::acquire(UPResource(new GLProgram(vsh,gsh,psh)));
-		initHandle(lh);
+		_cbInit(lh);
 		return Cast<UPProg>(std::move(lh));
 	}
 	GLFBufferTmp& GLRes::getTmpFramebuffer() const {
@@ -121,8 +181,11 @@ namespace rs {
 		if(ext=="png" || ext=="jpg" || ext=="bmp")
 			ret = loadTexture(uri);
 		// is it Effect(Shader)?
-		else if(ext == "glx")
-			ret = loadEffect(uri, [](AdaptSDL& as){ return new GLEffect(as); });
+		else if(ext == "glx") {
+			HLRW hlRW = mgr_rw.fromURI(uri, RWops::Read);
+			ret = loadEffect(uri.plain_utf8(), [](AdaptSDL& as){
+					return new GLEffect(as); });
+		}
 		return std::move(ret);
 	}
 }

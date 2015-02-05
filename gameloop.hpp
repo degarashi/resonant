@@ -26,36 +26,6 @@ namespace rs {
 		static void All(const SDL_Event& e, uint32_t filter = ALL_EVENT);
 	};
 
-	#define mgr_path (::rs::AppPath::_ref())
-	//! アプリケーションのパスや引数、その他システムパスを登録
-	/*! 将来的にはLuaによる変数定義で置き換え */
-	class AppPath : public spn::Singleton<AppPath> {
-		public:
-			enum class Type {
-				Sound,
-				Texture,
-				Font,
-				Effect,
-				NumType
-			};
-		private:
-			//! アプリケーション本体のパス
-			spn::PathBlock	_pbApp,
-							_pbAppDir;
-			//! AppPathと連結後のパス
-			spn::PathBlock	_path[static_cast<int>(Type::NumType)];
-		public:
-			AppPath(const std::string& apppath);
-			//! 改行を区切りとした文字列からシステムパスを設定
-			void setFromText(HRW hRW);
-			//! Luaスクリプト形式でパスを設定 (予定)
-			// void setFromLua();
-
-			const spn::PathBlock& getAppPath() const;
-			const spn::PathBlock& getAppDir() const;
-			const spn::PathBlock& getPath(Type typ) const;
-	};
-
 	template <class T>
 	using UPtr = std::unique_ptr<T>;
 	namespace msg {

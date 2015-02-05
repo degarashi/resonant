@@ -22,6 +22,12 @@ namespace rs {
 		return CalcSampleLength(af.getBitNum()/8, af.getChannels(), af.freq, dur);
 	}
 
+	// --------------------- ABufMgr ---------------------
+	const std::string ABufMgr::cs_rtname[] = {
+		"sound"
+	};
+	ABufMgr::ABufMgr(): ResMgrApp(cs_rtname) {}
+	// --------------------- ABuffer ---------------------
 	ABuffer::ABuffer(): _format(AFormat::Format::Invalid, 0) {}
 	// --------------------- ABufSub ---------------------
 	ABufSub::ABufSub(HAb hAb, uint32_t nLoop): _hlAb(hAb), _nLoop(nLoop), _nLoopInit(nLoop) {
@@ -688,15 +694,34 @@ namespace rs {
 		_source.clear();
 	}
 
+	namespace {
+		template <class T>
+		UPABuff MakeAb(const spn::URI& uri) {
+			auto lh = mgr_rw.fromURI(uri, RWops::Read);
+			return UPABuff(new T(lh));
+		}
+	}
 	// ------------------ SoundMgr ------------------
-	HLAb SoundMgr::loadWaveBatch(HRW hRw) {
-		return _buffMgr.acquire(UPABuff(new AWaveBatch(hRw)));
+	HLAb SoundMgr::loadWaveBatch(const std::string& name) {
+		return _buffMgr.loadResourceApp(
+			name,
+			&MakeAb<AWaveBatch>,
+			[](auto){}
+		);
 	}
-	HLAb SoundMgr::loadOggBatch(HRW hRw) {
-		return _buffMgr.acquire(UPABuff(new AOggBatch(hRw)));
+	HLAb SoundMgr::loadOggBatch(const std::string& name) {
+		return _buffMgr.loadResourceApp(
+			name,
+			&MakeAb<AOggBatch>,
+			[](auto){}
+		);
 	}
-	HLAb SoundMgr::loadOggStream(HRW hRw) {
-		return _buffMgr.acquire(UPABuff(new AOggStream(hRw)));
+	HLAb SoundMgr::loadOggStream(const std::string& name) {
+		return _buffMgr.loadResourceApp(
+			name,
+			&MakeAb<AOggStream>,
+			[](auto){}
+		);
 	}
 
 	HLSg SoundMgr::createSourceGroup(int n) {

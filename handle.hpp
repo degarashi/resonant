@@ -4,6 +4,7 @@
 #include "spinner/misc.hpp"
 #include "spinner/alignedalloc.hpp"
 #include "spinner/resmgr.hpp"
+#include "spinner/dir.hpp"
 
 namespace rs {
 	class GLWrap;
@@ -31,16 +32,16 @@ namespace rs {
 	using UPFBuffer = std::unique_ptr<GLFBuffer>;
 	class GLRBuffer;
 	using UPRBuffer = std::unique_ptr<GLRBuffer>;
-	DEF_NHANDLE_PROP(GLRes, Res, UPResource, UPResource, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Tex, UPResource, UPTexture, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Vb, UPResource, UPVBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Ib, UPResource, UPIBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Buff, UPResource, UPBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Prog, UPResource, UPProg, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Sh, UPResource, UPShader, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Fx, UPResource, UPEffect, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Fb, UPResource, UPFBuffer, std::allocator, std::string)
-	DEF_NHANDLE_PROP(GLRes, Rb, UPResource, UPRBuffer, std::allocator, std::string)
+	DEF_NHANDLE_PROP(GLRes, Res, UPResource, UPResource, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Tex, UPResource, UPTexture, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Vb, UPResource, UPVBuffer, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Ib, UPResource, UPIBuffer, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Buff, UPResource, UPBuffer, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Prog, UPResource, UPProg, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Sh, UPResource, UPShader, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Fx, UPResource, UPEffect, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Fb, UPResource, UPFBuffer, std::allocator, spn::URI)
+	DEF_NHANDLE_PROP(GLRes, Rb, UPResource, UPRBuffer, std::allocator, spn::URI)
 
 	class FontGen;
 	class TextObj;
@@ -77,7 +78,7 @@ namespace rs {
 	class ABufMgr;
 	class ABuffer;
 	using UPABuff = std::unique_ptr<ABuffer>;
-	DEF_AHANDLE(ABufMgr, Ab, UPABuff, UPABuff)
+	DEF_NHANDLE_PROP(ABufMgr, Ab, UPABuff, UPABuff, std::allocator, spn::URI)
 
 	class ASource;
 	class SSrcMgr;
