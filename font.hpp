@@ -147,8 +147,8 @@ namespace rs {
 				// CCoreIDを付加した文字列をキーにする
 				auto& ar = _getArray(cid);
 				auto tag = _MakeTextTag(cid, str32);
-				LHdl lh = emplace(std::move(tag), TextObj(ar, cid, std::move(str32))).first;
-				return std::move(lh);
+				return acquire(std::move(tag),
+							[&](){ return TextObj(ar, cid, std::move(str32)); }).first;
 			}
 			// デバイスロストで処理が必要なのはテクスチャハンドルだけなので、
 			// onDeviceLostやonDeviceResetは特に必要ない

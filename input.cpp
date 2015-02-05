@@ -271,7 +271,7 @@ namespace rs {
 	}
 
 	HLAct InputMgr::addAction(const std::string& name) {
-		HLAct ret = _act.acquire(name, detail::Action()).first;
+		HLAct ret = _act.acquire(name, [](){ return detail::Action(); }).first;
 		_aset.insert(ret);
 		return std::move(ret);
 	}

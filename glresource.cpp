@@ -20,7 +20,7 @@ namespace rs {
 	GLRes::LHdl GLRes::_common(const std::string& key, std::function<UPResource ()> cb) {
 		LHdl lh = getFromKey(key);
 		if(!lh.valid())
-			lh = base_type::acquire(key, cb()).first;
+			lh = base_type::acquire(key, cb).first;
 		initHandle(lh);
 		return std::move(lh);
 	}

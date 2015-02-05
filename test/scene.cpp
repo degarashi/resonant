@@ -10,7 +10,6 @@ void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	s.clear();
 
 	auto lk = shared.lock();
-	auto& fx = *lk->pFx;
 	// ---- make info ----
 	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(T_Info);
 	self.getBase().update->get()->addObj(hlInfo.get());
