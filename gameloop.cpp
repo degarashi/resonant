@@ -190,13 +190,16 @@ namespace rs {
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
+			// デフォルトでルートディレクトリからの探索パスを追加
+			rs::SPUriHandler sph = std::make_shared<rs::UriH_File>(u8"/");
+			mgr_rw.getHandler().addHandler(0x00, sph);
 			UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
-			appPath->setFromText(mgr_rw.fromFile(param.pathfile, RWops::Read), false);
+			// pathfile文字列が有効ならここでロードする
+			if(!param.pathfile.empty())
+				GameLoop::LoadPathfile(spn::URI("file", param.pathfile));
+
 			UPtr<FontFamily>	fontP(new FontFamily());
-			appPath->enumPath("font", "*.tt(c|f)", [&fontP](const spn::Dir& d){
-				fontP->loadFamily(mgr_rw.fromFile(d.plain_utf8(), RWops::Read));
-				return true;
-			});
+			GameLoop::LoadFonts();
 			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
 			UPtr<CameraMgr>		camP(new CameraMgr());
 			UPtr<PointerMgr>	pmP(new PointerMgr());
@@ -525,6 +528,15 @@ PrintLog;
 			Assert(Warn, false, "GuiThread: main thread was ended by throwing exception")
 		}
 		return 0;
+	}
+	void GameLoop::LoadFonts() {
+		mgr_path.enumPath("font", "*.tt(c|f)", [](const spn::Dir& d){
+			mgr_font.loadFamily(mgr_rw.fromFile(d.plain_utf8(), RWops::Read));
+			return true;
+		});
+	}
+	void GameLoop::LoadPathfile(const spn::URI& uri, bool bAppend) {
+		mgr_path.setFromText(mgr_rw.fromURI(uri, RWops::Read), bAppend);
 	}
 }
 

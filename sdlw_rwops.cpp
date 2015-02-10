@@ -1,6 +1,7 @@
 #include "sdlwrap.hpp"
 #include "spinner/random.hpp"
 #include "spinner/charvec.hpp"
+#include "apppath.hpp"
 
 namespace rs {
 	// --------------------- RWE_Error ---------------------
@@ -449,8 +450,16 @@ namespace rs {
 		return nullptr;
 	}
 	HLRW UriH_File::openURI_RW(const spn::URI& uri, int access) {
+		// (SDLのファイルロード関数がやってくれる筈だが、明示的にやる)
 		if(Capable(uri, access)) {
 			try {
+				// 相対パス時はプログラムが置いてある地点から探索
+				auto& path = uri.path();
+				if(!path.isAbsolute()) {
+					spn::PathBlock pb(mgr_path.getAppDir());
+					pb <<= path;
+					return mgr_rw.fromFile(pb.plain_utf8(), access);
+				}
 				return mgr_rw.fromFile(uri.plain_utf8(), access);
 			} catch(const std::runtime_error& e) {
 				// ファイルが読み込めないのはエラーとして扱わない

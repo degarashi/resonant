@@ -25,8 +25,6 @@ MyMain::MyMain(const rs::SPWindow& sp):
 {
 	auto lkb = sharedbase.lock();
 	lkb->hlIk.ref();
-	rs::SPUriHandler sph = std::make_shared<rs::UriH_File>(u8"/");
-	mgr_rw.getHandler().addHandler(0x00, sph);
 
 	_initInput();
 	_initCam();

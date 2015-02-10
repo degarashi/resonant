@@ -53,7 +53,6 @@ namespace rs {
 	}
 	HLTex GLRes::loadTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
 		_chPostfix = spn::none;
-		_setResourceTypeId(ResourceType::Texture);
 		return Cast<UPTexture>(
 			loadResourceApp(uri,
 				MakeStaticTex<Texture_StaticURI>(fmt),
@@ -113,15 +112,19 @@ namespace rs {
 		_cbInit(lh);
 		return Cast<UPShader>(std::move(lh));
 	}
-	HLFx GLRes::loadEffect(const std::string& name, CBCreateFx cb) {
-		_setResourceTypeId(ResourceType::Effect);
-		LHdl lh = loadResourceApp(name,
+	HLFx GLRes::loadEffect(const spn::URI& uri, const CBCreateFx& cb) {
+		LHdl lh = loadResourceApp(uri,
 				[&](const spn::URI& uri){
 					AdaptSDL as(mgr_rw.fromURI(uri, RWops::Read));
 					return UPResource(cb(as));
 				},
 				_cbInit);
 		return Cast<UPEffect>(std::move(lh));
+	}
+	HLFx GLRes::loadEffect(const std::string& name, const CBCreateFx& cb) {
+		_chPostfix = spn::none;
+		_setResourceTypeId(ResourceType::Effect);
+		return loadEffect(_uriFromResourceName(name), cb);
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
 		LHdl lh = base_type::acquire(UPResource(new GLVBuffer(dtype)));

@@ -198,6 +198,10 @@ namespace rs {
 			GameLoop(MPCreate mcr, DPCreate dcr);
 
 			int run(const GLoopInitParam& param);
+			//! AppPathの場所に置かれたをフォントファイルを列挙し、読み込む
+			static void LoadFonts();
+			//! AppPathをテキストファイルから設定
+			static void LoadPathfile(const spn::URI& uri, bool bAppend=false);
 	};
 }
 

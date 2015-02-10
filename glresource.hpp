@@ -192,7 +192,8 @@ namespace rs {
 			// ------------ Buffer ------------
 			using CBCreateFx = std::function<GLEffect* (AdaptSDL&)>;
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect,true> loadEffect(const std::string& name, CBCreateFx cb);
+			AnotherLHandle<UPEffect,true> loadEffect(const std::string& name, const CBCreateFx& cb);
+			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri, const CBCreateFx& cb);
 			//! 頂点バッファの確保
 			AnotherLHandle<UPVBuffer,true> makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
