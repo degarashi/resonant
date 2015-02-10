@@ -16,6 +16,10 @@ namespace rs {
 			// AppPathを先頭に付加した状態で格納
 			using PathM = std::unordered_map<std::string, PathV>;
 			PathM			_path;
+			struct E_SyntaxError : public std::invalid_argument {
+				E_SyntaxError(int nline, char expect);
+				E_SyntaxError(int nline, const std::string& msg);
+			};
 
 		public:
 			AppPath(const std::string& apppath);

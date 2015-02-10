@@ -2,6 +2,15 @@
 #include "sdlwrap.hpp"
 
 namespace rs {
+	// ------------------- E_SyntaxError -------------------
+	AppPath::E_SyntaxError::E_SyntaxError(int nline, char expect): std::invalid_argument("") {
+		boost::format fmt("in line %1%:\n AppPath source(text) syntax error: expected '%2%'");
+		static_cast<std::invalid_argument&>(*this) = std::invalid_argument((fmt % nline % expect).str());
+	}
+	AppPath::E_SyntaxError::E_SyntaxError(int nline, const std::string& msg): std::invalid_argument("") {
+		boost::format fmt("in line %1%:\n AppPath source(text) syntax error: %2%");
+		static_cast<std::invalid_argument&>(*this) = std::invalid_argument((fmt % nline % msg).str());
+	}
 	// ------------------- AppPath -------------------
 	AppPath::AppPath(const std::string& apppath): _pbApp(apppath), _pbAppDir(_pbApp) {
 		Assert(Trap, _pbApp.isAbsolute())
@@ -16,7 +25,8 @@ namespace rs {
 					*ptrE = ptr + buff.size();
 		char tmp[256];
 		PathV* pEnt = nullptr;
-		auto fnRead = [&tmp](const char* cur, const char* to, char cEnd) {
+		int line = 1;
+		auto fnRead = [&tmp](int line, const char* cur, const char* to, char cEnd) {
 			int wcur = 0;
 			while(cur != to) {
 				char c = *cur++;
@@ -26,22 +36,24 @@ namespace rs {
 				} else
 					tmp[wcur++] = c;
 			}
-			throw std::invalid_argument("syntax error");
+			throw E_SyntaxError(line, cEnd);
 		};
 		while(ptr < ptrE) {
 			if(*ptr == '[') {
 				// ---- Entry ----
 				++ptr;
 				// Read until ']'
-				ptr = fnRead(ptr, ptrE, ']');
+				ptr = fnRead(line, ptr, ptrE, ']');
 				pEnt = &_path[tmp];
-				ptr = fnRead(ptr, ptrE, '\n');
+				ptr = fnRead(line++, ptr, ptrE, '\n');
 			} else {
 				// ---- Path ----
 				// Read until '\n'
-				ptr = fnRead(ptr, ptrE, '\n');
+				ptr = fnRead(line++, ptr, ptrE, '\n');
 				spn::PathBlock pbtmp(_pbAppDir);
 				pbtmp <<= tmp;
+				if(!pEnt)
+					throw E_SyntaxError(line, "no active entry.");
 				pEnt->emplace_back(std::move(pbtmp));
 			}
 		}
