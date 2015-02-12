@@ -21,6 +21,12 @@ namespace rs {
 			return _scene.at(_scene.size()-1-n);
 		return HObj();
 	}
+	UpdGroup& SceneMgr::getUpdGroup(int n) const {
+		return *getSceneBase(n).update->get();
+	}
+	DrawGroup& SceneMgr::getDrawGroup(int n) const {
+		return *getSceneBase(n).draw->get();
+	}
 	void SceneMgr::setPushScene(HObj hSc, bool bPop) {
 		if(_scene.empty()) {
 			_scene.push_back(HLObj(hSc));

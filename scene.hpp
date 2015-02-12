@@ -5,10 +5,12 @@
 namespace rs {
 	struct SceneBase;
 	#define mgr_scene (::rs::SceneMgr::_ref())
+	//! シーンスタックを管理
 	class SceneMgr : public spn::Singleton<SceneMgr> {
 		using StStack = std::vector<HLObj>;
 		StStack		_scene;
-		bool		_scOp = false;		//!< SceneOpが有効か
+		//! シーンを切り替えや差し替えオペレーションがあるかのフラグ
+		bool		_scOp = false;
 		int			_scNPop;
 		HLObj		_scNext;
 		LCValue		_scArg;
@@ -17,7 +19,14 @@ namespace rs {
 
 		public:
 			bool isEmpty() const;
+			//! シーンスタック中のSceneBaseを取得
 			SceneBase& getSceneBase(int n=0) const;
+			//! ヘルパー関数: シーンスタック中のUpdGroupを取得
+			/*! *getSceneBase(n).update->get() と同等 */
+			UpdGroup& getUpdGroup(int n=0) const;
+			//! ヘルパー関数: シーンスタック中のDrawGroupを取得
+			/*! *getSceneBase(n).draw->get() と同等 */
+			DrawGroup& getDrawGroup(int n=0) const;
 			//! getScene(0)と同義
 			HObj getTop() const;
 			HObj getScene(int n=0) const;
@@ -60,6 +69,19 @@ namespace rs {
 			void onDraw() const override final {
 				base::onDraw();
 				_sbase.draw->get()->onDraw();
+			}
+			//! ヘルパー関数: シーンスタック中のUpdGroupを取得
+			/*! *getBase().update->get() と同等 */
+			UpdGroup& getUpdGroup() const {
+				return *getBase().update->get();
+			}
+			//! ヘルパー関数: シーンスタック中のDrawGroupを取得
+			/*! *getBase().draw->get() と同等 */
+			DrawGroup& getDrawGroup() const {
+				return *getBase().draw->get();
+			}
+			const SceneBase& getBase() const {
+				return _sbase;
 			}
 			SceneBase& getBase() {
 				return _sbase;
