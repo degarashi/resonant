@@ -61,6 +61,7 @@ namespace rs {
 			}
 		};
 	}
+	// 型Tはdetail::ObjectIdTにて新しいIdを生成する為に使用
 	template <class T, class Tag>
 	struct ObjectIdT {
 		const static ObjTypeId Id;
@@ -70,7 +71,6 @@ namespace rs {
 
 	namespace idtag {
 		struct Object {};
-		struct ObjectState {};
 		struct Group {};
 		struct DrawGroup {};
 	}
@@ -434,9 +434,10 @@ namespace rs {
 					virtual void onResume(T& /*self*/) {}
 					virtual void onReStart(T& /*self*/) {}
 				};
+				struct tagObjectState {};
 				template <class ST>
-				struct StateT : State, ::rs::ObjectIdT<ST, ::rs::idtag::ObjectState> {
-					using IdT = ::rs::ObjectIdT<ST, ::rs::idtag::ObjectState>;
+				struct StateT : State, ::rs::ObjectIdT<ST, tagObjectState> {
+					using IdT = ::rs::ObjectIdT<ST, tagObjectState>;
 					ObjTypeId getStateId() const override { return IdT::Id; }
 				};
 				using FPState = FlagPtr<State>;
@@ -480,6 +481,9 @@ namespace rs {
 					if(!st.get() || !_bSwState) {
 						_bSwState = true;
 						_nextState.swap(st);
+					} else {
+						// ステートを2度以上セットするのはロジックが何処かおかしいと思われる
+						Assert(Warn, false, "state set twice")
 					}
 				}
 				//! 前後をdoSwitchStateで挟む
@@ -502,6 +506,8 @@ namespace rs {
 				}
 				template <class CB>
 				auto _callWithSwitchState(CB&& cb) {
+					// DebugBuild & NullState時に警告を出す
+					AssertP(Warn, _state.get() != &_nullState, "null state detected")
 					using Rt = typename std::is_same<void, decltype(std::forward<CB>(cb)())>::type;
 					return _callWithSwitchState(std::forward<CB>(cb), Rt());
 				}
