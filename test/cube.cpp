@@ -90,14 +90,6 @@ const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
 	});
 	return vd;
 }
-const rs::DrawParamSP& rs::DrawDecl<drawtag::cube>::GetDParam() {
-	static rs::DrawParamSP dp(new rs::DrawParam{
-		GetVDecl(),
-		GL_TRIANGLES,
-		"TheCube", "P0"
-	});
-	return dp;
-}
 
 // ---------------------- CubeObj::MySt ----------------------
 void CubeObj::MySt::onUpdate(CubeObj& self) {}

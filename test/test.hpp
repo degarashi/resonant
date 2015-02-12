@@ -29,7 +29,7 @@ namespace vertex {
 namespace drawtag {
 	struct cube {};
 }
-DefineDrawParam(::drawtag::cube)
+DefineVDecl(::drawtag::cube)
 
 // ゲーム通しての(MainThread, DrawThread含めた)グローバル変数
 // リソースハンドルはメインスレッドで参照する -> メインスレッドハンドラに投げる
