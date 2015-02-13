@@ -28,11 +28,11 @@ namespace rs {
 			DEF_GLMETHOD2(ret_type, name, args)
 
 		#ifdef ANDROID
-			#include "android_gl.inc"
+			#include "opengl_define/android_gl.inc"
 		#elif defined(WIN32)
-			#include "mingw_gl.inc"
+			#include "opengl_define/mingw_gl.inc"
 		#else
-			#include "linux_gl.inc"
+			#include "opengl_define/linux_gl.inc"
 		#endif
 
 		#undef DEF_GLMETHOD
@@ -60,11 +60,11 @@ namespace rs {
 			DEF_GLMETHOD2(ret_type, name, args)
 
 		#ifdef ANDROID
-			#include "android_gl.inc"
+			#include "opengl_define/android_gl.inc"
 		#elif defined(WIN32)
-			#include "mingw_gl.inc"
+			#include "opengl_define/mingw_gl.inc"
 		#else
-			#include "linux_gl.inc"
+			#include "opengl_define/linux_gl.inc"
 		#endif
 
 		void setSwapInterval(int n) override;
@@ -79,11 +79,11 @@ namespace rs {
 	struct IGL_OtherSingle : IGL {
 		
 		#ifdef ANDROID
-			#include "android_gl.inc"
+			#include "opengl_define/android_gl.inc"
 		#elif defined(WIN32)
-			#include "mingw_gl.inc"
+			#include "opengl_define/mingw_gl.inc"
 		#else
-			#include "linux_gl.inc"
+			#include "opengl_define/linux_gl.inc"
 		#endif
 		
 		#undef DEF_GLMETHOD
@@ -139,11 +139,11 @@ namespace rs {
 				static t_##name name;
 
 			#ifdef ANDROID
-				#include "android_gl.inc"
+				#include "opengl_define/android_gl.inc"
 			#elif defined(WIN32)
-				#include "mingw_gl.inc"
+				#include "opengl_define/mingw_gl.inc"
 			#else
-				#include "linux_gl.inc"
+				#include "opengl_define/linux_gl.inc"
 			#endif
 
 			#undef DEF_GLMETHOD

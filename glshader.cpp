@@ -39,11 +39,11 @@ namespace rs {
 		void GLWrap::loadGLFunc() {
 			// 各種API関数
 			#ifdef ANDROID
-				#include "android_gl.inc"
+				#include "opengl_define/android_gl.inc"
 			#elif defined(WIN32)
-				#include "mingw_gl.inc"
+				#include "opengl_define/mingw_gl.inc"
 			#else
-				#include "linux_gl.inc"
+				#include "opengl_define/linux_gl.inc"
 			#endif
 			// その他OS依存なAPI関数
 			g_bglfuncInit = true;

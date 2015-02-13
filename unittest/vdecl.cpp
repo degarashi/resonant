@@ -4,7 +4,7 @@
 #include <boost/archive/text_iarchive.hpp>
 
 namespace {
-	#include "include/glformat_type.inc"
+	#include "opengl_define/glformat_type.inc"
 }
 namespace rs {
 	namespace test {

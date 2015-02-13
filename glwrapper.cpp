@@ -114,11 +114,11 @@ namespace rs {
 		DEF_SINGLE_METHOD(ret_type, BOOST_PP_CAT(name, _NC), args, argnames)
 
 		#ifdef ANDROID
-			#include "android_gl.inc"
+			#include "opengl_define/android_gl.inc"
 		#elif defined(WIN32)
-			#include "mingw_gl.inc"
+			#include "opengl_define/mingw_gl.inc"
 		#else
-			#include "linux_gl.inc"
+			#include "opengl_define/linux_gl.inc"
 		#endif
 
 	#undef DEF_SINGLE_METHOD
