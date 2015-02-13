@@ -3,27 +3,28 @@
 #include "glx.hpp"
 
 namespace rs {
+	using GlxId = GLEffect::GlxId;
 	namespace sysunif3d {
 		namespace matrix {
-			const std::string Transform("sys_mTrans"),
-							TransformInv("sys_mTransInv"),
-							Proj("sys_mProj"),
-							ProjInv("sys_mProjInv"),
-							View("sys_mView"),
-							ViewInv("sys_mViewInv"),
-							ViewProj("sys_mViewProj"),
-							ViewProjInv("sys_mViewProjInv"),
-							World("sys_mWorld"),
-							WorldInv("sys_mWorldInv"),
-							EyePos("sys_vEyePos"),
-							EyeDir("sys_vEyeDir");
+			const IdValue	Transform = GlxId::GenUnifId("sys_mTrans"),
+							TransformInv = GlxId::GenUnifId("sys_mTransInv"),
+							Proj = GlxId::GenUnifId("sys_mProj"),
+							ProjInv = GlxId::GenUnifId("sys_mProjInv"),
+							View = GlxId::GenUnifId("sys_mView"),
+							ViewInv = GlxId::GenUnifId("sys_mViewInv"),
+							ViewProj = GlxId::GenUnifId("sys_mViewProj"),
+							ViewProjInv = GlxId::GenUnifId("sys_mViewProjInv"),
+							World = GlxId::GenUnifId("sys_mWorld"),
+							WorldInv = GlxId::GenUnifId("sys_mWorldInv"),
+							EyePos = GlxId::GenUnifId("sys_vEyePos"),
+							EyeDir = GlxId::GenUnifId("sys_vEyeDir");
 		}
 	}
 	namespace unif3d {
 		namespace texture {
-			const std::string Specular("texSpecular"),
-								Normal("texNormal"),
-								Emissive("texEmissive");
+			const IdValue	Specular = GlxId::GenUnifId("texSpecular"),
+							Normal = GlxId::GenUnifId("texNormal"),
+							Emissive = GlxId::GenUnifId("texEmissive");
 		}
 	}
 
@@ -31,63 +32,63 @@ namespace rs {
 		using SetF3D = std::function<void (const SystemUniform3D&, GLEffect&)>;
 		const SetF3D c_systagF3D[] = {
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif3d::matrix::Transform))
-					glx.setUniform(*id, s.getTransform(), true);
+				glx.setUniform_try(sysunif3d::matrix::Transform,
+					s.getTransform(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif3d::matrix::TransformInv))
-					glx.setUniform(*id, s.getTransformInv(), true);
+				glx.setUniform_try(sysunif3d::matrix::TransformInv,
+					s.getTransformInv(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(sysunif3d::matrix::Proj))
-						glx.setUniform(*id, hCam.cref().getProjMatrix(), true);
+					glx.setUniform_try(sysunif3d::matrix::Proj,
+						hCam.cref().getProjMatrix(), true);
+			}
+			},
+			[](const SystemUniform3D& s, GLEffect& glx) {
+				glx.setUniform_try(sysunif3d::matrix::ProjInv,
+					s.getProjInv(), true);
+			},
+			[](const SystemUniform3D& s, GLEffect& glx) {
+				if(HCam hCam = s.getCamera()) {
+					glx.setUniform_try(sysunif3d::matrix::View,
+						hCam.cref().getViewMatrix(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif3d::matrix::ProjInv))
-					glx.setUniform(*id, s.getProjInv(), true);
+				glx.setUniform_try(sysunif3d::matrix::ViewInv,
+						s.getViewInv(), true);
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(sysunif3d::matrix::View))
-						glx.setUniform(*id, hCam.cref().getViewMatrix(), true);
-				}
-			},
-			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif3d::matrix::ViewInv))
-					glx.setUniform(*id, s.getViewInv(), true);
-			},
-			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(sysunif3d::matrix::ViewProj))
-						glx.setUniform(*id, hCam.cref().getViewProjMatrix(), true);
-				}
-			},
-			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(sysunif3d::matrix::ViewProjInv))
-						glx.setUniform(*id, hCam.cref().getViewProjInv(), true);
-				}
-			},
-			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif3d::matrix::World))
-					glx.setUniform(*id, s.getWorld(), true);
-			},
-			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif3d::matrix::WorldInv))
-					glx.setUniform(*id, s.getWorldInv(), true);
-			},
-			[](const SystemUniform3D& s, GLEffect& glx) {
-				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(sysunif3d::matrix::EyePos))
-						glx.setUniform(*id, hCam.cref().getOffset());
+					glx.setUniform_try(sysunif3d::matrix::ViewProj,
+						hCam.cref().getViewProjMatrix(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
-					if(auto id = glx.getUniformID(sysunif3d::matrix::EyeDir))
-						glx.setUniform(*id, hCam.cref().getRot().getZAxis());
+					glx.setUniform_try(sysunif3d::matrix::ViewProjInv,
+						hCam.cref().getViewProjInv(), true);
+				}
+			},
+			[](const SystemUniform3D& s, GLEffect& glx) {
+				glx.setUniform_try(sysunif3d::matrix::World,
+					s.getWorld(), true);
+			},
+			[](const SystemUniform3D& s, GLEffect& glx) {
+				glx.setUniform_try(sysunif3d::matrix::WorldInv,
+					s.getWorldInv(), true);
+			},
+			[](const SystemUniform3D& s, GLEffect& glx) {
+				if(HCam hCam = s.getCamera()) {
+					glx.setUniform_try(sysunif3d::matrix::EyePos,
+						hCam.cref().getOffset());
+				}
+			},
+			[](const SystemUniform3D& s, GLEffect& glx) {
+				if(HCam hCam = s.getCamera()) {
+					glx.setUniform_try(sysunif3d::matrix::EyeDir,
+						hCam.cref().getRot().getZAxis());
 				}
 			}
 		};

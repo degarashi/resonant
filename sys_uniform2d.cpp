@@ -2,21 +2,22 @@
 #include "glx.hpp"
 
 namespace rs {
+	using GlxId = GLEffect::GlxId;
 	namespace unif2d {
-		const std::string	Depth("fDepth"),
-							Alpha("fAlpha");
+		const IdValue	Depth = GlxId::GenUnifId("sys_fDepth"),
+						Alpha = GlxId::GenUnifId("sys_fAlpha");
 	}
 	namespace sysunif2d {
 		namespace matrix {
-			const std::string	Transform("sys_mTrans2D");
+			const IdValue Transform = GlxId::GenUnifId("sys_mTrans2D");
 		}
 	}
 	namespace {
 		using SetF = std::function<void (const SystemUniform2D&, GLEffect&)>;
 		const SetF c_systagF2D[] = {
 			[](const SystemUniform2D& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif2d::matrix::Transform))
-					glx.setUniform(*id, s.getTransform2D(), true);
+				glx.setUniform_try(sysunif2d::matrix::Transform,
+								s.getTransform2D(), true);
 			}
 		};
 	}

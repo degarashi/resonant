@@ -2,14 +2,15 @@
 #include "glx.hpp"
 
 namespace rs {
+	using GlxId = GLEffect::GlxId;
 	namespace unif {
 		namespace texture {
-			const std::string Diffuse("texDiffuse");
+			const IdValue Diffuse = GlxId::GenUnifId("sys_texDiffuse");
 		}
 	}
 	namespace sysunif {
 		namespace screen {
-			const std::string Size("sys_screen");
+			const IdValue Size = GlxId::GenUnifId("sys_vScreenSize");
 		}
 	}
 
@@ -18,13 +19,12 @@ namespace rs {
 		using SetF = std::function<void (const SystemUniformBase&, GLEffect&)>;
 		const SetF c_systagF[] = {
 			[](const SystemUniformBase& s, GLEffect& glx) {
-				if(auto id = glx.getUniformID(sysunif::screen::Size)) {
-					auto& ss = s.getScreenSize();
-					glx.setUniform(*id, spn::Vec4(ss.width,
-												ss.height,
-												spn::Rcp22Bit(ss.width),
-												spn::Rcp22Bit(ss.height)));
-				}
+				auto& ss = s.getScreenSize();
+				glx.setUniform_try(sysunif::screen::Size,
+									spn::Vec4(ss.width,
+										ss.height,
+										spn::Rcp22Bit(ss.width),
+										spn::Rcp22Bit(ss.height)));
 			}
 		};
 	}

@@ -739,10 +739,14 @@ namespace rs {
 			ip.second = *_getPassId(ip.first, (*src)[i].second);
 		}
 	}
-	GLint GLEffect::_getUnifId(IdValue id) const {
+	OPGLint GLEffect::_getUnifId(IdValue id) const {
+		// 定数値に対応するUniform変数が見つからない時は警告を出す
+		if(_unifId.resultCur->size() <= id.value)
+			return spn::none;
 		return (*_unifId.resultCur)[id.value];
 	}
 	GLEffect::IdPair GLEffect::_getTechPassId(IdValue id) const {
+		Assert(Trap, (_techId.result.size() > id.value), "TechPass-ConstantId: Invalid Id (%1%)", id.value)
 		return _techId.result[id.value];
 	}
 	void GLEffect::setTechPassId(IdValue id) {

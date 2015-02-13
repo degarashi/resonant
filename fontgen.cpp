@@ -182,13 +182,8 @@ namespace rs {
 	const SPString& TextObj::getFaceName() const { return _faceName; }
 	void TextObj::draw(GLEffect* gle) const {
 		gle->setVDecl(DrawDecl<drawtag::text>::GetVDecl());
-		auto& str = unif::texture::Diffuse;
-		auto id = gle->getUniformID(str);
-		Assert(Warn, id, u8R"(uniform value %1% is not found)", str)
-		if(!id)
-			return;
 		for(auto& ds : _drawSet) {
-			gle->setUniform(*id, ds.hTex);
+			gle->setUniform(unif::texture::Diffuse, ds.hTex);
 			gle->setVStream(ds.hlVb.get(), 0);
 			gle->setIStream(ds.hlIb.get());
 			gle->drawIndexed(GL_TRIANGLES, ds.nChar*6, 0);
