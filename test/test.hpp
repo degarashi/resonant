@@ -56,10 +56,7 @@ class MyDraw : public rs::DrawProc {
 	public:
 		bool runU(uint64_t accum, bool bSkip) override;
 };
-
-struct myTag {};
-using MyId = rs::IdMgr_Glx<myTag>;
-extern MyId g_myId;
+using GlxId = rs::GLEffect::GlxId;
 
 class Cube : public spn::Pose3D {
 	private:

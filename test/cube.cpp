@@ -1,10 +1,9 @@
 #include "test.hpp"
 
-MyId g_myId;
 // ---------------------- Cube ----------------------
-const rs::IdValue Cube::U_diffuse = MyId::GenUnifId("tDiffuse"),
-					Cube::U_trans = MyId::GenUnifId("mTrans"),
-					Cube::U_litdir = MyId::GenUnifId("vLitDir");
+const rs::IdValue Cube::U_diffuse = GlxId::GenUnifId("tDiffuse"),
+					Cube::U_trans = GlxId::GenUnifId("mTrans"),
+					Cube::U_litdir = GlxId::GenUnifId("vLitDir");
 Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	setScale({s,s,s});
 	using spn::Vec2;

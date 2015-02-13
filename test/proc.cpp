@@ -37,10 +37,7 @@ void MyMain::_initEffect() {
 	std::string key;
 	lkb->hlFx = mgr_gl.loadEffect("test.glx",
 		[](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
-	auto* pFx = lkb->hlFx->get();
-	pFx->setConstantUniformList(&MyId::GetUnifList());
-	pFx->setConstantTechPassList(&MyId::GetTechList());
-	lk->pFx = pFx;
+	lk->pFx = lkb->hlFx->get();
 }
 void MyMain::_initCam() {
 	auto lk = shared.lock();

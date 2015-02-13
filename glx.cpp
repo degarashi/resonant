@@ -190,6 +190,9 @@ namespace rs {
 			throw;
 		}
 		GLEC_Chk_D(Trap)
+
+		_setConstantUniformList(&GlxId::GetUnifList());
+		_setConstantTechPassList(&GlxId::GetTechList());
 	}
 
 	// -------------- GLEffect::Current::Vertex --------------
@@ -693,49 +696,47 @@ namespace rs {
 	void GLEffect::execTask() {
 		_task.execTask();
 	}
-	void GLEffect::setConstantUniformList(const StrV* src) {
+	void GLEffect::_setConstantUniformList(const StrV* src) {
 		_unifId.src = src;
 		auto& r = _unifId.result;
 		r.clear();
-		if(src) {
-			_unifId.resultCur = nullptr;
-			// 全てのTech&Passの組み合わせについてそれぞれUniform名を検索し、番号(GLint)を登録
-			int nTech = _result.tpL.size();
-			for(int i=0 ; i<nTech ; i++) {
-				GL16Id tpId{{uint8_t(i),0}};
-				for(;;) {
-					auto itr = _techMap.find(tpId);
-					if(itr == _techMap.end())
-						break;
-					auto& r2 = r[tpId];
-					auto& tps = itr->second;
-					const GLProgram* p = tps.getProgram()->get();
 
-					for(auto& srcstr : *src) {
-						if(auto id = p->getUniformID(srcstr)) {
-							r2.push_back(*id);
-						} else
-							r2.push_back(-1);
-					}
+		_unifId.resultCur = nullptr;
+		// 全てのTech&Passの組み合わせについてそれぞれUniform名を検索し、番号(GLint)を登録
+		int nTech = _result.tpL.size();
+		for(int i=0 ; i<nTech ; i++) {
+			GL16Id tpId{{uint8_t(i),0}};
+			for(;;) {
+				auto itr = _techMap.find(tpId);
+				if(itr == _techMap.end())
+					break;
+				auto& r2 = r[tpId];
+				auto& tps = itr->second;
+				const GLProgram* p = tps.getProgram()->get();
 
-					++tpId[1];
+				for(auto& srcstr : *src) {
+					if(auto id = p->getUniformID(srcstr)) {
+						r2.push_back(*id);
+					} else
+						r2.push_back(-1);
 				}
+
+				++tpId[1];
 			}
 		}
 	}
-	void GLEffect::setConstantTechPassList(const StrPairV* src) {
+	void GLEffect::_setConstantTechPassList(const StrPairV* src) {
 		_techId.src = src;
 		_techId.result.clear();
-		if(src) {
-			// TechとPass名のペアについてそれぞれTechId, PassIdを格納
-			auto& r = _techId.result;
-			int n = src->size();
-			r.resize(n);
-			for(int i=0 ; i<n ; i++) {
-				auto& ip = r[i];
-				ip.first = *getTechId((*src)[i].first);
-				ip.second = *_getPassId(ip.first, (*src)[i].second);
-			}
+
+		// TechとPass名のペアについてそれぞれTechId, PassIdを格納
+		auto& r = _techId.result;
+		int n = src->size();
+		r.resize(n);
+		for(int i=0 ; i<n ; i++) {
+			auto& ip = r[i];
+			ip.first = *getTechId((*src)[i].first);
+			ip.second = *_getPassId(ip.first, (*src)[i].second);
 		}
 	}
 	GLint GLEffect::_getUnifId(IdValue id) const {
@@ -749,6 +750,7 @@ namespace rs {
 		setTechnique(ip.first, true);
 		setPass(ip.second);
 	}
+	GLEffect::GlxId GLEffect::s_myId;
 
 	// ------------- ShStruct -------------
 	void ShStruct::swap(ShStruct& a) noexcept {

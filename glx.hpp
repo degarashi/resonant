@@ -305,6 +305,11 @@ namespace rs {
 	//! GLXエフェクト管理クラス
 	class GLEffect : public IGLResource {
 		public:
+			struct tagConstant {};
+			using GlxId = rs::IdMgr_Glx<tagConstant>;
+			//! Uniform & TechPass 定数にIdを割り当てるクラス
+			static GlxId	s_myId;
+
 			//! [UniformID -> TextureActiveIndex]
 			using TexIndex = std::unordered_map<GLint, GLint>;
 			//! [(TechID|PassID) -> ProgramClass]
@@ -386,10 +391,11 @@ namespace rs {
 			GLint _getUnifId(IdValue id) const;
 			IdPair _getTechPassId(IdValue id) const;
 
+			/*! 引数はコンパイラで静的に確保される定数を想定しているのでポインタで受け取る
+				動的にリストを削除したりはサポートしない */
+			void _setConstantUniformList(const StrV* src);
+			void _setConstantTechPassList(const StrPairV* src);
 		public:
-			void setConstantUniformList(const StrV* src);
-			void setConstantTechPassList(const StrPairV* src);
-
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
 			GLEffect(spn::AdaptStream& s);

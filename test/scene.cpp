@@ -2,8 +2,8 @@
 #include "../updater.hpp"
 
 const rs::GMessageId MSG_GetStatus = rs::GMessage::RegMsgId("get_status");
-const rs::IdValue TScene::T_Info = MyId::GenTechId("TheTech", "P1"),
-				TScene::T_Cube = MyId::GenTechId("TheCube", "P0");
+const rs::IdValue TScene::T_Info = GlxId::GenTechId("TheTech", "P1"),
+				TScene::T_Cube = GlxId::GenTechId("TheCube", "P0");
 // ------------------------ TScene::MySt ------------------------
 void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
