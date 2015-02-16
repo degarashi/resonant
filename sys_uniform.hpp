@@ -89,27 +89,5 @@ namespace rs {
 			void setTransform2D(const spn::Mat32& m);
 			void outputUniforms(GLEffect& glx, bool bBase) const;
 	};
-	class SystemUniform3D : virtual public SystemUniformBase {
-		private:
-			#define SEQ_SYSUNI3D \
-				((World)(spn::AMat44)) \
-				((WorldInv)(spn::AMat44)(World)) \
-				((Camera)(HLCamF))\
-				((ViewInv)(spn::AMat44)(Camera))\
-				((ProjInv)(spn::AMat44)(Camera))\
-				((Transform)(spn::AMat44)(Camera)(World))\
-				((TransformInv)(spn::AMat44)(Transform))
-			RFLAG_S(SystemUniform3D, SEQ_SYSUNI3D)
-			HLCamF		_hlCam;
-
-		public:
-			RFLAG_GETMETHOD_S(SEQ_SYSUNI3D)
-			RFLAG_SETMETHOD_S(SEQ_SYSUNI3D)
-			#undef SEQ_SYSUNI3D
-
-			SystemUniform3D();
-			void setTransform(const spn::AMat44& m);
-			void outputUniforms(GLEffect& glx, bool bBase) const;
-	};
 }
 

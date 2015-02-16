@@ -1,4 +1,6 @@
 #include "camera.hpp"
+#include "glx.hpp"
+#include "sys_uniform.hpp"
 
 namespace rs {
 	using spn::AMat43; using spn::AMat44;
@@ -6,6 +8,30 @@ namespace rs {
 	using spn::AVec4;
 	using spn::Quat; using spn::Plane;
 	using boom::geo3d::Frustum;
+	uint32_t Camera3D::_refresh(spn::AMat44& m, Transform*) const {
+		m = getWorld() * getViewProj();
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(spn::AMat44& m, TransformInv*) const {
+		getTransform().inversion(m);
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(spn::AMat44& m, WorldInv*) const {
+		getWorld().inversion(m);
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(uint32_t& acc, Accum*) const {
+		// キャッシュ更新
+		getPose();
+		getFov();
+		getAspect();
+		getNearZ();
+		getFarZ();
+		getWorld();
+		// カウンタをインクリメント
+		++acc;
+		return 0;
+	}
 	uint32_t Camera3D::_refresh(AMat43& m, View*) const {
 		auto& ps = getPose();
 		// 回転を一端quatに変換
@@ -52,6 +78,7 @@ namespace rs {
 		setFarZ(1e5f);
 		setFov(spn::DegF(90.0f));
 		setAspect(1.4f / 1.f);
+		setWorld(spn::AMat44(1, spn::AMat44::TagDiagonal));
 	}
 	void Camera3D::setZPlane(float n, float f) {
 		setNearZ(n);
@@ -86,8 +113,26 @@ namespace rs {
 		fr.setOffset(ps.getOffset());
 		return fr;
 	}
-	void Camera3D::outputUniforms(GLEffect& glx, const AMat43& wmat) const {
-		Assert(Trap, false, "not implemented yet")
+
+	void Camera3D::outputUniforms(GLEffect& glx) const {
+		#define DEF_SETUNIF(name) \
+			if(auto idv = glx.getUnifId(sysunif3d::matrix::name)) \
+				glx.setUniform(*idv, get##name(), true);
+		DEF_SETUNIF(World)
+		DEF_SETUNIF(WorldInv)
+		DEF_SETUNIF(View)
+		DEF_SETUNIF(Proj)
+		DEF_SETUNIF(ViewProj)
+		DEF_SETUNIF(ViewProjInv)
+		DEF_SETUNIF(Transform)
+		DEF_SETUNIF(TransformInv)
+		#undef DEF_SETUNIF
+
+		auto& ps = getPose();
+		if(auto idv = glx.getUnifId(sysunif3d::matrix::EyePos))
+			glx.setUniform(*idv, ps.getOffset(), true);
+		if(auto idv = glx.getUnifId(sysunif3d::matrix::EyeDir))
+			glx.setUniform(*idv, ps.getRot().getZAxis(), true);
 	}
 }
 
