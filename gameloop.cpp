@@ -201,7 +201,7 @@ namespace rs {
 			UPtr<FontFamily>	fontP(new FontFamily());
 			GameLoop::LoadFonts();
 			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
-			UPtr<CameraMgr>		camP(new CameraMgr());
+			UPtr<Camera3DMgr>	camP(new Camera3DMgr());
 			UPtr<PointerMgr>	pmP(new PointerMgr());
 			UPtr<InputMgr>		inpP(new InputMgr());
 			UPtr<ObjMgr>		objP(new ObjMgr());

@@ -4,75 +4,65 @@
 #include "spinner/quat.hpp"
 #include "spinner/resmgr.hpp"
 #include "spinner/alignedalloc.hpp"
+#include "spinner/rflag.hpp"
 #include "boomstick/geom3D.hpp"
 #include "handle.hpp"
 
 namespace rs {
-	using spn::AMat43; using spn::AMat44;
-	using spn::AVec3; using spn::AVec4;
-	using spn::Vec2; using spn::Vec3;
-	using spn::Pose3D;
-	using spn::Plane;
-	using spn::Quat; using spn::AQuat;
-	using boom::geo3d::Frustum;
-
+	class GLEffect;
 	/*! 姿勢の保持はPose3Dクラスが行い，カメラ固有の変数だけを持つ */
-	class CamData : public Pose3D, public spn::CheckAlign<16, CamData> {
-		GAP_MATRIX_DEF(mutable, _matV, 4,3,
-					   (((spn::RadF, _fov)))
-					   (((float, _aspect)))
-					   (((float, _nearZ)))
-					   (((float, _farZ)))
-		)
-		// 変換キャッシュ
-		mutable AMat44	_matVP, _matP, _matVPInv;
-		mutable Frustum _vfrus;
-		// リフレッシュAccum値 (更新した時点の値)
-		mutable uint32_t 	_accum,
-							_acMat,
-							_acMatInv,
-							_acVFrus;
-		bool _checkAC(uint32_t& acDst) const;
-		void _calcMatrices() const;				// View,Proj,(Both)
-		void _calcVPInv() const;				// InverseMat(VP)
-		void _calcFrustum() const;
-
+	class Camera3D : public spn::CheckAlign<16, Camera3D> {
+		private:
+			#define SEQ_CAMERA3D \
+				((Pose)(spn::Pose3D)) \
+				((View)(spn::AMat43)(Pose)) \
+				((Fov)(spn::RadF)) \
+				((Aspect)(float)) \
+				((NearZ)(float)) \
+				((FarZ)(float)) \
+				((Proj)(spn::AMat44)(Fov)(Aspect)(NearZ)(FarZ)) \
+				((ViewProj)(spn::AMat44)(View)(Proj)) \
+				((ViewProjInv)(spn::AMat44)(ViewProj)) \
+				((VFrustum)(boom::geo3d::Frustum)(View)(Fov)(Aspect)(NearZ)(FarZ)) \
+				((Accum)(uint32_t)(Pose)(Fov)(Aspect)(NearZ)(FarZ))
+			RFLAG_S(Camera3D, SEQ_CAMERA3D)
+			RFLAG_SETMETHOD(Accum)
 		public:
-			using Vec3x2 = std::pair<Vec3,Vec3>;
-			CamData();
-			CamData(const CamData& c);
+			using Vec3x2 = std::pair<spn::Vec3, spn::Vec3>;
+			Camera3D();
 
-			//! accumulation counter
-			uint32_t getAccum() const;
+			RFLAG_GETMETHOD_S(SEQ_CAMERA3D)
+			RFLAG_SETMETHOD_S(SEQ_CAMERA3D)
+			RFLAG_REFMETHOD_S(SEQ_CAMERA3D)
+			#undef SEQ_CAMERA3D
 
-			// アスペクト，FOV，Z平面
-			void setAspect(float ap);
-			void setFOV(spn::RadF fv);
 			void setZPlane(float n, float f);
-			void setNearDist(float n);
-			void setFarDist(float f);
-			// 各カメラ行列参照
-			const AMat44& getViewProjMatrix() const;
-			const AMat44& getProjMatrix() const;
-			const AMat43& getViewMatrix() const;
-			const AMat44& getViewProjInv() const;
-			// 各パラメータ取得
-			spn::RadF getFOV() const;
-			float getAspect() const;
-			float getFarDist() const;
-			float getNearDist() const;
-			Plane getNearPlane() const;
-			const Frustum& getFrustum() const;
-			Frustum getNearFrustum() const;
-			//! ビューポート座標をワールド座標系に変換
-			Vec3 unproject(const Vec3& vsPos) const;		// 単体
-			Vec3x2 unprojectVec(const Vec2& vsPos) const;	// (Near,Far)
-			//! ビューポート座標からワールド座標(FarPlane位置)を取得
-			Vec3 vp2wp(const Vec3& vp) const;
 
-			Pose3D getPose() const;
-			void setPose(const Pose3D& ps);
+			spn::Plane getNearPlane() const;
+			boom::geo3d::Frustum getNearFrustum() const;
+			//! ビューポート座標をワールド座標系に変換
+			spn::Vec3 unproject(const spn::Vec3& vsPos) const;		// 単体
+			Vec3x2 unprojectVec(const spn::Vec2& vsPos) const;	// (Near,Far)
+			//! ビューポート座標からワールド座標(FarPlane位置)を取得
+			spn::Vec3 vp2wp(const spn::Vec3& vp) const;
+
+			//! シェーダーにカメラ変数をUniformで渡す
+			/*! 変数リスト:
+				mat4 sys_mTrans,		// mWorld * mView * mProj
+					sys_mTransInv;		// inverse(mTrans)
+				mat4 sys_mView,
+					sys_mViewInv;		// inverse(mView)
+				mat4 sys_mProj,
+					sys_mProjInv;		// inverse(mProj)
+				mat4 sys_mViewProj,		// mView * mProj
+					sys_mViewProjInv;	// inverse(mViewProj)
+				mat4 sys_mWorld,
+					sys_mWorldInv;		// inverse(mWorld)
+				vec3 sys_vEyePos,
+					sys_vEyeDir;
+			*/
+			void outputUniforms(GLEffect& glx, const spn::AMat43& wmat) const;
 	};
-	#define mgr_cam (::rs::CameraMgr::_ref())
-	class CameraMgr : public spn::ResMgrA<CamData, CameraMgr, spn::Alloc16> {};
+	#define mgr_cam (::rs::Camera3DMgr::_ref())
+	class Camera3DMgr : public spn::ResMgrA<Camera3D, Camera3DMgr, spn::Alloc16> {};
 }

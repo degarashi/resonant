@@ -1,156 +1,93 @@
 #include "camera.hpp"
 
 namespace rs {
-	bool CamData::_checkAC(uint32_t& acDst) const {
-		uint32_t ac = getAccum();
-		if(acDst != ac) {
-			acDst = ac;
-			return true;
-		}
-		return false;
+	using spn::AMat43; using spn::AMat44;
+	using spn::Vec2; using spn::Vec3;
+	using spn::AVec4;
+	using spn::Quat; using spn::Plane;
+	using boom::geo3d::Frustum;
+	uint32_t Camera3D::_refresh(AMat43& m, View*) const {
+		auto& ps = getPose();
+		// 回転を一端quatに変換
+		const Quat& q = ps.getRot();
+		m.identity();
+		m.getRow(3) = -ps.getOffset();
+
+		Quat tq = q.inverse();
+		m *= tq.asMat33();
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(AMat44& m, Proj*) const {
+		m = AMat44::PerspectiveFovLH(getFov(), getAspect(), getNearZ(), getFarZ());
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(AMat44& m, ViewProj*) const {
+		m = getView().convertA44() * getProj();
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(AMat44& m, ViewProjInv*) const {
+		getViewProj().inversion(m);
+		return 0;
+	}
+	uint32_t Camera3D::_refresh(Frustum& vf, VFrustum*) const {
+		// UP軸とZ軸を算出
+		AMat44 mat;
+		getView().convertA44().inversion(mat);
+		mat.getRow(3) = AVec4(0,0,0,1);
+		AVec4 zAxis(0,0,1,0),
+			yAxis(0,1,0,0);
+		zAxis *= mat;
+		yAxis *= mat;
+
+		auto& ps = getPose();
+		vf = Frustum(ps.getOffset(), zAxis.asVec3(), yAxis.asVec3(), getFov(), getFarZ(), getAspect());
+		return 0;
 	}
 
-	void CamData::_calcMatrices() const {
-		if(_checkAC(_acMat)) {
-			// 回転を一端quatに変換
-			const Quat& q = getRot();
-			_matV.identity();
-			_matV.getRow(3) = -getOffset();
+	Camera3D::Camera3D() {
+		refPose().setAll(Vec3(0,0,-10), Quat(0,0,0,1), Vec3(1,1,1));
+		setAccum(1);
 
-			Quat tq = q.inverse();
-			_matV *= tq.asMat33();
-
-			_matP = AMat44::PerspectiveFovLH(_fov, _aspect, _nearZ, _farZ);
-			_matVP = _matV.convertA44() * _matP;
-		}
+		setNearZ(1.f);
+		setFarZ(1e5f);
+		setFov(spn::DegF(90.0f));
+		setAspect(1.4f / 1.f);
 	}
-	void CamData::_calcVPInv() const {
-		if(_checkAC(_acMatInv)) {
-			_calcMatrices();
-			_matVP.inversion(_matVPInv);
-		}
+	void Camera3D::setZPlane(float n, float f) {
+		setNearZ(n);
+		setFarZ(f);
 	}
-	void CamData::_calcFrustum() const {
-		if(_checkAC(_acVFrus)) {
-			// UP軸とZ軸を算出
-			AMat44 mat;
-			getViewMatrix().convertA44().inversion(mat);
-			mat.getRow(3) = AVec4(0,0,0,1);
-			AVec4 zAxis(0,0,1,0),
-				yAxis(0,1,0,0);
-			zAxis *= mat;
-			yAxis *= mat;
-
-			_vfrus = Frustum(getOffset(), zAxis.asVec3(), yAxis.asVec3(), _fov, _farZ, _aspect);
-		}
-	}
-
-	CamData::CamData():
-		Pose3D(Vec3(0,0,-10), Quat(0,0,0,1), Vec3(1,1,1)),
-		_accum(1), _acMat(0), _acMatInv(0), _acVFrus(0)
-	{
-		_nearZ = 1.f;
-		_farZ = 1e5f;
-		_fov = spn::DegF(90.0f);
-		_aspect = 1.4f / 1.f;
-	}
-	CamData::CamData(const CamData& c): Pose3D(static_cast<const Pose3D&>(c)), _matV() {
-		uintptr_t ths = reinterpret_cast<uintptr_t>(this) + sizeof(Pose3D),
-				src = reinterpret_cast<uintptr_t>(&c) + sizeof(Pose3D);
-		std::memcpy(reinterpret_cast<void*>(ths), reinterpret_cast<const void*>(src), sizeof(CamData)-sizeof(Pose3D));
-	}
-	uint32_t CamData::getAccum() const {
-		return _accum + ((Pose3D*)this)->getAccum();
-	}
-
-	void CamData::setAspect(float ap) {
-		_aspect = ap;
-		++_accum;
-	}
-	void CamData::setFOV(spn::RadF fv) {
-		_fov = fv;
-		++_accum;
-	}
-	void CamData::setZPlane(float n, float f) {
-		_nearZ = n;
-		_farZ = f;
-		++_accum;
-	}
-	void CamData::setNearDist(float n) {
-		_nearZ = n;
-		++_accum;
-	}
-	void CamData::setFarDist(float f) {
-		_farZ = f;
-		++_accum;
-	}
-
-	const AMat44& CamData::getViewProjMatrix() const {
-		_calcMatrices();
-		return _matVP;
-	}
-	const AMat43& CamData::getViewMatrix() const {
-		_calcMatrices();
-		return _matV;
-	}
-	const AMat44& CamData::getProjMatrix() const {
-		_calcMatrices();
-		return _matP;
-	}
-	const AMat44& CamData::getViewProjInv() const {
-		_calcVPInv();
-		return _matVPInv;
-	}
-
-	spn::RadF CamData::getFOV() const {
-		return _fov;
-	}
-	float CamData::getAspect() const {
-		return _aspect;
-	}
-	float CamData::getFarDist() const {
-		return _farZ;
-	}
-	float CamData::getNearDist() const {
-		return _nearZ;
-	}
-	const Frustum& CamData::getFrustum() const {
-		_calcFrustum();
-		return _vfrus;
-	}
-	Vec3 CamData::unproject(const Vec3& vsPos) const {
+	Vec3 Camera3D::unproject(const Vec3& vsPos) const {
 		const AMat44& mI = getViewProjInv();
 		return (vsPos.asVec4(1) * mI).asVec3Coord();
 	}
-	CamData::Vec3x2 CamData::unprojectVec(const Vec2& vsPos) const {
+	Camera3D::Vec3x2 Camera3D::unprojectVec(const Vec2& vsPos) const {
 		const AMat44& mI = getViewProjInv();
 		return Vec3x2(
 			(AVec4(vsPos.x, vsPos.y, 0, 1) * mI).asVec3Coord(),
 			(AVec4(vsPos.x, vsPos.y, 1, 1) * mI).asVec3Coord()
 		);
 	}
-	Vec3 CamData::vp2wp(const Vec3& vp) const {
+	Vec3 Camera3D::vp2wp(const Vec3& vp) const {
 		return (vp.asVec4(1) * getViewProjInv()).asVec3Coord();
 	}
-	Pose3D CamData::getPose() const {
-		return Pose3D(getOffset(), getRot(), AVec3(1,1,1));
-	}
-	void CamData::setPose(const Pose3D& ps) {
-		setOffset(ps.getOffset());
-		setRot(ps.getRot());
-		// (スケールは適用しない)
-	}
-	Plane CamData::getNearPlane() const {
-		Vec3 dir = getDir();
-		return Plane::FromPtDir(getOffset() + dir*getNearDist(), dir);
+	Plane Camera3D::getNearPlane() const {
+		auto& ps = getPose();
+		Vec3 dir = ps.getDir();
+		return Plane::FromPtDir(ps.getOffset() + dir*getNearZ(), dir);
 	}
 	// カメラの変換手順としては offset -> rotation だがPose3Dの変換は rotation -> offsetなので注意！
-	Frustum CamData::getNearFrustum() const {
+	Frustum Camera3D::getNearFrustum() const {
 		Frustum fr;
-		float t = std::tan(_fov->get()/2);
-		fr.setScale({t*_aspect, t, getNearDist()*8});
-		fr.setRot(getRot());
-		fr.setOffset(getOffset());
+		float t = std::tan(getFov().get()/2);
+		fr.setScale({t*getAspect(), t, getNearZ()*8});
+		auto& ps = getPose();
+		fr.setRot(ps.getRot());
+		fr.setOffset(ps.getOffset());
 		return fr;
 	}
+	void Camera3D::outputUniforms(GLEffect& glx, const AMat43& wmat) const {
+		Assert(Trap, false, "not implemented yet")
+	}
 }
+

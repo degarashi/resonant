@@ -47,9 +47,9 @@ namespace rs {
 	class TextObj;
 	DEF_NHANDLE_PROP(FontGen, Text, TextObj, TextObj, std::allocator, std::u32string)
 
-	class CameraMgr;
-	class CamData;
-	DEF_AHANDLE_PROP(CameraMgr, Cam, CamData, CamData, spn::Alloc16)
+	class Camera3DMgr;
+	class Camera3D;
+	DEF_AHANDLE_PROP(Camera3DMgr, Cam, Camera3D, Camera3D, spn::Alloc16)
 
 	class PointerMgr;
 	struct TPos2D;

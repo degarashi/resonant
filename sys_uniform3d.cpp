@@ -42,7 +42,7 @@ namespace rs {
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
 					glx.setUniform_try(sysunif3d::matrix::Proj,
-						hCam.cref().getProjMatrix(), true);
+						hCam.cref().getProj(), true);
 			}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
@@ -52,7 +52,7 @@ namespace rs {
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
 					glx.setUniform_try(sysunif3d::matrix::View,
-						hCam.cref().getViewMatrix(), true);
+						hCam.cref().getView(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
@@ -62,7 +62,7 @@ namespace rs {
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
 					glx.setUniform_try(sysunif3d::matrix::ViewProj,
-						hCam.cref().getViewProjMatrix(), true);
+						hCam.cref().getViewProj(), true);
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
@@ -82,13 +82,13 @@ namespace rs {
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
 					glx.setUniform_try(sysunif3d::matrix::EyePos,
-						hCam.cref().getOffset());
+						hCam.cref().getPose().getOffset());
 				}
 			},
 			[](const SystemUniform3D& s, GLEffect& glx) {
 				if(HCam hCam = s.getCamera()) {
 					glx.setUniform_try(sysunif3d::matrix::EyeDir,
-						hCam.cref().getRot().getZAxis());
+						hCam.cref().getPose().getRot().getZAxis());
 				}
 			}
 		};
@@ -104,12 +104,12 @@ namespace rs {
 		_rflag.set<Transform>(m);
 	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, ViewInv*) const {
-		auto m4 = getCamera().cref().getViewMatrix().convertA44();
+		auto m4 = getCamera().cref().getView().convertA44();
 		m4.inversion(m);
 		return 0;
 	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, ProjInv*) const {
-		getCamera().cref().getProjMatrix().inversion(m);
+		getCamera().cref().getProj().inversion(m);
 		return 0;
 	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, WorldInv*) const {
@@ -117,8 +117,8 @@ namespace rs {
 		return 0;
 	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, Transform*) const {
-		const CamData& cd = getCamera().cref();
-		m = getWorld() * cd.getViewProjMatrix();
+		const auto& cd = getCamera().cref();
+		m = getWorld() * cd.getViewProj();
 		return 0;
 	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, TransformInv*) const {

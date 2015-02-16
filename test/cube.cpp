@@ -72,8 +72,8 @@ void Cube::draw(rs::GLEffect& glx) {
 	auto m = getToWorld();
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
 	auto lk = shared.lock();
-	rs::CamData& cd = lk->hlCam.ref();
-	m2 *= cd.getViewProjMatrix().convert44();
+	auto& cd = lk->hlCam.ref();
+	m2 *= cd.getViewProj().convert44();
 	glx.setUniform(U_trans, m2, true);
 	glx.setVStream(_hlVb, 0);
 

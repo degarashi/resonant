@@ -42,9 +42,10 @@ void MyMain::_initEffect() {
 void MyMain::_initCam() {
 	auto lk = shared.lock();
 	lk->hlCam = mgr_cam.emplace();
-	rs::CamData& cd = lk->hlCam.ref();
-	cd.setOffset({0,0,-3});
-	cd.setFOV(spn::DegF(60));
+	auto& cd = lk->hlCam.ref();
+	auto& ps = cd.refPose();
+	ps.setOffset({0,0,-3});
+	cd.setFov(spn::DegF(60));
 	cd.setZPlane(0.01f, 500.f);
 }
 void MyMain::_initInput() {
@@ -105,8 +106,9 @@ bool MyMain::userRunU() {
 		mvS += speed;
 
 	auto& cd = lk->hlCam.ref();
-	cd.moveFwd3D(mvF);
-	cd.moveSide3D(mvS);
+	auto& ps = cd.refPose();
+	ps.moveFwd3D(mvF);
+	ps.moveSide3D(mvS);
 	if(_bPress) {
 		float xv = mgr_input.getKeyValue(lk->actMoveX)/6.f,
 			yv = mgr_input.getKeyValue(lk->actMoveY)/6.f;
@@ -114,7 +116,7 @@ bool MyMain::userRunU() {
 		_pitch += spn::DegF(-yv);
 		_yaw.single();
 		_pitch.rangeValue(-89, 89);
-		cd.setRot(spn::AQuat::RotationYPR(_yaw, _pitch, _roll));
+		ps.setRot(spn::AQuat::RotationYPR(_yaw, _pitch, _roll));
 	}
 	return true;
 }

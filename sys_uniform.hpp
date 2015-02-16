@@ -89,25 +89,7 @@ namespace rs {
 			void setTransform2D(const spn::Mat32& m);
 			void outputUniforms(GLEffect& glx, bool bBase) const;
 	};
-	//! システムuniform変数をセットする(3D)
-	/*! 変数リスト:
-		mat4 sys_mTrans,		// mWorld * mView * mProj
-			sys_mTransInv;		// inverse(mTrans)
-		mat4 sys_mView,
-			sys_mViewInv;		// inverse(mView)
-		mat4 sys_mProj,
-			sys_mProjInv;		// inverse(mProj)
-		mat4 sys_mViewProj,		// mView * mProj
-			sys_mViewProjInv;	// inverse(mViewProj)
-		mat4 sys_mWorld,
-			sys_mWorldInv;		// inverse(mWorld)
-		vec3 sys_vEyePos,
-			sys_vEyeDir;
-	*/
-	class SystemUniform3D :
-		public spn::CheckAlign<16, SystemUniform3D>,
-		virtual public SystemUniformBase
-	{
+	class SystemUniform3D : virtual public SystemUniformBase {
 		private:
 			#define SEQ_SYSUNI3D \
 				((World)(spn::AMat44)) \
