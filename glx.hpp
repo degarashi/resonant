@@ -388,7 +388,6 @@ namespace rs {
 			} _techId;
 
 			OPGLint _getPassId(int techId, const std::string& pass) const;
-			OPGLint _getUnifId(IdValue id) const;
 			IdPair _getTechPassId(IdValue id) const;
 
 			/*! 引数はコンパイラで静的に確保される定数を想定しているのでポインタで受け取る
@@ -449,16 +448,17 @@ namespace rs {
 			OPGLint getUniformID(const std::string& name) const;
 
 			void setTechPassId(IdValue id);
+			OPGLint getUnifId(IdValue id) const;
 			//! 定数値を使ったUniform変数設定。Uniform値が存在しなくてもエラーにならない
 			template <class T>
 			void setUniform_try(IdValue id, T&& t, bool bT=false) {
-				if(auto idv = _getUnifId(id))
+				if(auto idv = getUnifId(id))
 					setUniform(*idv, std::forward<T>(t), bT);
 			}
 			//! 定数値を使ったUniform変数設定
 			template <class T>
 			void setUniform(IdValue id, T&& t, bool bT=false) {
-				auto idv = _getUnifId(id);
+				auto idv = getUnifId(id);
 				// 定数値に対応するUniform変数が見つからない時は警告を出す
 				Assert(Warn, idv, "Uniform-ConstantId: %1% not found", id.value)
 				setUniform(*idv, std::forward<T>(t), bT);

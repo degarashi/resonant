@@ -739,7 +739,7 @@ namespace rs {
 			ip.second = *_getPassId(ip.first, (*src)[i].second);
 		}
 	}
-	OPGLint GLEffect::_getUnifId(IdValue id) const {
+	OPGLint GLEffect::getUnifId(IdValue id) const {
 		// 定数値に対応するUniform変数が見つからない時は警告を出す
 		if(_unifId.resultCur->size() <= id.value)
 			return spn::none;
