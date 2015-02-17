@@ -24,11 +24,7 @@ namespace rs {
 				((ViewProj)(spn::AMat44)(View)(Proj)) \
 				((ViewProjInv)(spn::AMat44)(ViewProj)) \
 				((VFrustum)(boom::geo3d::Frustum)(View)(Fov)(Aspect)(NearZ)(FarZ)) \
-				((World)(spn::AMat44)) \
-				((WorldInv)(spn::AMat44)(World)) \
-				((Transform)(spn::AMat44)(World)(View)(Proj)) \
-				((TransformInv)(spn::AMat44)(Transform)) \
-				((Accum)(uint32_t)(Pose)(Fov)(Aspect)(NearZ)(FarZ)(World))
+				((Accum)(uint32_t)(Pose)(Fov)(Aspect)(NearZ)(FarZ))
 			RFLAG_S(Camera3D, SEQ_CAMERA3D)
 			RFLAG_SETMETHOD(Accum)
 		public:
@@ -49,10 +45,6 @@ namespace rs {
 			Vec3x2 unprojectVec(const spn::Vec2& vsPos) const;	// (Near,Far)
 			//! ビューポート座標からワールド座標(FarPlane位置)を取得
 			spn::Vec3 vp2wp(const spn::Vec3& vp) const;
-
-			//! シェーダーにカメラ変数をUniformで渡す
-			/*! 対象はsysunif3d::matrixの変数ほぼ全て */
-			void outputUniforms(GLEffect& glx) const;
 	};
 	#define mgr_cam (::rs::Camera3DMgr::_ref())
 	class Camera3DMgr : public spn::ResMgrA<Camera3D, Camera3DMgr, spn::Alloc16> {};

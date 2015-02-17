@@ -69,6 +69,27 @@ namespace rs {
 			void setScreenSize(const spn::Size& s);
 			void outputUniforms(GLEffect& glx) const;
 	};
+	class SystemUniform3D : public SystemUniformBase, public spn::CheckAlign<16, SystemUniform3D> {
+		private:
+			mutable uint32_t	_acCamera;
+			#define SEQ_SYSUNI3D \
+				((World)(spn::AMat44)) \
+				((WorldInv)(spn::AMat44)(World)) \
+				((Camera)(HLCamF)) \
+				((Transform)(spn::AMat44)(World)(Camera)) \
+				((TransformInv)(spn::AMat44)(Transform))
+			RFLAG_S(SystemUniform3D, SEQ_SYSUNI3D)
+
+		public:
+			RFLAG_GETMETHOD_S(SEQ_SYSUNI3D)
+			#undef SEQ_SYSUNI3D
+			RFLAG_REFMETHOD(World)
+			RFLAG_SETMETHOD(World)
+
+			SystemUniform3D();
+			void setCamera(HCam hCam);
+			void outputUniforms(GLEffect& glx) const;
+	};
 	//! システムuniform変数をセットする(2D)
 	/*! 変数リスト:
 		mat3 sys_mTrans2D;		// scale * rotation * offset

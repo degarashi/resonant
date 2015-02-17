@@ -27,5 +27,60 @@ namespace rs {
 							Emissive = GlxId::GenUnifId("texEmissive");
 		}
 	}
+
+	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, Transform*) const {
+		auto& hc = getCamera();
+		if(hc)
+			m = getWorld() * hc->getViewProj();
+		else
+			m.identity();
+		return 0;
+	}
+	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, TransformInv*) const {
+		getTransform().inversion(m);
+		return 0;
+	}
+	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, WorldInv*) const {
+		getWorld().inversion(m);
+		return 0;
+	}
+
+	SystemUniform3D::SystemUniform3D(): _acCamera(0) {
+		setWorld(spn::AMat44(1, spn::AMat44::TagDiagonal));
+	}
+	void SystemUniform3D::setCamera(HCam hCam) {
+		_rflag.set<Camera>(hCam);
+		if(hCam)
+			_acCamera = hCam->getAccum();
+	}
+	void SystemUniform3D::outputUniforms(GLEffect& glx) const {
+		#define DEF_SETUNIF(name, func) \
+			if(auto idv = glx.getUnifId(sysunif3d::matrix::name)) \
+				glx.setUniform(*idv, func##name(), true);
+		DEF_SETUNIF(World, get)
+		DEF_SETUNIF(WorldInv, get)
+		if(auto& hc = getCamera()) {
+			auto& cd = hc.cref();
+			auto ac = cd.getAccum();
+			if(_acCamera != ac) {
+				_acCamera = ac;
+
+				DEF_SETUNIF(View, cd.get)
+				DEF_SETUNIF(Proj, cd.get)
+				DEF_SETUNIF(ViewProj, cd.get)
+				DEF_SETUNIF(ViewProjInv, cd.get)
+				DEF_SETUNIF(Transform, get)
+				DEF_SETUNIF(TransformInv, get)
+
+				auto& ps = cd.getPose();
+				if(auto idv = glx.getUnifId(sysunif3d::matrix::EyePos))
+					glx.setUniform(*idv, ps.getOffset(), true);
+				if(auto idv = glx.getUnifId(sysunif3d::matrix::EyeDir))
+					glx.setUniform(*idv, ps.getRot().getZAxis(), true);
+			}
+		}
+		SystemUniformBase::outputUniforms(glx);
+		#undef DEF_SETUNIF
+	}
 }
 
