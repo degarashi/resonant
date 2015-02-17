@@ -4,7 +4,7 @@
 // ---------------------- InfoShow::MySt ----------------------
 void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	auto lk = shared.lock();
-	auto& fx = *lk->pFx;
+	auto& fx = *lk->pEngine;
 	fx.setTechPassId(self._tpId);
 	auto lkb = sharedbase.lock();
 	auto tsz = lkb->screenSize;

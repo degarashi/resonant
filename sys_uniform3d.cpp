@@ -79,7 +79,6 @@ namespace rs {
 					glx.setUniform(*idv, ps.getRot().getZAxis(), true);
 			}
 		}
-		SystemUniformBase::outputUniforms(glx);
 		#undef DEF_SETUNIF
 	}
 }

@@ -1,9 +1,8 @@
 #include "test.hpp"
+#include "sys_uniform.hpp"
 
 // ---------------------- Cube ----------------------
-const rs::IdValue Cube::U_diffuse = GlxId::GenUnifId("tDiffuse"),
-					Cube::U_trans = GlxId::GenUnifId("mTrans"),
-					Cube::U_litdir = GlxId::GenUnifId("vLitDir");
+const rs::IdValue Cube::U_litdir = GlxId::GenUnifId("vLitDir");
 Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	setScale({s,s,s});
 	using spn::Vec2;
@@ -64,21 +63,18 @@ Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
 	_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
 }
-void Cube::draw(rs::GLEffect& glx) {
+void Cube::draw(Engine& e) {
 	const spn::AQuat& q = this->getRot();
 	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
-	glx.setVDecl(rs::DrawDecl<drawtag::cube>::GetVDecl());
-	glx.setUniform(U_diffuse, _hlTex);
+	e.setVDecl(rs::DrawDecl<drawtag::cube>::GetVDecl());
+	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	auto m = getToWorld();
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
-	auto lk = shared.lock();
-	auto& cd = lk->hlCam.ref();
-	m2 *= cd.getViewProj().convert44();
-	glx.setUniform(U_trans, m2, true);
-	glx.setVStream(_hlVb, 0);
+	e.setWorld(m2);
+	e.setVStream(_hlVb, 0);
 
-	glx.setUniform(U_litdir, spn::Vec3(0,1,0), false);
-	glx.draw(GL_TRIANGLES, 0, 6*6);
+	e.setUniform(U_litdir, spn::Vec3(0,1,0), false);
+	e.draw(GL_TRIANGLES, 0, 6*6);
 }
 // ---------------------- Cube頂点宣言 ----------------------
 const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
@@ -107,7 +103,7 @@ void CubeObj::MySt::onDisconnected(CubeObj& self, rs::HGroup) {
 }
 void CubeObj::MySt::onDraw(const CubeObj& self) const {
 	auto lk = shared.lock();
-	auto& fx = *lk->pFx;
+	auto& fx = *lk->pEngine;
 	fx.setTechPassId(self._tpId);
 	self._cube.draw(fx);
 }

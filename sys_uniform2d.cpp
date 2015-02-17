@@ -24,9 +24,7 @@ namespace rs {
 	void SystemUniform2D::setTransform2D(const spn::Mat32& m) {
 		_rflag.set<Transform2D>(m);
 	}
-	void SystemUniform2D::outputUniforms(GLEffect& glx, bool bBase) const {
-		if(bBase)
-			SystemUniformBase::outputUniforms(glx);
+	void SystemUniform2D::outputUniforms(GLEffect& glx) const {
 		for(auto& f : c_systagF2D)
 			f(*this, glx);
 	}

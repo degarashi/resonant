@@ -6,6 +6,16 @@
 #include "input.hpp"
 #include "adaptsdl.hpp"
 
+void Engine::draw(GLenum mode, GLint first, GLsizei count) {
+	SystemUniform::outputUniforms(*this);
+	SystemUniform3D::outputUniforms(*this);
+	GLEffect::draw(mode, first, count);
+}
+void Engine::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
+	SystemUniform::outputUniforms(*this);
+	SystemUniform3D::outputUniforms(*this);
+	GLEffect::drawIndexed(mode, count, offsetElem);
+}
 // ------------------------------ MyDraw ------------------------------
 bool MyDraw::runU(uint64_t accum, bool bSkip) {
 	if(!bSkip) {
@@ -36,8 +46,9 @@ void MyMain::_initEffect() {
 	auto lk = shared.lock();
 	std::string key;
 	lkb->hlFx = mgr_gl.loadEffect("test.glx",
-		[](rs::AdaptSDL& as){ return new rs::GLEffect(as); });
-	lk->pFx = lkb->hlFx->get();
+		[](rs::AdaptSDL& as){ return new Engine(as); });
+	lk->pEngine = static_cast<Engine*>(lkb->hlFx->get());
+	lk->pEngine->setCamera(lk->hlCam);
 }
 void MyMain::_initCam() {
 	auto lk = shared.lock();

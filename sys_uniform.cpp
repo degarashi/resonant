@@ -14,11 +14,11 @@ namespace rs {
 		}
 	}
 
-	// --------------------- SystemUniformBase ---------------------
+	// --------------------- SystemUniform ---------------------
 	namespace {
-		using SetF = std::function<void (const SystemUniformBase&, GLEffect&)>;
+		using SetF = std::function<void (const SystemUniform&, GLEffect&)>;
 		const SetF c_systagF[] = {
-			[](const SystemUniformBase& s, GLEffect& glx) {
+			[](const SystemUniform& s, GLEffect& glx) {
 				auto& ss = s.getScreenSize();
 				glx.setUniform_try(sysunif::screen::Size,
 									spn::Vec4(ss.width,
@@ -28,13 +28,13 @@ namespace rs {
 			}
 		};
 	}
-	const spn::Size& SystemUniformBase::getScreenSize() const {
+	const spn::Size& SystemUniform::getScreenSize() const {
 		return _screenSize;
 	}
-	void SystemUniformBase::setScreenSize(const spn::Size& s) {
+	void SystemUniform::setScreenSize(const spn::Size& s) {
 		_screenSize = s;
 	}
-	void SystemUniformBase::outputUniforms(GLEffect& glx) const {
+	void SystemUniform::outputUniforms(GLEffect& glx) const {
 		for(auto& f : c_systagF)
 			f(*this, glx);
 	}

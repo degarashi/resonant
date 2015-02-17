@@ -8,7 +8,6 @@
 #include "gameloop.hpp"
 #include "updater.hpp"
 #include "scene.hpp"
-#include "glx.hpp"
 #include "camera.hpp"
 #include "scene.hpp"
 #include "input.hpp"
@@ -16,7 +15,8 @@
 #include "font.hpp"
 #include "prochelper.hpp"
 #include "vertex.hpp"
-#include "glx_id.hpp"
+#include "sys_uniform.hpp"
+#include "glx.hpp"
 
 namespace vertex {
 	//! キューブ描画用頂点
@@ -31,10 +31,11 @@ namespace drawtag {
 }
 DefineVDecl(::drawtag::cube)
 
+class Engine;
 // ゲーム通しての(MainThread, DrawThread含めた)グローバル変数
 // リソースハンドルはメインスレッドで参照する -> メインスレッドハンドラに投げる
 struct SharedValue {
-	rs::GLEffect*	pFx;
+	Engine*		pEngine;
 	rs::HLAct	actQuit,
 				actLeft,
 				actRight,
@@ -62,12 +63,10 @@ class Cube : public spn::Pose3D {
 	private:
 		rs::HLVb	_hlVb;
 		rs::HLTex	_hlTex;
-		const static rs::IdValue	U_diffuse,
-									U_trans,
-									U_litdir;
+		const static rs::IdValue	U_litdir;
 	public:
 		Cube(float s, rs::HTex hTex);
-		void draw(rs::GLEffect& glx);
+		void draw(Engine& e);
 };
 
 //! キューブObj(Update)
@@ -159,5 +158,14 @@ class MyMain : public rs::MainProc {
 	public:
 		MyMain(const rs::SPWindow& sp);
 		bool userRunU() override;
+};
+class Engine : public rs::SystemUniform3D,
+			public rs::SystemUniform,
+			public rs::GLEffect
+{
+	public:
+		using rs::GLEffect::GLEffect;
+		void drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem=0) override;
+		void draw(GLenum mode, GLint first, GLsizei count) override;
 };
 
