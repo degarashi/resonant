@@ -9,7 +9,6 @@
 #include "handle.hpp"
 
 namespace rs {
-	class GLEffect;
 	/*! 姿勢の保持はPose3Dクラスが行い，カメラ固有の変数だけを持つ */
 	class Camera3D : public spn::CheckAlign<16, Camera3D> {
 		private:

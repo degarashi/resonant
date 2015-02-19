@@ -3,6 +3,7 @@
 #include "font.hpp"
 #include "spinner/frac.hpp"
 #include "camera.hpp"
+#include "camera2d.hpp"
 #include "updater.hpp"
 #include "scene.hpp"
 #include "sound.hpp"
@@ -202,6 +203,7 @@ namespace rs {
 			GameLoop::LoadFonts();
 			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
 			UPtr<Camera3DMgr>	camP(new Camera3DMgr());
+			UPtr<Camera2DMgr>	cam2P(new Camera2DMgr());
 			UPtr<PointerMgr>	pmP(new PointerMgr());
 			UPtr<InputMgr>		inpP(new InputMgr());
 			UPtr<ObjMgr>		objP(new ObjMgr());

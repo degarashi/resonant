@@ -51,6 +51,10 @@ namespace rs {
 	class Camera3D;
 	DEF_AHANDLE_PROP(Camera3DMgr, Cam, Camera3D, Camera3D, spn::Alloc16)
 
+	class Camera2DMgr;
+	class Camera2D;
+	DEF_AHANDLE_PROP(Camera2DMgr, Cam2D, Camera2D, Camera2D, spn::Alloc16)
+
 	class PointerMgr;
 	struct TPos2D;
 	DEF_AHANDLE(PointerMgr, Ptr, TPos2D, TPos2D)

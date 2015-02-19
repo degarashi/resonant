@@ -48,18 +48,21 @@ namespace rs {
 	*/
 	class SystemUniform2D {
 		private:
+			mutable uint32_t	_acCamera;
 			#define SEQ_SYSUNI2D \
-				((ViewOffset)(spn::Vec2)) \
-				((ViewScale)(spn::Vec2)) \
-				((ViewRotation)(spn::DegF)) \
-				((Transform2D)(spn::Mat32)(ViewOffset)(ViewScale)(ViewRotation))
+				((World)(spn::Mat33)) \
+				((WorldInv)(spn::Mat33)(World)) \
+				((Camera)(HLCam2DF)) \
+				((Transform)(spn::Mat33)(World)(Camera)) \
+				((TransformInv)(spn::Mat33)(Transform))
 			RFLAG_S(SystemUniform2D, SEQ_SYSUNI2D)
 		public:
 			RFLAG_GETMETHOD_S(SEQ_SYSUNI2D)
 			RFLAG_SETMETHOD_S(SEQ_SYSUNI2D)
 			#undef SEQ_SYSUNI2D
 
-			void setTransform2D(const spn::Mat32& m);
+			SystemUniform2D();
+			void setCamera(HCam2D hC);
 			void outputUniforms(GLEffect& glx) const;
 	};
 }

@@ -69,8 +69,6 @@ namespace rs {
 				DEF_SETUNIF(Proj, cd.get)
 				DEF_SETUNIF(ViewProj, cd.get)
 				DEF_SETUNIF(ViewProjInv, cd.get)
-				DEF_SETUNIF(Transform, get)
-				DEF_SETUNIF(TransformInv, get)
 
 				auto& ps = cd.getPose();
 				if(auto idv = glx.getUnifId(sysunif3d::matrix::EyePos))
@@ -79,6 +77,8 @@ namespace rs {
 					glx.setUniform(*idv, ps.getRot().getZAxis(), true);
 			}
 		}
+		DEF_SETUNIF(Transform, get)
+		DEF_SETUNIF(TransformInv, get)
 		#undef DEF_SETUNIF
 	}
 }
