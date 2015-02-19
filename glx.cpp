@@ -743,7 +743,10 @@ namespace rs {
 		// 定数値に対応するUniform変数が見つからない時は警告を出す
 		if(_unifId.resultCur->size() <= id.value)
 			return spn::none;
-		return (*_unifId.resultCur)[id.value];
+		auto ret = (*_unifId.resultCur)[id.value];
+		if(ret < 0)
+			return spn::none;
+		return ret;
 	}
 	GLEffect::IdPair GLEffect::_getTechPassId(IdValue id) const {
 		Assert(Trap, (_techId.result.size() > id.value), "TechPass-ConstantId: Invalid Id (%1%)", id.value)
