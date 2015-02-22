@@ -26,7 +26,7 @@ namespace rs {
 		return 0;
 	}
 	uint32_t Camera2D::_refresh(spn::Mat33& m, Proj*) const {
-		m = spn::AMat33::Scaling(1.f * getAspectRatio(), 1, 1);
+		m = spn::AMat33::Scaling(1.f / getAspectRatio(), 1, 1);
 		return 0;
 	}
 	uint32_t Camera2D::_refresh(spn::Mat33& m, ViewProj*) const {
