@@ -15,10 +15,12 @@ namespace rs {
 				using OPPath = spn::Optional<std::string>;
 				OPPath	path;
 
-				Item(Item&& it);
+				Item(Item&&) = default;
 				Item(int fIdx, HRW hRW);
 				Item(int fIdx, const std::string& p);
 				HLFT makeFont() const;
+
+				Item& operator = (Item&&) = default;
 			};
 		private:
 			using SPFace = std::shared_ptr<FTFace>;

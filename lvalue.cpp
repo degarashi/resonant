@@ -1,6 +1,7 @@
 #include "luaw.hpp"
 #include <sstream>
 #include <limits>
+#include "spinner/emplace.hpp"
 
 namespace rs {
 	bool LuaNil::operator == (LuaNil) const {
@@ -165,12 +166,12 @@ namespace rs {
 
 		// 循環参照対策で先にエントリを作っておく
 		SPLCTable ret(new LCTable());
-		spm->emplace(ptr, ret);
+		spn::TryEmplace(*spm, ptr, ret);
 		idx = lsc.absIndex(idx);
 		lsc.push(LuaNil());
 		while(lsc.next(idx) != 0) {
 			// key=-2 value=-1
-			ret->emplace(lsc.toLCValue(-2, spm), lsc.toLCValue(-1, spm));
+			spn::TryEmplace(*ret, lsc.toLCValue(-2, spm), lsc.toLCValue(-1, spm));
 			// valueは取り除きkeyはlua_nextのために保持
 			lsc.pop(1);
 		}

@@ -1,6 +1,7 @@
 #pragma once
 #include "spinner/resmgr.hpp"
 #include <unordered_map>
+#include "spinner/emplace.hpp"
 
 namespace rs {
 	//! リソースハンドルにKEYをつけて共有する (弱参照)
@@ -12,7 +13,7 @@ namespace rs {
 
 		public:
 			void setObj(const KEY& key, WHDL wh) {
-				_resource.emplace(key, wh);
+				spn::EmplaceOrReplace(_resource, key, wh);
 			}
 			LHdl getObj(const KEY& key) {
 				// 無効ならエントリを消す
@@ -42,7 +43,7 @@ namespace rs {
 
 		public:
 			void setObj(const KEY& key, SHDL sh) {
-				_resource.emplace(key, sh);
+				spn::EmplaceOrReplace(_resource, key, sh);
 			}
 			void remObj(const KEY& key) {
 				auto itr = _resource.find(key);

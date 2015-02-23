@@ -1,5 +1,6 @@
 #include "lsys.hpp"
 #include "adaptsdl.hpp"
+#include "spinner/emplace.hpp"
 
 DEF_LUAIMPLEMENT_PTR(LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep), NOTHING)
 namespace rs {
@@ -37,7 +38,7 @@ namespace rs {
 					auto& cur = blk.uriVec[blk.current];
 					// 並列処理のため、一旦ロックを解除
 					lk.unlock();
-						blk.result->emplace(cur.first, spn::ResMgrBase::LoadResource(cur.second));
+					spn::TryEmplace(*blk.result, cur.first, spn::ResMgrBase::LoadResource(cur.second));
 					lk.lock();
 					self._progress = ++blk.current / static_cast<float>(blk.uriVec.size());
 					if(blk.current == static_cast<int>(blk.uriVec.size()))
@@ -68,7 +69,7 @@ namespace rs {
 			spn::URI uri(lsc.toString(-1));
 			auto h = spn::ResMgrBase::LoadResource(uri);
 			LCValue lcv(h);
-			ret.emplace(std::move(ent), h);
+			spn::TryEmplace(ret, std::move(ent), h);
 		});
 		return std::move(ret);
 	}
@@ -80,7 +81,7 @@ namespace rs {
 		tbl.iterateTable([&block](LuaState& lsc) {
 			block.uriVec.emplace_back(lsc.toString(-2), spn::URI(lsc.toString(-1)));
 		});
-		_async.emplace(id, std::move(block));
+		spn::TryEmplace(_async, id, std::move(block));
 		_cond.signal_all();
 		return id;
 	}

@@ -1,12 +1,12 @@
 #include "font_ft_dep.hpp"
 #include "spinner/dir.hpp"
 #include <fstream>
+#include "spinner/emplace.hpp"
 
 namespace rs {
 	// ---------------------- FontFamily ----------------------
 	FontFamily::Item::Item(int fIdx, HRW hRW): faceIndex(fIdx), hlRW(hRW) {}
 	FontFamily::Item::Item(int fIdx, const std::string& p): faceIndex(fIdx), path(p) {}
-	FontFamily::Item::Item(Item&& it): faceIndex(it.faceIndex), hlRW(std::move(it.hlRW)), path(std::move(it.path)) {}
 	HLFT FontFamily::Item::makeFont() const {
 		if(hlRW)
 			return mgr_font.newFace(hlRW, faceIndex);
@@ -21,14 +21,15 @@ namespace rs {
 			loadFamily(mgr_rw.fromFile(dir.plain_utf8(), RWops::Read));
 		});
 	}
+
 	void FontFamily::loadFamily(HRW hRW) {
 		HLFT hlf = newFace(hRW, 0);
 		auto& face = hlf.ref();
 		int nf = face.getNFace();
-		_fontMap.emplace(face.getFamilyName(), Item(0, hRW));
+		spn::EmplaceOrReplace(_fontMap, face.getFamilyName(), 0, hRW);
 		for(int i=1 ; i<nf ; i++) {
 			HLFT hlf2 = newFace(hRW, i);
-			_fontMap.emplace(hlf2.ref().getFamilyName(), Item(i, hRW));
+			spn::EmplaceOrReplace(_fontMap, hlf2.ref().getFamilyName(), i, hRW);
 		}
 	}
 	HLFT FontFamily::fontFromFamilyName(const std::string& name) const {

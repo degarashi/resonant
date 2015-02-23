@@ -633,10 +633,10 @@ namespace rs {
 		_makeUniformToken(dstToken, id, static_cast<const int*>(tmp), 1, bT);
 	}
 	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const int* iv, int n, bool /*bT*/) const {
-		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n));
+		spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n));
 	}
 	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const float* fv, int n, bool /*bT*/) const {
-		dstToken.emplace(id, std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n));
+		spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n));
 	}
 	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const double* dv, int n, bool bT) const {
 		float tmp[n];
@@ -654,14 +654,14 @@ namespace rs {
 				std::vector<const IGLTexture*> pTexA(n);
 				for(int i=0 ; i<n ; i++)
 					pTexA[i] = (hTex[i].cref()).get();
-				dstToken.emplace(id, std::make_shared<draw::TextureA>(id,
+				spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::TextureA>(id,
 											reinterpret_cast<const HRes*>(hTex),
 											pTexA.data(), aID, n));
 				return;
 			}
 			AssertP(Trap, n==1)
 			HTex hTex2(*hTex);
-			dstToken.emplace(id, hTex2.ref()->getDrawToken(id, 0, aID));
+			spn::EmplaceOrReplace(dstToken, id, hTex2.ref()->getDrawToken(id, 0, aID));
 		}
 	}
 	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool bT) const {

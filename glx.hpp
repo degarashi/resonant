@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <boost/lexical_cast.hpp>
 #include "glx_id.hpp"
+#include "spinner/emplace.hpp"
 
 namespace rs {
 	//! OpenGLの値設定関数代理クラス
@@ -477,7 +478,7 @@ namespace rs {
 			void _makeUniformToken(UniMap& dstToken, GLint id, const int* iv, int n, bool) const;
 			template <int DN, bool A>
 			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
-				dstToken.emplace(id, std::make_shared<draw::Unif_Vec<float, DN>>(id, v, n)); }
+				spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Vec<float, DN>>(id, v, n)); }
 			template <int DM, int DN, bool A>
 			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) const {
 				constexpr int DIM = spn::TValue<DM,DN>::great;
@@ -488,7 +489,7 @@ namespace rs {
 			}
 			template <int DN, bool A>
 			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) const {
-				dstToken.emplace(id, std::make_shared<draw::Unif_Mat<float, DN>>(id, m, n, bT)); }
+				spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Mat<float, DN>>(id, m, n, bT)); }
 			void _makeUniformToken(UniMap& dstToken, GLint id, const HTex* hTex, int n, bool) const;
 			void _makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool) const;
 

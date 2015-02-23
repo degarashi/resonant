@@ -2,6 +2,7 @@
 #include "lane.hpp"
 #include "glx.hpp"
 #include "sys_uniform.hpp"
+#include "spinner/emplace.hpp"
 
 namespace rs {
 	namespace {
@@ -33,12 +34,7 @@ namespace rs {
 		return coreID == cid;
 	}
 	Face::DepPair& Face::getDepPair(CCoreID coreID) {
-		auto itrDP = depMap.find(coreID);
-		if(itrDP == depMap.end()) {
-			depMap.emplace(coreID, DepPair(faceName, sfcSize, coreID));
-			itrDP = depMap.find(coreID);
-		}
-		return itrDP->second;
+		return spn::TryEmplace(depMap, coreID, faceName, sfcSize, coreID).first->second;
 	}
 	const CharPos* Face::getCharPos(CharID chID) {
 		// キャッシュが既にあればそれを使う
