@@ -331,7 +331,6 @@ namespace rs {
 					private:
 						SPVDecl			_spVDecl;
 						HLVb			_vbuff[VData::MAX_STREAM];
-						mutable bool	_bChanged;
 					public:
 						Vertex();
 						void setVDecl(const SPVDecl& v);
@@ -342,7 +341,6 @@ namespace rs {
 				class Index {
 					private:
 						HLIb			_ibuff;
-						mutable bool	_bChanged;
 					public:
 						Index();
 						void setIBuffer(HIb hIb);

@@ -196,61 +196,44 @@ namespace rs {
 	}
 
 	// -------------- GLEffect::Current::Vertex --------------
-	GLEffect::Current::Vertex::Vertex(): _bChanged(true) {}
+	GLEffect::Current::Vertex::Vertex() {}
 	void GLEffect::Current::Vertex::reset() {
 		_spVDecl.reset();
 		for(auto& v : _vbuff)
 			v.setNull();
-		_bChanged = true;
 	}
 	void GLEffect::Current::Vertex::setVDecl(const SPVDecl& v) {
-		if(_spVDecl != v) {
-			_bChanged = true;
-			_spVDecl = v;
-		}
+		_spVDecl = v;
 	}
 	void GLEffect::Current::Vertex::setVBuffer(HVb hVb, int n) {
-		if(_vbuff[n].get() != hVb) {
-			_bChanged = true;
-			_vbuff[n] = hVb;
-		}
+		_vbuff[n] = hVb;
 	}
 	void GLEffect::Current::Vertex::extractData(draw::VStream& dst,
 												TPStructR::VAttrID vAttrId) const
 	{
-		if(_bChanged) {
-			_bChanged = false;
-			Assert(Trap, _spVDecl, "VDecl is not set")
-			dst.spVDecl = _spVDecl;
-			for(int i=0 ; i<countof(_vbuff) ; i++) {
-				if(_vbuff[i])
-					dst.vbuff[i] = _vbuff[i]->get()->getDrawToken();
-			}
-			dst.vAttrId = vAttrId;
+		Assert(Trap, _spVDecl, "VDecl is not set")
+		dst.spVDecl = _spVDecl;
+		for(int i=0 ; i<countof(_vbuff) ; i++) {
+			if(_vbuff[i])
+				dst.vbuff[i] = _vbuff[i]->get()->getDrawToken();
 		}
+		dst.vAttrId = vAttrId;
 	}
 
 	// -------------- GLEffect::Current::Index --------------
-	GLEffect::Current::Index::Index(): _bChanged(true) {}
+	GLEffect::Current::Index::Index() {}
 	void GLEffect::Current::Index::reset() {
 		_ibuff.setNull();
-		_bChanged = true;
 	}
 	void GLEffect::Current::Index::setIBuffer(HIb hIb) {
-		if(_ibuff.get() != hIb) {
-			_bChanged = true;
-			_ibuff = hIb;
-		}
+		_ibuff = hIb;
 	}
 	HIb GLEffect::Current::Index::getIBuffer() const {
 		return _ibuff;
 	}
 	void GLEffect::Current::Index::extractData(draw::VStream& dst) const {
-		if(_bChanged) {
-			_bChanged = false;
-			if(_ibuff)
-				dst.ibuff = spn::construct(_ibuff->get()->getDrawToken());
-		}
+		if(_ibuff)
+			dst.ibuff = spn::construct(_ibuff->get()->getDrawToken());
 	}
 
 	// -------------- GLEffect::Current --------------
