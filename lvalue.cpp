@@ -265,6 +265,9 @@ namespace rs {
 	bool LCValue::operator == (const LCValue& lcv) const {
 		return static_cast<const LCVar&>(*this) == static_cast<const LCVar&>(lcv);
 	}
+	bool LCValue::operator != (const LCValue& lcv) const {
+		return !(this->operator == (lcv));
+	}
 
 	LCValue& LCValue::operator = (const LCValue& lcv) {
 		this->~LCValue();

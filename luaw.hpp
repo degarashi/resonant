@@ -69,16 +69,35 @@ namespace rs {
 			LCValue();
 			LCValue(const LCValue& lc);
 			LCValue(LCValue&& lcv);
+			LCValue& operator = (const LCValue& lcv);
+			LCValue& operator = (LCValue&& lcv);
 			template <class T>
+			constexpr static auto IsHandleT = spn::IsHandleT<std::decay_t<T>>::value;
+			// リソースの固有ハンドルは汎用へ読み替え
+			// >>SHandle & WHandle & LHandle
+			template <class H, class=std::enable_if_t<IsHandleT<H>>>
+			LCValue(H h): LCVar(h.getBase()) {}
+			template <class H, class=std::enable_if_t<IsHandleT<H>>>
+			LCValue& operator = (H h) {
+				*this = h.getBase();
+				return *this;
+			}
+			// それ以外はそのままLCVarに渡す
+			template <class T, class=std::enable_if_t<!IsHandleT<T>>>
 			LCValue(T&& t): LCVar(std::forward<T>(t)) {}
-			template <class T>
+			template <class T, class=std::enable_if_t<!IsHandleT<T>>>
 			LCValue& operator = (T&& t) {
 				static_cast<LCVar&>(*this) = std::forward<T>(t);
 				return *this;
 			}
-			LCValue& operator = (const LCValue& lcv);
-			LCValue& operator = (LCValue&& lcv);
+
+			template <class H>
+			auto toHandle() const {
+				using BaseH = decltype(std::declval<H>().getBase());
+				return H::FromHandle(boost::get<BaseH>(*this));
+			}
 			bool operator == (const LCValue& lcv) const;
+			bool operator != (const LCValue& lcv) const;
 			void push(lua_State* ls) const;
 			const char* toCStr() const;
 			std::string toString() const;
