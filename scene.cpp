@@ -1,11 +1,30 @@
 #include "scene.hpp"
 
 namespace rs {
+	// -------------- SceneBase --------------
 	SceneBase::SceneBase(HGroup hUpd, HDGroup hDraw) {
-		update = hUpd ? hUpd : rs_mgr_obj.makeGroup<Update>().get();
-		draw = hDraw ? hDraw : rs_mgr_obj.makeDrawGroup<Draw>().get();
+		_update = hUpd ? hUpd : rs_mgr_obj.makeGroup<Update>().get();
+		_draw = hDraw ? hDraw : rs_mgr_obj.makeDrawGroup<Draw>().get();
+	}
+	void SceneBase::setUpdate(HGroup hGroup) {
+		if(_update)
+			_update->get()->onDisconnected(HGroup());
+		_update = hGroup;
+		if(hGroup)
+			hGroup->get()->onConnected(HGroup());
+	}
+	HGroup SceneBase::getUpdate() const {
+		return _update;
+	}
+	void SceneBase::setDraw(HDGroup hdGroup) {
+		// DrawGroupはConnected系の通知を行わない
+		_draw = hdGroup;
+	}
+	HDGroup SceneBase::getDraw() const {
+		return _draw;
 	}
 
+	// -------------- SceneMgr --------------
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
 	SceneBase& SceneMgr::getSceneBase(int n) const {
 		HObj hObj = getScene(n);
@@ -22,10 +41,10 @@ namespace rs {
 		return HObj();
 	}
 	UpdGroup& SceneMgr::getUpdGroup(int n) const {
-		return *getSceneBase(n).update->get();
+		return *getSceneBase(n).getUpdate()->get();
 	}
 	DrawGroup& SceneMgr::getDrawGroup(int n) const {
-		return *getSceneBase(n).draw->get();
+		return *getSceneBase(n).getDraw()->get();
 	}
 	void SceneMgr::setPushScene(HObj hSc, bool bPop) {
 		if(_scene.empty()) {

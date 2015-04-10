@@ -3,7 +3,7 @@
 #include "luaimport.hpp"
 
 namespace rs {
-	struct SceneBase;
+	class SceneBase;
 	#define mgr_scene (::rs::SceneMgr::_ref())
 	//! シーンスタックを管理
 	class SceneMgr : public spn::Singleton<SceneMgr> {
@@ -43,14 +43,20 @@ namespace rs {
 	};
 
 	constexpr static uint32_t SCENE_INTERFACE_ID = 0xf0000000;
-	struct SceneBase {
-		DefineGroupT(Update, UpdGroup)
-		DefineGroupT(Draw, DrawGroup)
+	class SceneBase {
+		private:
+			DefineGroupT(Update, UpdGroup)
+			DefineGroupT(Draw, DrawGroup)
 
-		HLGroup		update;
-		HLDGroup	draw;
+			HLGroup		_update;
+			HLDGroup	_draw;
 
-		SceneBase(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup());
+		public:
+			SceneBase(HGroup hUpd, HDGroup hDraw);
+			void setUpdate(HGroup hGroup);
+			HGroup getUpdate() const;
+			void setDraw(HDGroup hDGroup);
+			HDGroup getDraw() const;
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
@@ -62,23 +68,34 @@ namespace rs {
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
 				_sbase(hUpd, hDraw) {}
 			void onUpdate() override final {
+				UpdGroup::SetAsUpdateRoot();
 				base::onUpdate();
 				if(!base::isDead())
-					_sbase.update->get()->onUpdate();
+					_sbase.getUpdate()->get()->onUpdate();
 			}
 			void onDraw() const override final {
 				base::onDraw();
-				_sbase.draw->get()->onDraw();
+				_sbase.getDraw()->get()->onDraw();
+			}
+			void onDisconnected(HGroup h) override final {
+				base::onDisconnected(h);
+				AssertP(Trap, !h)
+				_sbase.getUpdate()->get()->onDisconnected(h);
+			}
+			void onConnected(HGroup h) override final {
+				base::onConnected(h);
+				AssertP(Trap, !h)
+				_sbase.getUpdate()->get()->onConnected(h);
 			}
 			//! ヘルパー関数: シーンスタック中のUpdGroupを取得
 			/*! *getBase().update->get() と同等 */
 			UpdGroup& getUpdGroup() const {
-				return *getBase().update->get();
+				return *getBase().getUpdate()->get();
 			}
 			//! ヘルパー関数: シーンスタック中のDrawGroupを取得
 			/*! *getBase().draw->get() と同等 */
 			DrawGroup& getDrawGroup() const {
-				return *getBase().draw->get();
+				return *getBase().getDraw()->get();
 			}
 			const SceneBase& getBase() const {
 				return _sbase;

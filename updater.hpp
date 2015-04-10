@@ -196,6 +196,7 @@ namespace rs {
 	//! Objectのグループ管理
 	class UpdGroup : public Object, public spn::EnableFromThis<HGroup> {
 		private:
+			static thread_local bool tls_bUpdateRoot;
 			using UGVec = std::vector<UpdGroup*>;
 			static UGVec	s_ug;
 
@@ -214,7 +215,9 @@ namespace rs {
 			void _doRemove();
 
 		public:
+			static void SetAsUpdateRoot();
 			UpdGroup(Priority p=0);
+			~UpdGroup();
 			Priority getPriority() const override;
 
 			//! オブジェクト又はグループを追加
@@ -443,8 +446,8 @@ namespace rs {
 				using FPState = FlagPtr<State>;
 
 				static StateT<void> _nullState;
-				static FPState getNullState() {
-					return useState(&_nullState);
+				static FPState _GetNullState() {
+					return FPState(&_nullState, false);
 				}
 
 			private:
@@ -465,7 +468,7 @@ namespace rs {
 					setState(FPState(st, false));
 				}
 				void setNullState() {
-					setStateUse(&_nullState);
+					setState(T::_GetNullState());
 				}
 				bool isNode() const override {
 					return false;
@@ -567,10 +570,10 @@ namespace rs {
 				}
 				//! Updaterノードツリーに追加された時に呼ばれる
 				/*! DrawGroupに登録された時は呼ばれない( */
-				void onConnected(HGroup hGroup) override final {
+				void onConnected(HGroup hGroup) override {
 					return _callWithSwitchState([&](){ return _state->onConnected(getRef(), hGroup); });
 				}
-				void onDisconnected(HGroup hGroup) override final {
+				void onDisconnected(HGroup hGroup) override {
 					return _callWithSwitchState([&](){ return _state->onDisconnected(getRef(), hGroup); });
 				}
 		};

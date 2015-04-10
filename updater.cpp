@@ -73,6 +73,10 @@ namespace rs {
 		_priority(p),
 		_nParent(0)
 	{}
+	thread_local bool UpdGroup::tls_bUpdateRoot = false;
+	void UpdGroup::SetAsUpdateRoot() {
+		tls_bUpdateRoot = true;
+	}
 	Priority UpdGroup::getPriority() const {
 		return _priority;
 	}
@@ -135,8 +139,11 @@ namespace rs {
 	}
 	void UpdGroup::clear() {
 		_remObj.clear();
-		_groupV.clear();
-		_objV.clear();
+		std::copy(_objV.begin(), _objV.end(), std::back_inserter(_remObj));
+		std::copy(_groupV.begin(), _groupV.end(), std::back_inserter(_remObj));
+		_doRemove();
+
+		AssertP(Trap, _objV.empty() && _groupV.empty() && _remObj.empty())
 	}
 	void UpdGroup::onDraw() const {
 		// DrawUpdate中のオブジェクト追加削除はナシ
@@ -144,6 +151,11 @@ namespace rs {
 			h->get()->onDraw();
 	}
 	void UpdGroup::onUpdate() {
+		struct FlagSet {
+			bool bRootPrev = tls_bUpdateRoot;
+			~FlagSet() { tls_bUpdateRoot = bRootPrev; }
+		} flagset;
+
 		for(auto& h : _objV) {
 			auto* ent = h->get();
 			auto b = ent->onUpdateUpd();
@@ -153,7 +165,7 @@ namespace rs {
 			}
 		}
 		// ルートノードで一括してオブジェクトの削除
-		if(_nParent == 0) {
+		if(tls_bUpdateRoot) {
 			while(!s_ug.empty()) {
 				decltype(s_ug) tmp;
 				tmp.swap(s_ug);
@@ -162,16 +174,18 @@ namespace rs {
 			}
 		}
 	}
+	UpdGroup::~UpdGroup() {
+		AssertP(Trap, _nParent==0)
+	}
 	void UpdGroup::onConnected(HGroup hGroup) {
 		++_nParent;
-		for(auto& h : _objV)
-			h->get()->onConnected(hGroup);
 	}
 	void UpdGroup::onDisconnected(HGroup hGroup) {
+		// 親グループから切り離された数のチェック
 		--_nParent;
-		Assert(Trap, _nParent >= 0)
-		for(auto& h : _objV)
-			h->get()->onDisconnected(hGroup);
+		AssertP(Trap, _nParent >= 0)
+		if(_nParent == 0)
+			clear();
 	}
 	void UpdGroup::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
 		if(_objV.empty())

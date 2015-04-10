@@ -12,18 +12,18 @@ void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto lk = shared.lock();
 	// ---- make info ----
 	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(T_Info);
-	self.getBase().update->get()->addObj(hlInfo.get());
+	self.getBase().getUpdate()->get()->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
 
 	// ---- make cube ----
 	rs::HLTex hlTex = mgr_gl.loadTexture("brick.jpg");
 
 	rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<CubeObj>(hlTex, T_Cube);
-	self.getBase().update->get()->addObj(hlObj.get());
+	self.getBase().getUpdate()->get()->addObj(hlObj.get());
 	self._hCube = hlObj;
 }
 void TScene::MySt::onExit(TScene& self, rs::ObjTypeId nextId) {
-	auto* p = self.getBase().update->get();
+	auto* p = self.getBase().getUpdate()->get();
 	p->remObj(self._hCube);
 	p->remObj(self._hInfo);
 	self._hCube = rs::HDObj();
@@ -86,7 +86,7 @@ DefineGroupT(MyDrawGroup, rs::DrawGroup)
 // ------------------------ TScene ------------------------
 TScene::TScene() {
 	// 描画グループを初期化 (Z-sort)
-	getBase().draw = rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_z_desc}, false);
+	getBase().setDraw(rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_z_desc}, false));
 	// サウンド読み込み
 	_hlAb = mgr_sound.loadOggStream("the_thunder.ogg");
 	_hlSg = mgr_sound.createSourceGroup(1);

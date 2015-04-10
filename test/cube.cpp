@@ -90,13 +90,13 @@ const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
 void CubeObj::MySt::onUpdate(CubeObj& self) {}
 void CubeObj::MySt::onConnected(CubeObj& self, rs::HGroup) {
 	self._dtag.zOffset = 1.f;
-	auto& d = mgr_scene.getSceneBase().draw;
+	auto d = mgr_scene.getSceneBase().getDraw();
 	auto hl = self.handleFromThis();
 	d->get()->addObj(hl);
 	PrintLog;
 }
 void CubeObj::MySt::onDisconnected(CubeObj& self, rs::HGroup) {
-	auto& d = mgr_scene.getSceneBase().draw;
+	auto d = mgr_scene.getSceneBase().getDraw();
 	auto hl = self.handleFromThis();
 	d->get()->remObj(hl);
 	PrintLog;

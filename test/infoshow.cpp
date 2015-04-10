@@ -30,12 +30,12 @@ void InfoShow::MySt::onDraw(const InfoShow& self) const {
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 	self._dtag.zOffset = 0.f;
 	auto lh = self.handleFromThis();
-	auto& d = mgr_scene.getSceneBase().draw;
+	auto d = mgr_scene.getSceneBase().getDraw();
 	d->get()->addObj(lh);
 }
 void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
 	auto lh = self.handleFromThis();
-	auto& d = mgr_scene.getSceneBase().draw;
+	auto d = mgr_scene.getSceneBase().getDraw();
 	d->get()->remObj(lh);
 }
 rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) {
