@@ -258,7 +258,36 @@ namespace rs {
 			std::ostream& operator()(const std::shared_ptr<T>& sp) const {
 				return LCV<T>()(_os, *sp); }
 		};
+
+		using spn::SHandle;
+		using spn::WHandle;
+		using spn::LHandle;
+		/*! LHandle -> SHandle
+			SHandle -> SHandle */
+		struct GetSHVisitor : boost::static_visitor<SHandle> {
+			SHandle operator()(const LHandle& l) const { return l.get(); }
+			SHandle operator()(SHandle s) const { return s; }
+			template <class T>
+			SHandle operator()[[noreturn]](const T&) const { Assert(Trap, false) throw 0; }
+		};
+		/*! LHandle -> WHandle
+			SHandle -> WHandle
+			WHandle -> WHandle */
+		struct GetWHVisitor : boost::static_visitor<WHandle> {
+			WHandle operator()(const LHandle& l) const { return l.weak(); }
+			WHandle operator()(SHandle s) const { return s.weak(); }
+			WHandle operator()(WHandle w) const { return w; }
+			template <class T>
+			WHandle operator()[[noreturn]](const T&) const { Assert(Trap, false) throw 0; }
+		};
 	}
+	SHandle LCValue::_toHandle(SHandle*) const {
+		return boost::apply_visitor(GetSHVisitor(), *this);
+	}
+	WHandle LCValue::_toHandle(WHandle*) const {
+		return boost::apply_visitor(GetWHVisitor(), *this);
+	}
+
 	LCValue::LCValue(): LCVar(boost::blank()) {}
 	LCValue::LCValue(const LCValue& lc): LCVar(static_cast<const LCVar&>(lc)) {}
 	LCValue::LCValue(LCValue&& lcv): LCVar(std::move(static_cast<LCVar&>(lcv))) {}

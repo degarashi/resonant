@@ -59,6 +59,9 @@ namespace rs {
 					bool, const char*, float, double, int32_t, uint32_t, int64_t, uint64_t,
 					spn::LHandle, spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, const std::string&, std::string, SPLCTable>;
 	class LCValue : public LCVar {
+		private:
+			spn::SHandle _toHandle(spn::SHandle*) const;
+			spn::WHandle _toHandle(spn::WHandle*) const;
 		public:
 			struct HashVisitor : boost::static_visitor<size_t> {
 				template <class T>
@@ -74,12 +77,20 @@ namespace rs {
 			template <class T>
 			constexpr static auto IsHandleT = spn::IsHandleT<std::decay_t<T>>::value;
 			// リソースの固有ハンドルは汎用へ読み替え
-			// >>SHandle & WHandle & LHandle
+			// >>SHandle & WHandle
 			template <class H, class=std::enable_if_t<IsHandleT<H>>>
-			LCValue(H h): LCVar(h.getBase()) {}
+			LCValue(const H& h): LCVar(h.getBase()) {}
 			template <class H, class=std::enable_if_t<IsHandleT<H>>>
-			LCValue& operator = (H h) {
+			LCValue& operator = (const H& h) {
 				*this = h.getBase();
+				return *this;
+			}
+			// >> LHandle
+			template <class H, bool B, class=std::enable_if_t<IsHandleT<H>>>
+			LCValue(const spn::HdlLock<H,B>& h): LCVar(spn::LHandle(h)) {}
+			template <class H, bool B, class=std::enable_if_t<IsHandleT<H>>>
+			LCValue& operator = (const spn::HdlLock<H,B>& h) {
+				*this = spn::LHandle(h);
 				return *this;
 			}
 			// それ以外はそのままLCVarに渡す
@@ -93,8 +104,9 @@ namespace rs {
 
 			template <class H>
 			auto toHandle() const {
-				using BaseH = decltype(std::declval<H>().getBase());
-				return H::FromHandle(boost::get<BaseH>(*this));
+				using handle_t = decltype(std::declval<H>().getBase());
+				auto h = _toHandle(static_cast<handle_t*>(nullptr));
+				return H::FromHandle(h);
 			}
 			bool operator == (const LCValue& lcv) const;
 			bool operator != (const LCValue& lcv) const;
