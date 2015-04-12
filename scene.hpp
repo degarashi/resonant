@@ -78,9 +78,9 @@ namespace rs {
 				_sbase.getDraw()->get()->onDraw();
 			}
 			void onDisconnected(HGroup h) override final {
-				base::onDisconnected(h);
 				AssertP(Trap, !h)
 				_sbase.getUpdate()->get()->onDisconnected(h);
+				base::onDisconnected(h);
 			}
 			void onConnected(HGroup h) override final {
 				base::onConnected(h);

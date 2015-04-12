@@ -76,9 +76,9 @@ namespace rs {
 			_scNPop = 0;
 			while(--nPop >= 0) {
 				auto& sc = _scene.back().ref();
+				sc->onDisconnected(HGroup());
 				sc->destroy();
 				sc->onUpdate();			// nullステートへ移行させる
-				sc->onDisconnected(HGroup());
 				_scene.pop_back();
 			}
 			// Sceneスタックが空ならここで終わり
