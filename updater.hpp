@@ -153,7 +153,7 @@ namespace rs {
 		}
 		template <class T, class... Ts>
 		LHdl _makeObj(std::true_type, Ts&&... ts) {
-			return base::acquire(T::NewUF_Args(std::forward<Ts>(ts)...));
+			return base::acquire(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
 
 		public:
