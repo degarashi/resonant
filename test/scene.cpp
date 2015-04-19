@@ -90,16 +90,16 @@ TScene::TScene() {
 	// サウンド読み込み
 	_hlAb = mgr_sound.loadOggStream("the_thunder.ogg");
 	_hlSg = mgr_sound.createSourceGroup(1);
-
-	setStateNew<MySt>();
 }
 TScene::~TScene() {
 	PrintLog;
 }
+void TScene::initState() {
+	setStateNew<MySt>();
+}
 
 // ------------------------ TScene2 ------------------------
 TScene2::TScene2() {
-	setStateNew<MySt>();
 	PrintLog;
 }
 TScene2::~TScene2() {
@@ -110,4 +110,7 @@ void TScene2::MySt::onUpdate(TScene2& self) {
 	if(mgr_input.isKeyPressed(lk->actRight)) {
 		mgr_scene.setPopScene(1);
 	}
+}
+void TScene2::initState() {
+	setStateNew<MySt>();
 }

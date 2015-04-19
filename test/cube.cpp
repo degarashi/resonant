@@ -113,9 +113,11 @@ CubeObj::CubeObj(rs::HTex hTex, rs::IdValue tpId):
 	_cube(1.f, hTex)
 {
 	PrintLog;
-	setStateNew<MySt>();
 }
 CubeObj::~CubeObj() {
 	PrintLog;
+}
+void CubeObj::initState() {
+	setStateNew<MySt>();
 }
 

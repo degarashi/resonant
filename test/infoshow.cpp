@@ -58,6 +58,8 @@ InfoShow::InfoShow(rs::IdValue tpId):
 			<< "Renderer: " << info.renderer() << std::endl
 			<< "DriverVersion: " << info.driverVersion() << std::endl;
 	_infotext = spn::Text::UTFConvertTo32(ss.str());
+}
+void InfoShow::initState() {
 	setStateNew<MySt>();
 }
 

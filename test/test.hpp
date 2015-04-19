@@ -70,7 +70,10 @@ class Cube : public spn::Pose3D {
 };
 
 //! キューブObj(Update)
-class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>, public spn::CheckAlign<16, CubeObj>, public spn::EnableFromThis<rs::HDObj> {
+class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>,
+				public spn::CheckAlign<16, CubeObj>,
+				public spn::EnableFromThis<rs::HDObj>
+{
 	private:
 		rs::IdValue		_tpId;
 		mutable Cube	_cube;
@@ -81,12 +84,15 @@ class CubeObj : public rs::DrawableObjT<CubeObj, 0x0000>, public spn::CheckAlign
 				void onDisconnected(CubeObj& self, rs::HGroup hGroup) override;
 				void onDraw(const CubeObj& self) const override;
 		};
+		void initState() override;
 	public:
 		CubeObj(rs::HTex hTex, rs::IdValue tpId);
 		~CubeObj();
 };
 extern const rs::GMessageId MSG_Visible;
-class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>, public spn::EnableFromThis<rs::HDObj> {
+class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>,
+				public spn::EnableFromThis<rs::HDObj>
+{
 	private:
 		rs::IdValue			_tpId;
 		std::u32string		_infotext;
@@ -100,15 +106,18 @@ class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>, public spn::EnableFr
 				void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
 				void onDraw(const InfoShow& self) const override;
 		};
+		void initState() override;
 	public:
 		InfoShow(rs::IdValue tpId);
 };
 
 class TScene2 : public rs::Scene<TScene2> {
-	class MySt : public StateT<MySt> {
-		public:
-			void onUpdate(TScene2& self) override;
-	};
+	private:
+		class MySt : public StateT<MySt> {
+			public:
+				void onUpdate(TScene2& self) override;
+		};
+		void initState() override;
 	public:
 		TScene2();
 		~TScene2();
@@ -141,6 +150,8 @@ class TScene : public rs::Scene<TScene> {
 			void onUpdate(TScene& self) override;
 			rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	};
+	void initState() override;
+
 	public:
 		TScene();
 		~TScene();

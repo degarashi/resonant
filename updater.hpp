@@ -78,10 +78,15 @@ namespace rs {
 	class UpdGroup;
 	using UpdProc = std::function<void (HObj)>;
 	using CBFindGroup = std::function<bool (HGroup)>;
+	class ObjMgr;
 	//! ゲームオブジェクト基底インタフェース
 	class Object {
 		private:
 			bool		_bDestroy;
+			virtual void initState();
+		protected:
+			friend class ObjMgr;
+			void _initState();
 		public:
 			enum class Form {
 				Invalid,
@@ -146,14 +151,19 @@ namespace rs {
 		static void NormalDeleter(void* p) {
 			delete reinterpret_cast<T*>(p);
 		}
+		template <class P>
+		LHdl _callInitialize(P&& p) {
+			p->_initState();
+			return base::acquire(std::move(p));
+		}
 		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う
 		template <class T, class... Ts>
 		LHdl _makeObj(std::false_type, Ts&&... ts) {
-			return base::acquire(std::unique_ptr<T, void(*)(void*)>(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>));
+			return _callInitialize(std::unique_ptr<T, void(*)(void*)>(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>));
 		}
 		template <class T, class... Ts>
 		LHdl _makeObj(std::true_type, Ts&&... ts) {
-			return base::acquire(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
+			return _callInitialize(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
 
 		public:
@@ -213,7 +223,6 @@ namespace rs {
 			//! オブジェクト又はグループを実際に削除
 			/*! onUpdate内で暗黙的に呼ばれる */
 			void _doRemove();
-
 		public:
 			static void SetAsUpdateRoot();
 			UpdGroup(Priority p=0);
@@ -457,6 +466,8 @@ namespace rs {
 				GMessage::Packet* _delayMsg;
 
 			protected:
+				ObjectT(): _state(FPState(&_nullState, false)) {}
+
 				// ステートをNewするためのヘルパー関数
 				template <class ST, class... Args>
 				void setStateNew(Args... args) {
@@ -476,7 +487,6 @@ namespace rs {
 				ObjTypeId getTypeId() const override {
 					return IdT::Id;
 				}
-				ObjectT(): _state(FPState(&_nullState, false)) {}
 				T& getRef() { return *reinterpret_cast<T*>(this); }
 				const T& getRef() const { return *reinterpret_cast<const T*>(this); }
 				void setState(FPState&& st) {
