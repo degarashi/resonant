@@ -33,6 +33,17 @@ namespace std {
 }
 
 namespace rs {
+	#if __x86_64__ || _LP64
+		using Int_MainT = int64_t;
+		using UInt_MainT = uint64_t;
+		using Int_OtherT = int32_t;
+		using UInt_OtherT = uint32_t;
+	#else
+		using Int_MainT = int32_t;
+		using UInt_MainT = uint32_t;
+		using Int_OtherT = int64_t;
+		using UInt_OtherT = uint64_t;
+	#endif
 	template <class T>
 	T& DeclVal() { return *(reinterpret_cast<T*>(0)); }
 	class LuaState;
@@ -53,11 +64,11 @@ namespace rs {
 	};
 
 	class LCTable;
-	class LCVec;
 	using SPLCTable = std::shared_ptr<LCTable>;
 	using LCVar = boost::variant<boost::blank, LuaNil,
-					bool, const char*, float, double, int32_t, uint32_t, int64_t, uint64_t,
-					spn::LHandle, spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, const std::string&, std::string, SPLCTable>;
+					bool, const char*, float, double, Int_MainT, UInt_MainT,
+					spn::Vec4, spn::Quat,
+					spn::LHandle, spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, std::string, SPLCTable>;
 	class LCValue : public LCVar {
 		private:
 			spn::SHandle _toHandle(spn::SHandle*) const;
@@ -72,6 +83,8 @@ namespace rs {
 			LCValue();
 			LCValue(const LCValue& lc);
 			LCValue(LCValue&& lcv);
+			LCValue(Int_OtherT t);
+			LCValue(UInt_OtherT t);
 			LCValue& operator = (const LCValue& lcv);
 			LCValue& operator = (LCValue&& lcv);
 			template <class T>
@@ -167,18 +180,9 @@ namespace rs {
 	DEF_LCV(spn::WHandle, spn::WHandle)
 	DEF_LCV(double, double)
 	DEF_LCV(LValueG, const LValueG&)
+	DEF_LCV(spn::Vec4, const spn::Vec4&)
+	DEF_LCV(spn::Quat, const spn::Quat&)
 	DERIVED_LCV(float, double)
-	#if __x86_64__ || _LP64
-		using Int_MainT = int64_t;
-		using UInt_MainT = uint64_t;
-		using Int_OtherT = int32_t;
-		using UInt_OtherT = uint32_t;
-	#else
-		using Int_MainT = int32_t;
-		using UInt_MainT = uint32_t;
-		using Int_OtherT = int64_t;
-		using UInt_OtherT = uint64_t;
-	#endif
 	DEF_LCV(Int_MainT, Int_MainT)
 	DEF_LCV(UInt_MainT, UInt_MainT)
 	DERIVED_LCV(Int_OtherT, Int_MainT)

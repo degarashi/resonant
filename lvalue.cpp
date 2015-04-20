@@ -78,6 +78,33 @@ namespace rs {
 	LuaType LCV<Int_MainT>::operator()() const {
 		return LuaType::Number; }
 
+	// TODO: 中身をちゃんと実装する
+	// --- LCV<spn::Vec4> = LUA_TABLE
+	void LCV<spn::Vec4>::operator()(lua_State* ls, const spn::Vec4& v) const {
+		Assert(Trap, false, "not implemented yet.")
+	}
+	spn::Vec4 LCV<spn::Vec4>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		LuaState::_CheckType(ls, idx, LuaType::Table);
+		Assert(Trap, false, "not implemented yet.") throw 0;
+	}
+	std::ostream& LCV<spn::Vec4>::operator()(std::ostream& os, const spn::Vec4& v) const {
+		return os << v; }
+	LuaType LCV<spn::Vec4>::operator()() const {
+		return LuaType::Table; }
+	
+	// TODO: 中身をちゃんと実装する
+	// --- LCV<spn::Quat> = LUA_TABLE
+	void LCV<spn::Quat>::operator()(lua_State* ls, const spn::Quat& q) const {
+		Assert(Trap, false, "not implemented yet.")
+	}
+	spn::Quat LCV<spn::Quat>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		Assert(Trap, false, "not implemented yet.") throw 0;
+	}
+	std::ostream& LCV<spn::Quat>::operator()(std::ostream& os, const spn::Quat& q) const {
+		return os << q; }
+	LuaType LCV<spn::Quat>::operator()() const {
+		return LuaType::Table; }
+
 	// --- LCV<UInt_MainT> = LUA_TNUMBER
 	void LCV<UInt_MainT>::operator()(lua_State* ls, UInt_MainT i) const {
 		lua_pushunsigned(ls, i); }
@@ -291,6 +318,8 @@ namespace rs {
 	LCValue::LCValue(): LCVar(boost::blank()) {}
 	LCValue::LCValue(const LCValue& lc): LCVar(static_cast<const LCVar&>(lc)) {}
 	LCValue::LCValue(LCValue&& lcv): LCVar(std::move(static_cast<LCVar&>(lcv))) {}
+	LCValue::LCValue(Int_OtherT t): LCVar(static_cast<Int_MainT>(t)) {}
+	LCValue::LCValue(UInt_OtherT t): LCVar(static_cast<UInt_MainT>(t)) {}
 	bool LCValue::operator == (const LCValue& lcv) const {
 		return static_cast<const LCVar&>(*this) == static_cast<const LCVar&>(lcv);
 	}
