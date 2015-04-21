@@ -447,10 +447,12 @@ namespace rs {
 					virtual void onReStart(T& /*self*/) {}
 				};
 				struct tagObjectState {};
-				template <class ST>
-				struct StateT : State, ::rs::ObjectIdT<ST, tagObjectState> {
+				template <class ST, class D=State>
+				struct StateT : D {
 					using IdT = ::rs::ObjectIdT<ST, tagObjectState>;
-					ObjTypeId getStateId() const override { return IdT::Id; }
+					const static IdT	s_idt;
+					ObjTypeId getStateId() const override { return GetStateId(); }
+					static ObjTypeId GetStateId() { return IdT::Id; }
 				};
 				using FPState = FlagPtr<State>;
 
@@ -590,6 +592,10 @@ namespace rs {
 		template <class T, class Base, Priority P>
 		typename ObjectT<T, Base, P>::template StateT<void> ObjectT<T, Base, P>::_nullState;
 	}
+	template <class T, class Base, Priority P>
+	template <class ST, class D>
+	const ObjectIdT<ST,typename detail::ObjectT<T,Base,P>::tagObjectState> detail::ObjectT<T,Base,P>::StateT<ST,D>::s_idt;
+
 	// Priority値をテンプレート指定
 	template <class T, Priority P>
 	class ObjectT : public detail::ObjectT<T, Object, P> {
