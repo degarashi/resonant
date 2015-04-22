@@ -2,8 +2,11 @@
 #include "common.hpp"
 #include "spinner/misc.hpp"
 #include "sdlwrap.hpp"
+#include "input_sdlvalue.hpp"
 
 namespace rs {
+	SpinLock<SDLInputShared>	g_sdlInputShared;
+
 	HLInput SDLMouse::s_hlInput;
 	SDL_Window* SDLMouse::s_window(nullptr);
 	SDLMouse::SDLMouse(): _state(0), _mode(MouseMode::Absolute) {}
@@ -17,10 +20,16 @@ namespace rs {
 		return 3;
 	}
 	int SDLMouse::dep_numAxes() const {
-		return 2;
+		return 4;
 	}
 	int SDLMouse::dep_getButton(int num) const {
 		return (_state & SDL_BUTTON(num+1)) ? InputRange : 0;
+	}
+	int SDLMouse::dep_getAxis(int num) const {
+		if(num < 2)
+			return 0;
+		auto lc = g_sdlInputShared.lock();
+		return (num==2) ? lc->wheel_dx : lc->wheel_dy;
 	}
 	bool SDLMouse::dep_scan(TPos2D& t) {
 		int x, y;

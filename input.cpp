@@ -53,8 +53,11 @@ namespace rs {
 		return dep_getButton(num);
 	}
 	int Mouse::getAxis(int num) const {
-		auto& p = _hlPtr.cref();
-		return _axisDZ[num].filter((num == 0) ? p.relPos.x : p.relPos.y);
+		if(num < 2) {
+			auto& p = _hlPtr.cref();
+			return _axisDZ[num].filter((num == 0) ? p.relPos.x : p.relPos.y);
+		}
+		return _axisDZ[num].filter(dep_getAxis(num));
 	}
 	int Mouse::numButtons() const {
 		return dep_numButtons();

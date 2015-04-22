@@ -51,6 +51,7 @@ namespace rs {
 			int dep_numButtons() const;
 			int dep_numAxes() const;
 			int dep_getButton(int num) const;
+			int dep_getAxis(int num) const;
 			bool dep_scan(TPos2D& t);
 			void dep_setMode(MouseMode mode, TPos2D& t);
 			MouseMode dep_getMode() const;

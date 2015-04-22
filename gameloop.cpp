@@ -13,6 +13,7 @@
 #include "serialization/chrono.hpp"
 #include "serialization/chars.hpp"
 #include "spinner/random.hpp"
+#include "input_sdlvalue.hpp"
 
 namespace rs {
 	// --------------------- FPSCounter ---------------------
@@ -324,6 +325,7 @@ PrintLog;
 				// ゲーム進行
 				++getInfo()->accumUpd;
 				mgr_input.update();
+				g_sdlInputShared.lock()->reset();
 PrintLog;
 				IMainProc::Query q(tp, skip);
 				if(!mp->runU(q)) {
@@ -409,6 +411,13 @@ PrintLog;
 				_setLevel(std::min(_level, Pause));
 				break;
 			default: break;
+		}
+	}
+	void GameLoop::_procMouseEvent(SDL_Event& e) {
+		if(e.wheel.which != SDL_TOUCH_MOUSEID) {
+			auto lc = g_sdlInputShared.lock();
+			lc->wheel_dx = e.wheel.x;
+			lc->wheel_dy = e.wheel.y;
 		}
 	}
 
@@ -502,7 +511,11 @@ PrintLog;
 				// (onStop()やonStart()は関知しない)
 				switch(e.type) {
 					case SDL_WINDOWEVENT:
-						_procWindowEvent(e); break;
+						_procWindowEvent(e);
+						break;
+					case SDL_MOUSEWHEEL:
+						_procMouseEvent(e);
+						break;
 					case SDL_QUIT:
 						// アプリケーション終了コールが来たらループを抜ける
 						bLoop = false;

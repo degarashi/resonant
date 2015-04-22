@@ -185,6 +185,7 @@ namespace rs {
 		const static LFunc cs_lfunc[NumLevel][2];
 		void _setLevel(Level level);
 		void _procWindowEvent(SDL_Event& e);
+		void _procMouseEvent(SDL_Event& e);
 
 		using OPHandler = spn::Optional<Handler>;
 		MPCreate	_mcr;
