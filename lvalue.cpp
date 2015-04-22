@@ -320,6 +320,11 @@ namespace rs {
 	LCValue::LCValue(LCValue&& lcv): LCVar(std::move(static_cast<LCVar&>(lcv))) {}
 	LCValue::LCValue(Int_OtherT t): LCVar(static_cast<Int_MainT>(t)) {}
 	LCValue::LCValue(UInt_OtherT t): LCVar(static_cast<UInt_MainT>(t)) {}
+	LCValue::LCValue(const spn::Vec4& v): LCVar(v) {}
+	LCValue& LCValue::operator = (const spn::Vec4& v) {
+		static_cast<LCVar&>(*this) = v;
+		return *this;
+	}
 	bool LCValue::operator == (const LCValue& lcv) const {
 		return static_cast<const LCVar&>(*this) == static_cast<const LCVar&>(lcv);
 	}

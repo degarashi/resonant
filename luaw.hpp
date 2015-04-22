@@ -85,10 +85,29 @@ namespace rs {
 			LCValue(LCValue&& lcv);
 			LCValue(Int_OtherT t);
 			LCValue(UInt_OtherT t);
+			LCValue(const spn::Vec4& v);
+			LCValue& operator =(const spn::Vec4& v);
+			//! 任意のベクトルからVec4型への変換
+			template <int N, bool B>
+			LCValue(const spn::VecT<N,B>& v) {
+				spn::Vec4 tmp;
+				for(int i=0 ; i<N ; i++)
+					tmp.m[i] = v.m[i];
+				for(int i=N ; i<4 ; i++)
+					tmp.m[i] = 0;
+				*this = tmp;
+			}
+			//! 任意のベクトルからVec4型への代入
+			template <int N, bool B>
+			LCValue& operator = (const spn::VecT<N,B>& v) {
+				return *this = LCValue(v);
+			}
 			LCValue& operator = (const LCValue& lcv);
 			LCValue& operator = (LCValue&& lcv);
 			template <class T>
 			constexpr static auto IsHandleT = spn::IsHandleT<std::decay_t<T>>::value;
+			template <class T>
+			constexpr static auto IsVectorT = spn::IsVectorT<std::decay_t<T>>::value;
 			// リソースの固有ハンドルは汎用へ読み替え
 			// >>SHandle & WHandle
 			template <class H, class=std::enable_if_t<IsHandleT<H>>>
@@ -107,19 +126,25 @@ namespace rs {
 				return *this;
 			}
 			// それ以外はそのままLCVarに渡す
-			template <class T, class=std::enable_if_t<!IsHandleT<T>>>
+			template <class T, class=std::enable_if_t<!IsHandleT<T> && !IsVectorT<T>>>
 			LCValue(T&& t): LCVar(std::forward<T>(t)) {}
-			template <class T, class=std::enable_if_t<!IsHandleT<T>>>
+			template <class T, class=std::enable_if_t<!IsHandleT<T> && !IsVectorT<T>>>
 			LCValue& operator = (T&& t) {
 				static_cast<LCVar&>(*this) = std::forward<T>(t);
 				return *this;
 			}
 
+			//! SHandleやLHandleを任意のハンドルへ変換して取り出す
 			template <class H>
 			auto toHandle() const {
 				using handle_t = decltype(std::declval<H>().getBase());
 				auto h = _toHandle(static_cast<handle_t*>(nullptr));
 				return H::FromHandle(h);
+			}
+			template <int N, bool B=false>
+			auto toVector() const {
+				auto& v4 = boost::get<spn::Vec4>(*this);
+				return spn::VecT<N,B>(static_cast<const float*>(v4.m));
 			}
 			bool operator == (const LCValue& lcv) const;
 			bool operator != (const LCValue& lcv) const;
