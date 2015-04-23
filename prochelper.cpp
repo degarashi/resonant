@@ -57,21 +57,27 @@ namespace rs {
 
 		mgr_sound.update();
 		// 描画コマンド
-		auto lk = sharedbase.lock();
-		rs::GLEffect& fx = *lk->hlFx.ref();
+		rs::GLEffect* fx;
+		{
+			auto lk = sharedbase.lock();
+			fx = lk->hlFx->get();
+		}
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
-		fx.beginTask();
+		fx->beginTask();
 		if(mgr_scene.onUpdate()) {
 			_endProc();
 			return false;
 		}
 
 		// 画面のサイズとアスペクト比合わせ
-		auto& scs = lk->screenSize;
-		auto sz = lk->spWindow->getSize();
-		if(scs != sz) {
-			scs = sz;
-			GL.glViewport(0,0, sz.width, sz.height);
+		{
+			auto lk = sharedbase.lock();
+			auto& scs = lk->screenSize;
+			auto sz = lk->spWindow->getSize();
+			if(scs != sz) {
+				scs = sz;
+				GL.glViewport(0,0, sz.width, sz.height);
+			}
 		}
 		return true;
 	}
