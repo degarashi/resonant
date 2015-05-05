@@ -200,7 +200,7 @@ namespace rs {
 	void GLEffect::Current::Vertex::reset() {
 		_spVDecl.reset();
 		for(auto& v : _vbuff)
-			v.setNull();
+			v.release();
 	}
 	void GLEffect::Current::Vertex::setVDecl(const SPVDecl& v) {
 		_spVDecl = v;
@@ -223,7 +223,7 @@ namespace rs {
 	// -------------- GLEffect::Current::Index --------------
 	GLEffect::Current::Index::Index() {}
 	void GLEffect::Current::Index::reset() {
-		_ibuff.setNull();
+		_ibuff.release();
 	}
 	void GLEffect::Current::Index::setIBuffer(HIb hIb) {
 		_ibuff = hIb;
