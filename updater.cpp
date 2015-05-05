@@ -19,7 +19,9 @@ namespace rs {
 	Object::Object(): _bDestroy(false) {}
 	void Object::_initState() {
 		initState();
+		_doSwitchState();
 	}
+	void Object::_doSwitchState() {}
 	void Object::initState() {}
 	Priority Object::getPriority() const {
 		return 0;

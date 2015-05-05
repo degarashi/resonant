@@ -131,25 +131,9 @@ class TScene : public rs::Scene<TScene> {
 	rs::HLSg	_hlSg;
 	rs::HDObj	_hInfo;
 	rs::HDObj	_hCube;
-	class MySt : public StateT<MySt> {
-		public:
-			void onEnter(TScene& self, rs::ObjTypeId prevId) override;
-			void onExit(TScene& self, rs::ObjTypeId nextId) override;
-			void onUpdate(TScene& self) override;
-			void onDown(TScene& self, rs::ObjTypeId prevId, const rs::LCValue& arg) override;
-			void onPause(TScene& self) override;
-			void onResume(TScene& self) override;
-			void onStop(TScene& self) override;
-			void onReStart(TScene& self) override;
-			rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
-			static void CheckQuit();
-	};
-	class MySt_Play : public StateT<MySt_Play> {
-		public:
-			void onEnter(TScene& self, rs::ObjTypeId prevId) override;
-			void onUpdate(TScene& self) override;
-			rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
-	};
+	struct St_Init;
+	struct St_Idle;
+	struct St_Play;
 	void initState() override;
 
 	public:

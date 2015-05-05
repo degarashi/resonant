@@ -84,6 +84,7 @@ namespace rs {
 		private:
 			bool		_bDestroy;
 			virtual void initState();
+			virtual void _doSwitchState();
 		protected:
 			friend class ObjMgr;
 			void _initState();
@@ -526,7 +527,7 @@ namespace rs {
 					using Rt = typename std::is_same<void, decltype(std::forward<CB>(cb)())>::type;
 					return _callWithSwitchState(std::forward<CB>(cb), Rt());
 				}
-				void _doSwitchState() {
+				void _doSwitchState() override {
 					if(_bSwState) {
 						_bSwState = false;
 						ObjTypeId prevId = InvalidObjId;

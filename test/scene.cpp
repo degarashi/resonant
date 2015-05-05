@@ -4,8 +4,41 @@
 const rs::GMessageId MSG_GetStatus = rs::GMessage::RegMsgId("get_status");
 const rs::IdValue TScene::T_Info = GlxId::GenTechId("TheTech", "P1"),
 				TScene::T_Cube = GlxId::GenTechId("TheCube", "P0");
-// ------------------------ TScene::MySt ------------------------
-void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
+struct TScene::St_Init : StateT<St_Init> {
+	void onConnected(TScene& self, rs::HGroup hGroup) override;
+	void onDisconnected(TScene& self, rs::HGroup hGroup) override;
+};
+struct TScene::St_Idle : StateT<St_Idle, St_Init> {
+	void onEnter(TScene& self, rs::ObjTypeId prevId) override;
+	void onExit(TScene& self, rs::ObjTypeId nextId) override;
+	void onUpdate(TScene& self) override;
+	void onDown(TScene& self, rs::ObjTypeId prevId, const rs::LCValue& arg) override;
+	void onPause(TScene& self) override;
+	void onResume(TScene& self) override;
+	void onStop(TScene& self) override;
+	void onReStart(TScene& self) override;
+	rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
+	static void CheckQuit();
+};
+struct TScene::St_Play : StateT<St_Play, St_Init> {
+	void onEnter(TScene& self, rs::ObjTypeId prevId) override;
+	void onUpdate(TScene& self) override;
+	rs::LCValue recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) override;
+};
+// ------------------------ TScene::St_Init ------------------------
+void TScene::St_Init::onConnected(TScene& self, rs::HGroup hGroup) {
+	self.setStateNew<St_Idle>();
+}
+void TScene::St_Init::onDisconnected(TScene& self, rs::HGroup hGroup) {
+	if(self._hInfo) {
+		auto* p = self.getBase().getUpdate()->get();
+		p->remObj(self._hInfo);
+		self._hInfo = rs::HDObj();
+	}
+	self.setStateNew<St_Init>();
+}
+// ------------------------ TScene::St_Idle ------------------------
+void TScene::St_Idle::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
 	s.clear();
 
@@ -22,61 +55,59 @@ void TScene::MySt::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	self.getBase().getUpdate()->get()->addObj(hlObj.get());
 	self._hCube = hlObj;
 }
-void TScene::MySt::onExit(TScene& self, rs::ObjTypeId nextId) {
+void TScene::St_Idle::onExit(TScene& self, rs::ObjTypeId nextId) {
 	auto* p = self.getBase().getUpdate()->get();
 	p->remObj(self._hCube);
-	p->remObj(self._hInfo);
 	self._hCube = rs::HDObj();
-	self._hInfo = rs::HDObj();
 }
-void TScene::MySt::onUpdate(TScene& self) {
+void TScene::St_Idle::onUpdate(TScene& self) {
 	auto lk = shared.lock();
 	if(mgr_input.isKeyPressed(lk->actPlay)) {
-		self.setStateNew<MySt_Play>();
+		self.setStateNew<St_Play>();
 	}
 	CheckQuit();
 }
-void TScene::MySt::CheckQuit() {
+void TScene::St_Idle::CheckQuit() {
 	auto lk = shared.lock();
 	if(mgr_input.isKeyPressed(lk->actQuit)) {
 		PrintLog;
 		mgr_scene.setPopScene(1);
 	}
 }
-void TScene::MySt::onDown(TScene& self, rs::ObjTypeId prevId, const rs::LCValue& arg) {
+void TScene::St_Idle::onDown(TScene& self, rs::ObjTypeId prevId, const rs::LCValue& arg) {
 	PrintLog;
 }
-void TScene::MySt::onPause(TScene& self) {
+void TScene::St_Idle::onPause(TScene& self) {
 	PrintLog;
 }
-void TScene::MySt::onResume(TScene& self) {
+void TScene::St_Idle::onResume(TScene& self) {
 	PrintLog;
 }
-void TScene::MySt::onStop(TScene& self) {
+void TScene::St_Idle::onStop(TScene& self) {
 	PrintLog;
 }
-void TScene::MySt::onReStart(TScene& self) {
+void TScene::St_Idle::onReStart(TScene& self) {
 	PrintLog;
 }
-rs::LCValue TScene::MySt::recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) {
+rs::LCValue TScene::St_Idle::recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) {
 	if(msg == MSG_GetStatus)
 		return "Idle";
 	return rs::LCValue();
 }
 
-// ------------------------ TScene::MySt_Play ------------------------
-void TScene::MySt_Play::onEnter(TScene& self, rs::ObjTypeId prevId) {
+// ------------------------ TScene::St_Play ------------------------
+void TScene::St_Play::onEnter(TScene& self, rs::ObjTypeId prevId) {
 	auto& s = self._hlSg.ref();
 	s.clear();
 	s.play(self._hlAb, 0);
 }
-void TScene::MySt_Play::onUpdate(TScene& self) {
+void TScene::St_Play::onUpdate(TScene& self) {
 	auto lk = shared.lock();
 	if(mgr_input.isKeyPressed(lk->actStop))
-		self.setStateNew<MySt>();
-	MySt::CheckQuit();
+		self.setStateNew<St_Idle>();
+	St_Idle::CheckQuit();
 }
-rs::LCValue TScene::MySt_Play::recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) {
+rs::LCValue TScene::St_Play::recvMsg(TScene& self, rs::GMessageId msg, const rs::LCValue& arg) {
 	if(msg == MSG_GetStatus)
 		return "Playing";
 	return rs::LCValue();
@@ -95,7 +126,7 @@ TScene::~TScene() {
 	PrintLog;
 }
 void TScene::initState() {
-	setStateNew<MySt>();
+	setStateNew<St_Init>();
 }
 
 // ------------------------ TScene2 ------------------------
