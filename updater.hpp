@@ -450,6 +450,9 @@ namespace rs {
 				struct tagObjectState {};
 				template <class ST, class D=State>
 				struct StateT : D {
+					StateT() = default;
+					StateT(const D& d): D(d) {}
+					StateT(D&& d): D(std::move(d)) {}
 					using IdT = ::rs::ObjectIdT<ST, tagObjectState>;
 					const static IdT	s_idt;
 					ObjTypeId getStateId() const override { return GetStateId(); }
@@ -550,6 +553,9 @@ namespace rs {
 			public:
 				Priority getPriority() const override {
 					return P;
+				}
+				ObjTypeId getStateId() const {
+					return _state->getStateId();
 				}
 				void destroy() override {
 					Base::destroy();
