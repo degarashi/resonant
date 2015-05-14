@@ -541,6 +541,7 @@ PrintLog;
 			mth.getResult();
 		} catch (...) {
 			Assert(Warn, false, "GuiThread: main thread was ended by throwing exception")
+			return 1;
 		}
 		return 0;
 	}

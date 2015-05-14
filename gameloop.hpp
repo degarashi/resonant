@@ -120,6 +120,8 @@ namespace rs {
 	};
 	#define main_thread (::rs::MainThread::_ref())
 
+	//! FPS計測クラス
+	/*! GameLoop内で使用 */
 	struct FPSCounter {
 		Timepoint	_tmBegin;
 		int			_counter,
@@ -198,6 +200,8 @@ namespace rs {
 				\param[in] dcr 描画コールバックインタフェースを作成(描画スレッドから呼ばれる) */
 			GameLoop(MPCreate mcr, DPCreate dcr);
 
+			/*! \retval 0		正常に終了
+				\retval 0以外	異常終了 */
 			int run(const GLoopInitParam& param);
 			//! AppPathの場所に置かれたをフォントファイルを列挙し、読み込む
 			static void LoadFonts();

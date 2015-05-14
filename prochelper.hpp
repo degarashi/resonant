@@ -1,3 +1,4 @@
+//! ゲームループを最低限の機能で動かすためのクラス基底
 #pragma once
 #include "spinner/size.hpp"
 #include "updater.hpp"
