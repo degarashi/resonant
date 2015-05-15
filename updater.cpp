@@ -51,13 +51,6 @@ namespace rs {
 	const std::string& Object::getName() const {
 		return cs_objname;
 	}
-	Object::Form Object::getForm() const {
-		return Form::Invalid;
-	}
-	void Object::onHitEnter(HObj /*hObj*/) {}				//!< 初回衝突
-	void Object::onHit(HObj /*hObj*/, int /*n*/) {}			//!< 2フレーム目以降
-	void Object::onHitExit(WObj /*whObj*/, int /*n*/) {}
-
 	void Object::enumGroup(CBFindGroup /*cb*/, GroupTypeId /*id*/, int /*depth*/) const {
 		Assert(Warn, "not supported operation")
 	}

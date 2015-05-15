@@ -89,11 +89,6 @@ namespace rs {
 			friend class ObjMgr;
 			void _initState();
 		public:
-			enum class Form {
-				Invalid,
-				Circle
-			};
-
 			Object();
 			virtual ~Object() {}
 			virtual Priority getPriority() const;
@@ -118,14 +113,6 @@ namespace rs {
 			virtual const std::string& getName() const;
 
 			virtual void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const;
-			// ---- Collision ----
-			virtual Form getForm() const;				//!< コリジョン形状Id
-			virtual void onHitEnter(HObj hObj);			//!< 初回衝突
-			virtual void onHit(HObj hObj, int n);		//!< 2フレーム目以降
-			//! 衝突が終わった最初のフレーム
-			/*! 既にオブジェクトが存在しない可能性がある為弱ハンドルを渡す */
-			virtual void onHitExit(WObj whObj, int n);
-
 			// ---- Message ----
 			virtual LCValue recvMsg(GMessageId id, const LCValue& arg=LCValue());
 			//! 特定の優先度範囲のオブジェクトを処理
@@ -574,15 +561,6 @@ namespace rs {
 				// ----------- 以下はStateのアダプタメソッド -----------
 				void onUpdate() override {
 					_callWithSwitchState([&](){ return _state->onUpdate(getRef()); });
-				}
-				void onHitEnter(HObj hObj) override final {
-					_callWithSwitchState([&](){ return _state->onHitEnter(getRef(), hObj); });
-				}
-				void onHit(HObj hObj, int n) override final {
-					_callWithSwitchState([&](){ return _state->onHit(getRef(), hObj, n); });
-				}
-				void onHitExit(WObj wObj, int n) override final {
-					_callWithSwitchState([&](){ return _state->onHitExit(getRef(), wObj, n); });
 				}
 				LCValue recvMsg(GMessageId msg, const LCValue& arg) override final {
 					return _callWithSwitchState([&](){ return _state->recvMsg(getRef(), msg, arg); });
