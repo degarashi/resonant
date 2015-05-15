@@ -5,18 +5,17 @@
 
 #include "spinner/pose.hpp"
 #include "spinner/vector.hpp"
-#include "gameloop.hpp"
-#include "updater.hpp"
-#include "scene.hpp"
-#include "camera.hpp"
-#include "scene.hpp"
-#include "input.hpp"
-#include "sound.hpp"
-#include "font.hpp"
-#include "prochelper.hpp"
-#include "vertex.hpp"
-#include "sys_uniform.hpp"
-#include "glx.hpp"
+#include "../gameloop.hpp"
+#include "../updater.hpp"
+#include "../scene.hpp"
+#include "../camera.hpp"
+#include "../scene.hpp"
+#include "../input.hpp"
+#include "../sound.hpp"
+#include "../font.hpp"
+#include "../vertex.hpp"
+#include "../sys_uniform.hpp"
+#include "../glx.hpp"
 
 namespace vertex {
 	//! キューブ描画用頂点
@@ -49,14 +48,8 @@ struct SharedValue {
 				actStop;
 	rs::HLCam	hlCam;
 };
-#define shared	(::SharedValueC::_ref())
-constexpr int Id_SharedValueC = 0xf0000001;
-class SharedValueC : public spn::Singleton<SharedValueC>, public rs::GLSharedData<SharedValue, Id_SharedValueC> {};
+#define sharedv (::rs::GameloopHelper<Engine, SharedValue, TScene>::SharedValueC::_ref())
 
-class MyDraw : public rs::DrawProc {
-	public:
-		bool runU(uint64_t accum, bool bSkip) override;
-};
 using GlxId = rs::GLEffect::GlxId;
 
 class Cube : public spn::Pose3D {
@@ -131,6 +124,9 @@ class TScene : public rs::Scene<TScene> {
 	rs::HLSg	_hlSg;
 	rs::HDObj	_hInfo;
 	rs::HDObj	_hCube;
+	bool		_bPress;
+	spn::DegF	_yaw, _pitch, _roll;
+
 	struct St_Init;
 	struct St_Idle;
 	struct St_Play;
@@ -141,19 +137,6 @@ class TScene : public rs::Scene<TScene> {
 		~TScene();
 };
 
-class MyMain : public rs::MainProc {
-	private:
-		SharedValueC	_svalue;
-		bool			_bPress;
-		spn::DegF		_yaw, _pitch, _roll;
-
-		void	_initInput();
-		void	_initEffect();
-		void	_initCam();
-	public:
-		MyMain(const rs::SPWindow& sp);
-		bool userRunU() override;
-};
 class Engine : public rs::SystemUniform3D,
 			public rs::SystemUniform,
 			public rs::GLEffect

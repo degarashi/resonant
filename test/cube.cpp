@@ -1,5 +1,6 @@
 #include "test.hpp"
-#include "sys_uniform.hpp"
+#include "../sys_uniform.hpp"
+#include "../gameloophelper.hpp"
 
 // ---------------------- Cube ----------------------
 const rs::IdValue Cube::U_litdir = GlxId::GenUnifId("vLitDir");
@@ -72,7 +73,6 @@ void Cube::draw(Engine& e) {
 	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
 	e.setWorld(m2);
 	e.setVStream(_hlVb, 0);
-
 	e.setUniform(U_litdir, spn::Vec3(0,1,0), false);
 	e.draw(GL_TRIANGLES, 0, 6*6);
 }
@@ -102,7 +102,7 @@ void CubeObj::MySt::onDisconnected(CubeObj& self, rs::HGroup) {
 	PrintLog;
 }
 void CubeObj::MySt::onDraw(const CubeObj& self) const {
-	auto lk = shared.lock();
+	auto lk = sharedv.lock();
 	auto& fx = *lk->pEngine;
 	fx.setTechPassId(self._tpId);
 	self._cube.draw(fx);

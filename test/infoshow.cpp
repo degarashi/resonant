@@ -1,9 +1,10 @@
 #include "test.hpp"
-#include "gpu.hpp"
+#include "../gpu.hpp"
+#include "../gameloophelper.hpp"
 
 // ---------------------- InfoShow::MySt ----------------------
 void InfoShow::MySt::onDraw(const InfoShow& self) const {
-	auto lk = shared.lock();
+	auto lk = sharedv.lock();
 	auto& fx = *lk->pEngine;
 	fx.setTechPassId(self._tpId);
 	auto lkb = sharedbase.lock();
