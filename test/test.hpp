@@ -16,6 +16,7 @@
 #include "../vertex.hpp"
 #include "../sys_uniform.hpp"
 #include "../glx.hpp"
+#include "../differential.hpp"
 
 namespace vertex {
 	//! キューブ描画用頂点
@@ -91,14 +92,9 @@ class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>,
 		std::u32string		_infotext;
 		rs::CCoreID			_charId;
 		mutable rs::HLText	_hlText;
+		rs::diff::Effect	_count;
 
-		class MySt : public StateT<MySt> {
-			public:
-				rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
-				void onConnected(InfoShow& self, rs::HGroup hGroup) override;
-				void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
-				void onDraw(const InfoShow& self) const override;
-		};
+		struct MySt;
 		void initState() override;
 	public:
 		InfoShow(rs::IdValue tpId);

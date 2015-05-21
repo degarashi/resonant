@@ -1,7 +1,15 @@
 #include "test.hpp"
 #include "../gpu.hpp"
 #include "../gameloophelper.hpp"
+#include "../differential.hpp"
 
+struct InfoShow::MySt : StateT<MySt> {
+	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
+	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
+	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
+	void onDraw(const InfoShow& self) const override;
+	void onUpdate(InfoShow& self) override;
+};
 // ---------------------- InfoShow::MySt ----------------------
 void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	auto lk = sharedv.lock();
@@ -18,15 +26,26 @@ void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	};
 	fx.setUniform(*fx.getUniformID("mText"), fn(0,0,1), true);
 
+	// FPSの表示
 	int fps = lkb->fps.getFPS();
 	std::stringstream ss;
 	ss << "FPS: " << fps << std::endl;
 	rs::Object& obj = *mgr_scene.getScene(0).ref();
 	auto var = obj.recvMsg(MSG_GetStatus);
 	ss << "Status: " << var.toCStr() << std::endl;
+	// バッファ切り替えカウント数の表示
+	auto& buffd = self._count.buffer;
+	ss << "VertexBuffer: " << buffd.vertex << std::endl;
+	ss << "IndexBuffer: " << buffd.index << std::endl;
+	ss << "DrawIndexed: " << self._count.drawIndexed << std::endl;
+	ss << "DrawNoIndexed: " << self._count.drawNoIndexed << std::endl;
 
 	self._hlText = mgr_text.createText(self._charId, self._infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
 	self._hlText.cref().draw(&fx);
+}
+void InfoShow::MySt::onUpdate(InfoShow& self) {
+	auto lk = sharedbase.lock();
+	self._count = lk->diffCount;
 }
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 	self._dtag.zOffset = 0.f;

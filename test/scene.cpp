@@ -45,9 +45,11 @@ void TScene::St_Idle::onEnter(TScene& self, rs::ObjTypeId prevId) {
 
 	auto lk = sharedv.lock();
 	// ---- make info ----
-	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(T_Info);
-	self.getBase().getUpdate()->get()->addObj(hlInfo.get());
-	self._hInfo = hlInfo;
+	if(prevId != TScene::St_Play::GetStateId()) {
+		rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(T_Info);
+		self.getBase().getUpdate()->get()->addObj(hlInfo.get());
+		self._hInfo = hlInfo;
+	}
 
 	// ---- make cube ----
 	rs::HLTex hlTex = mgr_gl.loadTexture("brick.jpg");

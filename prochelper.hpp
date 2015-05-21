@@ -5,17 +5,19 @@
 #include "scene.hpp"
 #include "gameloop.hpp"
 #include "glhead.hpp"
+#include "differential.hpp"
 
 namespace rs {
 	class Window;
 	using SPWindow = std::shared_ptr<Window>;
 	struct SharedBaseValue {
-		HLFx		hlFx;
-		HInput		hlIk,
-					hlIm;
-		FPSCounter	fps;
-		spn::Size	screenSize;
-		SPWindow	spWindow;
+		HLFx			hlFx;
+		HInput			hlIk,
+						hlIm;
+		FPSCounter		fps;
+		spn::Size		screenSize;
+		SPWindow		spWindow;
+		diff::Effect	diffCount;
 	};
 	constexpr int Id_SharedBaseValueC = 0xf0000000;
 	#define sharedbase	(::rs::SharedBaseValueC::_ref())

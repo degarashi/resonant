@@ -2,6 +2,7 @@
 #include "glx.hpp"
 #include "input.hpp"
 #include "sound.hpp"
+#include "spinner/unituple/operator.hpp"
 
 namespace rs {
 	// ------------------------------ DrawProc ------------------------------
@@ -82,8 +83,10 @@ namespace rs {
 		return true;
 	}
 	void MainProc::_endProc() {
-		auto& fx = sharedbase.lock()->hlFx.ref();
+		auto lk = sharedbase.lock();
+		auto& fx = lk->hlFx.ref();
 		fx->endTask();
+		lk->diffCount = fx->getDifference();
 	}
 	void MainProc::onPause() {
 		mgr_scene.onPause(); }

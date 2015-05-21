@@ -10,6 +10,7 @@
 #include <boost/lexical_cast.hpp>
 #include "glx_id.hpp"
 #include "spinner/emplace.hpp"
+#include "differential.hpp"
 
 namespace rs {
 	//! OpenGLの値設定関数代理クラス
@@ -324,6 +325,7 @@ namespace rs {
 			TechMap			_techMap;			//!< ゼロから設定を構築する場合の情報や頂点セマンティクス
 			TechName		_techName;
 			bool			_bInit = false;		//!< deviceLost/Resetの状態区別
+			diff::Effect	_diffCount;			/*!< バッファのカウントクリアはclearTask()かbeginTask()の呼び出しタイミング */
 
 			draw::Task		_task;
 			struct Current {
@@ -337,7 +339,8 @@ namespace rs {
 						void setVBuffer(HVb hVb, int n);
 						void reset();
 						void extractData(draw::VStream& dst, TPStructR::VAttrID vAttrId) const;
-				} vertex;
+						bool operator != (const Vertex& v) const;
+				} vertex, vertex_prev;
 				class Index {
 					private:
 						HLIb			_ibuff;
@@ -347,7 +350,12 @@ namespace rs {
 						HIb getIBuffer() const;
 						void reset();
 						void extractData(draw::VStream& dst) const;
-				} index;
+						bool operator != (const Index& idx) const;
+				} index, index_prev;
+
+				//! 前回とのバッファの差異
+				/*! Vertex, Indexバッファ情報を一時的にバックアップして差異の検出に備える */
+				diff::Buffer getDifference();
 
 				// Tech, Pass何れかを変更したらDraw変数をクリア
 				// passをセットしたタイミングでProgramを検索し、tpsにセット
@@ -512,5 +520,7 @@ namespace rs {
 			void endTask();
 			// ---- from DrawThread ----
 			void execTask();
+			//! 1フレームあたりのドローコール回数など
+			diff::Effect getDifference() const;
 	};
 }

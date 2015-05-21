@@ -129,7 +129,7 @@ namespace rs {
 
 		FPSCounter();
 		void reset();
-		void update();
+		bool update();
 		int getFPS() const;
 	};
 	struct GLoopInitParam {

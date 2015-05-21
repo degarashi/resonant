@@ -24,15 +24,17 @@ namespace rs {
 		_counter = _fps = 0;
 		_tmBegin = Clock::now();
 	}
-	void FPSCounter::update() {
+	bool FPSCounter::update() {
 		Timepoint tp = Clock::now();
 		Duration dur = tp - _tmBegin;
 		if(dur >= std::chrono::seconds(1)) {
 			_tmBegin = tp;
 			_fps = _counter;
 			_counter = 0;
+			return true;
 		}
 		++_counter;
+		return false;
 	}
 	int FPSCounter::getFPS() const { return _fps; }
 

@@ -3,6 +3,7 @@
 #include "spinner/matrix.hpp"
 #include <boost/format.hpp>
 #include <fstream>
+#include "spinner/unituple/operator.hpp"
 
 namespace rs {
 	const GLType_ GLType;
@@ -219,6 +220,15 @@ namespace rs {
 		}
 		dst.vAttrId = vAttrId;
 	}
+	bool GLEffect::Current::Vertex::operator != (const Vertex& v) const {
+		if(_spVDecl != v._spVDecl)
+			return true;
+		for(int i=0 ; i<countof(_vbuff) ; i++) {
+			if(_vbuff[i] != v._vbuff[i])
+				return true;
+		}
+		return false;
+	}
 
 	// -------------- GLEffect::Current::Index --------------
 	GLEffect::Current::Index::Index() {}
@@ -235,11 +245,28 @@ namespace rs {
 		if(_ibuff)
 			dst.ibuff = spn::construct(_ibuff->get()->getDrawToken());
 	}
+	bool GLEffect::Current::Index::operator != (const Index& idx) const {
+		return _ibuff != idx._ibuff;
+	}
 
 	// -------------- GLEffect::Current --------------
+	diff::Buffer GLEffect::Current::getDifference() {
+		diff::Buffer diff = {};
+		if(vertex != vertex_prev)
+			++diff.vertex;
+		if(index != index_prev)
+			++diff.index;
+
+		vertex_prev = vertex;
+		index_prev = index;
+		return diff;
+	}
 	void GLEffect::Current::reset() {
 		vertex.reset();
+		vertex_prev.reset();
 		index.reset();
+		index_prev.reset();
+
 		bDefaultParam = false;
 		tech = spn::none;
 		_clean_drawvalue();
@@ -600,6 +627,9 @@ namespace rs {
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
 		auto t = _current.outputDrawCall(mode, first, count);
 		_task.pushTag(std::move(t));
+
+		_diffCount.buffer += _current.getDifference();
+		++_diffCount.drawNoIndexed;
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
 		HIb hIb = _current.index.getIBuffer();
@@ -607,6 +637,9 @@ namespace rs {
 		auto szF = GLIBuffer::GetSizeFlag(str);
 		auto t = _current.outputDrawCallIndexed(mode, count, szF, offsetElem*str);
 		_task.pushTag(std::move(t));
+
+		_diffCount.buffer += _current.getDifference();
+		++_diffCount.drawIndexed;
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
 	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const bool* b, int n, bool bT) const {
@@ -669,6 +702,7 @@ namespace rs {
 	void GLEffect::beginTask() {
 		_task.beginTask();
 		_current.reset();
+		spn::TupleZeroFill(_diffCount);
 	}
 	void GLEffect::endTask() {
 		_task.endTask();
@@ -739,6 +773,9 @@ namespace rs {
 		auto ip = _getTechPassId(id);
 		setTechnique(ip.first, true);
 		setPass(ip.second);
+	}
+	diff::Effect GLEffect::getDifference() const {
+		return _diffCount;
 	}
 	GLEffect::GlxId GLEffect::s_myId;
 
