@@ -385,7 +385,7 @@ namespace rs {
 							cs_dsort_texture,
 							cs_dsort_buffer;
 
-	class DrawGroup : public Object {
+	class DrawGroup : public DrawableObj {
 		private:
 			const DSortV	_dsort;		//!< ソートアルゴリズム優先度リスト
 			const bool		_bSort;		//!< 毎フレームソートするか
@@ -403,6 +403,7 @@ namespace rs {
 			bool isNode() const override;
 			void onDraw() const override;
 			const std::string& getName() const override;
+			DrawTag& refDTag();
 	};
 
 	namespace detail {

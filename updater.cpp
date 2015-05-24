@@ -287,17 +287,13 @@ namespace rs {
 	DrawGroup::DrawGroup(const DSortV& ds, bool bSort):
 		_dsort(ds), _bSort(bSort) {}
 	bool DrawGroup::isNode() const {
-		// DrawGroupの下に別のGroupは含めない
-		return false;
+		return true;
+	}
+	DrawTag& DrawGroup::refDTag() {
+		return _dtag;
 	}
 	void DrawGroup::addObj(HDObj hObj) {
-		auto* pObj = hObj->get();
-		if(pObj->isNode()) {
-			Assert(Warn, false, "DrawGroup can't have any groups")
-			return;
-		}
-
-		auto* dtag = &pObj->getDTag();
+		auto* dtag = &hObj->get()->getDTag();
 		_dobj.emplace_back(dtag, hObj);
 		// 毎フレームソートする設定でない時はここでソートする
 		if(!_bSort)
