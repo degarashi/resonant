@@ -61,21 +61,18 @@ namespace rs {
 		DEF_SETUNIF(WorldInv, get)
 		if(auto& hc = getCamera()) {
 			auto& cd = hc.cref();
-			auto ac = cd.getAccum();
-			if(_acCamera != ac) {
-				_acCamera = ac;
+			_acCamera = cd.getAccum();
 
-				DEF_SETUNIF(View, cd.get)
-				DEF_SETUNIF(Proj, cd.get)
-				DEF_SETUNIF(ViewProj, cd.get)
-				DEF_SETUNIF(ViewProjInv, cd.get)
+			DEF_SETUNIF(View, cd.get)
+			DEF_SETUNIF(Proj, cd.get)
+			DEF_SETUNIF(ViewProj, cd.get)
+			DEF_SETUNIF(ViewProjInv, cd.get)
 
-				auto& ps = cd.getPose();
-				if(auto idv = glx.getUnifId(sysunif3d::matrix::EyePos))
-					glx.setUniform(*idv, ps.getOffset(), true);
-				if(auto idv = glx.getUnifId(sysunif3d::matrix::EyeDir))
-					glx.setUniform(*idv, ps.getRot().getZAxis(), true);
-			}
+			auto& ps = cd.getPose();
+			if(auto idv = glx.getUnifId(sysunif3d::matrix::EyePos))
+				glx.setUniform(*idv, ps.getOffset(), true);
+			if(auto idv = glx.getUnifId(sysunif3d::matrix::EyeDir))
+				glx.setUniform(*idv, ps.getRot().getZAxis(), true);
 		}
 		DEF_SETUNIF(Transform, get)
 		DEF_SETUNIF(TransformInv, get)
