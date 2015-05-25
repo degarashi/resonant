@@ -26,6 +26,10 @@ namespace rs {
 	}
 
 	// ------------------- DSort_Z_Asc -------------------
+	const float DSort_Z_Asc::cs_border(-1e8f);
+	bool DSort_Z_Asc::hasInfo(const DrawTag& d) const {
+		return d.zOffset > cs_border;
+	}
 	bool DSort_Z_Asc::compare(const DrawTag& d0, const DrawTag& d1) const {
 		return d0.zOffset < d1.zOffset;
 	}
@@ -35,12 +39,22 @@ namespace rs {
 	}
 
 	// ------------------- DSort_TechPass -------------------
+	const uint32_t DSort_TechPass::cs_invalidValue(~0);
+	bool DSort_TechPass::hasInfo(const DrawTag& d) const {
+		return d.idTechPass.value != cs_invalidValue;
+	}
 	bool DSort_TechPass::compare(const DrawTag& d0, const DrawTag& d1) const {
-		return d0.idTechPass < d1.idTechPass;
+		return d0.idTechPass.value < d1.idTechPass.value;
 	}
 	void DSort_TechPass::apply(const DrawTag& d, GLEffect& glx) {
-		glx.setTechnique(d.idTechPass[0], true);
-		glx.setPass(d.idTechPass[1]);
+		if(hasInfo(d)) {
+			if(d.idTechPass.bId16) {
+				glx.setTechnique(d.idTechPass.tpId[0], true);
+				glx.setPass(d.idTechPass.tpId[1]);
+			} else {
+				glx.setTechPassId(d.idTechPass.preId);
+			}
+		}
 	}
 
 	namespace detail {
@@ -55,6 +69,9 @@ namespace rs {
 		}
 	}
 	// ------------------- DSort_Texture -------------------
+	bool DSort_Texture::hasInfo(const DrawTag& d) const {
+		return d.idTex[0].valid();
+	}
 	bool DSort_Texture::compare(const DrawTag& d0, const DrawTag& d1) const {
 		return d0.idTex < d1.idTex;
 	}
@@ -67,6 +84,9 @@ namespace rs {
 	}
 
 	// ------------------- DSort_Buffer -------------------
+	bool DSort_Buffer::hasInfo(const DrawTag& d) const {
+		return d.idVBuffer[0].valid() || d.idIBuffer.valid();
+	}
 	bool DSort_Buffer::compare(const DrawTag& d0, const DrawTag& d1) const {
 		auto val0 = d0.idIBuffer.getValue(),
 			 val1 = d1.idIBuffer.getValue();
@@ -82,5 +102,6 @@ namespace rs {
 			if(hdl)
 				glx.setVStream(hdl, i);
 		}
+		glx.setIStream(d.idIBuffer);
 	}
 }

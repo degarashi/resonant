@@ -1,3 +1,4 @@
+#pragma once
 #ifdef WIN32
 	#include <intrin.h>
 	#include <windows.h>
@@ -60,6 +61,7 @@ class Cube : public spn::Pose3D {
 		const static rs::IdValue	U_litdir;
 	public:
 		Cube(float s, rs::HTex hTex);
+		void exportDrawTag(rs::DrawTag& d) const;
 		void draw(Engine& e);
 };
 

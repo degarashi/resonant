@@ -76,6 +76,10 @@ void Cube::draw(Engine& e) {
 	e.setUniform(U_litdir, spn::Vec3(0,1,0), false);
 	e.draw(GL_TRIANGLES, 0, 6*6);
 }
+void Cube::exportDrawTag(rs::DrawTag& d) const {
+	d.idTex[0] = _hlTex.get();
+}
+
 // ---------------------- Cube頂点宣言 ----------------------
 const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{

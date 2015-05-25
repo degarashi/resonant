@@ -2,20 +2,12 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "wrapper.hpp"
 
 namespace rs {
 	using StrV = std::vector<std::string>;
 	using StrPair = std::pair<std::string, std::string>;
 	using StrPairV = std::vector<StrPair>;
-	//! 単なる型のラッパー
-	/*! Idか普通の数値かでオーバーロードしたい場合なんかに使用 */
-	template <class T>
-	struct Wrapper {
-		T	value;
-		explicit Wrapper(const T& t): value(t) {}
-
-		// 数値と明確に区別したいので暗黙的な変換はしない
-	};
 	using IdValue = Wrapper<int>;
 	template <class Key>
 	class IdMgr {

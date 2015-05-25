@@ -3,6 +3,7 @@
 #include "glx.hpp"
 #include "sys_uniform.hpp"
 #include "spinner/emplace.hpp"
+#include "drawtag.hpp"
 
 namespace rs {
 	namespace {
@@ -165,7 +166,23 @@ namespace rs {
 			ds.hlIb.ref()->initData(std::move(ibuff));
 		}
 	}
-
+	void TextObj::exportDrawTag(DrawTag& d) const {
+		constexpr int maxVb = sizeof(d.idVBuffer)/sizeof(d.idVBuffer[0]),
+					maxTex = sizeof(d.idTex)/sizeof(d.idTex[0]);
+		int curVb = 0,
+			curTex = 0;
+		bool bFirst = true;
+		for(auto& ds : _drawSet) {
+			if(curVb != maxVb)
+				d.idVBuffer[curVb++] = ds.hlVb.get();
+			if(curTex != maxTex)
+				d.idTex[curTex++] = ds.hTex;
+			if(bFirst) {
+				d.idIBuffer = ds.hlIb.get();
+				bFirst = false;
+			}
+		}
+	}
 	void TextObj::onCacheLost() {
 		// フォントキャッシュを消去
 		_drawSet.clear();

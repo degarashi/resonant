@@ -5,6 +5,8 @@
 #include "clock.hpp"
 #include "luaw.hpp"
 #include "handle.hpp"
+#include "glx_id.hpp"
+#include "drawtag.hpp"
 
 namespace rs {
 	using Priority = uint32_t;
@@ -278,19 +280,6 @@ namespace rs {
 			// コピー禁止
 			UpdTask& operator = (const UpdTask&) = delete;
 	};
-
-	//! Tech:Pass の組み合わせを表す
-	using GL16Id = std::array<uint8_t, 2>;
-	struct DrawTag {
-		using TexAr = std::array<HTex, 4>;
-		using VBuffAr = std::array<HVb, 4>;
-
-		GL16Id		idTechPass;
-		VBuffAr		idVBuffer;
-		HIb			idIBuffer;
-		TexAr		idTex;
-		float		zOffset;
-	};
 	class DrawableObj : public Object {
 		protected:
 			DrawTag		_dtag;
@@ -307,20 +296,27 @@ namespace rs {
 	class GLEffect;
 	// ---- Draw sort algorithms ----
 	struct DSort {
+		//! ソートに必要な情報が記録されているか(デバッグ用)
+		virtual bool hasInfo(const DrawTag& d) const = 0;
 		virtual bool compare(const DrawTag& d0, const DrawTag& d1) const = 0;
 		virtual void apply(const DrawTag& d, GLEffect& glx);
 		static void DoSort(const DSortV& alg, int cursor, typename DLObjV::iterator itr0, typename DLObjV::iterator itr1);
 	};
 	//! 描画ソート: Z距離の昇順
 	struct DSort_Z_Asc : DSort {
+		//! 無効とされる深度値のボーダー (これ以下は無効)
+		const static float cs_border;
+		bool hasInfo(const DrawTag& d) const override;
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
 	};
 	//! 描画ソート: Z距離の降順
-	struct DSort_Z_Desc : DSort {
+	struct DSort_Z_Desc : DSort_Z_Asc {
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
 	};
 	//! 描画ソート: Tech&Pass Id
 	struct DSort_TechPass : DSort {
+		const static uint32_t cs_invalidValue;
+		bool hasInfo(const DrawTag& d) const override;
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
 		void apply(const DrawTag& d, GLEffect& glx) override;
 	};
@@ -368,6 +364,7 @@ namespace rs {
 		using base_t = detail::DSort_UniformPair<std::tuple_size<DrawTag::TexAr>::value>;
 		public:
 			using base_t::base_t;
+			bool hasInfo(const DrawTag& d) const override;
 			bool compare(const DrawTag& d0, const DrawTag& d1) const override;
 			void apply(const DrawTag& d, GLEffect& glx) override;
 	};
@@ -376,6 +373,7 @@ namespace rs {
 	struct DSort_Buffer : DSort {
 		constexpr static int length = std::tuple_size<DrawTag::VBuffAr>::value;
 
+		bool hasInfo(const DrawTag& d) const override;
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
 		void apply(const DrawTag& d, GLEffect& glx) override;
 	};

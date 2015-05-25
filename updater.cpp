@@ -14,7 +14,20 @@ namespace rs {
 					cs_dsort_techpass = std::make_shared<DSort_TechPass>(),
 					cs_dsort_texture = std::make_shared<DSort_Texture>(),
 					cs_dsort_buffer = std::make_shared<DSort_Buffer>();
-
+	// -------------------- DrawTag --------------------
+	DrawTag::DrawTag() {
+		zOffset = DSort_Z_Asc::cs_border;
+		idTechPass.value = DSort_TechPass::cs_invalidValue;
+	}
+	DrawTag::TPId::TPId(): preId() {}
+	DrawTag::TPId& DrawTag::TPId::operator = (const GL16Id& id) {
+		value = 0x80000000 | (id[0] << sizeof(id[0])) | id[1];
+		return *this;
+	}
+	DrawTag::TPId& DrawTag::TPId::operator = (const IdValue& id) {
+		value = id.value;
+		return *this;
+	}
 	// -------------------- Object --------------------
 	Object::Object(): _bDestroy(false) {}
 	void Object::_initState() {

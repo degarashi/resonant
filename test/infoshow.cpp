@@ -46,6 +46,9 @@ void InfoShow::MySt::onDraw(const InfoShow& self) const {
 void InfoShow::MySt::onUpdate(InfoShow& self) {
 	auto lk = sharedbase.lock();
 	self._count = lk->diffCount;
+
+	if(self._hlText)
+		self._hlText.cref().exportDrawTag(self._dtag);
 }
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 	self._dtag.zOffset = 0.f;

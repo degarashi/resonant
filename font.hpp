@@ -43,6 +43,7 @@ namespace rs {
 		//! フォント描画用セッティング Tag
 		struct text {};
 	}
+	struct DrawTag;
 	namespace vertex {
 		//! 文字列描画用頂点
 		struct text {
@@ -97,6 +98,7 @@ namespace rs {
 			// 上位クラスで位置調整など行列をセットしてからメソッドを呼ぶ
 			void draw(GLEffect* gle) const;
 			const spn::SizeF& getSize() const;
+			void exportDrawTag(DrawTag& d) const;
 	};
 	#define mgr_text (::rs::FontGen::_ref())
 
