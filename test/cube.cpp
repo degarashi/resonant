@@ -1,79 +1,87 @@
 #include "test.hpp"
-#include "../sys_uniform.hpp"
-#include "../gameloophelper.hpp"
+#include "engine.hpp"
+#include "cube.hpp"
 
+rs::WVb Cube::s_wVb;
 // ---------------------- Cube ----------------------
-const rs::IdValue Cube::U_litdir = GlxId::GenUnifId("vLitDir");
+const rs::IdValue Cube::T_Cube = GlxId::GenTechId("TheCube", "P0"),
+				Cube::U_litpos = GlxId::GenUnifId("vLitPos");
+void Cube::_initVb() {
+	if(!(_hlVb = s_wVb.lock())) {
+		using spn::Vec2;
+		using spn::Vec3;
+		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
+		vertex::cube tmpV[6*6];
+		Vec3 tmpPos[8];
+		Vec2 tmpUV[4];
+		for(int i=0 ; i<0x8 ; i++) {
+			// 座標生成
+			int cur0 = (i & 0x01) ? 1 : -1,
+				cur1 = (i & 0x02) ? 1 : -1,
+				cur2 = (i & 0x04) ? 1 : -1;
+			tmpPos[i] = Vec3(cur0, cur1, cur2);
+			// UV座標生成
+			if(i<4)
+				tmpUV[i] = Vec2(std::max(cur0, 0), std::max(cur1, 0));
+		}
+		const int tmpI[6*6] = {
+			// Front
+			0,2,1,
+			2,3,1,
+			// Right
+			1,3,7,
+			7,5,1,
+			// Left
+			4,6,2,
+			2,0,4,
+			// Top
+			6,7,2,
+			7,3,2,
+			// Bottom
+			0,1,5,
+			5,4,0,
+			// Back
+			7,6,4,
+			4,5,7
+		};
+		const int tmpI_uv[6] = {
+			0,1,2,
+			2,1,3
+		};
+		const Vec3 normal[6] = {
+			Vec3(0,0,-1),
+			Vec3(1,0,0),
+			Vec3(-1,0,0),
+			Vec3(0,1,0),
+			Vec3(0,-1,0),
+			Vec3(0,0,1)
+		};
+		for(int i=0 ; i<6*6 ; i++) {
+			tmpV[i].pos = tmpPos[tmpI[i]];
+			auto& uv = tmpUV[tmpI_uv[i%6]];
+			tmpV[i].tex = uv;
+			tmpV[i].normal = normal[i/6];
+		}
+
+		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+		_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
+		s_wVb = _hlVb.weak();
+	}
+}
 Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
 	setScale({s,s,s});
-	using spn::Vec2;
-	using spn::Vec3;
-	// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
-	vertex::cube tmpV[6*6];
-	Vec3 tmpPos[8];
-	Vec2 tmpUV[4];
-	for(int i=0 ; i<0x8 ; i++) {
-		// 座標生成
-		int cur0 = (i & 0x01) ? 1 : -1,
-			cur1 = (i & 0x02) ? 1 : -1,
-			cur2 = (i & 0x04) ? 1 : -1;
-		tmpPos[i] = Vec3(cur0, cur1, cur2);
-		// UV座標生成
-		if(i<4)
-			tmpUV[i] = Vec2(std::max(cur0, 0), std::max(cur1, 0));
-	}
-	const int tmpI[6*6] = {
-		// Front
-		0,2,1,
-		2,3,1,
-		// Right
-		1,3,7,
-		7,5,1,
-		// Left
-		4,6,2,
-		2,0,4,
-		// Top
-		6,7,2,
-		7,3,2,
-		// Bottom
-		0,1,5,
-		5,4,0,
-		// Back
-		7,6,4,
-		4,5,7
-	};
-	const int tmpI_uv[6] = {
-		0,1,2,
-		2,1,3
-	};
-	const Vec3 normal[6] = {
-		Vec3(0,0,-1),
-		Vec3(1,0,0),
-		Vec3(-1,0,0),
-		Vec3(0,1,0),
-		Vec3(0,-1,0),
-		Vec3(0,0,1)
-	};
-	for(int i=0 ; i<6*6 ; i++) {
-		tmpV[i].pos = tmpPos[tmpI[i]];
-		auto& uv = tmpUV[tmpI_uv[i%6]];
-		tmpV[i].tex = uv;
-		tmpV[i].normal = normal[i/6];
-	}
-
-	_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-	_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
+	_initVb();
 }
-void Cube::draw(Engine& e) {
+void Cube::draw(Engine& e) const {
 	const spn::AQuat& q = this->getRot();
-	setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
+	auto& self = const_cast<Cube&>(*this);
+	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
+
 	e.setVDecl(rs::DrawDecl<drawtag::cube>::GetVDecl());
 	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
-	auto m = getToWorld();
-	auto m2 = m.convertA44() * spn::AMat44::Translation(spn::Vec3(0,0,2));
-	e.setWorld(m2);
+	e.ref3d().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
-	e.setUniform(U_litdir, spn::Vec3(0,1,0), false);
+	e.setUniform(U_litpos, spn::Vec3(0,2,2), false);
 	e.draw(GL_TRIANGLES, 0, 6*6);
 }
 void Cube::exportDrawTag(rs::DrawTag& d) const {
@@ -89,39 +97,3 @@ const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
 	});
 	return vd;
 }
-
-// ---------------------- CubeObj::MySt ----------------------
-void CubeObj::MySt::onUpdate(CubeObj& self) {}
-void CubeObj::MySt::onConnected(CubeObj& self, rs::HGroup) {
-	self._dtag.zOffset = 1.f;
-	auto d = mgr_scene.getSceneBase().getDraw();
-	auto hl = self.handleFromThis();
-	d->get()->addObj(hl);
-	PrintLog;
-}
-void CubeObj::MySt::onDisconnected(CubeObj& self, rs::HGroup) {
-	auto d = mgr_scene.getSceneBase().getDraw();
-	auto hl = self.handleFromThis();
-	d->get()->remObj(hl);
-	PrintLog;
-}
-void CubeObj::MySt::onDraw(const CubeObj& self) const {
-	auto lk = sharedv.lock();
-	auto& fx = *lk->pEngine;
-	fx.setTechPassId(self._tpId);
-	self._cube.draw(fx);
-}
-// ---------------------- CubeObj ----------------------
-CubeObj::CubeObj(rs::HTex hTex, rs::IdValue tpId):
-	_tpId(tpId),
-	_cube(1.f, hTex)
-{
-	PrintLog;
-}
-CubeObj::~CubeObj() {
-	PrintLog;
-}
-void CubeObj::initState() {
-	setStateNew<MySt>();
-}
-

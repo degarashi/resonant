@@ -1,0 +1,44 @@
+#include "../updater.hpp"
+#include "../gameloophelper.hpp"
+#include "engine.hpp"
+
+template <class Base>
+class DWrapper : public rs::DrawableObjT<DWrapper<Base>, 0x0000>,
+				public Base,
+				public spn::EnableFromThis<rs::HDObj>
+{
+	private:
+		using base_dt = rs::DrawableObjT<DWrapper<Base>, 0x0000>;
+		rs::IdValue		_tpId;
+		struct St_Default : base_dt::template StateT<St_Default> {
+			void onConnected(DWrapper& self, rs::HGroup hGroup) override {
+				auto d = mgr_scene.getSceneBase().getDraw();
+				auto hl = self.handleFromThis();
+				d->get()->addObj(hl);
+			}
+			void onDisconnected(DWrapper& self, rs::HGroup hGroup) override {
+				auto d = mgr_scene.getSceneBase().getDraw();
+				auto hl = self.handleFromThis();
+				d->get()->remObj(hl);
+			}
+			void onDraw(const DWrapper& self) const override {
+				auto lk = sharedv.lock();
+				auto& fx = *lk->pEngine;
+				fx.setTechPassId(self._tpId);
+				self.draw(fx);
+			}
+		};
+	private:
+		void initState() override {
+			base_dt::template setStateNew<St_Default>();
+		}
+	public:
+		template <class... Ts>
+		DWrapper(rs::IdValue tpId, Ts&&... ts):
+			Base(std::forward<Ts>(ts)...),
+			_tpId(tpId)
+		{
+			Base::exportDrawTag(base_dt::_dtag);
+			base_dt::_dtag.idTechPass = tpId;
+		}
+};

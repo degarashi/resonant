@@ -1,8 +1,12 @@
 #include "test.hpp"
+#include "infoshow.hpp"
 #include "../gpu.hpp"
 #include "../gameloophelper.hpp"
 #include "../differential.hpp"
+#include "engine.hpp"
 
+const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("TheTech", "P1"),
+				InfoShow::U_Text = GlxId::GenUnifId("mText");
 struct InfoShow::MySt : StateT<MySt> {
 	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
@@ -10,11 +14,12 @@ struct InfoShow::MySt : StateT<MySt> {
 	void onDraw(const InfoShow& self) const override;
 	void onUpdate(InfoShow& self) override;
 };
+
 // ---------------------- InfoShow::MySt ----------------------
 void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	auto lk = sharedv.lock();
 	auto& fx = *lk->pEngine;
-	fx.setTechPassId(self._tpId);
+	fx.setTechPassId(T_Info);
 	auto lkb = sharedbase.lock();
 	auto tsz = lkb->screenSize;
 	auto fn = [tsz](int x, int y, float r) {
@@ -24,15 +29,14 @@ void InfoShow::MySt::onDraw(const InfoShow& self) const {
 						0,			ry*r, 		0,
 						-1.f+x*rx,	1.f-y*ry,	1);
 	};
-	fx.setUniform(*fx.getUniformID("mText"), fn(0,0,1), true);
+	fx.setUniform(U_Text, fn(0,0,1), true);
 
 	// FPSの表示
 	int fps = lkb->fps.getFPS();
 	std::stringstream ss;
 	ss << "FPS: " << fps << std::endl;
 	rs::Object& obj = *mgr_scene.getScene(0).ref();
-	auto var = obj.recvMsg(MSG_GetStatus);
-	ss << "Status: " << var.toCStr() << std::endl;
+	ss << "State: " << obj.recvMsg(MSG_StateName).toString() << std::endl;
 	// バッファ切り替えカウント数の表示
 	auto& buffd = self._count.buffer;
 	ss << "VertexBuffer: " << buffd.vertex << std::endl;
@@ -66,9 +70,9 @@ rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs
 }
 
 // ---------------------- InfoShow ----------------------
-InfoShow::InfoShow(rs::IdValue tpId):
-	_tpId(tpId)
-{
+InfoShow::InfoShow() {
+	_dtag.zOffset = 0;
+	_dtag.idTechPass = T_Info;
 	//  フォント読み込み
 	_charId = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
 

@@ -5,6 +5,10 @@
 #include "test.hpp"
 #include "../adaptsdl.hpp"
 #include "../gameloophelper.hpp"
+#include "../camera.hpp"
+#include "../input.hpp"
+#include "scene.hpp"
+#include "engine.hpp"
 
 namespace {
 	constexpr int RESOLUTION_X = 1024,
@@ -33,7 +37,7 @@ int main(int argc, char **argv) {
 		// init Effect
 		{
 			lk->pEngine = static_cast<Engine*>(lkb->hlFx->get());
-			lk->pEngine->setCamera(lk->hlCam);
+			lk->pEngine->ref3d().setCamera(lk->hlCam);
 		}
 		// init Input
 		{
@@ -43,13 +47,20 @@ int main(int argc, char **argv) {
 			// reset-scene[R]						シーンリセット
 			lk->actReset = mgr_input.addAction("reset");
 			mgr_input.link(lk->actReset, rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_LSHIFT));
-			// playsound[Q]							音楽再生
-			lk->actPlay = mgr_input.addAction("play");
-			mgr_input.link(lk->actPlay, rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_Q));
-			// stopsound[E]							音楽停止
-			lk->actStop = mgr_input.addAction("stop");
-			lkb->hlIk.ref();
-			mgr_input.link(lk->actStop, rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_E));
+			// mode: cube[Z]
+			lk->actCube = mgr_input.addAction("mode_cube");
+			mgr_input.link(lk->actCube, rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_Z));
+			// mode: sound[X]
+			lk->actSound = mgr_input.addAction("mode_sound");
+			mgr_input.link(lk->actSound, rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_X));
+			// mode: sprite[C]
+			lk->actSprite = mgr_input.addAction("mode_sprite");
+			mgr_input.link(lk->actSprite, rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_C));
+			const int c_scancode[] = { SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6};
+			for(int i=0 ; i<countof(lk->actNumber) ; i++) {
+				lk->actNumber[i] = mgr_input.addAction((boost::format("number_%1%")%i).str());
+				mgr_input.link(lk->actNumber[i], rs::InF::AsButton(lkb->hlIk, c_scancode[i]));
+			}
 			// left, right, up, down [A,D,W,S]		カメラ移動
 			lk->actLeft = mgr_input.addAction("left");
 			lk->actRight = mgr_input.addAction("right");
@@ -71,5 +82,5 @@ int main(int argc, char **argv) {
 			mgr_input.link(lk->actPress, rs::InF::AsButton(lkb->hlIm, 0));
 		}
 	};
-	return rs::GameloopHelper<Engine, SharedValue, TScene>::Run(cbInit, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
+	return rs::GameloopHelper<Engine, SharedValue, Sc_Base>::Run(cbInit, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
 }
