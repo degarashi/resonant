@@ -163,17 +163,24 @@ namespace rs {
 			h->get()->onDraw();
 	}
 	void UpdGroup::onUpdate() {
-		struct FlagSet {
-			bool bRootPrev = tls_bUpdateRoot;
-			~FlagSet() { tls_bUpdateRoot = bRootPrev; }
-		} flagset;
+		{
+			class FlagSet {
+				private:
+					bool _bRootPrev = tls_bUpdateRoot;
+				public:
+					FlagSet(): _bRootPrev(tls_bUpdateRoot) {
+						tls_bUpdateRoot = false; }
+					~FlagSet() {
+						tls_bUpdateRoot = _bRootPrev; }
+			} flagset;
 
-		for(auto& h : _objV) {
-			auto* ent = h->get();
-			auto b = ent->onUpdateUpd();
-			if(b) {
-				// 次のフレーム直前で消す
-				remObj(h.get());
+			for(auto& h : _objV) {
+				auto* ent = h->get();
+				auto b = ent->onUpdateUpd();
+				if(b) {
+					// 次のフレーム直前で消す
+					remObj(h.get());
+				}
 			}
 		}
 		// ルートノードで一括してオブジェクトの削除
@@ -301,6 +308,9 @@ namespace rs {
 		_dsort(ds), _bSort(bSort) {}
 	bool DrawGroup::isNode() const {
 		return true;
+	}
+	const DLObjV& DrawGroup::getMember() const {
+		return _dobj;
 	}
 	DrawTag& DrawGroup::refDTag() {
 		return _dtag;

@@ -397,6 +397,7 @@ namespace rs {
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
 			void onUpdate() override;
+			const DLObjV& getMember() const;
 
 			bool isNode() const override;
 			void onDraw() const override;
