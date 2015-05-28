@@ -51,6 +51,7 @@ struct SharedValue {
 				actCube,
 				actSound,
 				actSprite,
+				actSpriteD,
 				actNumber[5];
 	rs::HLCam	hlCam;
 };

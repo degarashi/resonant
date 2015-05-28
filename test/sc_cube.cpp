@@ -2,7 +2,6 @@
 #include "dwrapper.hpp"
 #include "cube.hpp"
 #include "scene.hpp"
-#include "../input.hpp"
 
 struct Sc_Cube::St_Default : StateT<St_Default> {
 	void onConnected(Sc_Cube& self, rs::HGroup hGroup) override;
@@ -32,13 +31,7 @@ void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
 	}
 }
 void Sc_Cube::St_Default::onUpdate(Sc_Cube& self) {
-	auto lk = sharedv.lock();
-	if(mgr_input.isKeyPressed(lk->actSound))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Sound>(self._base), true);
-	else if(mgr_input.isKeyPressed(lk->actSprite))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSort>(self._base), true);
-	else
-		self._base.checkQuit();
+	self._base.checkSwitchScene();
 }
 void Sc_Cube::initState() {
 	setStateNew<St_Default>();

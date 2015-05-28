@@ -75,12 +75,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 			}
 		}
 		// 他のシーンへ切り替え
-		if(mgr_input.isKeyPressed(lk->actSound))
-			mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Sound>(self._base), true);
-		else if(mgr_input.isKeyPressed(lk->actCube))
-			mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(self._base), true);
-		else
-			self._base.checkQuit();
+		self._base.checkSwitchScene();
 	}
 	rs::LCValue recvMsg(Sc_DSort& self, rs::GMessageId id, const rs::LCValue& arg) override {
 		if(id == MSG_StateName)

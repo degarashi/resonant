@@ -10,6 +10,7 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>, 0x0000>,
 	private:
 		using base_dt = rs::DrawableObjT<DWrapper<Base>, 0x0000>;
 		rs::IdValue		_tpId;
+	protected:
 		struct St_Default : base_dt::template StateT<St_Default> {
 			void onConnected(DWrapper& self, rs::HGroup hGroup) override {
 				auto d = mgr_scene.getSceneBase().getDraw();
@@ -38,7 +39,10 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>, 0x0000>,
 			Base(std::forward<Ts>(ts)...),
 			_tpId(tpId)
 		{
-			Base::exportDrawTag(base_dt::_dtag);
+			refreshDrawTag();
 			base_dt::_dtag.idTechPass = tpId;
+		}
+		void refreshDrawTag() {
+			Base::exportDrawTag(base_dt::_dtag);
 		}
 };

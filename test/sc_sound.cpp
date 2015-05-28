@@ -1,6 +1,5 @@
 #include "test.hpp"
 #include "scene.hpp"
-#include "../input.hpp"
 #include "../sound.hpp"
 #include "../gameloophelper.hpp"
 
@@ -30,13 +29,7 @@ void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup hGroup) {
 	s.play(self._hlAb, 0);
 }
 void Sc_Sound::St_Default::onUpdate(Sc_Sound& self) {
-	auto lk = sharedv.lock();
-	if(mgr_input.isKeyPressed(lk->actCube))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(self._base), true);
-	else if(mgr_input.isKeyPressed(lk->actSprite))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSort>(self._base), true);
-	else
-		self._base.checkQuit();
+	self._base.checkSwitchScene();
 }
 void Sc_Sound::initState() {
 	setStateNew<St_Default>();

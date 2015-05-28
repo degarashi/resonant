@@ -30,7 +30,14 @@ void Sprite::_initBuffer() {
 Sprite::Sprite(rs::HTex hTex, float z) {
 	_hlTex = hTex;
 	_zOffset = z;
+	_zRange = {0.f, 1.f};
 	_initBuffer();
+}
+void Sprite::setZOffset(float z) {
+	_zOffset = z;
+}
+void Sprite::setZRange(const spn::RangeF& r) {
+	_zRange = r;
 }
 void Sprite::draw(Engine& e) const {
 	e.setVDecl(rs::DrawDecl<drawtag::sprite>::GetVDecl());

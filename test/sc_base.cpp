@@ -41,6 +41,20 @@ spn::MTRandom& Sc_Base::getRand() {
 	return *_random;
 }
 #include "../input.hpp"
+void Sc_Base::checkSwitchScene() {
+	auto lk = sharedv.lock();
+	if(mgr_input.isKeyPressed(lk->actCube))
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(*this), true);
+	else if(mgr_input.isKeyPressed(lk->actSound))
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Sound>(*this), true);
+	else if(mgr_input.isKeyPressed(lk->actSprite))
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSort>(*this), true);
+	else if(mgr_input.isKeyPressed(lk->actSpriteD))
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSortD>(*this), true);
+	else
+		checkQuit();
+}
+#include "../input.hpp"
 void Sc_Base::checkQuit() {
 	auto lk = sharedv.lock();
 	if(mgr_input.isKeyPressed(lk->actQuit)) {

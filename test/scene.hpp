@@ -14,6 +14,7 @@ class Sc_Base : public rs::Scene<Sc_Base> {
 	public:
 		spn::MTRandom& getRand();
 		void checkQuit();
+		void checkSwitchScene();
 };
 //! キューブ描画テスト
 class Sc_Cube : public rs::Scene<Sc_Cube> {
@@ -48,4 +49,13 @@ class Sc_DSort : public rs::Scene<Sc_DSort> {
 	public:
 		static rs::HLTex LoadTexture(int index);
 		Sc_DSort(Sc_Base& b);
+};
+//! スプライトによる描画ソートテスト(dynamic)
+class Sc_DSortD : public rs::Scene<Sc_DSortD> {
+	private:
+		Sc_Base&	_base;
+		struct St_Default;
+		void initState() override;
+	public:
+		Sc_DSortD(Sc_Base& b);
 };
