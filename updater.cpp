@@ -304,10 +304,21 @@ namespace rs {
 		return _dtag;
 	}
 	// -------------------- DrawGroup --------------------
-	DrawGroup::DrawGroup(const DSortV& ds, bool bSort):
-		_dsort(ds), _bSort(bSort) {}
+	DrawGroup::DrawGroup(const DSortV& ds, bool bDynamic):
+		_dsort(ds), _bDynamic(bDynamic) {}
 	bool DrawGroup::isNode() const {
 		return true;
+	}
+	void DrawGroup::setSortAlgorithm(const DSortV& ds, bool bDynamic) {
+		_dsort = ds;
+		_bDynamic = bDynamic;
+		if(!bDynamic) {
+			// リスト中のオブジェクトをソートし直す
+			_doDrawSort();
+		}
+	}
+	const DSortV& DrawGroup::getSortAlgorithm() const {
+		return _dsort;
 	}
 	const DLObjV& DrawGroup::getMember() const {
 		return _dobj;
@@ -319,7 +330,7 @@ namespace rs {
 		auto* dtag = &hObj->get()->getDTag();
 		_dobj.emplace_back(dtag, hObj);
 		// 毎フレームソートする設定でない時はここでソートする
-		if(!_bSort)
+		if(!_bDynamic)
 			_doDrawSort();
 	}
 	void DrawGroup::remObj(HDObj hObj) {
@@ -342,7 +353,7 @@ namespace rs {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
 	}
 	void DrawGroup::onDraw() const {
-		if(_bSort) {
+		if(_bDynamic) {
 			// 微妙な実装
 			const_cast<DrawGroup*>(this)->_doDrawSort();
 		}

@@ -385,18 +385,20 @@ namespace rs {
 
 	class DrawGroup : public DrawableObj {
 		private:
-			const DSortV	_dsort;		//!< ソートアルゴリズム優先度リスト
-			const bool		_bSort;		//!< 毎フレームソートするか
-			DLObjV			_dobj;
+			DSortV		_dsort;			//!< ソートアルゴリズム優先度リスト
+			bool		_bDynamic;		//!< 毎フレームソートするか
+			DLObjV		_dobj;
 
 			void _doDrawSort();
 		public:
 			// 描画ソート方式を指定
-			DrawGroup(const DSortV& ds=DSortV{}, bool bSort=false);
+			DrawGroup(const DSortV& ds=DSortV{}, bool bDynamic=false);
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
 			void onUpdate() override;
+			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
+			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
 			bool isNode() const override;
