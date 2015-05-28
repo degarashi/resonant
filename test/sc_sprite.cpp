@@ -6,7 +6,7 @@
 #include "../spinner/random.hpp"
 
 namespace {
-	using CBStateInit = std::function<rs::HLDGroup (bool)>;
+	using CBStateInit = std::function<rs::DSortV ()>;
 	DefineGroupT(MyDrawGroup, rs::DrawGroup)
 
 	const std::string c_name[5] = {
@@ -16,42 +16,37 @@ namespace {
 		"buffer|z_asc|techpass|texture",
 		"buffer|z_desc|techpass|texture"
 	};
-	const CBStateInit c_makedg[5] = {
-		[](bool bSort){
-			return rs_mgr_obj.makeDrawGroup<MyDrawGroup>(
-						rs::DSortV{rs::cs_dsort_z_desc}, bSort);
+	const CBStateInit c_makeds[5] = {
+		[](){
+			return rs::DSortV{rs::cs_dsort_z_desc};
 		},
 		// TechPass, ZAsc, Texture, Buffer
-		[](bool bSort){
-			return rs_mgr_obj.makeDrawGroup<MyDrawGroup>(
-						rs::DSortV{rs::cs_dsort_techpass,
-									rs::cs_dsort_z_asc,
-									rs::cs_dsort_texture,
-									rs::cs_dsort_buffer}, bSort);
+		[](){
+			return rs::DSortV{rs::cs_dsort_techpass,
+						rs::cs_dsort_z_asc,
+						rs::cs_dsort_texture,
+						rs::cs_dsort_buffer};
 		},
 		// TechPass, ZDsc, Texture, Buffer
-		[](bool bSort){
-			return rs_mgr_obj.makeDrawGroup<MyDrawGroup>(
-						rs::DSortV{rs::cs_dsort_techpass,
-									rs::cs_dsort_z_desc,
-									rs::cs_dsort_texture,
-									rs::cs_dsort_buffer}, bSort);
+		[](){
+			return rs::DSortV{rs::cs_dsort_techpass,
+						rs::cs_dsort_z_desc,
+						rs::cs_dsort_texture,
+						rs::cs_dsort_buffer};
 		},
 		// Buffer, ZAsc,  TechPass, Texture
-		[](bool bSort){
-			return rs_mgr_obj.makeDrawGroup<MyDrawGroup>(
-						rs::DSortV{rs::cs_dsort_buffer,
-									rs::cs_dsort_z_asc,
-									rs::cs_dsort_techpass,
-									rs::cs_dsort_texture}, bSort);
+		[](){
+			return rs::DSortV{rs::cs_dsort_buffer,
+						rs::cs_dsort_z_asc,
+						rs::cs_dsort_techpass,
+						rs::cs_dsort_texture};
 		},
 		// Buffer, ZDesc,  TechPass, Texture
-		[](bool bSort){
-			return rs_mgr_obj.makeDrawGroup<MyDrawGroup>(
-						rs::DSortV{rs::cs_dsort_buffer,
-									rs::cs_dsort_z_desc,
-									rs::cs_dsort_techpass,
-									rs::cs_dsort_texture}, bSort);
+		[](){
+			return rs::DSortV{rs::cs_dsort_buffer,
+						rs::cs_dsort_z_desc,
+						rs::cs_dsort_techpass,
+						rs::cs_dsort_texture};
 		}
 	};
 }
@@ -59,13 +54,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 	int	_index;
 	St_Test(Sc_DSort& self, int index, bool bFirst, bool bSort) {
 		_index = index;
-		auto hdg = c_makedg[index](bSort);
-		{
-			auto& dg = self.getBase().getDraw()->get()->getMember();
-			for(auto& d : dg)
-				hdg->get()->addObj(d.second);
-		}
-		self.getBase().setDraw(hdg);
+		self.getBase().getDraw()->get()->setSortAlgorithm(c_makeds[index](), false);
 	}
 	void onUpdate(Sc_DSort& self) override {
 		// 一定時間ごとにランダムなスプライトを選んで一旦グループから外し、再登録
@@ -78,7 +67,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 		}
 		auto lk = sharedv.lock();
 		// 他のテストへ切り替え
-		for(int i=0 ; i<countof(c_makedg) ; i++) {
+		for(int i=0 ; i<countof(c_makeds) ; i++) {
 			if(mgr_input.isKeyPressed(lk->actNumber[i])) {
 				self.setStateNew<St_Test>(std::ref(static_cast<Sc_DSort&>(self)), i, false, false);
 				return;
