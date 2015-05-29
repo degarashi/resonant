@@ -273,17 +273,17 @@ namespace rs {
 			LuaType operator()(const std::shared_ptr<T>& sp) const {
 				return LCV<T>()(); }
 		};
-		struct PrintVisitor : boost::static_visitor<std::ostream&> {
-			std::ostream& _os;
-			PrintVisitor(std::ostream& os): _os(os) {}
+		struct PrintVisitor : boost::static_visitor<std::ostream*> {
+			std::ostream* _os;
+			PrintVisitor(std::ostream& os): _os(&os) {}
 			template <class T>
-			std::ostream& operator()(const T& t) const {
-				return LCV<T>()(_os, t); }
-			std::ostream& operator()(const SPLua& sp) const {
-				return LCV<SPLua>()(_os, sp); }
+			std::ostream* operator()(const T& t) const {
+				return &LCV<T>()(*_os, t); }
+			std::ostream* operator()(const SPLua& sp) const {
+				return &LCV<SPLua>()(*_os, sp); }
 			template <class T>
-			std::ostream& operator()(const std::shared_ptr<T>& sp) const {
-				return LCV<T>()(_os, *sp); }
+			std::ostream* operator()(const std::shared_ptr<T>& sp) const {
+				return &LCV<T>()(*_os, *sp); }
 		};
 
 		using spn::SHandle;
@@ -350,7 +350,7 @@ namespace rs {
 		return boost::apply_visitor(TypeVisitor(), *this);
 	}
 	std::ostream& LCValue::print(std::ostream& os) const {
-		return boost::apply_visitor(PrintVisitor(os), *this);
+		return *boost::apply_visitor(PrintVisitor(os), *this);
 	}
 	namespace {
 		struct LCVisitor : boost::static_visitor<const char*> {

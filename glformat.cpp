@@ -5,13 +5,13 @@ namespace rs {
 	GLFormat::GLFormat(GLenum fmt): value(fmt) {}
 	bool GLFormat::Check(GLenum fmt, ID id) {
 		auto itr = s_idMap->find(FmtID(id,fmt));
-		return itr != s_idMap->end() && boost::get<uint32_t>(itr->second) == Invalid;
+		return itr != s_idMap->end() && boost::get<ID_t>(itr->second) == Invalid;
 	}
 	GLFormat::ID GLFormat::QueryFormat(GLenum fmt, ID tag) {
 		FmtID id(tag, fmt);
 		auto itr = s_idMap->find(id);
 		if(itr != s_idMap->end())
-			return boost::get<ID>(itr->second);
+			return static_cast<ID>(boost::get<ID_t>(itr->second));
 		return Invalid;
 	}
 	GLFormat::OPInfo GLFormat::QueryInfo(GLenum fmt) {
@@ -29,7 +29,7 @@ namespace rs {
 	size_t GLFormat::QuerySize(GLenum typ) {
 		auto itr = s_idMap->find(FmtID(Query_TypeSize, typ));
 		if(itr != s_idMap->end())
-			return boost::get<uint32_t>(itr->second);
+			return boost::get<ID_t>(itr->second);
 		return 0;
 	}
 	size_t GLFormat::QueryByteSize(GLenum fmt, GLenum typ) {

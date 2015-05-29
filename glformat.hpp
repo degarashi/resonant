@@ -117,13 +117,14 @@ namespace rs {
 				Query_GLSLTypeInfo,
 				Invalid = 0xffffffff
 			};
+			using ID_t = std::underlying_type_t<ID>;
 			GLenum	value;
 
 		private:
 			// uint64_t
 			// フォーマット判定: (32bit:種別 32bit:OpenGLフォーマット値) -> ID(種別) 本当は0固定でも良い
 			// フォーマット検索: (32bit: Query_??? 32bit:OpenGLフォーマット値) -> ID(種別)
-			using IDMap = std::unordered_map<FmtID, boost::variant<uint32_t,GLFormatDesc, GLSLFormatDesc>>;
+			using IDMap = std::unordered_map<FmtID, boost::variant<ID_t,GLFormatDesc, GLSLFormatDesc>>;
 			// SDL_PixelFormatEnum -> OpenGLFormatDesc
 			using SDLtoGL = std::unordered_map<uint32_t, const GLFormatDesc&>;
 
