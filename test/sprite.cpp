@@ -1,6 +1,7 @@
 #include "test.hpp"
 #include "sprite.hpp"
 #include "engine.hpp"
+#include "../spinner/structure/profiler.hpp"
 
 const rs::IdValue Sprite::T_Sprite = GlxId::GenTechId("TheSprite", "P0");
 // ----------------------- Sprite -----------------------
@@ -40,6 +41,7 @@ void Sprite::setZRange(const spn::RangeF& r) {
 	_zRange = r;
 }
 void Sprite::draw(Engine& e) const {
+	spn::profiler.beginBlockObj("sprite::draw");
 	e.setVDecl(rs::DrawDecl<drawtag::sprite>::GetVDecl());
 	e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
 	e.ref2d().setWorld(getToWorld().convertA33());

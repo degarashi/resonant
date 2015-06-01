@@ -1,9 +1,11 @@
 #include "test.hpp"
 #include "scene.hpp"
 #include "infoshow.hpp"
+#include "profileshow.hpp"
 #include "fpscamera.hpp"
 #include "../updater.hpp"
 #include "../gameloophelper.hpp"
+#include "../font.hpp"
 
 const rs::GMessageId MSG_StateName = rs::GMessage::RegMsgId("MSG_StateName");
 namespace {
@@ -17,9 +19,16 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
 	mgr_random.initEngine(RandomId);
 	self._random = mgr_random.get(RandomId);
 
+	// ---- make InfoShow ----
 	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>();
-	self.getBase().getUpdate()->get()->addObj(hlInfo.get());
+	auto* upd = self.getBase().getUpdate()->get();
+	upd->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
+
+	rs::CCoreID cid = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
+	// ---- make ProfileShow ----
+	auto hlProf = rs_mgr_obj.makeDrawable<ProfileShow>(cid);
+	upd->addObj(hlProf.get());
 
 	auto hlFP = rs_mgr_obj.makeObj<FPSCamera>();
 	self.getBase().getUpdate()->get()->addObj(hlFP);

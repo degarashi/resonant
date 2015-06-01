@@ -14,6 +14,7 @@
 #include "serialization/chars.hpp"
 #include "spinner/random.hpp"
 #include "input_sdlvalue.hpp"
+#include "spinner/structure/profiler.hpp"
 
 namespace rs {
 	// --------------------- FPSCounter ---------------------
@@ -308,6 +309,7 @@ PrintLog;
 						}
 					}
 				}
+				spn::profiler.beginBlock("sleep");
 				// 次のフレーム開始を待つ
 				auto ntp = prevtime + microseconds(16666);
 				auto tp = Clock::now();
@@ -323,18 +325,25 @@ PrintLog;
 					while(Clock::now() < ntp);
 				}
 				prevtime = ntp;
+				spn::profiler.endBlock("sleep");
+				// プロファイラのフレーム切り替え
+				spn::profiler.resetTree();
 
 				// ゲーム進行
 				++getInfo()->accumUpd;
-				mgr_input.update();
-				g_sdlInputShared.lock()->reset();
-PrintLog;
-				IMainProc::Query q(tp, skip);
-				if(!mp->runU(q)) {
-					PrintLogMsg("MainLoop END");
-					break;
+				{
+					auto p = spn::profiler.beginBlockObj("input_update");
+					mgr_input.update();
 				}
-PrintLog;
+				g_sdlInputShared.lock()->reset();
+				IMainProc::Query q(tp, skip);
+				{
+					auto p = spn::profiler.beginBlockObj("main_loop");
+					if(!mp->runU(q)) {
+						PrintLogMsg("MainLoop END");
+						break;
+					}
+				}
 				// 時間が残っていれば描画
 				// 最大スキップフレームを超過してたら必ず描画
 				bool bSkip = !q.getDraw();

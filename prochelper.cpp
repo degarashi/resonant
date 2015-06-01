@@ -3,6 +3,7 @@
 #include "input.hpp"
 #include "sound.hpp"
 #include "spinner/unituple/operator.hpp"
+#include "spinner/structure/profiler.hpp"
 
 namespace rs {
 	// ------------------------------ DrawProc ------------------------------
@@ -46,17 +47,21 @@ namespace rs {
 			return false;
 
 		bool b = userRunU();
+{ auto p = spn::profiler.beginBlockObj("scene_draw");
 		if(b && q.canDraw()) {
 			mgr_scene.onDraw();
 			q.setDraw(true);
 		}
+}
 		_endProc();
 		return b;
 	}
 	bool MainProc::_beginProc() {
 		Assert(Trap, _bFirstScene, "not pushed first scene yet")
 
+{ auto p = spn::profiler.beginBlockObj("sound_update");
 		mgr_sound.update();
+}
 		// 描画コマンド
 		rs::GLEffect* fx;
 		{
@@ -65,10 +70,12 @@ namespace rs {
 		}
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
 		fx->beginTask();
+{ auto p = spn::profiler.beginBlockObj("scene_update");
 		if(mgr_scene.onUpdate()) {
 			_endProc();
 			return false;
 		}
+}
 
 		// 画面のサイズとアスペクト比合わせ
 		{

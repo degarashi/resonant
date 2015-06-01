@@ -47,6 +47,8 @@ void InfoShow::MySt::onDraw(const InfoShow& self) const {
 	self._hlText = mgr_text.createText(self._charId, self._infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
 	self._hlText.cref().draw(&fx);
 }
+#include "../spinner/structure/profiler.hpp"
+#include <thread>
 void InfoShow::MySt::onUpdate(InfoShow& self) {
 	auto lk = sharedbase.lock();
 	self._count = lk->diffCount;
