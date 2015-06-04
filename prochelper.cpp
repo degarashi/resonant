@@ -49,7 +49,10 @@ namespace rs {
 		bool b = userRunU();
 { auto p = spn::profiler.beginBlockObj("scene_draw");
 		if(b && q.canDraw()) {
-			mgr_scene.onDraw();
+			auto lk = sharedbase.lock();
+			auto* ptr = lk->hlFx->get();
+			lk.unlock();
+			mgr_scene.onDraw(*ptr);
 			q.setDraw(true);
 		}
 }

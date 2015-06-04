@@ -123,7 +123,7 @@ namespace rs {
 								Priority prioEnd=std::numeric_limits<Priority>::max());
 
 			// ---------- Object/Scene用メソッド ----------
-			virtual void onDraw() const;
+			virtual void onDraw(GLEffect& e) const;
 			// ---------- Scene用メソッド ----------
 			virtual void onDown(ObjTypeId prevId, const LCValue& arg);
 			virtual void onPause();
@@ -229,7 +229,7 @@ namespace rs {
 			void onConnected(HGroup hGroup) override;
 			void onDisconnected(HGroup hGroup) override;
 			void onUpdate() override;
-			void onDraw() const override;
+			void onDraw(GLEffect& e) const override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			const std::string& getName() const override;
 			//! グループ内のオブジェクト全てに配信
@@ -402,7 +402,7 @@ namespace rs {
 			const DLObjV& getMember() const;
 
 			bool isNode() const override;
-			void onDraw() const override;
+			void onDraw(GLEffect& e) const override;
 			const std::string& getName() const override;
 			DrawTag& refDTag();
 	};
@@ -429,7 +429,7 @@ namespace rs {
 					virtual void onConnected(T& /*self*/, HGroup /*hGroup*/) {}
 					virtual void onDisconnected(T& /*self*/, HGroup /*hGroup*/) {}
 					// --------- Scene用メソッド ---------
-					virtual void onDraw(const T& /*self*/) const {}
+					virtual void onDraw(const T& /*self*/, GLEffect& /*e*/) const {}
 					virtual void onDown(T& /*self*/, ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
 					virtual void onPause(T& /*self*/) {}
 					virtual void onStop(T& /*self*/) {}
@@ -552,9 +552,9 @@ namespace rs {
 					setNullState();
 				}
 				//! 毎フレームの描画 (Scene用)
-				void onDraw() const override {
+				void onDraw(GLEffect& e) const override {
 					// ステート遷移はナシ
-					_state->onDraw(getRef());
+					_state->onDraw(getRef(), e);
 				}
 				//! 上の層のシーンから抜ける時に戻り値を渡す (Scene用)
 				void onDown(ObjTypeId prevId, const LCValue& arg) override final {

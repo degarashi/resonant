@@ -16,10 +16,9 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 		auto d = mgr_scene.getSceneBase().getDraw();
 		d->get()->remObj(self.handleFromThis());
 	}
-	void onDraw(const ProfileShow& self) const override {
+	void onDraw(const ProfileShow& self, rs::GLEffect& e) const override {
 		if(self._spProfile) {
-			auto lk = sharedv.lock();
-			auto& fx = *lk->pEngine;
+			auto& fx = static_cast<Engine&>(e);
 			fx.setTechPassId(InfoShow::T_Info);
 			auto lkb = sharedbase.lock();
 			auto tsz = lkb->screenSize;

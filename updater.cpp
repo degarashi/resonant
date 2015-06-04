@@ -73,7 +73,7 @@ namespace rs {
 	void Object::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
 		Assert(Warn, "not supported operation")
 	}
-	void Object::onDraw() const {}
+	void Object::onDraw(GLEffect& /*e*/) const {}
 	void Object::onDown(ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
 	void Object::onPause() {}
 	void Object::onStop() {}
@@ -157,10 +157,10 @@ namespace rs {
 
 		AssertP(Trap, _objV.empty() && _groupV.empty() && _remObj.empty())
 	}
-	void UpdGroup::onDraw() const {
+	void UpdGroup::onDraw(GLEffect& e) const {
 		// DrawUpdate中のオブジェクト追加削除はナシ
 		for(auto& h : _objV)
-			h->get()->onDraw();
+			h->get()->onDraw(e);
 	}
 	void UpdGroup::onUpdate() {
 		{
@@ -352,14 +352,14 @@ namespace rs {
 	void DrawGroup::onUpdate() {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
 	}
-	void DrawGroup::onDraw() const {
+	void DrawGroup::onDraw(GLEffect& e) const {
 		if(_bDynamic) {
 			// 微妙な実装
 			const_cast<DrawGroup*>(this)->_doDrawSort();
 		}
 		// ソート済みの描画オブジェクトを1つずつ処理していく
 		for(auto& d : _dobj) {
-			d.second->get()->onDraw();
+			d.second->get()->onDraw(e);
 		}
 	}
 }

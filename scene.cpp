@@ -108,11 +108,11 @@ namespace rs {
 		// スタックが空だったらtrue = 終了の合図 を返す
 		return _scene.empty();
 	}
-	void SceneMgr::onDraw() {
+	void SceneMgr::onDraw(GLEffect& e) {
 		if(_scene.empty())
 			return;
 
-		_scene.back().ref()->onDraw();
+		_scene.back().ref()->onDraw(e);
 		// DrawフェーズでのSceneOpは許可されない
 		AssertP(Trap, !_scOp)
 	}

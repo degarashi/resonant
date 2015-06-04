@@ -22,9 +22,8 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 				auto hl = self.handleFromThis();
 				d->get()->remObj(hl);
 			}
-			void onDraw(const DWrapper& self) const override {
-				auto lk = sharedv.lock();
-				auto& fx = *lk->pEngine;
+			void onDraw(const DWrapper& self, rs::GLEffect& e) const override {
+				auto& fx = static_cast<Engine&>(e);
 				fx.setTechPassId(self._tpId);
 				self.draw(fx);
 			}

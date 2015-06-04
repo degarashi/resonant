@@ -11,14 +11,13 @@ struct InfoShow::MySt : StateT<MySt> {
 	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
-	void onDraw(const InfoShow& self) const override;
+	void onDraw(const InfoShow& self, rs::GLEffect& e) const override;
 	void onUpdate(InfoShow& self) override;
 };
 
 // ---------------------- InfoShow::MySt ----------------------
-void InfoShow::MySt::onDraw(const InfoShow& self) const {
-	auto lk = sharedv.lock();
-	auto& fx = *lk->pEngine;
+void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
+	auto& fx = static_cast<Engine&>(e);
 	fx.setTechPassId(T_Info);
 	auto lkb = sharedbase.lock();
 	auto tsz = lkb->screenSize;

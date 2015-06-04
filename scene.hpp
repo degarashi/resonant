@@ -35,7 +35,7 @@ namespace rs {
 			//! フレーム更新のタイミングで呼ぶ
 			bool onUpdate();
 			//! 描画のタイミングで呼ぶ
-			void onDraw();
+			void onDraw(GLEffect& e);
 			void onPause();
 			void onStop();
 			void onResume();
@@ -73,9 +73,9 @@ namespace rs {
 				if(!base::isDead())
 					_sbase.getUpdate()->get()->onUpdate();
 			}
-			void onDraw() const override final {
-				base::onDraw();
-				_sbase.getDraw()->get()->onDraw();
+			void onDraw(GLEffect& e) const override final {
+				base::onDraw(e);
+				_sbase.getDraw()->get()->onDraw(e);
 			}
 			void onDisconnected(HGroup h) override final {
 				AssertP(Trap, !h)
