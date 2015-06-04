@@ -91,4 +91,4 @@ InfoShow::InfoShow() {
 void InfoShow::initState() {
 	setStateNew<MySt>();
 }
-
+rs::Priority InfoShow::getPriority() const { return 0x1000; }

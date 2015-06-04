@@ -4,7 +4,7 @@
 #include "../font.hpp"
 #include "../spinner/structure/profiler.hpp"
 
-class ProfileShow : public rs::DrawableObjT<ProfileShow, 0x2000>,
+class ProfileShow : public rs::DrawableObjT<ProfileShow>,
 					public spn::EnableFromThis<rs::HDObj>
 {
 	private:
@@ -16,4 +16,5 @@ class ProfileShow : public rs::DrawableObjT<ProfileShow, 0x2000>,
 		void initState() override;
 	public:
 		ProfileShow(rs::CCoreID cid);
+		rs::Priority getPriority() const override;
 };

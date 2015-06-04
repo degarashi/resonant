@@ -60,9 +60,9 @@ namespace rs {
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
-	class Scene : public ObjectT<T,0> {
+	class Scene : public ObjectT<T> {
 		private:
-			using base = ObjectT<T,0>;
+			using base = ObjectT<T>;
 			SceneBase	_sbase;
 		public:
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):

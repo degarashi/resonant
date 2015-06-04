@@ -6,7 +6,7 @@
 #include "../font.hpp"
 
 extern const rs::GMessageId MSG_Visible;
-class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>,
+class InfoShow : public rs::DrawableObjT<InfoShow>,
 				public spn::EnableFromThis<rs::HDObj>
 {
 	private:
@@ -21,4 +21,5 @@ class InfoShow : public rs::DrawableObjT<InfoShow, 0x1000>,
 		static const rs::IdValue	T_Info,
 									U_Text;
 		InfoShow();
+		rs::Priority getPriority() const override;
 };

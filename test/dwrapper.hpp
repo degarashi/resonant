@@ -3,12 +3,12 @@
 #include "engine.hpp"
 
 template <class Base>
-class DWrapper : public rs::DrawableObjT<DWrapper<Base>, 0x0000>,
+class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 				public Base,
 				public spn::EnableFromThis<rs::HDObj>
 {
 	private:
-		using base_dt = rs::DrawableObjT<DWrapper<Base>, 0x0000>;
+		using base_dt = rs::DrawableObjT<DWrapper<Base>>;
 		rs::IdValue		_tpId;
 	protected:
 		struct St_Default : base_dt::template StateT<St_Default> {

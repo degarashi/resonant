@@ -63,3 +63,4 @@ ProfileShow::ProfileShow(rs::CCoreID cid): _charId(cid) {}
 void ProfileShow::initState() {
 	setStateNew<St_Default>();
 }
+rs::Priority ProfileShow::getPriority() const { return 0x2000; }

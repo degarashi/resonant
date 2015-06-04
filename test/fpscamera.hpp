@@ -1,7 +1,7 @@
 #pragma once
 #include "../handle.hpp"
 
-class FPSCamera : public rs::ObjectT<FPSCamera, 0x0000> {
+class FPSCamera : public rs::ObjectT<FPSCamera> {
 	private:
 		bool		_bPress;
 		spn::DegF	_yaw, _pitch, _roll;

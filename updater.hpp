@@ -411,9 +411,9 @@ namespace rs {
 		//! オブジェクト基底
 		/*! UpdatableなオブジェクトやDrawableなオブジェクトはこれから派生して作る
 			Sceneと共用 */
-		template <class T, class Base, Priority P>
+		template <class T, class Base>
 		class ObjectT : public Base, public ::rs::ObjectIdT<T, ::rs::idtag::Object> {
-			using ThisT = ObjectT<T,Base,P>;
+			using ThisT = ObjectT<T,Base>;
 			using IdT = ::rs::ObjectIdT<T, ::rs::idtag::Object>;
 			protected:
 				struct State {
@@ -541,7 +541,7 @@ namespace rs {
 				}
 			public:
 				Priority getPriority() const override {
-					return P;
+					return 0x0000;
 				}
 				ObjTypeId getStateId() const {
 					return _state->getStateId();
@@ -576,21 +576,21 @@ namespace rs {
 					return _callWithSwitchState([&](){ return _state->onDisconnected(getRef(), hGroup); });
 				}
 		};
-		template <class T, class Base, Priority P>
-		typename ObjectT<T, Base, P>::template StateT<void> ObjectT<T, Base, P>::_nullState;
+		template <class T, class Base>
+		typename ObjectT<T, Base>::template StateT<void> ObjectT<T, Base>::_nullState;
 	}
-	template <class T, class Base, Priority P>
+	template <class T, class Base>
 	template <class ST, class D>
-	const ObjectIdT<ST,typename detail::ObjectT<T,Base,P>::tagObjectState> detail::ObjectT<T,Base,P>::StateT<ST,D>::s_idt;
+	const ObjectIdT<ST,typename detail::ObjectT<T,Base>::tagObjectState> detail::ObjectT<T,Base>::StateT<ST,D>::s_idt;
 
 	// Priority値をテンプレート指定
-	template <class T, Priority P>
-	class ObjectT : public detail::ObjectT<T, Object, P> {
-		using detail::ObjectT<T, Object, P>::ObjectT;
+	template <class T>
+	class ObjectT : public detail::ObjectT<T, Object> {
+		using detail::ObjectT<T, Object>::ObjectT;
 	};
 	// PriorityはUpdateObjと兼用の場合に使われる
-	template <class T, Priority P=0>
-	class DrawableObjT : public detail::ObjectT<T, DrawableObj, P> {
-		using detail::ObjectT<T, DrawableObj, P>::ObjectT;
+	template <class T>
+	class DrawableObjT : public detail::ObjectT<T, DrawableObj> {
+		using detail::ObjectT<T, DrawableObj>::ObjectT;
 	};
 }
