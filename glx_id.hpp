@@ -2,9 +2,19 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <boost/format.hpp>
 #include "wrapper.hpp"
 
 namespace rs {
+	inline std::string ConvertToStr(const std::string& s) { return s; }
+	template <class T>
+	std::string ConvertToStr(const T& t) {
+		return std::to_string(t);
+	}
+	template <class T0, class T1>
+	std::string ConvertToStr(const std::pair<T0,T1>& t) {
+		return ConvertToStr(t.first) + ":" + ConvertToStr(t.second);
+	}
 	using StrV = std::vector<std::string>;
 	using StrPair = std::pair<std::string, std::string>;
 	using StrPairV = std::vector<StrPair>;
@@ -19,7 +29,7 @@ namespace rs {
 			IdValue genId(const Key& key) {
 				auto itr = std::find(_entry.begin(), _entry.end(), key);
 				if(itr != _entry.end())
-					throw 0;
+					throw std::logic_error((boost::format("Idの重複生成 %1%") % ConvertToStr(key)).str());
 				_entry.emplace_back(key);
 				return IdValue(_entry.size()-1);
 			}
