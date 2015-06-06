@@ -48,12 +48,12 @@ namespace rs {
 	*/
 	class SystemUniform2D {
 		private:
-			mutable uint32_t	_acCamera;
 			#define SEQ_SYSUNI2D \
 				((World)(spn::Mat33)) \
 				((WorldInv)(spn::Mat33)(World)) \
 				((Camera)(HLCam2DF)) \
-				((Transform)(spn::Mat33)(World)(Camera)) \
+				((CameraAc)(uint32_t)(Camera)) \
+				((Transform)(spn::Mat33)(World)(CameraAc)) \
 				((TransformInv)(spn::Mat33)(Transform))
 			RFLAG_S(SystemUniform2D, SEQ_SYSUNI2D)
 		public:
@@ -62,8 +62,6 @@ namespace rs {
 			#undef SEQ_SYSUNI2D
 
 			SystemUniform2D();
-			void setCamera(HCam2D hC);
 			void outputUniforms(GLEffect& glx) const;
 	};
 }
-

@@ -26,12 +26,24 @@ namespace rs {
 		getWorld().inversion(m);
 		return 0;
 	}
+	uint32_t SystemUniform2D::_refresh(uint32_t& ac, CameraAc*) const {
+		getCamera();
+		ac = ~0;
+		return 0;
+	}
 	uint32_t SystemUniform2D::_refresh(spn::Mat33& m, Transform*) const {
 		auto& hc = getCamera();
-		if(hc)
-			m = getWorld() * hc->getViewProj();
-		else
-			m.identity();
+		auto cur_ac = getCameraAc();
+		if(hc) {
+			auto n_ac = hc->getAccum();
+			if(cur_ac != n_ac) {
+				_rflag.ref<CameraAc>() = n_ac;
+				m = getWorld() * hc->getViewProj();
+			}
+			// 次回も更新チェックする
+			const_cast<SystemUniform2D*>(this)->_rflag.setFlag<Transform>();
+		} else
+			m = getWorld();
 		return 0;
 	}
 	uint32_t SystemUniform2D::_refresh(spn::Mat33& m, TransformInv*) const {
@@ -39,13 +51,8 @@ namespace rs {
 		return 0;
 	}
 
-	SystemUniform2D::SystemUniform2D(): _acCamera(0) {
+	SystemUniform2D::SystemUniform2D() {
 		setWorld(spn::Mat33(1, spn::Mat33::TagDiagonal));
-	}
-	void SystemUniform2D::setCamera(HCam2D hC) {
-		_rflag.set<Camera>(hC);
-		if(hC)
-			_acCamera = hC->getAccum();
 	}
 	void SystemUniform2D::outputUniforms(GLEffect& glx) const {
 		#define DEF_SETUNIF(name, func) \
@@ -55,20 +62,14 @@ namespace rs {
 		DEF_SETUNIF(WorldInv, get)
 		if(auto& hc = getCamera()) {
 			auto& cd = hc.cref();
-			auto ac = cd.getAccum();
-			if(_acCamera != ac) {
-				_acCamera = ac;
-
-				DEF_SETUNIF(View, cd.get)
-				DEF_SETUNIF(ViewInv, cd.get)
-				DEF_SETUNIF(Proj, cd.get)
-				DEF_SETUNIF(ViewProj, cd.get)
-				DEF_SETUNIF(ViewProjInv, cd.get)
-			}
+			DEF_SETUNIF(View, cd.get)
+			DEF_SETUNIF(ViewInv, cd.get)
+			DEF_SETUNIF(Proj, cd.get)
+			DEF_SETUNIF(ViewProj, cd.get)
+			DEF_SETUNIF(ViewProjInv, cd.get)
 		}
 		DEF_SETUNIF(Transform, get)
 		DEF_SETUNIF(TransformInv, get)
 		#undef DEF_SETUNIF
 	}
 }
-
