@@ -23,23 +23,21 @@ namespace rs {
 	};
 	class SystemUniform3D : public spn::CheckAlign<16, SystemUniform3D> {
 		private:
-			mutable uint32_t	_acCamera;
 			#define SEQ_SYSUNI3D \
 				((World)(spn::AMat44)) \
 				((WorldInv)(spn::AMat44)(World)) \
 				((Camera)(HLCamF)) \
-				((Transform)(spn::AMat44)(World)(Camera)) \
+				((CameraAc)(uint32_t)(Camera)) \
+				((Transform)(spn::AMat44)(World)(CameraAc)) \
 				((TransformInv)(spn::AMat44)(Transform))
 			RFLAG_S(SystemUniform3D, SEQ_SYSUNI3D)
-
 		public:
 			RFLAG_GETMETHOD_S(SEQ_SYSUNI3D)
+			RFLAG_REFMETHOD_S(SEQ_SYSUNI3D)
+			RFLAG_SETMETHOD_S(SEQ_SYSUNI3D)
 			#undef SEQ_SYSUNI3D
-			RFLAG_REFMETHOD(World)
-			RFLAG_SETMETHOD(World)
 
 			SystemUniform3D();
-			void setCamera(HCam hCam);
 			void outputUniforms(GLEffect& glx) const;
 	};
 	//! システムuniform変数をセットする(2D)

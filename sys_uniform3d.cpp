@@ -28,11 +28,23 @@ namespace rs {
 		}
 	}
 
+	uint32_t SystemUniform3D::_refresh(uint32_t& ac, CameraAc*) const {
+		getCamera();
+		ac = ~0;
+		return 0;
+	}
 	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, Transform*) const {
 		auto& hc = getCamera();
-		if(hc)
-			m = getWorld() * hc->getViewProj();
-		else
+		auto cur_ac = getCameraAc();
+		if(hc) {
+			auto n_ac = hc->getAccum();
+			if(cur_ac != n_ac) {
+				_rflag.ref<CameraAc>() = n_ac;
+				m = getWorld() * hc->getViewProj();
+			}
+			// 次回も更新チェックする
+			const_cast<SystemUniform3D*>(this)->_rflag.setFlag<Transform>();
+		} else
 			m.identity();
 		return 0;
 	}
@@ -45,13 +57,8 @@ namespace rs {
 		return 0;
 	}
 
-	SystemUniform3D::SystemUniform3D(): _acCamera(0) {
+	SystemUniform3D::SystemUniform3D() {
 		setWorld(spn::AMat44(1, spn::AMat44::TagDiagonal));
-	}
-	void SystemUniform3D::setCamera(HCam hCam) {
-		_rflag.set<Camera>(hCam);
-		if(hCam)
-			_acCamera = hCam->getAccum();
 	}
 	void SystemUniform3D::outputUniforms(GLEffect& glx) const {
 		#define DEF_SETUNIF(name, func) \
@@ -61,8 +68,6 @@ namespace rs {
 		DEF_SETUNIF(WorldInv, get)
 		if(auto& hc = getCamera()) {
 			auto& cd = hc.cref();
-			_acCamera = cd.getAccum();
-
 			DEF_SETUNIF(View, cd.get)
 			DEF_SETUNIF(Proj, cd.get)
 			DEF_SETUNIF(ViewProj, cd.get)
