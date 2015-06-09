@@ -67,8 +67,11 @@ int main(int argc, char **argv) {
 			// left, right, up, down [A,D,W,S]		カメラ移動
 			lk->actAx = mgr_input.makeAction("axisX");
 			lk->actAy = mgr_input.makeAction("axisY");
-			mgr_input.linkButtonAsAxis(lkb->hlIk, lk->actAx, SDL_SCANCODE_A, SDL_SCANCODE_D);
-			mgr_input.linkButtonAsAxis(lkb->hlIk, lk->actAy, SDL_SCANCODE_S, SDL_SCANCODE_W);
+			mgr_input.linkButtonAsAxisMulti(
+				lkb->hlIk,
+				std::make_tuple(lk->actAx, SDL_SCANCODE_A, SDL_SCANCODE_D),
+				std::make_tuple(lk->actAy, SDL_SCANCODE_S, SDL_SCANCODE_W)
+			);
 			// rotate-camera[MouseX,Y]				カメラ向き変更
 			lk->actMoveX = mgr_input.makeAction("moveX");
 			lk->actMoveY = mgr_input.makeAction("moveY");

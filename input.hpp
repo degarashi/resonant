@@ -196,6 +196,13 @@ namespace rs {
 			static auto _getKeyValueSimplifiedMulti(std::index_sequence<N...>, const Tuple& t) {
 				return std::make_tuple(getKeyValueSimplified(std::get<N>(t))...);
 			}
+			template <std::size_t... N>
+			static void _linkButtonAsAxisMulti(std::index_sequence<N...>, HInput) {}
+			template <std::size_t... N, class T, class... Tuple>
+			static void _linkButtonAsAxisMulti(std::index_sequence<N...> seq, HInput hI, const T& t, const Tuple&... ts) {
+				linkButtonAsAxis(hI, std::get<N>(t)...);
+				_linkButtonAsAxisMulti(seq, hI, ts...);
+			}
 		public:
 			InputMgr();
 			~InputMgr();
@@ -209,6 +216,11 @@ namespace rs {
 			// 更新リストから除くだけで削除はしない
 			void remAction(HAct hAct);
 			static void linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive);
+			template <class T, class... Tuple>
+			static void linkButtonAsAxisMulti(HInput hI, const T& t, const Tuple&... ts) {
+				using IntS = std::make_index_sequence<std::tuple_size<T>::value>;
+				_linkButtonAsAxisMulti(IntS(), hI, t, ts...);
+			}
 			//! getValueの結果を使いやすいように加工(-1〜1)して返す
 			/*! \retval 1	getValueの値がInputRangeHalf以上
 						-1	getValueの値が-InputRangeHalf以下
