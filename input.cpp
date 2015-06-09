@@ -150,6 +150,9 @@ namespace rs {
 		int FM_Direct(int val) {
 			return val;
 		}
+		int FM_Flip(int val) {
+			return -val;
+		}
 		int FM_Positive(int val) {
 			return std::max(0, val);
 		}
@@ -173,8 +176,8 @@ namespace rs {
 			return HatAngToValue<SF>(val, std::cos);
 		}
 	}
-	InF InF::AsButton(HInput hI, int num) {
-		return InF(hI, num, &IInput::getButton, FM_Direct);
+	InF InF::AsButton(HInput hI, int num, bool bFlip) {
+		return InF(hI, num, &IInput::getButton, bFlip ? FM_Flip : FM_Direct);
 	}
 	InF InF::AsAxis(HInput hI, int num) {
 		return InF(hI, num, &IInput::getAxis, FM_Direct);
@@ -269,20 +272,22 @@ namespace rs {
 	bool InputMgr::isKeyPressing(HAct hAct) const {
 		return _checkKeyValue([](int st){ return st>0; }, hAct);
 	}
-	int InputMgr::getKeyValue(HAct hAct) const {
-		return hAct.ref().getValue();
-	}
-
-	HLAct InputMgr::addAction(const std::string& name) {
+	HLAct InputMgr::makeAction(const std::string& name) {
 		HLAct ret = _act.acquire(name, [](const auto&){ return detail::Action(); }).first;
 		_aset.insert(ret);
 		return std::move(ret);
 	}
-	void InputMgr::link(HAct hAct, const InF& inF) {
-		hAct.ref().addLink(inF);
+	void InputMgr::linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive) {
+		hAct->addLink(InF::AsButton(hI, num_negative, true));
+		hAct->addLink(InF::AsButton(hI, num_positive, false));
 	}
-	void InputMgr::unlink(HAct hAct, const InF& inF) {
-		hAct.ref().remLink(inF);
+	int InputMgr::getKeyValueSimplified(HAct hAct) {
+		auto v = hAct->getValue();
+		if(v >= InputRangeHalf)
+			return 1;
+		if(v <= -InputRangeHalf)
+			return -1;
+		return 0;
 	}
 	HLInput InputMgr::addInput(UPInput&& u) {
 		return acquire(std::move(u));

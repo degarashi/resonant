@@ -154,7 +154,7 @@ namespace rs {
 			int getValue() const;
 			bool operator == (const InF& f) const;
 
-			static InF AsButton(HInput hI, int num);		// しきい値指定バージョンも用意
+			static InF AsButton(HInput hI, int num, bool bFlip=false);
 			static InF AsAxis(HInput hI, int num);
 			static InF AsAxisNegative(HInput hI, int num);
 			static InF AsAxisPositive(HInput hI, int num);
@@ -192,22 +192,34 @@ namespace rs {
 			ActSet			_aset;
 			template <class CHK>
 			bool _checkKeyValue(CHK chk, HAct hAct) const;
+			template <std::size_t... N, class Tuple>
+			static auto _getKeyValueSimplifiedMulti(std::index_sequence<N...>, const Tuple& t) {
+				return std::make_tuple(getKeyValueSimplified(std::get<N>(t))...);
+			}
 		public:
 			InputMgr();
 			~InputMgr();
 			bool isKeyPressed(HAct hAct) const;
 			bool isKeyReleased(HAct hAct) const;
 			bool isKeyPressing(HAct hAct) const;
-			int getKeyValue(HAct hAct) const;
 
 			HLInput addInput(UPInput&& u);
-			HLAct addAction(const std::string& name);
+			HLAct makeAction(const std::string& name);
 			void addAction(HAct hAct);
 			// 更新リストから除くだけで削除はしない
 			void remAction(HAct hAct);
-			void link(HAct hAct, const InF& inF);
-			void unlink(HAct hAct, const InF& inF);	// linkを個別に解除
-
+			static void linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive);
+			//! getValueの結果を使いやすいように加工(-1〜1)して返す
+			/*! \retval 1	getValueの値がInputRangeHalf以上
+						-1	getValueの値が-InputRangeHalf以下
+						0	どちらでもない時 */
+			static int getKeyValueSimplified(HAct hAct);
+			//! 複数のハンドルを受け取りsimplifiedの結果をstd::tupleで返す
+			template <class... H>
+			static auto getKeyValueSimplifiedMulti(H... h) {
+				using IntS = std::make_index_sequence<sizeof...(H)>;
+				return _getKeyValueSimplifiedMulti(IntS(), std::forward_as_tuple(h...));
+			}
 			// キーマッピングのファイル入出力
 			// 入力キャプチャコールバック
 			using CaptureCB = bool (HInput, int);

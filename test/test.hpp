@@ -40,10 +40,8 @@ class Sc_Base;
 struct SharedValue {
 	Engine*		pEngine;
 	rs::HLAct	actQuit,
-				actLeft,
-				actRight,
-				actUp,
-				actDown,
+				actAx,
+				actAy,
 				actMoveX,
 				actMoveY,
 				actPress,

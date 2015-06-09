@@ -17,23 +17,16 @@ void FPSCamera::St_Default::onUpdate(FPSCamera& self) {
 		self._bPress = btn;
 	}
 	constexpr float speed = 0.25f;
-	float mvF=0, mvS=0;
-	if(mgr_input.isKeyPressing(lk->actUp))
-		mvF += speed;
-	if(mgr_input.isKeyPressing(lk->actDown))
-		mvF -= speed;
-	if(mgr_input.isKeyPressing(lk->actLeft))
-		mvS -= speed;
-	if(mgr_input.isKeyPressing(lk->actRight))
-		mvS += speed;
-
+	auto mv = mgr_input.getKeyValueSimplifiedMulti(lk->actAx, lk->actAy);
+	float mvF = speed * std::get<1>(mv),
+		  mvS = speed * std::get<0>(mv);
 	auto& cd = lk->hlCam.ref();
 	auto& ps = cd.refPose();
 	ps.moveFwd3D(mvF);
 	ps.moveSide3D(mvS);
 	if(self._bPress) {
-		float xv = mgr_input.getKeyValue(lk->actMoveX)/6.f,
-			yv = mgr_input.getKeyValue(lk->actMoveY)/6.f;
+		float xv = lk->actMoveX->getValue()/6.f,
+			yv = lk->actMoveY->getValue()/6.f;
 		self._yaw += spn::DegF(xv);
 		self._pitch += spn::DegF(-yv);
 		self._yaw.single();
