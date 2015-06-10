@@ -8,7 +8,7 @@ namespace rs {
 	using spn::AVec4;
 	using spn::Quat; using spn::Plane;
 	using boom::geo3d::Frustum;
-	uint32_t Camera3D::_refresh(uint32_t& acc, Accum*) const {
+	spn::RFlagRet Camera3D::_refresh(uint32_t& acc, Accum*) const {
 		// キャッシュ更新
 		getPose();
 		getFov();
@@ -17,9 +17,9 @@ namespace rs {
 		getFarZ();
 		// カウンタをインクリメント
 		++acc;
-		return 0;
+		return {};
 	}
-	uint32_t Camera3D::_refresh(AMat43& m, View*) const {
+	spn::RFlagRet Camera3D::_refresh(AMat43& m, View*) const {
 		auto& ps = getPose();
 		// 回転を一端quatに変換
 		const Quat& q = ps.getRot();
@@ -28,21 +28,21 @@ namespace rs {
 
 		Quat tq = q.inverse();
 		m *= tq.asMat33();
-		return 0;
+		return {};
 	}
-	uint32_t Camera3D::_refresh(AMat44& m, Proj*) const {
+	spn::RFlagRet Camera3D::_refresh(AMat44& m, Proj*) const {
 		m = AMat44::PerspectiveFovLH(getFov(), getAspect(), getNearZ(), getFarZ());
-		return 0;
+		return {};
 	}
-	uint32_t Camera3D::_refresh(AMat44& m, ViewProj*) const {
+	spn::RFlagRet Camera3D::_refresh(AMat44& m, ViewProj*) const {
 		m = getView().convertA44() * getProj();
-		return 0;
+		return {};
 	}
-	uint32_t Camera3D::_refresh(AMat44& m, ViewProjInv*) const {
+	spn::RFlagRet Camera3D::_refresh(AMat44& m, ViewProjInv*) const {
 		getViewProj().inversion(m);
-		return 0;
+		return {};
 	}
-	uint32_t Camera3D::_refresh(Frustum& vf, VFrustum*) const {
+	spn::RFlagRet Camera3D::_refresh(Frustum& vf, VFrustum*) const {
 		// UP軸とZ軸を算出
 		AMat44 mat;
 		getView().convertA44().inversion(mat);
@@ -54,7 +54,7 @@ namespace rs {
 
 		auto& ps = getPose();
 		vf = Frustum(ps.getOffset(), zAxis.asVec3(), yAxis.asVec3(), getFov(), getFarZ(), getAspect());
-		return 0;
+		return {};
 	}
 
 	Camera3D::Camera3D() {

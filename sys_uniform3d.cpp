@@ -28,33 +28,35 @@ namespace rs {
 		}
 	}
 
-	uint32_t SystemUniform3D::_refresh(uint32_t& ac, CameraAc*) const {
+	spn::RFlagRet SystemUniform3D::_refresh(uint32_t& ac, CameraAc*) const {
 		getCamera();
 		ac = ~0;
-		return 0;
+		return {};
 	}
-	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, Transform*) const {
+	spn::RFlagRet SystemUniform3D::_refresh(spn::AcWrapper<spn::AMat44>& m, Transform*) const {
 		auto& hc = getCamera();
 		auto cur_ac = getCameraAc();
 		if(hc) {
+			bool b = spn::CompareAndSet(m.ac_counter, _rflag.getAcCounter<World>());
 			auto n_ac = hc->getAccum();
-			if(cur_ac != n_ac) {
+			b |= cur_ac != n_ac;
+			if(b) {
 				_rflag.ref<CameraAc>() = n_ac;
 				m = getWorld() * hc->getViewProj();
 			}
 			// 次回も更新チェックする
-			const_cast<SystemUniform3D*>(this)->_rflag.setFlag<Transform>();
+			return {0, true};
 		} else
-			m.identity();
-		return 0;
+			m = getWorld();
+		return {};
 	}
-	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, TransformInv*) const {
+	spn::RFlagRet SystemUniform3D::_refresh(spn::AMat44& m, TransformInv*) const {
 		getTransform().inversion(m);
-		return 0;
+		return {};
 	}
-	uint32_t SystemUniform3D::_refresh(spn::AMat44& m, WorldInv*) const {
+	spn::RFlagRet SystemUniform3D::_refresh(spn::AMat44& m, WorldInv*) const {
 		getWorld().inversion(m);
-		return 0;
+		return {};
 	}
 
 	SystemUniform3D::SystemUniform3D() {

@@ -28,7 +28,7 @@ namespace rs {
 				((WorldInv)(spn::AMat44)(World)) \
 				((Camera)(HLCamF)) \
 				((CameraAc)(uint32_t)(Camera)) \
-				((Transform)(spn::AMat44)(World)(CameraAc)) \
+				((Transform)(spn::AcWrapper<spn::AMat44>)(World)(CameraAc)) \
 				((TransformInv)(spn::AMat44)(Transform))
 			RFLAG_S(SystemUniform3D, SEQ_SYSUNI3D)
 		public:
@@ -51,7 +51,7 @@ namespace rs {
 				((WorldInv)(spn::Mat33)(World)) \
 				((Camera)(HLCam2DF)) \
 				((CameraAc)(uint32_t)(Camera)) \
-				((Transform)(spn::Mat33)(World)(CameraAc)) \
+				((Transform)(spn::AcWrapper<spn::Mat33>)(World)(CameraAc)) \
 				((TransformInv)(spn::Mat33)(Transform))
 			RFLAG_S(SystemUniform2D, SEQ_SYSUNI2D)
 		public:

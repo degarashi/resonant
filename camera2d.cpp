@@ -8,34 +8,34 @@ namespace rs {
 		setAccum(1);
 		setAspectRatio(1.f);
 	}
-	uint32_t Camera2D::_refresh(uint32_t& acc, Accum*) const {
+	spn::RFlagRet Camera2D::_refresh(uint32_t& acc, Accum*) const {
 		// キャッシュ更新
 		getPose();
 		getAspectRatio();
 		// カウンタをインクリメント
 		++acc;
-		return 0;
+		return {};
 	}
-	uint32_t Camera2D::_refresh(spn::Mat33& m, View*) const {
+	spn::RFlagRet Camera2D::_refresh(spn::Mat33& m, View*) const {
 		auto& ps = getPose();
 		m = ps.getToLocal().convert33();
-		return 0;
+		return {};
 	}
-	uint32_t Camera2D::_refresh(spn::Mat33& m, ViewInv*) const {
+	spn::RFlagRet Camera2D::_refresh(spn::Mat33& m, ViewInv*) const {
 		getView().inversion(m);
-		return 0;
+		return {};
 	}
-	uint32_t Camera2D::_refresh(spn::Mat33& m, Proj*) const {
+	spn::RFlagRet Camera2D::_refresh(spn::Mat33& m, Proj*) const {
 		m = spn::AMat33::Scaling(1.f / getAspectRatio(), 1, 1);
-		return 0;
+		return {};
 	}
-	uint32_t Camera2D::_refresh(spn::Mat33& m, ViewProj*) const {
+	spn::RFlagRet Camera2D::_refresh(spn::Mat33& m, ViewProj*) const {
 		m = getView() * getProj();
-		return 0;
+		return {};
 	}
-	uint32_t Camera2D::_refresh(spn::Mat33& m, ViewProjInv*) const {
+	spn::RFlagRet Camera2D::_refresh(spn::Mat33& m, ViewProjInv*) const {
 		getViewProj().inversion(m);
-		return 0;
+		return {};
 	}
 
 	spn::Vec2 Camera2D::vp2w(const spn::Vec2& pos) const {
