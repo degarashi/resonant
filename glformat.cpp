@@ -180,4 +180,42 @@ namespace rs {
 		delete s_SDLtoGL;
 		delete s_idMap;
 	}
+	// --------------------- GLFormatDesc ---------------------
+	std::ostream& GLFormatDesc::print(std::ostream& os) const {
+		os << "[GLFormatDesc " << std::endl;
+		os << "format: " << GLFormat::QueryEnumString(format) << std::endl;
+		os << "elementType: " << GLFormat::QueryEnumString(elementType) << std::endl;
+		os << "numElem: " << numElem << std::endl;
+		os << "baseType: " << GLFormat::QueryEnumString(baseType) << std::endl;
+		os << "sdlFormat: " << Surface::GetFormatString(sdlFormat) << std::endl;
+		os << "sdlLossFormat: " << Surface::GetFormatString(sdlLossFormat) << "]";
+		return os;
+	}
+	std::ostream& operator << (std::ostream& os, const GLFormatDesc& desc) {
+		return desc.print(os);
+	}
+	// --------------------- GLSLFormatDesc ---------------------
+	namespace {
+		const std::string c_glslTypeStr[] = {
+			"IntT",
+			"FloatT",
+			"DoubleT",
+			"BoolT",
+			"TextureT",
+			"IntTextureT",
+			"MatrixT",
+			"DMatrixT"
+		};
+	}
+	std::ostream& GLSLFormatDesc::print(std::ostream& os) const {
+		os << "[GLSLFormatDesc " << std::endl;
+		os << "type: " << c_glslTypeStr[static_cast<int>(type)]  << std::endl;
+		os << "dim: " << dim << std::endl;
+		os << "bUnsigned: " << bUnsigned << std::endl;
+		os << "bCubed: " << bCubed << "]";
+		return os;
+	}
+	std::ostream& operator << (std::ostream& os, const GLSLFormatDesc& desc) {
+		return desc.print(os);
+	}
 }

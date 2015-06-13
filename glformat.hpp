@@ -80,7 +80,10 @@ namespace rs {
 		GLenum		baseType;		//!< BaseFormatにする場合の型
 		uint32_t	sdlFormat;		//!< GLFormatと一致するSDLの型(ない場合はUNKNOWN)
 		uint32_t	sdlLossFormat;
+
+		std::ostream& print(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const GLFormatDesc& desc);
 	enum class GLSLType : uint32_t {
 		IntT,
 		FloatT,
@@ -96,7 +99,10 @@ namespace rs {
 		uint32_t	dim;
 		bool		bUnsigned;
 		bool		bCubed;
+
+		std::ostream& print(std::ostream& os) const;
 	};
+	std::ostream& operator << (std::ostream& os, const GLSLFormatDesc& desc);
 	class GLFormat {
 		public:
 			enum ID : uint32_t {
