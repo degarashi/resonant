@@ -50,8 +50,8 @@ namespace rs {
 	GLenum IGLTexture::getFaceFlag() const {
 		return _faceFlag;
 	}
-	const GLInCompressedFmt& IGLTexture::getFormat() const {
-		return *_format;
+	const OPInCompressedFmt& IGLTexture::getFormat() const {
+		return _format;
 	}
 	IGLTexture::~IGLTexture() { onDeviceLost(); }
 	const spn::Size& IGLTexture::getSize() const { return _size; }
@@ -63,6 +63,7 @@ namespace rs {
 		return level >= MipmapNear;
 	}
 	void IGLTexture::save(const std::string& path) {
+		auto& desc = *GLFormat::QueryInfo(*_format);
 		auto saveFmt = GL_RGBA;
 		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(saveFmt, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
@@ -275,22 +276,27 @@ namespace rs {
 		IGLTexture(std::move(static_cast<IGLTexture&>(t))), _uri(std::move(t._uri)) {}
 	void Texture_StaticURI::onDeviceReset() {
 		if(_onDeviceReset())
-			_size = LoadTexture(*this, mgr_rw.fromURI(_uri, RWops::Read), CubeFace::PositiveX);
+			std::tie(_size, _format) = LoadTexture(*this, mgr_rw.fromURI(_uri, RWops::Read), CubeFace::PositiveX);
 	}
 	// メンバ関数?
-	spn::Size MakeTex(GLenum tflag, const SPSurface& sfc, bool bP2, bool bMip) {
+	std::pair<spn::Size,GLInCompressedFmt> MakeTex(GLenum tflag, const SPSurface& sfc, OPInCompressedFmt fmt, bool bP2, bool bMip) {
 		// SDLフォーマットから適したOpenGLフォーマットへ変換
 		SPSurface tsfc = sfc;
-		uint32_t fmt = tsfc->getFormat().format;
-		auto info = GLFormat::QuerySDLtoGL(fmt);
-		if(!info) {
-			// INDEXEDなフォーマット等は該当が無いのでRGB24として扱う
-			info = GLFormat::QuerySDLtoGL(SDL_PIXELFORMAT_RGB24);
-			AssertP(Trap, info)
+		GLFormatDesc desc;
+		if(fmt) {
+			desc = *GLFormat::QueryInfo(*fmt);
+		} else {
+			// 希望するフォーマットが無ければSurfaceから決定
+			auto info = GLFormat::QuerySDLtoGL(tsfc->getFormat().format);
+			if(!info) {
+				// INDEXEDなフォーマット等は該当が無いのでRGB24として扱う
+				info = GLFormat::QuerySDLtoGL(SDL_PIXELFORMAT_RGB24);
+				AssertP(Trap, info)
+			}
+			desc = *info;
 		}
-		fmt = info->sdlFormat;
-		tsfc = tsfc->convert(fmt);
-
+		auto sdlFmt = desc.sdlFormat!=SDL_PIXELFORMAT_UNKNOWN ? desc.sdlFormat : desc.sdlLossFormat;
+		tsfc->convert(sdlFmt);
 		// テクスチャ用のサイズ調整
 		auto size = tsfc->getSize();
 		spn::PowSize n2size{size.width, size.height};
@@ -306,17 +312,16 @@ namespace rs {
 			// 2乗サイズ合わせ
 			if(bP2 && size != n2size)
 				tsfc = tsfc->resize(n2size);
-			func = [&tsfc, &info](CB cb) {
-				auto buff = tsfc->extractAsContinuous(info->sdlFormat);
+			func = [&tsfc, sdlFmt](CB cb) {
+				auto buff = tsfc->extractAsContinuous(sdlFmt);
 				cb(&buff[0]);
 			};
 		}
 		// ミップマップの場合はサイズを縮小しながらテクスチャを書き込む
 		size = tsfc->getSize();
-		auto ret = size;
 		int layer = 0;
-		auto make = [tflag, &layer, &info, &size](const void* data) {
-			GL.glTexImage2D(tflag, layer++, info->format, size.width, size.height, 0, info->baseType, info->elementType, data);
+		auto make = [tflag, &layer, &desc, &size](const void* data) {
+			GL.glTexImage2D(tflag, layer++, desc.format, size.width, size.height, 0, desc.baseType, desc.elementType, data);
 		};
 		if(!bMip)
 			func(make);
@@ -329,20 +334,20 @@ namespace rs {
 				tsfc = tsfc->resize(size);
 			}
 		}
-		return ret;
+		return std::make_pair(size, desc.format);
 	}
-	spn::Size MakeMip(GLenum tflag, GLenum format, const spn::Size& size, const spn::ByteBuff& buff, bool bP2, bool bMip) {
+	auto MakeMip(GLenum tflag, GLenum format, const spn::Size& size, const spn::ByteBuff& buff, bool bP2, bool bMip) {
 		// 簡単の為に一旦SDL_Surfaceに変換
 		auto info = GLFormat::QueryInfo(format);
 		int pixelsize = info->numElem* GLFormat::QuerySize(info->baseType);
 		SPSurface sfc = Surface::Create(buff, pixelsize*size.width, size.width, size.height, info->sdlFormat);
-		return MakeTex(tflag, sfc, bP2, bMip);
+		return MakeTex(tflag, sfc, spn::none, bP2, bMip);
 	}
-	spn::Size Texture_StaticURI::LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face) {
+	std::pair<spn::Size, GLInCompressedFmt> Texture_StaticURI::LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face) {
 		SPSurface sfc = Surface::Load(hRW);
 		auto tbd = tex.use();
 		GLenum tflag = tex.getFaceFlag() + static_cast<int>(face) - static_cast<int>(CubeFace::PositiveX);
-		return MakeTex(tflag, sfc, true, tex.isMipmap());
+		return MakeTex(tflag, sfc, tex.getFormat(), true, tex.isMipmap());
 	}
 
 	// ------------------------- Texture_StaticCubeURI -------------------------
@@ -354,8 +359,11 @@ namespace rs {
 	void Texture_StaticCubeURI::onDeviceReset() {
 		if(_onDeviceReset()) {
 			int mask = _uri->getNPacked()==1 ? 0x00 : 0xff;
-			for(int i=0 ; i<6 ; i++)
-				_size = Texture_StaticURI::LoadTexture(*this, mgr_rw.fromURI(_uri->getPacked(i & mask), RWops::Read), static_cast<CubeFace>(i));
+			for(int i=0 ; i<6 ; i++) {
+				auto ret = Texture_StaticURI::LoadTexture(*this, mgr_rw.fromURI(_uri->getPacked(i & mask), RWops::Read), static_cast<CubeFace>(i));
+				if(i==0)
+					std::tie(_size, _format) = ret;
+			}
 		}
 	}
 

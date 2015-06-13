@@ -521,7 +521,7 @@ namespace rs {
 
 			const spn::Size& getSize() const;
 			GLint getTextureID() const;
-			const GLInCompressedFmt& getFormat() const;
+			const OPInCompressedFmt& getFormat() const;
 			GLenum getTexFlag() const;
 			GLenum getFaceFlag() const;
 			void onDeviceLost() override;
@@ -645,7 +645,7 @@ namespace rs {
 		spn::URI			_uri;
 		OPInCompressedFmt	_opFmt;
 		public:
-			static spn::Size LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face);
+			static std::pair<spn::Size, GLInCompressedFmt> LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face);
 			Texture_StaticURI(Texture_StaticURI&& t);
 			Texture_StaticURI(const spn::URI& uri, OPInCompressedFmt fmt);
 			void onDeviceReset() override;
