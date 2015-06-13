@@ -240,11 +240,38 @@ namespace rs {
 		SDLEC(Trap, SDL_BlitScaled, _sfc, &sr, sfc->getSurface(), &dr);
 	}
 	SPSurface Surface::resize(const spn::Size& s) const {
+		auto bm = getBlendMode();
+		auto* self = const_cast<Surface*>(this);
+		self->setBlendMode(SDL_BLENDMODE_NONE);
+
 		auto sz = getSize();
 		spn::Rect srcRect(0,sz.width, 0,sz.height),
 				dstRect(0,s.width, 0,s.height);
 		SPSurface nsfc = Create(s.width, s.height, getFormat().format);
 		blitScaled(nsfc, srcRect, dstRect);
+
+		self->setBlendMode(bm);
 		return std::move(nsfc);
+	}
+	void Surface::setEnableColorKey(uint32_t key) {
+		SDLEC(Trap, SDL_SetColorKey, _sfc, SDL_TRUE, key);
+	}
+	void Surface::setDisableColorKey() {
+		SDLEC(Trap, SDL_SetColorKey, _sfc, SDL_FALSE, 0);
+	}
+	spn::Optional<uint32_t> Surface::getColorKey() const {
+		uint32_t key;
+		if(SDLEC(Trap, SDL_GetColorKey, _sfc, &key) == -1)
+			return spn::none;
+		return key;
+	}
+	void Surface::setBlendMode(SDL_BlendMode mode) {
+		SDLEC(Trap, SDL_SetSurfaceBlendMode, _sfc, mode);
+	}
+	SDL_BlendMode Surface::getBlendMode() const {
+		SDL_BlendMode mode;
+		int ret = SDLEC(Trap, SDL_GetSurfaceBlendMode, _sfc, &mode);
+		Assert(Warn, ret >= 0, "unknown error")
+		return mode;
 	}
 }

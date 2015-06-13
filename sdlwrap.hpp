@@ -1064,5 +1064,10 @@ namespace rs {
 			uint32_t getFormatEnum() const;
 			SDL_Surface* getSurface();
 			SPSurface resize(const spn::Size& s) const;
+			void setEnableColorKey(uint32_t key);
+			void setDisableColorKey();
+			spn::Optional<uint32_t> getColorKey() const;
+			void setBlendMode(SDL_BlendMode mode);
+			SDL_BlendMode getBlendMode() const;
 	};
 }
