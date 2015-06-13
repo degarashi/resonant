@@ -35,6 +35,14 @@ namespace rs {
 	size_t GLFormat::QueryByteSize(GLenum fmt, GLenum typ) {
 		return QueryInfo(fmt)->numElem * QuerySize(typ);
 	}
+	const std::string& GLFormat::QueryEnumString(GLenum value) {
+		for(auto& p : *s_valueMap) {
+			if(p.first == value)
+				return p.second;
+		}
+		const static std::string c_unknown("UNKNOWN_VALUE");
+		return c_unknown;
+	}
 	GLFormat::OPGLSLInfo GLFormat::QueryGLSLInfo(GLenum fmt) {
 		auto itr = s_idMap->find(FmtID(Query_GLSLTypeInfo, fmt));
 		if(itr != s_idMap->end())
@@ -72,6 +80,7 @@ namespace rs {
 	}
 	GLFormat::IDMap* GLFormat::s_idMap;
 	GLFormat::SDLtoGL* GLFormat::s_SDLtoGL;
+	GLFormat::GLValueMap* GLFormat::s_valueMap;
 
 	constexpr uint32_t MakeDim() {
 		return 0;
@@ -86,8 +95,10 @@ namespace rs {
 	#define ADD_FMTID_ALL(z, data, elem)		ADD_IDMAP(Query_All, elem, data)
 	#define ADD_FMTID_DSC(z, data, elem)		ADD_IDMAP(Query_DSC, elem, data)
 	void GLFormat::Initialize() {
+		// エントリの予約数は適当
 		s_idMap = new IDMap(1024);
 		s_SDLtoGL = new SDLtoGL(1024);
+		s_valueMap = new GLValueMap(1024);
 		#include "opengl_define/glformat_const.inc"
 		// フォーマット判定用エントリ
 		BOOST_PP_SEQ_FOR_EACH(ADD_FMTID1, Internal, SEQ_INTERNAL)
@@ -137,8 +148,36 @@ namespace rs {
 			if(p.sdlFormat!=SDL_PIXELFORMAT_UNKNOWN && itr==s_SDLtoGL->end())
 				s_SDLtoGL->emplace(p.sdlFormat, p);
 		}
+
+		// --------------- Const変数名の登録 ---------------
+		auto fnAddValue = [](std::string name, GLenum value){
+			auto itr = s_valueMap->find(value);
+			if(itr == s_valueMap->end()) {
+				// エントリ作成
+				s_valueMap->emplace(value, std::move(name));
+			} else {
+				// 併記
+				itr->second.append(" or ");
+				itr->second.append(name);
+			}
+		};
+		#define DEF_GLMETHOD(...)
+		#define GLDEFINE(...)
+		#define DEF_GLCONST(name, value)	fnAddValue(#name, static_cast<GLenum>(value));
+			#ifdef ANDROID
+				#include "opengl_define/android_gl.inc"
+			#elif defined(WIN32)
+				#include "opengl_define/mingw_gl.inc"
+			#else
+				#include "opengl_define/linux_gl.inc"
+			#endif
+		#undef DEF_GLCONST
+		#undef GLDEFINE
+		#undef DEF_GLMETHOD
 	}
 	void GLFormat::Terminate() {
+		delete s_valueMap;
+		delete s_SDLtoGL;
 		delete s_idMap;
 	}
 }

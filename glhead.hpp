@@ -18,6 +18,7 @@
 namespace rs {
 	struct IGL {
 		#define GLDEFINE(...)
+		#define DEF_GLCONST(...)
 		#ifdef DEBUG
 			#define DEF_GLMETHOD2(ret_type, name, args) virtual ret_type name##_NC(BOOST_PP_SEQ_ENUM(args)) = 0;
 		#else
@@ -37,6 +38,7 @@ namespace rs {
 
 		#undef DEF_GLMETHOD
 		#undef DEF_GLMETHOD2
+		#undef DEF_GLCONST
 		#undef GLDEFINE
 		virtual void setSwapInterval(int n) = 0;
 		virtual void stencilFuncFront(int func, int ref, int mask) = 0;
@@ -50,6 +52,7 @@ namespace rs {
 	//! 直でOpenGL関数を呼ぶ
 	struct IGL_Draw : IGL {
 		#define GLDEFINE(...)
+		#define DEF_GLCONST(...)
 		#ifdef DEBUG
 			#define DEF_GLMETHOD2(ret_type, name, args) virtual ret_type name##_NC(BOOST_PP_SEQ_ENUM(args)) override;
 		#else
@@ -88,6 +91,7 @@ namespace rs {
 		
 		#undef DEF_GLMETHOD
 		#undef DEF_GLMETHOD2
+		#undef DEF_GLCONST
 		#undef GLDEFINE
 
 		void setSwapInterval(int n) override;
@@ -134,6 +138,7 @@ namespace rs {
 
 		public:
 			#define GLDEFINE(...)
+			#define DEF_GLCONST(...)
 			#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 				using t_##name = ret_type APICALL(*)(BOOST_PP_SEQ_ENUM(args)); \
 				static t_##name name;
@@ -147,6 +152,7 @@ namespace rs {
 			#endif
 
 			#undef DEF_GLMETHOD
+			#undef DEF_GLCONST
 			#undef GLDEFINE
 		public:
 			GLWrap(bool bShareEnabled);

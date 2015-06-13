@@ -30,6 +30,7 @@ namespace rs {
 	// OpenGL関数ロード
 	// FuncNameで読み込めなければFuncNameARBとFuncNameEXTで試す
 	#define GLDEFINE(...)
+	#define DEF_GLCONST(...)
 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		GLWrap::name = nullptr; \
 		GLWrap::name = (typename GLWrap::t_##name) GLGETPROC(name); \
@@ -49,6 +50,7 @@ namespace rs {
 			g_bglfuncInit = true;
 		}
 	#undef DEF_GLMETHOD
+	#undef DEF_GLCONST
 	#undef GLDEFINE
 	// ---------------------- GLShader ----------------------
 	void GLShader::_initShader() {

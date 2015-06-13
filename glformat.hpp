@@ -127,9 +127,11 @@ namespace rs {
 			using IDMap = std::unordered_map<FmtID, boost::variant<ID_t,GLFormatDesc, GLSLFormatDesc>>;
 			// SDL_PixelFormatEnum -> OpenGLFormatDesc
 			using SDLtoGL = std::unordered_map<uint32_t, const GLFormatDesc&>;
+			using GLValueMap = std::unordered_map<GLenum, std::string>;
 
 			static IDMap* s_idMap;
 			static SDLtoGL* s_SDLtoGL;
+			static GLValueMap* s_valueMap;
 
 		public:
 			using OPInfo = spn::Optional<const GLFormatDesc&>;
@@ -150,6 +152,8 @@ namespace rs {
 			static size_t QuerySize(GLenum typ);
 			//! fmtをtypで保存した場合の1画素のバイト数を計算
 			static size_t QueryByteSize(GLenum fmt, GLenum typ);
+			//! GLenum値を文字列に変換(デバッグ用)
+			static const std::string& QueryEnumString(GLenum value);
 
 			static OPGLSLInfo QueryGLSLInfo(GLenum fmt);
 

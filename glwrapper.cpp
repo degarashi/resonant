@@ -104,6 +104,7 @@ namespace rs {
 
 	// マクロで分岐
 	#define GLDEFINE(...)
+	#define DEF_GLCONST(...)
 	#define DEF_GLMETHOD(ret_type, num, name, args, argnames) \
 		typename GLWrap::t_##name GLWrap::name = nullptr; \
 		ret_type IGL_Draw::name##_NC(BOOST_PP_SEQ_ENUM(args)) { \
@@ -123,6 +124,7 @@ namespace rs {
 
 	#undef DEF_SINGLE_METHOD
 	#undef DEF_GLMETHOD
+	#undef DEF_GLCONST 
 	#undef GLDEFINE
 	#undef DEF_DRAW_METHOD
 	#undef DEF_DRAW_GLEC
