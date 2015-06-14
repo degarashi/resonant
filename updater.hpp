@@ -419,22 +419,24 @@ namespace rs {
 				struct State {
 					virtual ~State() {}
 					virtual ObjTypeId getStateId() const = 0;
-					virtual void onUpdate(T& /*self*/) {}
-					virtual LCValue recvMsg(T& /*self*/, GMessageId /*msg*/, const LCValue& /*arg*/) { return LCValue(); }
+					virtual void onUpdate(T& self) { self.Base::onUpdate(); }
+					virtual LCValue recvMsg(T& self, GMessageId msg, const LCValue& arg) { return self.Base::recvMsg(msg, arg); }
+					// onEnterとonExitは継承しない
 					virtual void onEnter(T& /*self*/, ObjTypeId /*prevId*/) {}
 					virtual void onExit(T& /*self*/, ObjTypeId /*nextId*/) {}
-					virtual void onHitEnter(T& /*self*/, HObj /*hObj*/) {}
-					virtual void onHit(T& /*self*/, HObj /*hObj*/, int /*n*/) {}
-					virtual void onHitExit(T& /*self*/, WObj /*whObj*/, int /*n*/) {}
-					virtual void onConnected(T& /*self*/, HGroup /*hGroup*/) {}
-					virtual void onDisconnected(T& /*self*/, HGroup /*hGroup*/) {}
+					// コリジョン関係はまだ対応してない
+					virtual void onHitEnter(T& self, HObj hObj) {}
+					virtual void onHit(T& self, HObj hObj, int n) {}
+					virtual void onHitExit(T& self, WObj whObj, int n) {}
+					virtual void onConnected(T& self, HGroup hGroup) { self.Base::onConnected(hGroup); }
+					virtual void onDisconnected(T& self, HGroup hGroup) { self.Base::onDisconnected(hGroup); }
 					// --------- Scene用メソッド ---------
-					virtual void onDraw(const T& /*self*/, GLEffect& /*e*/) const {}
-					virtual void onDown(T& /*self*/, ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
-					virtual void onPause(T& /*self*/) {}
-					virtual void onStop(T& /*self*/) {}
-					virtual void onResume(T& /*self*/) {}
-					virtual void onReStart(T& /*self*/) {}
+					virtual void onDraw(const T& self, GLEffect& e) const { self.Base::onDraw(e); }
+					virtual void onDown(T& self, ObjTypeId prevId, const LCValue& arg) { self.Base::onDown(prevId, arg); }
+					virtual void onPause(T& self) { self.Base::onPause(); }
+					virtual void onStop(T& self) { self.Base::onStop(); }
+					virtual void onResume(T& self) { self.Base::onResume(); }
+					virtual void onReStart(T& self) { self.Base::onReStart(); }
 				};
 				struct tagObjectState {};
 				template <class ST, class D=State>
@@ -557,14 +559,14 @@ namespace rs {
 					_state->onDraw(getRef(), e);
 				}
 				//! 上の層のシーンから抜ける時に戻り値を渡す (Scene用)
-				void onDown(ObjTypeId prevId, const LCValue& arg) override final {
+				void onDown(ObjTypeId prevId, const LCValue& arg) override {
 					_callWithSwitchState([&](){ _state->onDown(getRef(), prevId, arg); });
 				}
 				// ----------- 以下はStateのアダプタメソッド -----------
 				void onUpdate() override {
 					_callWithSwitchState([&](){ return _state->onUpdate(getRef()); });
 				}
-				LCValue recvMsg(GMessageId msg, const LCValue& arg) override final {
+				LCValue recvMsg(GMessageId msg, const LCValue& arg) override {
 					return _callWithSwitchState([&](){ return _state->recvMsg(getRef(), msg, arg); });
 				}
 				//! Updaterノードツリーに追加された時に呼ばれる
@@ -584,13 +586,11 @@ namespace rs {
 	const ObjectIdT<ST,typename detail::ObjectT<T,Base>::tagObjectState> detail::ObjectT<T,Base>::StateT<ST,D>::s_idt;
 
 	// Priority値をテンプレート指定
-	template <class T>
-	class ObjectT : public detail::ObjectT<T, Object> {
-		using detail::ObjectT<T, Object>::ObjectT;
+	template <class T, class Base=Object>
+	class ObjectT : public detail::ObjectT<T, Base> {
+		using detail::ObjectT<T, Base>::ObjectT;
 	};
 	// PriorityはUpdateObjと兼用の場合に使われる
 	template <class T>
-	class DrawableObjT : public detail::ObjectT<T, DrawableObj> {
-		using detail::ObjectT<T, DrawableObj>::ObjectT;
-	};
+	using DrawableObjT = ObjectT<T, DrawableObj>;
 }
