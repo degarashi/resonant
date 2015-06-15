@@ -23,11 +23,10 @@ void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
 	rs::HLTex hlTex = mgr_gl.loadTexture("brick.jpg");
 	{
 		using CubeObj = DWrapper<Cube>;
-		rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<CubeObj>(Cube::T_Cube, 1.f, hlTex);
-		auto* sp = static_cast<CubeObj*>(hlObj->get());
-		sp->setOffset(spn::Vec3(0,0,2));
-		self.getBase().getUpdate()->get()->addObj(hlObj.get());
-		self._hCube = hlObj;
+		auto hlp = rs_mgr_obj.makeDrawable<CubeObj>(Cube::T_Cube, 1.f, hlTex);
+		hlp.second->setOffset(spn::Vec3(0,0,2));
+		self.getBase().getUpdate()->get()->addObj(hlp.first.get());
+		self._hCube = hlp.first;
 	}
 }
 void Sc_Cube::St_Default::onUpdate(Sc_Cube& self) {

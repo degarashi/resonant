@@ -102,13 +102,12 @@ struct Sc_DSort::St_Init : StateT<St_Init> {
 		auto& upd = self.getBase().getUpdate().ref();
 		for(int i=0 ; i<self._hlSpriteV.size() ; i++) {
 			rs::HLTex hlST = LoadTexture(i);
-			rs::HLDObj hlObj = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, hlST, i*0.1f);
-			auto* sp = static_cast<SpriteObj*>(hlObj->get());
-			sp->setScale(spn::Vec2(0.3f));
-			sp->setOffset(spn::Vec2(-1.f + i*0.2f,
+			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, hlST, i*0.1f);
+			hlp.second->setScale(spn::Vec2(0.3f));
+			hlp.second->setOffset(spn::Vec2(-1.f + i*0.2f,
 									(i&1)*-0.1f));
-			self._hlSpriteV[i] = hlObj;
-			upd.get()->addObj(hlObj.get());
+			self._hlSpriteV[i] = hlp.first;
+			upd.get()->addObj(hlp.first.get());
 		}
 		self.setStateNew<St_Test>(std::ref(self), 0, true, false);
 	}

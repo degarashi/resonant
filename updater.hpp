@@ -142,17 +142,18 @@ namespace rs {
 			delete reinterpret_cast<T*>(p);
 		}
 		template <class P>
-		LHdl _callInitialize(P&& p) {
+		auto _callInitialize(P&& p) -> std::pair<LHdl, decltype(p.get())> {
+			auto* ptr = p.get();
 			p->_initState();
-			return base::acquire(std::move(p));
+			return std::make_pair(base::acquire(std::move(p)), ptr);
 		}
 		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う
 		template <class T, class... Ts>
-		LHdl _makeObj(std::false_type, Ts&&... ts) {
+		decltype(auto) _makeObj(std::false_type, Ts&&... ts) {
 			return _callInitialize(std::unique_ptr<T, void(*)(void*)>(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>));
 		}
 		template <class T, class... Ts>
-		LHdl _makeObj(std::true_type, Ts&&... ts) {
+		decltype(auto) _makeObj(std::true_type, Ts&&... ts) {
 			return _callInitialize(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
 
@@ -162,23 +163,23 @@ namespace rs {
 			void emplace() = delete;
 			// オブジェクトの追加にはこっちを使う
 			template <class T, class... Ts>
-			LHdl makeObj(Ts&&... ar) {
+			std::pair<LHdl, T*> makeObj(Ts&&... ar) {
 				return _makeObj<T>(typename spn::NType<alignof(T), 8>::great(), std::forward<Ts>(ar)...);
 			}
 			template <class T, class... Ts>
-			HLGroup makeGroup(Ts&&... ar) {
-				LHdl lh = makeObj<T>(std::forward<Ts>(ar)...);
-				return CastToGroup(lh.get());
+			std::pair<HLGroup,T*> makeGroup(Ts&&... ar) {
+				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
+				return std::make_pair(CastToGroup(lhp.first.get()), lhp.second);
 			}
 			template <class T, class... Ts>
-			HLDObj makeDrawable(Ts&&... ar) {
-				LHdl lh = makeObj<T>(std::forward<Ts>(ar)...);
-				return Cast<DrawableUP>(lh.get());
+			std::pair<HLDObj,T*> makeDrawable(Ts&&... ar) {
+				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
+				return std::make_pair(Cast<DrawableUP>(lhp.first.get()), lhp.second);
 			}
 			template <class T, class... Ts>
-			HLDGroup makeDrawGroup(Ts&&... ar) {
-				LHdl lh = makeObj<T>(std::forward<Ts>(ar)...);
-				return Cast<DrawGroupUP>(lh.get());
+			std::pair<HLDGroup,T*> makeDrawGroup(Ts&&... ar) {
+				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
+				return std::make_pair(Cast<DrawGroupUP>(lhp.first.get()), lhp.second);
 			}
 			static HGroup CastToGroup(HObj hObj) {
 				return Cast<GroupUP>(hObj);

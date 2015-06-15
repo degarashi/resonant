@@ -9,7 +9,7 @@ namespace rs {
 		auto fn = [](Ts&&... ts) {
 			return rs_mgr_obj.makeObj<T>(std::forward<Ts>(ts)...);
 		};
-		HLObj hlObj = FuncCall<Ts...>::callCB(fn, ls, -sizeof...(Ts));
+		HLObj hlObj = FuncCall<Ts...>::callCB(fn, ls, -sizeof...(Ts)).first;
 		using spn::SHandle;
 		LuaState lsc(ls);
 		// LightUserdataでハンドル値を保持

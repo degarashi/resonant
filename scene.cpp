@@ -3,8 +3,8 @@
 namespace rs {
 	// -------------- SceneBase --------------
 	SceneBase::SceneBase(HGroup hUpd, HDGroup hDraw) {
-		_update = hUpd ? hUpd : rs_mgr_obj.makeGroup<Update>().get();
-		_draw = hDraw ? hDraw : rs_mgr_obj.makeDrawGroup<Draw>().get();
+		_update = hUpd ? hUpd : rs_mgr_obj.makeGroup<Update>().first.get();
+		_draw = hDraw ? hDraw : rs_mgr_obj.makeDrawGroup<Draw>().first.get();
 	}
 	void SceneBase::setUpdate(HGroup hGroup) {
 		if(_update)

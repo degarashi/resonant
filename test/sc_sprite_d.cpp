@@ -82,10 +82,9 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		for(int i=0 ; i<50 ; i++) {
 			auto hlTex = Sc_DSort::LoadTexture(i % N_Sprite);
 			rs_mgr_obj.makeDrawable<BoundingSprite>(Sprite::T_Sprite, hlTex, fnPos(), fnSV());
-			auto hlObj = rs_mgr_obj.makeDrawable<BoundingSprite>(Sprite::T_Sprite, hlTex, fnPos(), fnSV());
-			auto* sp = static_cast<BoundingSprite*>(hlObj->get());
-			sp->setScale(spn::Vec2(0.2f));
-			upd->get()->addObj(hlObj.get());
+			auto hlp = rs_mgr_obj.makeDrawable<BoundingSprite>(Sprite::T_Sprite, hlTex, fnPos(), fnSV());
+			hlp.second->setScale(spn::Vec2(0.2f));
+			upd->get()->addObj(hlp.first.get());
 		}
 	}
 	void onUpdate(Sc_DSortD& self) override {

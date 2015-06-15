@@ -20,20 +20,20 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
 	self._random = mgr_random.get(RandomId);
 
 	// ---- make InfoShow ----
-	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>();
+	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>().first;
 	auto* upd = self.getBase().getUpdate()->get();
 	upd->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
 
 	rs::CCoreID cid = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
 	// ---- make ProfileShow ----
-	auto hlProf = rs_mgr_obj.makeDrawable<ProfileShow>(cid);
+	auto hlProf = rs_mgr_obj.makeDrawable<ProfileShow>(cid).first;
 	upd->addObj(hlProf.get());
 
-	auto hlFP = rs_mgr_obj.makeObj<FPSCamera>();
+	auto hlFP = rs_mgr_obj.makeObj<FPSCamera>().first;
 	self.getBase().getUpdate()->get()->addObj(hlFP);
 
-	mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(self), false);
+	mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(self).first, false);
 }
 void Sc_Base::St_Default::onDisconnected(Sc_Base& self, rs::HGroup hGroup) {
 	self._random = spn::none;
@@ -53,13 +53,13 @@ spn::MTRandom& Sc_Base::getRand() {
 void Sc_Base::checkSwitchScene() {
 	auto lk = sharedv.lock();
 	if(mgr_input.isKeyPressed(lk->actCube))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(*this), true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(*this).first, true);
 	else if(mgr_input.isKeyPressed(lk->actSound))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Sound>(*this), true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Sound>(*this).first, true);
 	else if(mgr_input.isKeyPressed(lk->actSprite))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSort>(*this), true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSort>(*this).first, true);
 	else if(mgr_input.isKeyPressed(lk->actSpriteD))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSortD>(*this), true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSortD>(*this).first, true);
 	else
 		checkQuit();
 }

@@ -84,7 +84,7 @@ namespace rs {
 							);
 				};
 				auto cbScene = [](){
-					return rs_mgr_obj.makeObj<InitialSceneT>();
+					return rs_mgr_obj.makeObj<InitialSceneT>().first;
 				};
 				return detail::GameloopHelper::Run(cbEngine, cbMakeSV, cbInit, cbScene, rx, ry, appname, pathfile);
 			}
