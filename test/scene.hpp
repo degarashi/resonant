@@ -10,6 +10,7 @@ class Sc_Base : public rs::Scene<Sc_Base> {
 		rs::HDObj		_hInfo;
 		RandomOP		_random;
 		struct St_Default;
+	protected:
 		void initState() override;
 	public:
 		spn::MTRandom& getRand();
@@ -22,6 +23,7 @@ class Sc_Cube : public rs::Scene<Sc_Cube> {
 		Sc_Base&	_base;
 		rs::HDObj	_hCube;
 		struct St_Default;
+	protected:
 		void initState() override;
 	public:
 		Sc_Cube(Sc_Base& b);
@@ -33,6 +35,7 @@ class Sc_Sound : public rs::Scene<Sc_Sound> {
 		rs::HLAbF	_hlAb;
 		rs::HLSgF	_hlSg;
 		struct St_Default;
+	protected:
 		void initState() override;
 	public:
 		Sc_Sound(Sc_Base& b);
@@ -45,6 +48,7 @@ class Sc_DSort : public rs::Scene<Sc_DSort> {
 		struct St_Test;
 		using HLSprV = std::vector<rs::HLDObj>;
 		HLSprV		_hlSpriteV;
+	protected:
 		void initState() override;
 	public:
 		static rs::HLTex LoadTexture(int index);
@@ -55,6 +59,7 @@ class Sc_DSortD : public rs::Scene<Sc_DSortD> {
 	private:
 		Sc_Base&	_base;
 		struct St_Default;
+	protected:
 		void initState() override;
 	public:
 		Sc_DSortD(Sc_Base& b);

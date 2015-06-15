@@ -84,12 +84,10 @@ namespace rs {
 	//! ゲームオブジェクト基底インタフェース
 	class Object {
 		private:
-			bool		_bDestroy;
-			virtual void initState();
-			virtual void _doSwitchState();
+			bool _bDestroy;
 		protected:
 			friend class ObjMgr;
-			void _initState();
+			virtual void initState();
 		public:
 			Object();
 			virtual ~Object() {}
@@ -144,7 +142,7 @@ namespace rs {
 		template <class P>
 		auto _callInitialize(P&& p) -> std::pair<LHdl, decltype(p.get())> {
 			auto* ptr = p.get();
-			p->_initState();
+			static_cast<Object*>(ptr)->initState();
 			return std::make_pair(base::acquire(std::move(p)), ptr);
 		}
 		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う
@@ -459,12 +457,15 @@ namespace rs {
 
 			private:
 				bool	_bSwState = false;
-				FPState	_state, _nextState;
+				FPState	_state = FPState(&_nullState, false),
+						_nextState;
 				//! 遅延メッセージリストの先端
 				GMessage::Packet* _delayMsg;
-
+				bool _isNullState() const {
+					return _state.get() == &_nullState;
+				}
 			protected:
-				ObjectT(): _state(FPState(&_nullState, false)) {}
+				using Base::Base;
 
 				// ステートをNewするためのヘルパー関数
 				template <class ST, class... Args>
@@ -490,8 +491,11 @@ namespace rs {
 				void setState(FPState&& st) {
 					// もし既に有効なステートがセットされていたら無視 | nullステートは常に適用
 					if(!st.get() || !_bSwState) {
+						bool bNull = _isNullState();
 						_bSwState = true;
 						_nextState.swap(st);
+						if(bNull)
+							_doSwitchState();
 					} else {
 						// ステートを2度以上セットするのはロジックが何処かおかしいと思われる
 						Assert(Warn, false, "state set twice")
@@ -522,7 +526,7 @@ namespace rs {
 					using Rt = typename std::is_same<void, decltype(std::forward<CB>(cb)())>::type;
 					return _callWithSwitchState(std::forward<CB>(cb), Rt());
 				}
-				void _doSwitchState() override {
+				void _doSwitchState() {
 					if(_bSwState) {
 						_bSwState = false;
 						ObjTypeId prevId = InvalidObjId;

@@ -30,16 +30,10 @@ namespace rs {
 	}
 	// -------------------- Object --------------------
 	Object::Object(): _bDestroy(false) {}
-	void Object::_initState() {
-		initState();
-		_doSwitchState();
-	}
-	void Object::_doSwitchState() {}
 	void Object::initState() {}
 	Priority Object::getPriority() const {
 		return 0;
 	}
-
 	bool Object::isDead() const {
 		return _bDestroy;
 	}

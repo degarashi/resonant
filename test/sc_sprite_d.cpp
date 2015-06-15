@@ -42,7 +42,9 @@ class BoundingSprite : public DWrapper<Sprite> {
 				self.refreshDrawTag();
 			}
 		};
+	protected:
 		void initState() override {
+			base_t::initState();
 			setStateNew<St_Default>();
 		}
 	public:

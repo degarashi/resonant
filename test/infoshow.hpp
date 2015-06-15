@@ -16,6 +16,7 @@ class InfoShow : public rs::DrawableObjT<InfoShow>,
 		rs::diff::Effect	_count;
 
 		struct MySt;
+	protected:
 		void initState() override;
 	public:
 		static const rs::IdValue	T_Info,

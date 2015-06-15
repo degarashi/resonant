@@ -28,7 +28,6 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 				self.draw(fx);
 			}
 		};
-	private:
 		void initState() override {
 			base_dt::template setStateNew<St_Default>();
 		}
