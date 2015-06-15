@@ -992,6 +992,8 @@ namespace rs {
 			uint8_t ar[3];
 			struct { uint8_t r,g,b; };
 		};
+		RGB() = default;
+		RGB(int r, int g, int b): ar{uint8_t(r), uint8_t(g), uint8_t(b)} {}
 	};
 	struct RGBA {
 		union {
