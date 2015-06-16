@@ -43,7 +43,7 @@ void Sc_Base::St_Default::onDisconnected(Sc_Base& self, rs::HGroup hGroup) {
 	p->remObj(self._hInfo);
 	self._hInfo = rs::HDObj();
 }
-void Sc_Base::initState() {
+Sc_Base::Sc_Base() {
 	setStateNew<St_Default>();
 }
 spn::MTRandom& Sc_Base::getRand() {

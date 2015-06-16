@@ -28,9 +28,6 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 				self.draw(fx);
 			}
 		};
-		void initState() override {
-			base_dt::template setStateNew<St_Default>();
-		}
 	public:
 		template <class... Ts>
 		DWrapper(rs::IdValue tpId, Ts&&... ts):
@@ -39,6 +36,7 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 		{
 			refreshDrawTag();
 			base_dt::_dtag.idTechPass = tpId;
+			base_dt::template setStateNew<St_Default>();
 		}
 		void refreshDrawTag() {
 			Base::exportDrawTag(base_dt::_dtag);

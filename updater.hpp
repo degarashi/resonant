@@ -85,9 +85,6 @@ namespace rs {
 	class Object {
 		private:
 			bool _bDestroy;
-		protected:
-			friend class ObjMgr;
-			virtual void initState();
 		public:
 			Object();
 			virtual ~Object() {}
@@ -142,7 +139,6 @@ namespace rs {
 		template <class P>
 		auto _callInitialize(P&& p) -> std::pair<LHdl, decltype(p.get())> {
 			auto* ptr = p.get();
-			static_cast<Object*>(ptr)->initState();
 			return std::make_pair(base::acquire(std::move(p)), ptr);
 		}
 		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う

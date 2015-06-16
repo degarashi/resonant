@@ -13,8 +13,6 @@ class ProfileShow : public rs::DrawableObjT<ProfileShow>,
 		spn::Profiler::BlockSP	_spProfile;
 
 		struct St_Default;
-	protected:
-		void initState() override;
 	public:
 		ProfileShow(rs::CCoreID cid);
 		rs::Priority getPriority() const override;

@@ -31,7 +31,6 @@ void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup hGroup) {
 void Sc_Sound::St_Default::onUpdate(Sc_Sound& self) {
 	self._base.checkSwitchScene();
 }
-void Sc_Sound::initState() {
+Sc_Sound::Sc_Sound(Sc_Base& b): _base(b) {
 	setStateNew<St_Default>();
 }
-Sc_Sound::Sc_Sound(Sc_Base& b): _base(b) {}

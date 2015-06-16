@@ -86,8 +86,6 @@ InfoShow::InfoShow() {
 			<< "Renderer: " << info.renderer() << std::endl
 			<< "DriverVersion: " << info.driverVersion() << std::endl;
 	_infotext = spn::Text::UTFConvertTo32(ss.str());
-}
-void InfoShow::initState() {
 	setStateNew<MySt>();
 }
 rs::Priority InfoShow::getPriority() const { return 0x1000; }

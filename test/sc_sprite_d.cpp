@@ -42,11 +42,6 @@ class BoundingSprite : public DWrapper<Sprite> {
 				self.refreshDrawTag();
 			}
 		};
-	protected:
-		void initState() override {
-			base_t::initState();
-			setStateNew<St_Default>();
-		}
 	public:
 		BoundingSprite(rs::IdValue tpId, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
 			base_t(tpId, hTex, 0.f),
@@ -54,6 +49,7 @@ class BoundingSprite : public DWrapper<Sprite> {
 		{
 			setOffset(pos);
 			setZRange({-1.f, 1.f});
+			setStateNew<St_Default>();
 		}
 };
 struct Sc_DSortD::St_Default : StateT<St_Default> {
@@ -99,7 +95,6 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		return rs::LCValue();
 	}
 };
-Sc_DSortD::Sc_DSortD(Sc_Base& b): _base(b) {}
-void Sc_DSortD::initState() {
+Sc_DSortD::Sc_DSortD(Sc_Base& b): _base(b) {
 	setStateNew<St_Default>();
 }

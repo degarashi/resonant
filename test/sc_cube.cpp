@@ -32,7 +32,6 @@ void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
 void Sc_Cube::St_Default::onUpdate(Sc_Cube& self) {
 	self._base.checkSwitchScene();
 }
-void Sc_Cube::initState() {
+Sc_Cube::Sc_Cube(Sc_Base& b): _base(b) {
 	setStateNew<St_Default>();
 }
-Sc_Cube::Sc_Cube(Sc_Base& b): _base(b) {}

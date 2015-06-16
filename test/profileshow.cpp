@@ -58,8 +58,7 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 };
 
 // ---------------------- ProfileShow ----------------------
-ProfileShow::ProfileShow(rs::CCoreID cid): _charId(cid) {}
-void ProfileShow::initState() {
+ProfileShow::ProfileShow(rs::CCoreID cid): _charId(cid) {
 	setStateNew<St_Default>();
 }
 rs::Priority ProfileShow::getPriority() const { return 0x2000; }

@@ -34,10 +34,8 @@ void FPSCamera::St_Default::onUpdate(FPSCamera& self) {
 		ps.setRot(spn::AQuat::RotationYPR(self._yaw, self._pitch, self._roll));
 	}
 }
-void FPSCamera::initState() {
-	setStateNew<St_Default>();
-}
 FPSCamera::FPSCamera() {
 	_bPress = false;
 	_yaw = _pitch = _roll = spn::DegF(0);
+	setStateNew<St_Default>();
 }

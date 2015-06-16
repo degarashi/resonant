@@ -112,7 +112,6 @@ struct Sc_DSort::St_Init : StateT<St_Init> {
 		self.setStateNew<St_Test>(std::ref(self), 0, true, false);
 	}
 };
-void Sc_DSort::initState() {
+Sc_DSort::Sc_DSort(Sc_Base& b): _base(b), _hlSpriteV(N_Sprite) {
 	setStateNew<St_Init>();
 }
-Sc_DSort::Sc_DSort(Sc_Base& b): _base(b), _hlSpriteV(N_Sprite) {}

@@ -6,8 +6,6 @@ class FPSCamera : public rs::ObjectT<FPSCamera> {
 		bool		_bPress;
 		spn::DegF	_yaw, _pitch, _roll;
 		struct St_Default;
-	protected:
-		void initState() override;
 	public:
 		FPSCamera();
 };

@@ -30,7 +30,6 @@ namespace rs {
 	}
 	// -------------------- Object --------------------
 	Object::Object(): _bDestroy(false) {}
-	void Object::initState() {}
 	Priority Object::getPriority() const {
 		return 0;
 	}
