@@ -420,10 +420,6 @@ namespace rs {
 					// onEnterとonExitは継承しない
 					virtual void onEnter(T& /*self*/, ObjTypeId /*prevId*/) {}
 					virtual void onExit(T& /*self*/, ObjTypeId /*nextId*/) {}
-					// コリジョン関係はまだ対応してない
-					virtual void onHitEnter(T& self, HObj hObj) {}
-					virtual void onHit(T& self, HObj hObj, int n) {}
-					virtual void onHitExit(T& self, WObj whObj, int n) {}
 					virtual void onConnected(T& self, HGroup hGroup) { self.Base::onConnected(hGroup); }
 					virtual void onDisconnected(T& self, HGroup hGroup) { self.Base::onDisconnected(hGroup); }
 					// --------- Scene用メソッド ---------
