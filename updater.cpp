@@ -33,6 +33,7 @@ namespace rs {
 	Priority Object::getPriority() const {
 		return 0;
 	}
+	void Object::setTerminationState() {}
 	bool Object::isDead() const {
 		return _bDestroy;
 	}

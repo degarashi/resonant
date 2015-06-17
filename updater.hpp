@@ -93,6 +93,7 @@ namespace rs {
 			bool isDead() const;
 			bool onUpdateUpd();
 			virtual bool isNode() const = 0;
+			virtual void setTerminationState();
 			//! オブジェクトの識別IDを取得
 			virtual ObjTypeId getTypeId() const = 0;
 
@@ -473,8 +474,8 @@ namespace rs {
 				void setStateUse(ST* st) {
 					setState(FPState(st, false));
 				}
-				void setNullState() {
-					setState(T::_GetNullState());
+				void setTerminationState() override {
+					setStateUse(&_nullState);
 				}
 				bool isNode() const override {
 					return false;
@@ -551,8 +552,8 @@ namespace rs {
 				}
 				void destroy() override {
 					Base::destroy();
-					// nullステートに移行
-					setNullState();
+					// 終端ステートに移行
+					setTerminationState();
 				}
 				//! 毎フレームの描画 (Scene用)
 				void onDraw(GLEffect& e) const override {
