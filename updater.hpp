@@ -201,14 +201,17 @@ namespace rs {
 			using GroupVH = std::vector<HGroup>;
 
 			Priority	_priority;
-			ObjV		_objV;
-			ObjVH		_remObj;	//!< 削除予定のオブジェクト
+			ObjV		_objV,
+						_addObj;	//!< (onUpdateが終った後に)追加予定のオブジェクト
+			ObjVH		_remObj;	//!< (onUpdateが終った後に)削除予定のオブジェクト
 			GroupVH		_groupV;	//!< Idでグループ検索する時用
 			int			_nParent;
 
-			//! オブジェクト又はグループを実際に削除
+			//! Add,RemoveListが空なら自身をグローバルリストに登録
+			void _registerUGVec();
+			//! オブジェクト又はグループを実際に追加、削除
 			/*! onUpdate内で暗黙的に呼ばれる */
-			void _doRemove();
+			void _doAddRemove();
 		public:
 			static void SetAsUpdateRoot();
 			UpdGroup(Priority p=0);

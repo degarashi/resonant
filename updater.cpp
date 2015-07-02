@@ -105,28 +105,24 @@ namespace rs {
 		return cs_updgroupname;
 	}
 	void UpdGroup::addObj(HObj hObj) {
-		auto* p = hObj->get();
-		if(p->isNode()) {
-			// Groupリスト自体はソートしない
-			_groupV.emplace_back(rs_mgr_obj.CastToGroup(hObj));
+		_registerUGVec();
+		// すぐ追加するとリスト巡回が不具合起こすので後で一括処理
+		if(std::count_if(_addObj.begin(), _addObj.end(),
+					[hObj](const HLObj& hl){ return hl.get() == hObj; }) == 0)
+		{
+			_addObj.emplace_back(hObj);
 		}
-
-		// 末尾に追加してソートをかける
-		_objV.emplace_back(hObj);
-		// 優先度値は変化しないので多分、単純挿入ソートが最適
-		spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
-				return hl0->get()->getPriority() < hl1->get()->getPriority(); });
-
-		auto h = handleFromThis();
-		p->onConnected(rs_mgr_obj.CastToGroup(h.get()));
+	}
+	void UpdGroup::_registerUGVec() {
+		if(_addObj.empty() && _remObj.empty())
+			s_ug.push_back(this);
 	}
 	int UpdGroup::remObj(const ObjVH& ar) {
-		if(_remObj.empty())
-			s_ug.push_back(this);
+		_registerUGVec();
 		int count = 0;
 		for(auto& h : ar) {
 			// すぐ削除するとリスト巡回が不具合起こすので後で一括削除
-			// 後でonUpdateの時に削除する
+			// onUpdateの最後で削除する
 			if(std::find(_remObj.begin(), _remObj.end(), h) == _remObj.end()) {
 				_remObj.emplace_back(h);
 				++count;
@@ -144,12 +140,14 @@ namespace rs {
 		return _objV;
 	}
 	void UpdGroup::clear() {
+		_addObj.clear();
 		_remObj.clear();
+		// Remove時の処理をする為、一旦RemoveListに追加
 		std::copy(_objV.begin(), _objV.end(), std::back_inserter(_remObj));
 		std::copy(_groupV.begin(), _groupV.end(), std::back_inserter(_remObj));
-		_doRemove();
+		_doAddRemove();
 
-		AssertP(Trap, _objV.empty() && _groupV.empty() && _remObj.empty())
+		AssertP(Trap, _objV.empty() && _groupV.empty() && _addObj.empty() && _remObj.empty())
 	}
 	void UpdGroup::onDraw(GLEffect& e) const {
 		// DrawUpdate中のオブジェクト追加削除はナシ
@@ -177,13 +175,14 @@ namespace rs {
 				}
 			}
 		}
-		// ルートノードで一括してオブジェクトの削除
+		// ルートノードで一括してオブジェクトの追加、削除
 		if(tls_bUpdateRoot) {
 			while(!s_ug.empty()) {
+				// 削除中、他に追加削除されるオブジェクトが出るかも知れないので一旦リストを退避
 				decltype(s_ug) tmp;
 				tmp.swap(s_ug);
 				for(auto ent : tmp)
-					ent->_doRemove();
+					ent->_doAddRemove();
 			}
 		}
 	}
@@ -228,28 +227,51 @@ namespace rs {
 		return LCValue();
 	}
 	UpdGroup::UGVec UpdGroup::s_ug;
-	void UpdGroup::_doRemove() {
+	void UpdGroup::_doAddRemove() {
 		auto hThis = handleFromThis();
-		for(auto& h : _remObj) {
-			auto* p = h->get();
-			if(p->isNode()) {
-				auto itr = std::find_if(_groupV.begin(), _groupV.end(), [&h](const HLGroup& hl){
+		for(;;) {
+			// -- add --
+			// オブジェクト追加中に更に追加オブジェクトが出るかも知れないので一旦退避
+			auto addTmp = std::move(_addObj);
+			for(auto& h : addTmp) {
+				auto* p = h->get();
+				if(p->isNode()) {
+					// Groupリスト自体はソートしない
+					_groupV.emplace_back(rs_mgr_obj.CastToGroup(h));
+				}
+
+				// 末尾に追加してソートをかける
+				_objV.emplace_back(h);
+				// 優先度値は変化しないので多分、単純挿入ソートが最適
+				spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
+						return hl0->get()->getPriority() < hl1->get()->getPriority(); });
+				p->onConnected(hThis);
+			}
+			// -- remove --
+			// オブジェクト削除中に更に削除オブジェクトが出るかも知れないので一旦退避
+			auto remTmp = std::move(_remObj);
+			for(auto& h : remTmp) {
+				auto* p = h->get();
+				if(p->isNode()) {
+					auto itr = std::find_if(_groupV.begin(), _groupV.end(), [&h](const HLGroup& hl){
+												return hl.get() == h;
+											});
+					if(itr != _groupV.end())
+						_groupV.erase(itr);
+					else
+						continue;
+				}
+				auto itr = std::find_if(_objV.begin(), _objV.end(), [&h](const HLObj& hl){
 											return hl.get() == h;
 										});
-				if(itr != _groupV.end())
-					_groupV.erase(itr);
-				else
-					continue;
+				if(itr != _objV.end()) {
+					p->onDisconnected(hThis);
+					_objV.erase(itr);
+				}
 			}
-			auto itr = std::find_if(_objV.begin(), _objV.end(), [&h](const HLObj& hl){
-										return hl.get() == h;
-									});
-			if(itr != _objV.end()) {
-				p->onDisconnected(hThis);
-				_objV.erase(itr);
-			}
+			if(_addObj.empty() && _remObj.empty())
+				break;
 		}
-		_remObj.clear();
 	}
 	// -------------------- UpdTask --------------------
 	UpdTask::UpdTask(Priority p, HGroup hGroup):
