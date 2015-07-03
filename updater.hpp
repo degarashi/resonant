@@ -138,28 +138,30 @@ namespace rs {
 			delete reinterpret_cast<T*>(p);
 		}
 		template <class P>
-		auto _callInitialize(P&& p) -> std::pair<LHdl, decltype(p.get())> {
+		auto _makeHandle(P&& p) -> std::pair<LHdl, decltype(p.get())> {
 			auto* ptr = p.get();
 			return std::make_pair(base::acquire(std::move(p)), ptr);
 		}
 		// Alignmentが8byte以上かどうかで分岐して対応した関数でメモリ確保 & 解放を行う
 		template <class T, class... Ts>
 		decltype(auto) _makeObj(std::false_type, Ts&&... ts) {
-			return _callInitialize(std::unique_ptr<T, void(*)(void*)>(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>));
+			return _makeHandle(std::unique_ptr<T, void(*)(void*)>(new T(std::forward<Ts>(ts)...), &NormalDeleter<T>));
 		}
 		template <class T, class... Ts>
 		decltype(auto) _makeObj(std::true_type, Ts&&... ts) {
-			return _callInitialize(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
+			return _makeHandle(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
 
 		public:
 			// デフォルトのリソース作成関数は無効化
 			void acquire() = delete;
 			void emplace() = delete;
-			// オブジェクトの追加にはこっちを使う
+			// アラインメントによってスマートポインタ型を分けるので
+			// UpdGroupに登録するオブジェクトの作成にはこの関数を使う
 			template <class T, class... Ts>
 			std::pair<LHdl, T*> makeObj(Ts&&... ar) {
-				return _makeObj<T>(typename spn::NType<alignof(T), 8>::great(), std::forward<Ts>(ar)...);
+				return _makeObj<T>(typename spn::NType<alignof(T), 8>::great(),
+									std::forward<Ts>(ar)...);
 			}
 			template <class T, class... Ts>
 			std::pair<HLGroup,T*> makeGroup(Ts&&... ar) {
