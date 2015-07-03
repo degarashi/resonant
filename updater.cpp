@@ -117,21 +117,12 @@ namespace rs {
 		if(_addObj.empty() && _remObj.empty())
 			s_ug.push_back(this);
 	}
-	int UpdGroup::remObj(const ObjVH& ar) {
-		_registerUGVec();
-		int count = 0;
-		for(auto& h : ar) {
-			// すぐ削除するとリスト巡回が不具合起こすので後で一括削除
-			// onUpdateの最後で削除する
-			if(std::find(_remObj.begin(), _remObj.end(), h) == _remObj.end()) {
-				_remObj.emplace_back(h);
-				++count;
-			}
-		}
-		return count;
-	}
 	void UpdGroup::remObj(HObj hObj) {
-		remObj(ObjVH{hObj});
+		_registerUGVec();
+		// すぐ削除するとリスト巡回が不具合起こすので後で一括削除
+		// onUpdateの最後で削除する
+		if(std::find(_remObj.begin(), _remObj.end(), hObj) == _remObj.end())
+			_remObj.emplace_back(hObj);
 	}
 	const UpdGroup::ObjV& UpdGroup::getList() const {
 		return _objV;

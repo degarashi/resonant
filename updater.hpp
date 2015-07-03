@@ -223,7 +223,6 @@ namespace rs {
 			//! オブジェクト又はグループを追加
 			void addObj(HObj hObj);
 			//! オブジェクト又はグループを削除
-			int remObj(const ObjVH& ar);
 			void remObj(HObj hObj);
 
 			bool isNode() const override;
