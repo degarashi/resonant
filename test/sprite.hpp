@@ -1,7 +1,7 @@
 #pragma once
 #include "spinner/pose.hpp"
 #include "../handle.hpp"
-#include "../spinner/structure/range.hpp"
+#include "spinner/structure/range.hpp"
 
 class Engine;
 namespace rs {

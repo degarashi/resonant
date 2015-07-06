@@ -2,7 +2,7 @@
 #include "scene.hpp"
 #include "dwrapper.hpp"
 #include "sprite.hpp"
-#include "../spinner/random.hpp"
+#include "spinner/random.hpp"
 
 class BoundingSprite : public DWrapper<Sprite> {
 	private:

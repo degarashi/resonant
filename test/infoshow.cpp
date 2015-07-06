@@ -33,7 +33,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
 	ths._textHud.setText(self._infotext+ spn::Text::UTFConvertTo32(ss.str()).c_str());
 	self._textHud.draw(e);
 }
-#include "../spinner/structure/profiler.hpp"
+#include "spinner/structure/profiler.hpp"
 #include <thread>
 void InfoShow::MySt::onUpdate(InfoShow& self) {
 	auto lk = sharedbase.lock();

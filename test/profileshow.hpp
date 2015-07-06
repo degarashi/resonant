@@ -2,7 +2,7 @@
 #include "../handle.hpp"
 #include "../updater.hpp"
 #include "../font.hpp"
-#include "../spinner/structure/profiler.hpp"
+#include "spinner/structure/profiler.hpp"
 #include "../util/textdraw.hpp"
 
 class ProfileShow : public rs::DrawableObjT<ProfileShow>,

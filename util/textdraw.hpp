@@ -1,8 +1,8 @@
 #pragma once
 #include "../font.hpp"
 #include "../glx_id.hpp"
-#include "../spinner/optional.hpp"
-#include "../spinner/pose.hpp"
+#include "spinner/optional.hpp"
+#include "spinner/pose.hpp"
 
 namespace rs {
 	struct DrawTag;

@@ -3,7 +3,7 @@
 #include "dwrapper.hpp"
 #include "sprite.hpp"
 #include "../input.hpp"
-#include "../spinner/random.hpp"
+#include "spinner/random.hpp"
 
 const int N_Sprite = 5;
 namespace {

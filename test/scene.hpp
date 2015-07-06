@@ -1,6 +1,6 @@
 #pragma once
 #include "../scene.hpp"
-#include "../spinner/random.hpp"
+#include "spinner/random.hpp"
 
 extern const int N_Sprite;
 //! ベースシーンクラス

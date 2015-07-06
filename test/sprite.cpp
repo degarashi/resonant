@@ -1,7 +1,7 @@
 #include "test.hpp"
 #include "sprite.hpp"
 #include "engine.hpp"
-#include "../spinner/structure/profiler.hpp"
+#include "spinner/structure/profiler.hpp"
 
 const rs::IdValue Sprite::T_Sprite = GlxId::GenTechId("TheSprite", "P0");
 // ----------------------- Sprite -----------------------
