@@ -3,13 +3,13 @@
 #include "../updater.hpp"
 #include "../font.hpp"
 #include "../spinner/structure/profiler.hpp"
+#include "../util/textdraw.hpp"
 
 class ProfileShow : public rs::DrawableObjT<ProfileShow>,
 					public spn::EnableFromThis<rs::HDObj>
 {
 	private:
-		rs::CCoreID				_charId;
-		mutable rs::HLText		_hlText;
+		rs::util::TextHUD		_textHud;
 		spn::Profiler::BlockSP	_spProfile;
 
 		struct St_Default;

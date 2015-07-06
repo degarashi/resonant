@@ -8,7 +8,6 @@
 // ---------------------- ProfileShow::St_Default ----------------------
 struct ProfileShow::St_Default : StateT<St_Default> {
 	void onConnected(ProfileShow& self, rs::HGroup hGroup) override {
-		self._dtag.zOffset = 0.f;
 		auto d = mgr_scene.getSceneBase().getDraw();
 		d->get()->addObj(self.handleFromThis());
 	}
@@ -18,19 +17,6 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 	}
 	void onDraw(const ProfileShow& self, rs::GLEffect& e) const override {
 		if(self._spProfile) {
-			auto& fx = static_cast<Engine&>(e);
-			fx.setTechPassId(InfoShow::T_Info);
-			auto lkb = sharedbase.lock();
-			auto tsz = lkb->screenSize;
-			auto fn = [tsz](int x, int y, float r) {
-				float rx = spn::Rcp22Bit(tsz.width/2),
-					  ry = spn::Rcp22Bit(tsz.height/2);
-				return spn::Mat33(rx*r,		0,			0,
-								0,			ry*r, 		0,
-								-1.f+x*rx,	1.f-y*ry,	1);
-			};
-			fx.setUniform(InfoShow::U_Text, fn(100,320,1), true);
-
 			std::stringstream ss;
 			ss.precision(2);
 			ss << std::setfill('0') << std::setw(5);
@@ -47,8 +33,8 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 				ss << s << std::endl;
 				return spn::Iterate::StepIn;
 			});
-			self._hlText = mgr_text.createText(self._charId, ss.str());
-			self._hlText->draw(&fx);
+			const_cast<ProfileShow&>(self)._textHud.setText(ss.str());
+			self._textHud.draw(e);
 		}
 	}
 	void onUpdate(ProfileShow& self) override {
@@ -58,7 +44,12 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 };
 
 // ---------------------- ProfileShow ----------------------
-ProfileShow::ProfileShow(rs::CCoreID cid): _charId(cid) {
+ProfileShow::ProfileShow(rs::CCoreID cid):
+	_textHud(InfoShow::T_Info)
+{
+	_textHud.setCCoreId(cid);
+	_textHud.setScreenOffset({0,0});
+	_textHud.setDepth(0.f);
 	setStateNew<St_Default>();
 }
 rs::Priority ProfileShow::getPriority() const { return 0x2000; }

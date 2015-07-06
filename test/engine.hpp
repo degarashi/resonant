@@ -27,6 +27,8 @@ class Engine : public rs::SystemUniform,
 		using rs::GLEffect::GLEffect;
 		rs::SystemUniform2D& ref2d();
 		rs::SystemUniform3D& ref3d();
+		operator rs::SystemUniform2D& ();
+		operator rs::SystemUniform3D& ();
 		RFLAG_SETMETHOD_S(SEQ_UNIF)
 		RFLAG_REFMETHOD_S(SEQ_UNIF)
 		RFLAG_GETMETHOD_S(SEQ_UNIF)

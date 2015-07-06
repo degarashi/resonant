@@ -29,6 +29,12 @@ rs::SystemUniform2D& Engine::ref2d() {
 rs::SystemUniform3D& Engine::ref3d() {
 	return _unif3d;
 }
+Engine::operator rs::SystemUniform2D& (){
+	return _unif2d;
+}
+Engine::operator rs::SystemUniform3D& (){
+	return _unif3d;
+}
 void Engine::draw(GLenum mode, GLint first, GLsizei count) {
 	_prepareUniforms();
 	GLEffect::draw(mode, first, count);

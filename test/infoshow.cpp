@@ -5,8 +5,8 @@
 #include "../differential.hpp"
 #include "engine.hpp"
 
-const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("TheTech", "P1"),
-				InfoShow::U_Text = GlxId::GenUnifId("mText");
+const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("TheTech", "P2");
+// ---------------------- InfoShow::MySt ----------------------
 struct InfoShow::MySt : StateT<MySt> {
 	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
@@ -14,22 +14,8 @@ struct InfoShow::MySt : StateT<MySt> {
 	void onDraw(const InfoShow& self, rs::GLEffect& e) const override;
 	void onUpdate(InfoShow& self) override;
 };
-
-// ---------------------- InfoShow::MySt ----------------------
 void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
-	auto& fx = static_cast<Engine&>(e);
-	fx.setTechPassId(T_Info);
 	auto lkb = sharedbase.lock();
-	auto tsz = lkb->screenSize;
-	auto fn = [tsz](int x, int y, float r) {
-		float rx = spn::Rcp22Bit(tsz.width/2),
-			  ry = spn::Rcp22Bit(tsz.height/2);
-		return spn::Mat33(rx*r,		0,			0,
-						0,			ry*r, 		0,
-						-1.f+x*rx,	1.f-y*ry,	1);
-	};
-	fx.setUniform(U_Text, fn(0,0,1), true);
-
 	// FPSの表示
 	int fps = lkb->fps.getFPS();
 	std::stringstream ss;
@@ -43,8 +29,9 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
 	ss << "DrawIndexed: " << self._count.drawIndexed << std::endl;
 	ss << "DrawNoIndexed: " << self._count.drawNoIndexed << std::endl;
 
-	self._hlText = mgr_text.createText(self._charId, self._infotext + spn::Text::UTFConvertTo32(ss.str()).c_str());
-	self._hlText.cref().draw(&fx);
+	auto& ths = const_cast<InfoShow&>(self);
+	ths._textHud.setText(self._infotext+ spn::Text::UTFConvertTo32(ss.str()).c_str());
+	self._textHud.draw(e);
 }
 #include "../spinner/structure/profiler.hpp"
 #include <thread>
@@ -52,11 +39,9 @@ void InfoShow::MySt::onUpdate(InfoShow& self) {
 	auto lk = sharedbase.lock();
 	self._count = lk->diffCount;
 
-	if(self._hlText)
-		self._hlText.cref().exportDrawTag(self._dtag);
+	self._textHud.exportDrawTag(self._dtag);
 }
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
-	self._dtag.zOffset = 0.f;
 	auto lh = self.handleFromThis();
 	auto d = mgr_scene.getSceneBase().getDraw();
 	d->get()->addObj(lh);
@@ -69,13 +54,14 @@ void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
 rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) {
 	return rs::LCValue();
 }
-
 // ---------------------- InfoShow ----------------------
-InfoShow::InfoShow() {
-	_dtag.zOffset = 0;
-	_dtag.idTechPass = T_Info;
+InfoShow::InfoShow():
+	_textHud(T_Info)
+{
 	//  フォント読み込み
-	_charId = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
+	rs::CCoreID cid = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 20, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel));
+	_textHud.setCCoreId(cid);
+	_textHud.setDepth(0.f);
 
 	rs::GPUInfo info;
 	info.onDeviceReset();

@@ -4,21 +4,20 @@
 #include "../differential.hpp"
 #include "../updater.hpp"
 #include "../font.hpp"
+#include "../util/textdraw.hpp"
 
 extern const rs::GMessageId MSG_Visible;
 class InfoShow : public rs::DrawableObjT<InfoShow>,
 				public spn::EnableFromThis<rs::HDObj>
 {
 	private:
+		rs::util::TextHUD	_textHud;
 		std::u32string		_infotext;
-		rs::CCoreID			_charId;
-		mutable rs::HLText	_hlText;
 		rs::diff::Effect	_count;
 
 		struct MySt;
 	public:
-		static const rs::IdValue	T_Info,
-									U_Text;
+		static const rs::IdValue	T_Info;
 		InfoShow();
 		rs::Priority getPriority() const override;
 };
