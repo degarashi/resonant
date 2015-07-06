@@ -2,10 +2,13 @@
 #include "../font.hpp"
 #include "../glx_id.hpp"
 #include "../spinner/optional.hpp"
+#include "../spinner/pose.hpp"
 
 namespace rs {
 	struct DrawTag;
 	class GLEffect;
+	class SystemUniform2D;
+	class SystemUniform3D;
 	namespace util {
 		enum class Align {
 			Negative,
@@ -59,6 +62,36 @@ namespace rs {
 				void setScale(const spn::Vec2& s);
 				void setDepth(float d);
 				void draw(GLEffect& e) const;
+		};
+		// 1行の縦をY=1としたサイズに内部変換
+		// H,V {Negative, Positive, Middle}
+		//! テキスト描画クラス (for 2D)
+		class Text2D : public spn::Pose2D, public Text {
+			private:
+				float		_lineHeight,
+							_depth;
+			public:
+				Text2D(IdValue idTech, float lh);
+				void setLineHeight(float lh);
+				void setDepth(float d);
+
+				template <class T>
+				void draw(T& t) const { draw(t, t, false); }
+				void draw(GLEffect& e, SystemUniform2D& su2d, bool bRefresh) const;
+		};
+		//! テキスト描画クラス (for 3D sprite)
+		class Text3D : public spn::Pose3D, public Text {
+			private:
+				float	_lineHeight;
+				bool	_bBillboard;		//!< trueなら描画時にビルボード変換
+			public:
+				Text3D(IdValue idTech, float lh, bool bBillboard);
+				void setLineHeight(float lh);
+				void setBillboard(bool b);
+
+				template <class T>
+				void draw(T& t) const { draw(t, t, false); }
+				void draw(GLEffect& e, SystemUniform3D& su3d, bool bRefresh) const;
 		};
 	}
 }
