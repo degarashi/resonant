@@ -63,9 +63,15 @@ endif()
 add_library(resonant STATIC ${LIBSRC_FILE} ${DEPSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
-file(GLOB HEADERS "./*.hpp")
-list(APPEND HEADERS glext.h)
+file(GLOB_RECURSE HEADERS "*.hpp")
+# 除外するヘッダディレクトリを指定
+set(COPYHEADERS_EXCLUDE_DIR spinner boomstick glextract test unittest)
+set(COPYHEADERS_MY_DIR "resonant")
+include(crosscompile/CopyHeaders.cmake require)
+
+file(GLOB HEADERS "glext.h")
 install(FILES ${HEADERS} DESTINATION include/resonant)
+
 file(GLOB INCLUDES "./opengl_define/*.inc")
 install(FILES ${INCLUDES} DESTINATION include/resonant/opengl_define)
 if(NOT DEFINED ARCHITECTURE)
