@@ -34,14 +34,20 @@ namespace rs {
 		CCoreID Text::getCCoreId() const {
 			return _charId;
 		}
+		void Text::_makeTextCache() const {
+			_hlText = mgr_text.createText(_charId, _text);
+		}
 		void Text::draw(GLEffect& e, const CBPreDraw& cbPre) const {
+			_makeTextCache();
+
 			e.setTechPassId(_idTech);
 			cbPre(e);
 			e.setUniform(unif::Alpha, _alpha);
-			_hlText = mgr_text.createText(_charId, _text);
 			_hlText->draw(&e);
 		}
 		void Text::exportDrawTag(DrawTag& d) const {
+			if(!_hlText)
+				_makeTextCache();
 			_hlText->exportDrawTag(d);
 			d.idTechPass = _idTech;
 		}

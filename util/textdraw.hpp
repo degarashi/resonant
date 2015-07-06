@@ -26,6 +26,7 @@ namespace rs {
 				Size_OP				_textSize;
 				float				_alpha;
 				mutable rs::HLText	_hlText;
+				void _makeTextCache() const;
 
 				static CCoreID _GetDefaultCID();
 				using CBPreDraw = std::function<void (GLEffect&)>;
