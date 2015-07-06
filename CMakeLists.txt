@@ -12,6 +12,8 @@ add_definitions(-DTOOL_PREFIX="${TOOL_PREFIX}")
 
 # 依存ファイル以外のソースファイルを収集
 file(GLOB LIBSRC_FILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
+file(GLOB LIBSRC_FILE_UTIL RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "util/*.cpp")
+list(APPEND LIBSRC_FILE ${LIBSRC_FILE_UTIL})
 list(REMOVE_ITEM LIBSRC_FILE main.cpp sound_depAL.cpp sound_depSL.cpp)
 if(SOUND_API STREQUAL "openal")
 	message(STATUS "using OpenAL...")
