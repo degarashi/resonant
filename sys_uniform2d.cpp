@@ -5,8 +5,7 @@
 namespace rs {
 	using GlxId = GLEffect::GlxId;
 	namespace unif2d {
-		const IdValue	Depth = GlxId::GenUnifId("sys_fDepth"),
-						Alpha = GlxId::GenUnifId("sys_fAlpha");
+		const IdValue	Depth = GlxId::GenUnifId("sys_fDepth");
 	}
 	namespace sysunif2d {
 		namespace matrix {

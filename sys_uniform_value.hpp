@@ -3,14 +3,14 @@
 
 namespace rs {
 	namespace unif {
+		extern const IdValue		Alpha;			// "sys_fAlpha"
 		namespace texture {
 			extern const IdValue Diffuse;		// "sys_texDiffuse"
 		}
 	}
 	namespace unif2d {
 		using namespace unif;
-		extern const IdValue	Depth,			// "sys_fDepth"
-								Alpha;			// "sys_fAlpha"
+		extern const IdValue		Depth;			// "sys_fDepth"
 	}
 	namespace unif3d {
 		using namespace unif;
