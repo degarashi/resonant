@@ -178,8 +178,8 @@ namespace rs {
 	DEF_CHECKER(IFmtCheck, GLFormat::Internal, SEQ_INTERNAL)
 	DEF_CHECKER(ISFmtCheck, GLFormat::Internal_Sized, SEQ_INTERNALSIZED)
 	DEF_CHECKER(ICFmtCheck, GLFormat::Internal_Compressed, SEQ_INTERNALCOMPRESSED)
-	DEF_CHECKER(RenderFmtCheck, GLFormat::Internal_Read, SEQ_INTERNALRENDER)
-	DEF_CHECKER(ReadFmtCheck, GLFormat::Internal_Render, SEQ_INTERNALREAD)
+	DEF_CHECKER(RenderFmtCheck, GLFormat::Internal_Render, SEQ_INTERNALRENDER)
+	DEF_CHECKER(ReadFmtCheck, GLFormat::Internal_Read, SEQ_INTERNALREAD)
 	DEF_CHECKER(TypeFmtCheck, GLFormat::Type, SEQ_TYPE)
 
 	#undef DEF_CHECKER
