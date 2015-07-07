@@ -761,21 +761,23 @@ namespace rs {
 			void use_begin() const;
 			void use_end() const;
 
-			enum AttID {
-				COLOR0,
-#ifndef USE_OPENGLES2
-				COLOR1,
-				COLOR2,
-				COLOR3,
-#endif
-				DEPTH,
-				STENCIL,
-				NUM_ATTACHMENT,
-				DEPTH_STENCIL = NUM_ATTACHMENT
+			struct Att {
+				enum Id {
+					COLOR0,
+					#ifndef USE_OPENGLES2
+						COLOR1,
+						COLOR2,
+						COLOR3,
+					#endif
+					DEPTH,
+					STENCIL,
+					NUM_ATTACHMENT,
+					DEPTH_STENCIL = 0xffff
+				};
 			};
-			static GLenum _AttIDtoGL(AttID att);
-			void _attachRenderbuffer(AttID aId, GLuint rb);
-			void _attachTexture(AttID aId, GLuint tb);
+			static GLenum _AttIDtoGL(Att::Id att);
+			void _attachRenderbuffer(Att::Id aId, GLuint rb);
+			void _attachTexture(Att::Id aId, GLuint tb);
 			// attachは受け付けるがハンドルを格納するだけであり、実際OpenGLにセットされるのはDTh
 		protected:
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
@@ -793,7 +795,7 @@ namespace rs {
 		static void _Attach(GLenum flag, GLuint rb);
 		public:
 			GLFBufferTmp(GLuint idFb);
-			void attach(AttID att, GLuint rb);
+			void attach(Att::Id att, GLuint rb);
 			void use_end() const;
 
 			RUser<GLFBufferTmp> use() const;
@@ -807,10 +809,10 @@ namespace rs {
 				bool	bTex;
 				GLuint	idRes;		// 0番は無効
 				Res		handle;
-			} _ent[NUM_ATTACHMENT];
+			} _ent[Att::NUM_ATTACHMENT];
 
 			public:
-				FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[AttID::NUM_ATTACHMENT]);
+				FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]);
 
 				void exec() override;
 		};
@@ -819,18 +821,18 @@ namespace rs {
 	//! OpenGL: FrameBufferObjectインタフェース
 	class GLFBuffer : public GLFBufferCore, public IGLResource {
 		// GLuintは内部処理用 = RenderbufferのID
-		Res	_attachment[AttID::NUM_ATTACHMENT];
+		Res	_attachment[Att::NUM_ATTACHMENT];
 
 		public:
 			GLFBuffer();
 			~GLFBuffer();
-			void attach(AttID att, HRb hRb);
-			void attach(AttID att, HTex hTex);
-			void detach(AttID att);
+			void attach(Att::Id att, HRb hRb);
+			void attach(Att::Id att, HTex hTex);
+			void detach(Att::Id att);
 
 			void onDeviceReset() override;
 			void onDeviceLost() override;
 			draw::SPFb_Token getDrawToken() const;
-			const Res& getAttachment(AttID att) const;
+			const Res& getAttachment(Att::Id att) const;
 	};
 }

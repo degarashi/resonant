@@ -36,7 +36,7 @@ namespace rs {
 #ifndef USE_OPENGLES2
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto fbi = fb.use();
-			fb.attach(GLFBufferTmp::COLOR0, rb._idRbo);
+			fb.attach(GLFBufferTmp::Att::Id::COLOR0, rb._idRbo);
 			GLFormat::OPInfo op = GLFormat::QueryInfo(rb._fmt.get());
 			int texSize;
 			if(op) {
@@ -83,7 +83,7 @@ namespace rs {
 			const spn::Vec4& c = boost::get<spn::Vec4>(rb._restoreInfo);
 			GL.glClearColor(c.x, c.y, c.z, c.w);
 			auto fbi = fb.use();
-			fb.attach(GLFBuffer::COLOR0, rb._idRbo);
+			fb.attach(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
 			GL.glClear(GL_COLOR_BUFFER_BIT);
 		},
 // OpenGL ES2ではglDrawPixelsが使えないので、ひとまず無効化
@@ -91,7 +91,7 @@ namespace rs {
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto& buff = boost::get<spn::ByteBuff>(rb._restoreInfo);
 			auto fbi = fb.use();
-			fb.attach(GLFBuffer::COLOR0, rb._idRbo);
+			fb.attach(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
 			GL.glDrawPixels(0,0, rb._fmt.get(), rb._buffFmt, &buff[0]);
 			rb._restoreInfo = boost::none;
 		}
@@ -126,12 +126,12 @@ namespace rs {
 		return RUser<GLFBufferTmp>(*this);
 	}
 	void GLFBufferTmp::use_end() const {
-		for(int i=0 ; i<NUM_ATTACHMENT ; i++)
-			const_cast<GLFBufferTmp*>(this)->_attachRenderbuffer(static_cast<AttID>(i), 0);
+		for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++)
+			const_cast<GLFBufferTmp*>(this)->_attachRenderbuffer(Att::Id(i), 0);
 	}
-	void GLFBufferTmp::attach(AttID att, GLuint rb) {
+	void GLFBufferTmp::attach(Att::Id att, GLuint rb) {
 #ifdef USE_OPENGLES2
-		AssertP(Trap, att != AttID::DEPTH_STENCIL)
+		AssertP(Trap, att != Att::DEPTH_STENCIL)
 #endif
 		_attachRenderbuffer(att, rb);
 	}
@@ -141,10 +141,10 @@ namespace rs {
 	RUser<GLFBufferCore> GLFBufferCore::use() const {
 		return RUser<GLFBufferCore>(*this);
 	}
-	void GLFBufferCore::_attachRenderbuffer(AttID aId, GLuint rb) {
+	void GLFBufferCore::_attachRenderbuffer(Att::Id aId, GLuint rb) {
 		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_RENDERBUFFER, rb);
 	}
-	void GLFBufferCore::_attachTexture(AttID aId, GLuint tb) {
+	void GLFBufferCore::_attachTexture(Att::Id aId, GLuint tb) {
 		GL.glFramebufferTexture2D(GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_TEXTURE_2D, tb, 0);
 	}
 	void GLFBufferCore::use_begin() const {
@@ -173,18 +173,18 @@ namespace rs {
 			}
 			void operator()(boost::none_t) const {}
 		};
-		FrameBuff::FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[AttID::NUM_ATTACHMENT]):
+		FrameBuff::FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]):
 			GLFBufferCore(idFb), Token(hRes)
 		{
-			for(int i=0 ; i<AttID::NUM_ATTACHMENT ; i++)
+			for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++)
 				boost::apply_visitor(Visitor(_ent[i]), att[i]);
 		}
 		void FrameBuff::exec() {
 			use_begin();
-			for(int i=0 ; i<NUM_ATTACHMENT ; i++) {
+			for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++) {
 				auto& p = _ent[i];
 				if(p.idRes != 0) {
-					auto flag = _AttIDtoGL(static_cast<AttID>(i));
+					auto flag = _AttIDtoGL(Att::Id(i));
 					if(p.bTex)
 						GL.glFramebufferTexture2D(GL_FRAMEBUFFER, flag, GL_TEXTURE_2D, p.idRes, 0);
 					else
@@ -229,21 +229,24 @@ namespace rs {
 			}
 		}
 	}
-	GLenum GLFBufferCore::_AttIDtoGL(AttID att) {
-		if(att < AttID::DEPTH)
-			return static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + static_cast<int>(att));
-		if(att == AttID::DEPTH)
-			return GL_DEPTH_ATTACHMENT;
-		return GL_STENCIL_ATTACHMENT;
+	GLenum GLFBufferCore::_AttIDtoGL(Att::Id att) {
+		const GLenum c_num[Att::NUM_ATTACHMENT] = {
+			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT1,
+			GL_COLOR_ATTACHMENT2,
+			GL_COLOR_ATTACHMENT3,
+			GL_DEPTH_ATTACHMENT,
+			GL_STENCIL_ATTACHMENT
+		};
+		return c_num[int(att)];
 	}
-
 	void GLFBuffer::onDeviceLost() {
 		if(_idFbo != 0) {
 			{
 				auto u = use();
-				for(int i=0 ; i<NUM_ATTACHMENT ; i++) {
+				for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++) {
 					// AttachmentのDetach
-					GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(static_cast<AttID>(i)), GL_RENDERBUFFER, 0);
+					GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(Att::Id(i)), GL_RENDERBUFFER, 0);
 				}
 			}
 			GL.glDeleteFramebuffers(1, &_idFbo);
@@ -252,19 +255,29 @@ namespace rs {
 			// Attachmentの解放は各ハンドルに任せる
 		}
 	}
-	void GLFBuffer::attach(AttID att, HRb hRb) {
-		_attachment[att] = hRb;
+	void GLFBuffer::attach(Att::Id att, HRb hRb) {
+		if(att == Att::DEPTH_STENCIL) {
+			// DepthとStencilそれぞれにhRbをセットする
+			attach(Att::DEPTH, hRb);
+			attach(Att::STENCIL, hRb);
+		} else
+			_attachment[att] = HLRb(hRb);
 	}
-	void GLFBuffer::attach(AttID att, HTex hTex) {
-		_attachment[att] = hTex;
+	void GLFBuffer::attach(Att::Id att, HTex hTex) {
+		if(att == Att::DEPTH_STENCIL) {
+			// DepthとStencilそれぞれにhTexをセットする
+			attach(Att::DEPTH, hTex);
+			attach(Att::STENCIL, hTex);
+		} else
+			_attachment[att] = HLTex(hTex);
 	}
-	void GLFBuffer::detach(AttID att) {
+	void GLFBuffer::detach(Att::Id att) {
 		_attachment[att] = boost::none;
 	}
 	draw::SPFb_Token GLFBuffer::getDrawToken() const {
 		return std::make_shared<draw::FrameBuff>(handleFromThis(), _idFbo, _attachment);
 	}
-	const GLFBuffer::Res& GLFBuffer::getAttachment(AttID att) const {
+	const GLFBuffer::Res& GLFBuffer::getAttachment(Att::Id att) const {
 		return _attachment[att];
 	}
 }
