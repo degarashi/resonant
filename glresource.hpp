@@ -204,6 +204,11 @@ namespace rs {
 			GLFBufferTmp& getTmpFramebuffer() const;
 			// --- from ResMgrBase ---
 			spn::LHandle loadResource(spn::AdaptStream& ast, const spn::URI& uri) override;
+
+			// ------------ FrameBuffer ------------
+			AnotherLHandle<UPFBuffer,true> makeFBuffer();
+			// ------------ RenderBuffer ------------
+			AnotherLHandle<UPRBuffer,true> makeRBuffer(int w, int h, GLInRenderFmt fmt);
 	};
 
 	using Priority = uint32_t;

@@ -191,4 +191,14 @@ namespace rs {
 		}
 		return std::move(ret);
 	}
+	HLFb GLRes::makeFBuffer() {
+		LHdl lh = base_type::emplace(new GLFBuffer());
+		_cbInit(lh);
+		return Cast<UPFBuffer>(lh);
+	}
+	HLRb GLRes::makeRBuffer(int w, int h, GLInRenderFmt fmt) {
+		LHdl lh = base_type::emplace(new GLRBuffer(w, h, fmt));
+		_cbInit(lh);
+		return Cast<UPRBuffer>(lh);
+	}
 }
