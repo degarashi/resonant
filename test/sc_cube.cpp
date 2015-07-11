@@ -15,15 +15,15 @@ rs::LCValue Sc_Cube::St_Default::recvMsg(Sc_Cube& self, rs::GMessageId id, const
 }
 void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
 	// 前シーンの描画 & アップデートグループを流用
-	{	 auto hDGroup = mgr_scene.getSceneBase(1).getDraw();
-		mgr_scene.getSceneBase(0).getDraw()->get()->addObj(hDGroup); }
+	{	auto hDGroup = mgr_scene.getSceneBase(1).getDraw();
+		mgr_scene.getDrawGroup().addObj(hDGroup); }
 	{	auto hG = mgr_scene.getSceneBase(1).getUpdate();
-		mgr_scene.getSceneBase(0).getUpdate()->get()->addObj(hG); }
+		mgr_scene.getUpdGroup().addObj(hG); }
 	// ---- make cube ----
 	rs::HLTex hlTex = mgr_gl.loadTexture("brick.jpg");
 	{
 		using CubeObj = DWrapper<Cube>;
-		auto hlp = rs_mgr_obj.makeDrawable<CubeObj>(Cube::T_Cube, 1.f, hlTex);
+		auto hlp = rs_mgr_obj.makeDrawable<CubeObj>(Cube::T_Cube, rs::HDGroup(), 1.f, hlTex);
 		hlp.second->setOffset(spn::Vec3(0,0,2));
 		self.getBase().getUpdate()->get()->addObj(hlp.first.get());
 		self._hCube = hlp.first;

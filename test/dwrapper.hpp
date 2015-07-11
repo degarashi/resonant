@@ -1,3 +1,4 @@
+#pragma once
 #include "../updater.hpp"
 #include "../gameloophelper.hpp"
 #include "engine.hpp"
@@ -10,29 +11,32 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 	private:
 		using base_dt = rs::DrawableObjT<DWrapper<Base>>;
 		rs::IdValue		_tpId;
+		rs::HDGroup		_hDGroup;
+		rs::HDGroup _getDGroup() const {
+			return _hDGroup ? _hDGroup : mgr_scene.getSceneBase().getDraw();
+		}
 	protected:
 		struct St_Default : base_dt::template StateT<St_Default> {
 			void onConnected(DWrapper& self, rs::HGroup hGroup) override {
-				auto d = mgr_scene.getSceneBase().getDraw();
 				auto hl = self.handleFromThis();
-				d->get()->addObj(hl);
+				self._getDGroup()->get()->addObj(hl);
 			}
 			void onDisconnected(DWrapper& self, rs::HGroup hGroup) override {
-				auto d = mgr_scene.getSceneBase().getDraw();
 				auto hl = self.handleFromThis();
-				d->get()->remObj(hl);
+				self._getDGroup()->get()->remObj(hl);
 			}
 			void onDraw(const DWrapper& self, rs::GLEffect& e) const override {
 				auto& fx = static_cast<Engine&>(e);
 				fx.setTechPassId(self._tpId);
-				self.draw(fx);
+				self.Base::draw(fx);
 			}
 		};
 	public:
 		template <class... Ts>
-		DWrapper(rs::IdValue tpId, Ts&&... ts):
+		DWrapper(rs::IdValue tpId, rs::HDGroup hDg, Ts&&... ts):
 			Base(std::forward<Ts>(ts)...),
-			_tpId(tpId)
+			_tpId(tpId),
+			_hDGroup(hDg)
 		{
 			refreshDrawTag();
 			base_dt::_dtag.idTechPass = tpId;

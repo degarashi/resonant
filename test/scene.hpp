@@ -2,6 +2,8 @@
 #include "../scene.hpp"
 #include "spinner/random.hpp"
 
+DefineUpdGroup(BaseUPG)
+DefineDrawGroup(BaseDRG)
 extern const int N_Sprite;
 //! ベースシーンクラス
 class Sc_Base : public rs::Scene<Sc_Base> {

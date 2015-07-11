@@ -26,4 +26,3 @@ class Sprite : public spn::Pose2D {
 		void setZRange(const spn::RangeF& r);
 		void exportDrawTag(rs::DrawTag& d) const;
 };
-

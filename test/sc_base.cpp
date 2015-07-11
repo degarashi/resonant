@@ -7,6 +7,7 @@
 #include "../gameloophelper.hpp"
 #include "../font.hpp"
 
+ImplDrawGroup(BaseDRG, 0x8000)
 const rs::GMessageId MSG_StateName = rs::GMessage::RegMsgId("MSG_StateName");
 namespace {
 	constexpr int RandomId = 0x20000000;
@@ -43,7 +44,10 @@ void Sc_Base::St_Default::onDisconnected(Sc_Base& self, rs::HGroup hGroup) {
 	p->remObj(self._hInfo);
 	self._hInfo = rs::HDObj();
 }
-Sc_Base::Sc_Base() {
+Sc_Base::Sc_Base():
+	Scene(rs_mgr_obj.makeGroup<BaseUPG>().first,
+			rs_mgr_obj.makeDrawGroup<BaseDRG>().first)
+{
 	setStateNew<St_Default>();
 }
 spn::MTRandom& Sc_Base::getRand() {

@@ -101,7 +101,7 @@ struct Sc_DSort::St_Init : StateT<St_Init> {
 		auto& upd = self.getBase().getUpdate().ref();
 		for(int i=0 ; i<self._hlSpriteV.size() ; i++) {
 			rs::HLTex hlST = LoadTexture(i);
-			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, hlST, i*0.1f);
+			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, rs::HDGroup(), hlST, i*0.1f);
 			hlp.second->setScale(spn::Vec2(0.3f));
 			hlp.second->setOffset(spn::Vec2(-1.f + i*0.2f,
 									(i&1)*-0.1f));
