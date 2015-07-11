@@ -1050,20 +1050,31 @@ namespace rs {
 			~Surface();
 			void saveAsBMP(HRW hDst) const;
 			void saveAsPNG(HRW hDst) const;
-			void fillRect(const spn::Rect& rect, uint32_t color);
 			LockObj lock() const;
 			LockObj try_lock() const;
-			spn::Size getSize() const;
 			const SDL_PixelFormat& getFormat() const;
+			uint32_t getFormatEnum() const;
+			spn::Size getSize() const;
 			int width() const;
 			int height() const;
+			//! 同サイズのサーフェスを作成
+			SPSurface makeBlank() const;
+			SPSurface duplicate() const;
+			SPSurface flipHorizontal() const;
+			SPSurface flipVertical() const;
+			//! ピクセルフォーマット変換
 			SPSurface convert(uint32_t fmt) const;
 			SPSurface convert(const SDL_PixelFormat& fmt) const;
+			//! ピクセルデータがデータ配列先頭から隙間なく詰められているか
 			bool isContinuous() const;
+			//! Continuousな状態でピクセルデータを抽出
 			spn::ByteBuff extractAsContinuous(uint32_t dstFmt=0) const;
+			//! ビットブロック転送
 			void blit(const SPSurface& sfc, const spn::Rect& srcRect, int dstX, int dstY) const;
+			//! スケーリング有りのビットブロック転送
 			void blitScaled(const SPSurface& sfc, const spn::Rect& srcRect, const spn::Rect& dstRect) const;
-			uint32_t getFormatEnum() const;
+			//! 単色での矩形塗りつぶし
+			void fillRect(const spn::Rect& rect, uint32_t color);
 			SDL_Surface* getSurface();
 			SPSurface resize(const spn::Size& s) const;
 			void setEnableColorKey(uint32_t key);
