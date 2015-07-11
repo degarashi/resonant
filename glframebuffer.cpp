@@ -142,15 +142,13 @@ namespace rs {
 		return RUser<GLFBufferCore>(*this);
 	}
 	void GLFBufferCore::_attachRenderbuffer(Att::Id aId, GLuint rb) {
-		GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_RENDERBUFFER, rb);
+		GLEC(Trap, glFramebufferRenderbuffer, GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_RENDERBUFFER, rb);
 	}
 	void GLFBufferCore::_attachTexture(Att::Id aId, GLuint tb) {
 		GL.glFramebufferTexture2D(GL_FRAMEBUFFER, _AttIDtoGL(aId), GL_TEXTURE_2D, tb, 0);
 	}
 	void GLFBufferCore::use_begin() const {
 		GL.glBindFramebuffer(GL_FRAMEBUFFER, _idFbo);
-		GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		Assert(Trap, e != GL_FRAMEBUFFER_COMPLETE);
 	}
 	void GLFBufferCore::use_end() const {
 		GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -171,8 +169,16 @@ namespace rs {
 				_dst.bTex = false;
 				_dst.idRes = hlRb.cref()->getBufferID();
 			}
-			void operator()(boost::none_t) const {}
+			void operator()(boost::none_t) const {
+				_dst.idRes = 0;
+			}
 		};
+		FrameBuff::FrameBuff(GLuint idFb):
+			GLFBufferCore(idFb), Token(HRes())
+		{
+			for(auto& p : _ent)
+				p.idRes = 0;
+		}
 		FrameBuff::FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]):
 			GLFBufferCore(idFb), Token(hRes)
 		{
@@ -186,11 +192,14 @@ namespace rs {
 				if(p.idRes != 0) {
 					auto flag = _AttIDtoGL(Att::Id(i));
 					if(p.bTex)
-						GL.glFramebufferTexture2D(GL_FRAMEBUFFER, flag, GL_TEXTURE_2D, p.idRes, 0);
+						GLEC(Trap, glFramebufferTexture2D, GL_FRAMEBUFFER, flag, GL_TEXTURE_2D, p.idRes, 0);
 					else
-						GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, flag, GL_RENDERBUFFER, p.idRes);
+						GLEC(Trap, glFramebufferRenderbuffer, GL_FRAMEBUFFER, flag, GL_RENDERBUFFER, p.idRes);
 				}
 			}
+			// この時点で有効なフレームバッファになって無ければエラー
+			GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			Assert(Trap, e == GL_FRAMEBUFFER_COMPLETE)
 		}
 	}
 	// ------------------------- GLFBuffer -------------------------
@@ -246,7 +255,7 @@ namespace rs {
 				auto u = use();
 				for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++) {
 					// AttachmentのDetach
-					GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, _AttIDtoGL(Att::Id(i)), GL_RENDERBUFFER, 0);
+					GLEC(Trap, glFramebufferRenderbuffer, GL_FRAMEBUFFER, _AttIDtoGL(Att::Id(i)), GL_RENDERBUFFER, 0);
 				}
 			}
 			GL.glDeleteFramebuffers(1, &_idFbo);

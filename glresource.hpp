@@ -817,6 +817,9 @@ namespace rs {
 			} _ent[Att::NUM_ATTACHMENT];
 
 			public:
+				// from GLFBufferTmp
+				FrameBuff(GLuint idFb);
+				// from GLFBuffer
 				FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]);
 
 				void exec() override;
