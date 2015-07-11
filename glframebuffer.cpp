@@ -135,6 +135,9 @@ namespace rs {
 #endif
 		_attachRenderbuffer(att, rb);
 	}
+	draw::SPFb_Token GLFBufferTmp::getDrawToken() const {
+		return std::make_shared<draw::FrameBuff>(_idFbo);
+	}
 
 	// ------------------------- GLFBufferCore -------------------------
 	GLFBufferCore::GLFBufferCore(GLuint id): _idFbo(id) {}

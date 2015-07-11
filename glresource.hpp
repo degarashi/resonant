@@ -795,16 +795,6 @@ namespace rs {
 
 			RUser<GLFBufferCore> use() const;
 	};
-	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
-	class GLFBufferTmp : public GLFBufferCore {
-		static void _Attach(GLenum flag, GLuint rb);
-		public:
-			GLFBufferTmp(GLuint idFb);
-			void attach(Att::Id att, GLuint rb);
-			void use_end() const;
-
-			RUser<GLFBufferTmp> use() const;
-	};
 
 	namespace draw {
 		// 毎回GLでAttachする
@@ -826,6 +816,17 @@ namespace rs {
 		};
 		using SPFb_Token = std::shared_ptr<FrameBuff>;
 	}
+	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
+	class GLFBufferTmp : public GLFBufferCore {
+		static void _Attach(GLenum flag, GLuint rb);
+		public:
+			GLFBufferTmp(GLuint idFb);
+			void attach(Att::Id att, GLuint rb);
+			void use_end() const;
+
+			draw::SPFb_Token getDrawToken() const;
+			RUser<GLFBufferTmp> use() const;
+	};
 	//! OpenGL: FrameBufferObjectインタフェース
 	class GLFBuffer : public GLFBufferCore, public IGLResource {
 		// GLuintは内部処理用 = RenderbufferのID
