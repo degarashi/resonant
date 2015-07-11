@@ -63,7 +63,6 @@ namespace rs {
 		return level >= MipmapNear;
 	}
 	void IGLTexture::save(const std::string& path) {
-		auto& desc = *GLFormat::QueryInfo(*_format);
 		auto saveFmt = GL_RGBA;
 		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(saveFmt, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
@@ -77,8 +76,10 @@ namespace rs {
 			Assert(Trap, false, "not implemented yet");
 		#endif
 		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, SDL_PIXELFORMAT_ARGB8888);
+		// OpenGLテクスチャは左下が原点なので…
+		auto sfcVf = sfc->flipVertical();
 		auto hlRW = mgr_rw.fromFile(path, RWops::Write);
-		sfc->saveAsPNG(hlRW);
+		sfcVf->saveAsPNG(hlRW);
 	}
 	void IGLTexture::setAnisotropicCoeff(float coeff) {
 		_coeff = coeff;
