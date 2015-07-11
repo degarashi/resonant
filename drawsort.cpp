@@ -37,7 +37,17 @@ namespace rs {
 	bool DSort_Z_Desc::compare(const DrawTag& d0, const DrawTag& d1) const {
 		return d0.zOffset > d1.zOffset;
 	}
-
+	// ------------------- DSort_Priority_Asc -------------------
+	bool DSort_Priority_Asc::hasInfo(const DrawTag& d) const {
+		return true;
+	}
+	bool DSort_Priority_Asc::compare(const DrawTag& d0, const DrawTag& d1) const {
+		return d0.priority < d1.priority;
+	}
+	// ------------------- DSort_Priority_Desc -------------------
+	bool DSort_Priority_Desc::compare(const DrawTag& d0, const DrawTag& d1) const {
+		return d0.priority > d1.priority;
+	}
 	// ------------------- DSort_TechPass -------------------
 	const uint32_t DSort_TechPass::cs_invalidValue(~0);
 	bool DSort_TechPass::hasInfo(const DrawTag& d) const {

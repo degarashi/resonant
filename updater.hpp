@@ -10,6 +10,7 @@
 
 namespace rs {
 	using Priority = uint32_t;
+	constexpr static Priority DefaultPriority = std::numeric_limits<Priority>::max() / 2;
 	using GroupName = std::string;
 	using GroupTypeId = uint32_t;		//!< Object種別Id
 	using ObjName = std::string;
@@ -216,7 +217,7 @@ namespace rs {
 			void _doAddRemove();
 		public:
 			static void SetAsUpdateRoot();
-			UpdGroup(Priority p=0);
+			UpdGroup(Priority p=DefaultPriority);
 			~UpdGroup();
 			Priority getPriority() const override;
 
@@ -246,12 +247,20 @@ namespace rs {
 		using IdT = ObjectIdT<T, idtag::Group>;
 		public:
 			using Base::Base;
-			ObjTypeId getTypeId() const override {
-				return IdT::Id;
-			}
+			ObjTypeId getTypeId() const override { return GetTypeId(); }
+			static ObjTypeId GetTypeId() { return IdT::Id; }
 	};
-	#define DefineGroupT(name, base)	class name : public ::rs::GroupT<name, base> { \
-		using ::rs::GroupT<name, base>::GroupT; };
+	#define DefineUpdGroup(name)	class name : public ::rs::GroupT<name, ::rs::UpdGroup> { \
+		using base_t = ::rs::GroupT<name, ::rs::UpdGroup>; \
+		using base_t::base_t; };
+	#define DefineDrawGroup(name)	class name : public ::rs::GroupT<name, ::rs::DrawGroup> { \
+		using base_t = ::rs::GroupT<name, ::rs::DrawGroup>; \
+		public: \
+			template <class... Ts> \
+			name(Ts&&... ts): base_t(std::forward<Ts>(ts)...) { _dtag.priority = GetPriority(); } \
+			static ::rs::Priority GetPriority(); };
+	#define ImplDrawGroup(name, prio) \
+		::rs::Priority name::GetPriority() { return prio; }
 
 	//! UpdGroupにフレームカウンタやアイドル機能をつけたクラス
 	/*! 中身は別のUpdGroupを使用 */
@@ -311,6 +320,15 @@ namespace rs {
 	};
 	//! 描画ソート: Z距離の降順
 	struct DSort_Z_Desc : DSort_Z_Asc {
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	//! 描画ソート: ユーザー任意の優先度値 昇順
+	struct DSort_Priority_Asc : DSort {
+		bool hasInfo(const DrawTag& d) const override;
+		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
+	};
+	//! 描画ソート: ユーザー任意の優先度値 降順
+	struct DSort_Priority_Desc : DSort_Priority_Asc {
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
 	};
 	//! 描画ソート: Tech&Pass Id
@@ -379,6 +397,8 @@ namespace rs {
 	};
 	extern const DSortSP	cs_dsort_z_asc,
 							cs_dsort_z_desc,
+							cs_dsort_priority_asc,
+							cs_dsort_priority_desc,
 							cs_dsort_techpass,
 							cs_dsort_texture,
 							cs_dsort_buffer;
@@ -587,7 +607,6 @@ namespace rs {
 	template <class ST, class D>
 	const ObjectIdT<ST,typename detail::ObjectT<T,Base>::tagObjectState> detail::ObjectT<T,Base>::StateT<ST,D>::s_idt;
 
-	// Priority値をテンプレート指定
 	template <class T, class Base=Object>
 	class ObjectT : public detail::ObjectT<T, Base> {
 		using detail::ObjectT<T, Base>::ObjectT;

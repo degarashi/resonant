@@ -3,6 +3,7 @@
 #include "handle.hpp"
 
 namespace rs {
+	using Priority = uint32_t;
 	using IdValue = Wrapper<int>;
 	//! Tech:Pass の組み合わせを表す
 	using GL16Id = std::array<uint8_t, 2>;
@@ -29,6 +30,7 @@ namespace rs {
 		VBuffAr		idVBuffer;
 		HIb			idIBuffer;
 		TexAr		idTex;
+		Priority	priority;
 		float		zOffset;
 
 		DrawTag();

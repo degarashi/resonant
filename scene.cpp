@@ -1,6 +1,7 @@
 #include "scene.hpp"
 
 namespace rs {
+	ImplDrawGroup(SceneBase::Draw, 0x0000)
 	// -------------- SceneBase --------------
 	SceneBase::SceneBase(HGroup hUpd, HDGroup hDraw) {
 		_update = hUpd ? hUpd : rs_mgr_obj.makeGroup<Update>().first.get();

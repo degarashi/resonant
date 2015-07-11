@@ -11,12 +11,15 @@ namespace rs {
 	}
 	const DSortSP cs_dsort_z_asc = std::make_shared<DSort_Z_Asc>(),
 					cs_dsort_z_desc = std::make_shared<DSort_Z_Desc>(),
+					cs_dsort_priority_asc = std::make_shared<DSort_Priority_Asc>(),
+					cs_dsort_priority_desc = std::make_shared<DSort_Priority_Desc>(),
 					cs_dsort_techpass = std::make_shared<DSort_TechPass>(),
 					cs_dsort_texture = std::make_shared<DSort_Texture>(),
 					cs_dsort_buffer = std::make_shared<DSort_Buffer>();
 	// -------------------- DrawTag --------------------
 	DrawTag::DrawTag() {
 		zOffset = DSort_Z_Asc::cs_border;
+		priority = 0;
 		idTechPass.value = DSort_TechPass::cs_invalidValue;
 	}
 	DrawTag::TPId::TPId(): preId() {}

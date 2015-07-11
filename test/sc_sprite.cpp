@@ -8,7 +8,6 @@
 const int N_Sprite = 5;
 namespace {
 	using CBStateInit = std::function<rs::DSortV ()>;
-	DefineGroupT(MyDrawGroup, rs::DrawGroup)
 
 	const std::string c_name[N_Sprite] = {
 		"z_desc",

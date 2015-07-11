@@ -45,8 +45,8 @@ namespace rs {
 	constexpr static uint32_t SCENE_INTERFACE_ID = 0xf0000000;
 	class SceneBase {
 		private:
-			DefineGroupT(Update, UpdGroup)
-			DefineGroupT(Draw, DrawGroup)
+			DefineUpdGroup(Update)
+			DefineDrawGroup(Draw)
 
 			HLGroup		_update;
 			HLDGroup	_draw;
