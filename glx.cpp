@@ -270,6 +270,7 @@ namespace rs {
 		bDefaultParam = false;
 		tech = spn::none;
 		_clean_drawvalue();
+		hlFb = HFb();
 	}
 	void GLEffect::Current::_clean_drawvalue() {
 		pass = spn::none;
@@ -333,7 +334,20 @@ namespace rs {
 			}));
 //		}
 	}
+	draw::SPToken GLEffect::Current::outputFramebuffer() {
+		if(hlFb) {
+			auto& fb = *hlFb;
+			if(fb)
+				return fb->get()->getDrawToken();
+			else
+				return GLFBufferTmp(0).getDrawToken();
+			hlFb = spn::none;
+		}
+		return draw::SPToken();
+	}
 	void GLEffect::Current::_outputDrawCall(draw::VStream& vs) {
+		if(auto sp = outputFramebuffer())
+			tokenV.emplace_back(std::move(sp));
 		// set uniform value
 		if(!uniMap.empty()) {
 			// 中身shared_ptrなのでコピーする
@@ -530,6 +544,14 @@ namespace rs {
 			_func();
 		}
 
+		// -------------- Tag_Tokens --------------
+		Tag_Tokens::Tag_Tokens(TokenV&& t):
+			_token(std::move(t))
+		{}
+		void Tag_Tokens::exec() {
+			for(auto& t : _token)
+				t->exec();
+		}
 		// -------------- Tag_DrawBase --------------
 		Tag_DrawBase::Tag_DrawBase(TokenV&& t, VStream&& vs):
 			_token(std::move(t)),
@@ -605,6 +627,16 @@ namespace rs {
 		void Unif_Mat_Exec(int idx, GLint id, const void* ptr, int n, bool bT) {
 			c_iglfM[idx](id, ptr, n, bT ? GL_TRUE : GL_FALSE);
 		}
+	}
+	void GLEffect::_clearFramebuffer(const draw::SPToken& tkn) {
+		draw::TokenV tokenV;
+		if(auto sp = _current.outputFramebuffer())
+			tokenV.emplace_back(std::move(sp));
+		tokenV.emplace_back(tkn);
+		_task.pushTag(std::make_unique<draw::Tag_Tokens>(std::move(tokenV)));
+	}
+	void GLEffect::clearFramebuffer(const draw::ClearParam& param) {
+		_clearFramebuffer(std::make_shared<draw::Clear>(param));
 	}
 	namespace {
 		struct UniVisitor : boost::static_visitor<> {
@@ -773,6 +805,12 @@ namespace rs {
 		auto ip = _getTechPassId(id);
 		setTechnique(ip.first, true);
 		setPass(ip.second);
+	}
+	void GLEffect::setFramebuffer(HFb fb) {
+		_current.hlFb = fb;
+	}
+	void GLEffect::resetFramebuffer() {
+		_current.hlFb = HLFb();
 	}
 	diff::Effect GLEffect::getDifference() const {
 		return _diffCount;

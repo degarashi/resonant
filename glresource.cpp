@@ -201,4 +201,28 @@ namespace rs {
 		_cbInit(lh);
 		return Cast<UPRBuffer>(lh);
 	}
+
+	namespace draw {
+		Clear::Clear(const ClearParam& p):
+			Token(HRes()),
+			_param(p)
+		{}
+		void Clear::exec() {
+			GLenum flag = 0;
+			if(_param.color) {
+				flag |= GL_COLOR_BUFFER_BIT;
+				auto& c = *_param.color;
+				GL.glClearColor(c.x, c.y, c.z, c.w);
+			}
+			if(_param.depth) {
+				flag |= GL_DEPTH_BUFFER_BIT;
+				GL.glClearDepth(*_param.depth);
+			}
+			if(_param.stencil) {
+				flag |= GL_STENCIL_BUFFER_BIT;
+				GL.glClearStencil(*_param.stencil);
+			}
+			GL.glClear(flag);
+		}
+	}
 }

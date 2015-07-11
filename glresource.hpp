@@ -228,6 +228,18 @@ namespace rs {
 			GLint	idUnif;
 			Uniform(HRes hRes, GLint id);
 		};
+		struct ClearParam {
+			spn::Optional<spn::Vec4>	color;
+			spn::Optional<float>		depth;
+			spn::Optional<uint32_t>		stencil;
+		};
+		class Clear : public Token {
+			private:
+				ClearParam	_param;
+			public:
+				Clear(const ClearParam& p);
+				void exec() override;
+		};
 
 		void Unif_Vec_Exec(int idx, GLint id, const void* ptr, int n);
 		void Unif_Mat_Exec(int idx, GLint id, const void* ptr, int n, bool bT);

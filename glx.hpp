@@ -227,6 +227,8 @@ namespace rs {
 				void exec() override;
 		};
 		//MEMO: ソースの改変を経ている為、少し実装が回りくどいと思われる
+		//! 頂点インプットに関するOpenGLコール
+		/*! 頂点バッファ, インデックスバッファ, 頂点フォーマットが対象 */
 		class VStream {
 			private:
 				friend class RUser<VStream>;
@@ -243,6 +245,13 @@ namespace rs {
 				OPBuffer	ibuff;
 
 				RUser<VStream> use();
+		};
+		class Tag_Tokens : public ITag {
+			private:
+				TokenV		_token;
+			public:
+				Tag_Tokens(TokenV&& t);
+				void exec() override;
 		};
 		class Tag_DrawBase : public ITag {
 			private:
@@ -352,7 +361,8 @@ namespace rs {
 						void extractData(draw::VStream& dst) const;
 						bool operator != (const Index& idx) const;
 				} index, index_prev;
-
+				using HLFb_OP = spn::Optional<HLFb>;
+				HLFb_OP				hlFb;			//!< 描画対象のフレームバッファ (無効ならデフォルトターゲット)
 				//! 前回とのバッファの差異
 				/*! Vertex, Indexバッファ情報を一時的にバックアップして差異の検出に備える */
 				diff::Buffer getDifference();
@@ -372,6 +382,7 @@ namespace rs {
 				void setTech(GLint idTech, bool bDefault);
 				void setPass(GLint idPass, TechMap& tmap);
 				void _outputDrawCall(draw::VStream& vs);
+				draw::SPToken outputFramebuffer();
 				//! DrawCallに関連するAPI呼び出しTokenを出力
 				/*! Vertex,Index BufferやUniform変数など */
 				draw::UPTag outputDrawCall(GLenum mode, GLint first, GLsizei count);
@@ -401,6 +412,7 @@ namespace rs {
 				動的にリストを削除したりはサポートしない */
 			void _setConstantUniformList(const StrV* src);
 			void _setConstantTechPassList(const StrPairV* src);
+			void _clearFramebuffer(const draw::SPToken& tkn);
 		public:
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
@@ -411,6 +423,7 @@ namespace rs {
 			struct EC_Base : std::runtime_error {
 				using std::runtime_error::runtime_error;
 			};
+			// ----------------- Exceptions -----------------
 			//! 該当するTechが無い
 			struct EC_TechNotFound : EC_Base { using EC_Base::EC_Base; };
 			//! 範囲外のPass番号を指定
@@ -427,16 +440,15 @@ namespace rs {
 			struct EC_FileNotFound : EC_Base {
 				EC_FileNotFound(const std::string& fPath);
 			};
-			//! システムセマンティクス(2D)
-			//! システムセマンティクス(3D)
-			//! システムセマンティクス(Both)
 
+			// ----------------- Tech&Pass -----------------
 			//! Technique
 			OPGLint getTechId(const std::string& tech) const;
 			OPGLint getPassId(const std::string& pass) const;
 			OPGLint getPassId(const std::string& tech, const std::string& pass) const;
 			OPGLint getCurTechId() const;
 			OPGLint getCurPassId() const;
+			void setTechPassId(IdValue id);
 			//! TechID, PassIDに該当するProgramハンドルを返す
 			/*! \param[in] techId (-1 = currentTechId)
 				\param[in] passId (-1 = currentPassId)
@@ -446,15 +458,22 @@ namespace rs {
 			void setTechnique(int id, bool bReset);
 			//! Pass指定
 			void setPass(int id);
+
+			// ----------------- Framebuffer -----------------
+			void setFramebuffer(HFb fb);
+			//! アプリケーション初期化時のデフォルトフレームバッファに戻す
+			void resetFramebuffer();
+
+			// ----------------- Vertex&Index Stream -----------------
 			//! 頂点宣言
 			/*! \param[in] decl 頂点定義クラスのポインタ(定数を前提) */
 			void setVDecl(const SPVDecl& decl);
 			void setVStream(HVb vb, int n);
 			void setIStream(HIb ib);
+
+			// ----------------- Uniform Value -----------------
 			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
 			OPGLint getUniformID(const std::string& name) const;
-
-			void setTechPassId(IdValue id);
 			OPGLint getUnifId(IdValue id) const;
 			//! 定数値を使ったUniform変数設定。Uniform値が存在しなくてもエラーにならない
 			template <class T>
@@ -499,6 +518,9 @@ namespace rs {
 			void _makeUniformToken(UniMap& dstToken, GLint id, const HTex* hTex, int n, bool) const;
 			void _makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool) const;
 
+			// ----------------- Buffer Clear -----------------
+			void clearFramebuffer(const draw::ClearParam& param);
+			// ----------------- Draw call -----------------
 			//! IStreamを使用して描画
 			/*! \param[in] mode 描画モードフラグ(OpenGL)
 				\param[in] count 描画に使用される要素数
@@ -510,6 +532,7 @@ namespace rs {
 				\param[in] count 描画に使用される要素数 */
 			virtual void draw(GLenum mode, GLint first, GLsizei count);
 
+			// ----------------- Task switching -----------------
 			// ---- from MainThread ----
 			//! バッファを2つともクリア(主にスリープ時)
 			void clearTask();
