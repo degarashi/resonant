@@ -54,8 +54,19 @@ class BoundingSprite : public DWrapper<Sprite> {
 			setStateNew<St_Default>();
 		}
 };
+enum CPriority : rs::Priority {
+	p_fbsw0,
+	p_fbclear,
+	p_curScene,
+	p_blur0,
+	p_fbsw1,
+	p_blur1,
+	p_prevScene
+};
+DefineDrawGroupProxy(PrevDGroup)
+ImplDrawGroup(PrevDGroup, p_prevScene)
 DefineDrawGroup(MyDGroup)
-ImplDrawGroup(MyDGroup, BaseDRG::GetPriority() - 0x0500)
+ImplDrawGroup(MyDGroup, p_curScene)
 struct Sc_DSortD::St_Default : StateT<St_Default> {
 	rs::HLFb	_hlFb;
 	rs::HLTex	_hlTex[2];
@@ -82,16 +93,15 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		auto &dg0 = sb0.getDraw()->operator *();
 		// メイン描画グループ (ユーザー定義の優先度でソート)
 		dg0.setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
-		auto dp1 = BaseDRG::GetPriority();
 		// [FBSwitch(Cur)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<FBSwitch>(dp1-0x2000, _hlFb);
+			auto hlp = rs_mgr_obj.makeDrawable<FBSwitch>(p_fbsw0, _hlFb);
 			self.getDrawGroup().addObj(hlp.first);
 		}
 		// [FBClear]
 		{
 			rs::draw::ClearParam cp{spn::Vec4(0,0,0,1.f), 1.f, 0};
-			auto hlp = rs_mgr_obj.makeDrawable<FBClear>(dp1-0x1000, cp);
+			auto hlp = rs_mgr_obj.makeDrawable<FBClear>(p_fbclear, cp);
 			self.getDrawGroup().addObj(hlp.first);
 		}
 		// [現シーンのDG] Z値でソート(Dynamic)
@@ -99,22 +109,22 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		dg0.addObj(hDG.first.get());
 		// [Blur(前回の重ね)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<Blur>(dp1-0x400);
+			auto hlp = rs_mgr_obj.makeDrawable<Blur>(p_blur0);
 			hlp.second->setAlpha(0);
 			self.getDrawGroup().addObj(hlp.first);
 			_pBlur0 = hlp.second;
 		}
 		// [FBSwitch(Default)]
-		self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<FBSwitch>(dp1-0x300, rs::HFb()).first);
+		self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<FBSwitch>(p_fbsw1, rs::HFb()).first);
 		// [Blur(今回のベタ描画)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<Blur>(dp1-0x200);
+			auto hlp = rs_mgr_obj.makeDrawable<Blur>(p_blur1);
 			hlp.second->setAlpha(1.f);
 			self.getDrawGroup().addObj(hlp.first);
 			_pBlur1 = hlp.second;
 		}
 		// [前シーンのDG]
-		dg0.addObj(sb1.getDraw());
+		dg0.addObj(rs_mgr_obj.makeDrawGroup<PrevDGroup>(sb1.getDraw()).first.get());
 
 		// スプライト読み込み
 		// ランダムで位置とスピードを設定

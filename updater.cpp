@@ -372,4 +372,28 @@ namespace rs {
 			d.second->get()->onDraw(e);
 		}
 	}
+
+	// -------------------- DrawGroupProxy --------------------
+	DrawGroupProxy::DrawGroupProxy(HDGroup hDg): _hlDGroup(hDg) {}
+	void DrawGroupProxy::onUpdate() {
+		_hlDGroup->get()->onUpdate();
+	}
+	const DSortV& DrawGroupProxy::getSortAlgorithm() const {
+		return _hlDGroup->get()->getSortAlgorithm();
+	}
+	const DLObjV& DrawGroupProxy::getMember() const {
+		return _hlDGroup->get()->getMember();
+	}
+	bool DrawGroupProxy::isNode() const {
+		return true;
+	}
+	void DrawGroupProxy::onDraw(GLEffect& e) const {
+		_hlDGroup->get()->onDraw(e);
+	}
+	const std::string& DrawGroupProxy::getName() const {
+		return _hlDGroup->get()->getName();
+	}
+	DrawTag& DrawGroupProxy::refDTag() {
+		return _dtag;
+	}
 }

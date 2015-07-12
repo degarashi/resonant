@@ -253,14 +253,16 @@ namespace rs {
 	#define DefineUpdGroup(name)	class name : public ::rs::GroupT<name, ::rs::UpdGroup> { \
 		using base_t = ::rs::GroupT<name, ::rs::UpdGroup>; \
 		using base_t::base_t; };
-	#define DefineDrawGroup(name)	class name : public ::rs::GroupT<name, ::rs::DrawGroup> { \
-		using base_t = ::rs::GroupT<name, ::rs::DrawGroup>; \
+	#define DefineDrawGroupBase(name, base)	class name : public ::rs::GroupT<name, base> { \
+		using base_t = ::rs::GroupT<name, base>; \
 		public: \
 			template <class... Ts> \
 			name(Ts&&... ts): base_t(std::forward<Ts>(ts)...) { _dtag.priority = GetPriority(); } \
 			static ::rs::Priority GetPriority(); };
 	#define ImplDrawGroup(name, prio) \
 		::rs::Priority name::GetPriority() { return prio; }
+	#define DefineDrawGroup(name)	DefineDrawGroupBase(name, ::rs::DrawGroup)
+	#define DefineDrawGroupProxy(name)	DefineDrawGroupBase(name, ::rs::DrawGroupProxy)
 
 	//! UpdGroupにフレームカウンタやアイドル機能をつけたクラス
 	/*! 中身は別のUpdGroupを使用 */
@@ -418,6 +420,21 @@ namespace rs {
 			void remObj(HDObj hObj);
 			void onUpdate() override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
+			const DSortV& getSortAlgorithm() const;
+			const DLObjV& getMember() const;
+
+			bool isNode() const override;
+			void onDraw(GLEffect& e) const override;
+			const std::string& getName() const override;
+			DrawTag& refDTag();
+	};
+	class DrawGroupProxy : public DrawableObj {
+		private:
+			HLDGroup		_hlDGroup;
+		public:
+			DrawGroupProxy(HDGroup hDg);
+
+			void onUpdate() override;
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
