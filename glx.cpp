@@ -291,7 +291,7 @@ namespace rs {
 	void GLEffect::Current::setPass(GLint idPass, TechMap& tmap) {
 		// TechIdをセットせずにPassIdをセットするのは禁止
 		AssertT(Trap, tech, (GLE_Error)(const char*), "tech is not selected")
-//		if(!cur.pass || *cur.pass != passId) {
+		if(!pass || *pass != idPass) {
 			_clean_drawvalue();
 			pass = idPass;
 
@@ -332,7 +332,7 @@ namespace rs {
 			tokenV.emplace_back(new draw::UserFunc([&tp_tmp = *tps](){
 				tp_tmp.applySetting();
 			}));
-//		}
+		}
 	}
 	draw::SPToken GLEffect::Current::outputFramebuffer() {
 		if(hlFb) {
@@ -506,7 +506,7 @@ namespace rs {
 			we.clear();
 		}
 		void Task::endTask() {
-			GL.glFinish();
+			GL.glFlush();
 			UniLock lk(_mutex);
 			++_curWrite;
 		}

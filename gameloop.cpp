@@ -88,7 +88,7 @@ namespace rs {
 					// 1フレーム分の描画処理
 					if(up->runU(p->id, p->bSkip))
 						_info.lock()->ctxDrawThread->swapWindow();
-					GL.glFinish();
+					GL.glFlush();
 					{
 						auto lk = _info.lock();
 						lk->state = State::Idle;
