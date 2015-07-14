@@ -77,7 +77,7 @@ void Cube::draw(Engine& e) const {
 	auto& self = const_cast<Cube&>(*this);
 	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
 
-	e.setVDecl(rs::DrawDecl<drawtag::cube>::GetVDecl());
+	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());
 	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	e.ref3d().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
@@ -89,7 +89,7 @@ void Cube::exportDrawTag(rs::DrawTag& d) const {
 }
 
 // ---------------------- Cube頂点宣言 ----------------------
-const rs::SPVDecl& rs::DrawDecl<drawtag::cube>::GetVDecl() {
+const rs::SPVDecl& rs::DrawDecl<vdecl::cube>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
 		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0},

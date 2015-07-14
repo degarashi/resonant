@@ -42,7 +42,7 @@ void Sprite::setZRange(const spn::RangeF& r) {
 }
 void Sprite::draw(Engine& e) const {
 	spn::profiler.beginBlockObj("sprite::draw");
-	e.setVDecl(rs::DrawDecl<drawtag::sprite>::GetVDecl());
+	e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
 	e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
 	e.ref2d().setWorld(getToWorld().convertA33());
 	e.setVStream(_hlVb, 0);
@@ -56,7 +56,7 @@ void Sprite::exportDrawTag(rs::DrawTag& d) const {
 	d.zOffset = _zOffset;
 }
 // ---------------------- Sprite頂点宣言 ----------------------
-const rs::SPVDecl& rs::DrawDecl<drawtag::sprite>::GetVDecl() {
+const rs::SPVDecl& rs::DrawDecl<vdecl::sprite>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
 		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0}

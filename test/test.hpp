@@ -26,12 +26,12 @@ namespace vertex {
 		spn::Vec2	tex;
 	};
 }
-namespace drawtag {
+namespace vdecl {
 	struct cube {};
 	struct sprite {};
 }
-DefineVDecl(::drawtag::cube)
-DefineVDecl(::drawtag::sprite)
+DefineVDecl(::vdecl::cube)
+DefineVDecl(::vdecl::sprite)
 
 class Engine;
 class Sc_Base;

@@ -3,7 +3,7 @@
 #include "dwrapper.hpp"
 #include "sprite.hpp"
 #include "spinner/random.hpp"
-#include "blur.hpp"
+#include "../util/screen.hpp"
 #include "../input.hpp"
 
 class BoundingSprite : public DWrapper<Sprite> {
@@ -70,8 +70,8 @@ ImplDrawGroup(MyDGroup, p_curScene)
 struct Sc_DSortD::St_Default : StateT<St_Default> {
 	rs::HLFb	_hlFb;
 	rs::HLTex	_hlTex[2];
-	Blur	*_pBlur0,
-			*_pBlur1;
+	rs::util::PostEffect	*_pBlur0,
+							*_pBlur1;
 	int swt = 0;
 	bool bBlur = false;
 	St_Default() {
@@ -95,13 +95,13 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		dg0.setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
 		// [FBSwitch(Cur)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<FBSwitch>(p_fbsw0, _hlFb);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw0, _hlFb);
 			self.getDrawGroup().addObj(hlp.first);
 		}
 		// [FBClear]
 		{
 			rs::draw::ClearParam cp{spn::Vec4(0,0,0,1.f), 1.f, 0};
-			auto hlp = rs_mgr_obj.makeDrawable<FBClear>(p_fbclear, cp);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBClear>(p_fbclear, cp);
 			self.getDrawGroup().addObj(hlp.first);
 		}
 		// [現シーンのDG] Z値でソート(Dynamic)
@@ -109,16 +109,16 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		dg0.addObj(hDG.first.get());
 		// [Blur(前回の重ね)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<Blur>(p_blur0);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(p_blur0);
 			hlp.second->setAlpha(0);
 			self.getDrawGroup().addObj(hlp.first);
 			_pBlur0 = hlp.second;
 		}
 		// [FBSwitch(Default)]
-		self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<FBSwitch>(p_fbsw1, rs::HFb()).first);
+		self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw1, rs::HFb()).first);
 		// [Blur(今回のベタ描画)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<Blur>(p_blur1);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(p_blur1);
 			hlp.second->setAlpha(1.f);
 			self.getDrawGroup().addObj(hlp.first);
 			_pBlur1 = hlp.second;
@@ -148,8 +148,8 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 	}
 	void onDraw(const Sc_DSortD& self, rs::GLEffect& e) const override {
 		_hlFb->get()->attach(rs::GLFBuffer::Att::COLOR0, _hlTex[swt]);
-		_pBlur0->setTexture(_hlTex[swt ^ 1]);
-		_pBlur1->setTexture(_hlTex[swt]);
+		_pBlur0->setTexture(rs::unif::texture::Diffuse, _hlTex[swt ^ 1]);
+		_pBlur1->setTexture(rs::unif::texture::Diffuse, _hlTex[swt]);
 		const_cast<St_Default&>(*this).swt ^= 1;
 	}
 	void onUpdate(Sc_DSortD& self) override {
