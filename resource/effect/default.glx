@@ -1,0 +1,167 @@
+attribute CubeAttr {
+	highp vec3 atPos : POSITION;
+	mediump vec2 atTex : TEXCOORD0;
+	mediump vec3 atNormal : NORMAL;
+}
+varying CubeVary {
+	mediump vec2 varTex;
+	mediump vec3 varNormal;
+	mediump vec3 varPos;
+}
+uniform CubeUnif {
+	highp mat4 sys_mTrans;
+	highp mat4 sys_mWorld;
+	sampler2D sys_texDiffuse;
+	mediump vec3 vLitPos;
+	mediump vec3 sys_vEyePos;
+}
+vertexshader(400) CubeVS() {
+	vec4 v = vec4(atPos,1);
+	gl_Position = v * sys_mTrans;
+	v *= sys_mWorld;
+	varTex = atTex;
+
+	varNormal = normalize((vec4(atNormal, 0) * sys_mWorld).xyz);
+	varPos = v.xyz;
+}
+fragmentshader(400) CubePS() {
+	vec3 fromEye = normalize(varPos - sys_vEyePos);
+	vec3 refv = fromEye + varNormal * (-dot(varNormal, fromEye) * 2);
+	vec3 toLit = normalize(vLitPos - varPos);
+	float lit = pow(max(0, dot(toLit, refv)),16);
+	float lit_d = dot(toLit, varNormal) * 0.5 + 0.5;
+	lit_d *= 0.5;
+	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit + lit_d);
+	gl_FragColor.w = 1;
+}
+technique Cube {
+	CullFace = true;
+	FrontFace = cw;
+	Blend = false;
+	DepthTest = true;
+	DepthMask = true;
+	Attribute = CubeAttr;
+	Varying = CubeVary;
+	Uniform = CubeUnif;
+	pass Default {
+		VertexShader = CubeVS();
+		FragmentShader = CubePS();
+	}
+}
+
+uniform Text2DUnif {
+	mat3 mText;
+	float sys_fAlpha;
+	float sys_fDepth;
+	sampler2D sys_texDiffuse;
+}
+attribute TextAttr {
+	highp vec2 atPos : POSITION;
+	mediump vec3 atTex : TEXCOORD0;
+}
+varying TextVary {
+	highp vec4 vrTex;
+}
+vertexshader(130) Text2DVS() {
+	vec3 tmp = vec3(atPos.x, atPos.y, 1) * mText;
+	gl_Position = vec4(tmp.x, tmp.y, sys_fDepth, 1);
+	vrTex = vec4(atTex, 0);
+}
+fragmentshader(130) TextFS() {
+	gl_FragColor = texture2D(sys_texDiffuse, vrTex.xy).xyyy;
+	if(gl_FragColor.w < 0.5)
+		discard;
+	gl_FragColor.w *= sys_fAlpha;
+}
+technique Text {
+	CullFace = false;
+	FrontFace = cw;
+	LineWidth = 5;
+	Blend = true;
+	DepthTest = true;
+	BlendFunc = SrcAlpha InvSrcAlpha;
+	StencilMask = 0x10;
+	DepthMask = true;
+	Attribute = TextAttr;
+	Varying = TextVary;
+	Uniform = Text2DUnif;
+
+	pass Default {
+		VertexShader = Text2DVS();
+		FragmentShader = TextFS();
+	}
+}
+
+attribute SpriteAttr {
+	highp vec2 atPos : POSITION;
+	mediump vec2 atTex : TEXCOORD0;
+}
+uniform SpriteUnif {
+	highp mat3 sys_mTrans2d;
+	sampler2D sys_texDiffuse;
+	float sys_fDepth;
+	float sys_fAlpha;
+}
+vertexshader(400) SpriteVS() {
+	gl_Position.xyz = vec3(atPos, 1) * sys_mTrans2d;
+	gl_Position.z = sys_fDepth;
+	gl_Position.w = 1;
+	varTex = atTex;
+}
+fragmentshader(400) SpriteFS() {
+	vec4 c = texture2D(sys_texDiffuse, varTex);
+	c.w *= sys_fAlpha;
+	if(c.w < 0.1)
+		discard;
+	gl_FragColor = c;
+}
+technique Sprite {
+	CullFace = true;
+	FrontFace = cw;
+	Blend = true;
+	BlendFunc = SrcAlpha InvSrcAlpha;
+	DepthTest = false;
+	DepthMask = false;
+	Attribute = SpriteAttr;
+	Varying = CubeVary;
+	Uniform = SpriteUnif;
+	pass Default {
+		VertexShader = SpriteVS();
+		FragmentShader = SpriteFS();
+	}
+}
+
+uniform PFxUnif {
+	sampler2D sys_texDiffuse;
+	float sys_fDepth;
+	float sys_fAlpha;
+}
+varying PFxVary {
+	mediump vec2 varTex;
+}
+vertexshader(400) PFxVS() {
+	gl_Position.xy = atPos;
+	gl_Position.z = sys_fDepth;
+	gl_Position.w = 1;
+	varTex = atTex;
+}
+fragmentshader(400) PFxFS() {
+	vec4 c = texture2D(sys_texDiffuse, varTex);
+	c.w = sys_fAlpha;
+	gl_FragColor = c;
+}
+technique PostEffect {
+	CullFace = true;
+	FrontFace = cw;
+	Blend = true;
+	BlendFunc = SrcAlpha InvSrcAlpha;
+	DepthTest = false;
+	DepthMask = false;
+	Attribute = SpriteAttr;
+	Varying = PFxVary;
+	Uniform = PFxUnif;
+	pass Default {
+		VertexShader = PFxVS();
+		FragmentShader = PFxFS();
+	}
+}
