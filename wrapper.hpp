@@ -8,7 +8,17 @@ namespace rs {
 		T	value;
 		Wrapper() = default;
 		explicit Wrapper(const T& t): value(t) {}
-
 		// 数値と明確に区別したいので暗黙的な変換はしない
+
+		#define DEF_OP(op) \
+			bool operator op (const T& t) const { return value op t; } \
+			bool operator op (const Wrapper& w) const { return value op w.value; }
+			DEF_OP(==)
+			DEF_OP(!=)
+			DEF_OP(<)
+			DEF_OP(>)
+			DEF_OP(<=)
+			DEF_OP(>=)
+		#undef DEF_OP
 	};
 }
