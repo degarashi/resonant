@@ -22,18 +22,20 @@ namespace rs {
 			auto s = lkb->screenSize;
 			rx = spn::Rcp22Bit(s.width/2);
 			ry = spn::Rcp22Bit(s.height/2);
+			auto ofs = _offset;
 			if(_coordType == Coord::Window) {
 				ox = -1.f;
 				oy = 1.f;
 				diry = -1.f;
+				ofs.x *= rx;
+				ofs.y *= ry;
 			} else {
 				ox = oy = 0.f;
 				diry = 1.f;
 			}
-			auto& ofs = _offset;
 			return spn::Mat33(rx*_scale.x,		0,						0,
 							0,					ry*_scale.y,			0,
-							ox + ofs.x*rx,		oy + ofs.y*ry*diry,		1);
+							ox + ofs.x,			oy + ofs.y*diry,		1);
 		}
 		void TextHUD::setWindowOffset(const spn::Vec2& ofs) {
 			_coordType = Coord::Window;
