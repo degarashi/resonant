@@ -4,7 +4,7 @@
 
 rs::WVb Cube::s_wVb;
 // ---------------------- Cube ----------------------
-const rs::IdValue Cube::T_Cube = GlxId::GenTechId("TheCube", "P0"),
+const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
 				Cube::U_litpos = GlxId::GenUnifId("vLitPos");
 void Cube::_initVb() {
 	if(!(_hlVb = s_wVb.lock())) {

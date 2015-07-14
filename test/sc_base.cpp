@@ -26,7 +26,7 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
 	upd->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
 
-	rs::CCoreID cid = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
+	rs::CCoreID cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
 	// ---- make ProfileShow ----
 	auto hlProf = rs_mgr_obj.makeDrawable<ProfileShow>(cid).first;
 	upd->addObj(hlProf.get());

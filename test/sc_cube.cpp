@@ -20,7 +20,7 @@ void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
 	{	auto hG = mgr_scene.getSceneBase(1).getUpdate();
 		mgr_scene.getUpdGroup().addObj(hG); }
 	// ---- make cube ----
-	rs::HLTex hlTex = mgr_gl.loadTexture("brick.jpg");
+	rs::HLTex hlTex = mgr_gl.loadTexture("block.jpg");
 	{
 		using CubeObj = DWrapper<Cube>;
 		auto hlp = rs_mgr_obj.makeDrawable<CubeObj>(Cube::T_Cube, rs::HDGroup(), 1.f, hlTex);

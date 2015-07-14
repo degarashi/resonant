@@ -5,7 +5,8 @@
 #include "../differential.hpp"
 #include "engine.hpp"
 
-const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("TheTech", "P2");
+const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("Text", "Default");
+const std::string g_fontName("IPAGothic");
 // ---------------------- InfoShow::MySt ----------------------
 struct InfoShow::MySt : StateT<MySt> {
 	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
@@ -59,7 +60,7 @@ InfoShow::InfoShow():
 	_textHud(T_Info)
 {
 	//  フォント読み込み
-	rs::CCoreID cid = mgr_text.makeCoreID("IPAGothic", rs::CCoreID(0, 20, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel));
+	rs::CCoreID cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 20, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel));
 	_textHud.setCCoreId(cid);
 	_textHud.setDepth(0.f);
 

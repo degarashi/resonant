@@ -48,7 +48,7 @@ ProfileShow::ProfileShow(rs::CCoreID cid):
 	_textHud(InfoShow::T_Info)
 {
 	_textHud.setCCoreId(cid);
-	_textHud.setScreenOffset({0,0});
+	_textHud.setScreenOffset({-1,0});
 	_textHud.setDepth(0.f);
 	setStateNew<St_Default>();
 }

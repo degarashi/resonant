@@ -7,6 +7,7 @@
 #include "../util/textdraw.hpp"
 
 extern const rs::GMessageId MSG_Visible;
+extern const std::string g_fontName;
 class InfoShow : public rs::DrawableObjT<InfoShow>,
 				public spn::EnableFromThis<rs::HDObj>
 {

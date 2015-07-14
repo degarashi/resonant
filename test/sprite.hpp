@@ -16,7 +16,8 @@ class Sprite : public spn::Pose2D {
 		rs::HLIb	_hlIb;
 		rs::HLTex	_hlTex;
 		spn::RangeF	_zRange;
-		float		_zOffset;
+		float		_zOffset,
+					_alpha;
 		void _initBuffer();
 	public:
 		const static rs::IdValue	T_Sprite;
@@ -24,5 +25,6 @@ class Sprite : public spn::Pose2D {
 		void draw(Engine& e) const;
 		void setZOffset(float z);
 		void setZRange(const spn::RangeF& r);
+		void setAlpha(float a);
 		void exportDrawTag(rs::DrawTag& d) const;
 };

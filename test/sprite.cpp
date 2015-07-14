@@ -3,7 +3,7 @@
 #include "engine.hpp"
 #include "spinner/structure/profiler.hpp"
 
-const rs::IdValue Sprite::T_Sprite = GlxId::GenTechId("TheSprite", "P0");
+const rs::IdValue Sprite::T_Sprite = GlxId::GenTechId("Sprite", "Default");
 // ----------------------- Sprite -----------------------
 rs::WVb Sprite::s_wVb;
 rs::WIb Sprite::s_wIb;
@@ -32,10 +32,14 @@ Sprite::Sprite(rs::HTex hTex, float z) {
 	_hlTex = hTex;
 	_zOffset = z;
 	_zRange = {0.f, 1.f};
+	_alpha = 1.f;
 	_initBuffer();
 }
 void Sprite::setZOffset(float z) {
 	_zOffset = z;
+}
+void Sprite::setAlpha(float a) {
+	_alpha = a;
 }
 void Sprite::setZRange(const spn::RangeF& r) {
 	_zRange = r;
@@ -44,6 +48,7 @@ void Sprite::draw(Engine& e) const {
 	spn::profiler.beginBlockObj("sprite::draw");
 	e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
 	e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
+	e.setUniform(rs::unif::Alpha, _alpha);
 	e.ref2d().setWorld(getToWorld().convertA33());
 	e.setVStream(_hlVb, 0);
 	e.setIStream(_hlIb);

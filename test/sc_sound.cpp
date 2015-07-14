@@ -21,7 +21,7 @@ void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup hGroup) {
 		mgr_scene.getSceneBase(0).getUpdate()->get()->addObj(hG); }
 
 	// サウンド読み込み
-	self._hlAb = mgr_sound.loadOggStream("the_thunder.ogg");
+	self._hlAb = mgr_sound.loadOggStream("test_music.ogg");
 	self._hlSg = mgr_sound.createSourceGroup(1);
 
 	auto& s = self._hlSg.ref();
