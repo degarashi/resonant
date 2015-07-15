@@ -1,6 +1,6 @@
 #pragma once
-#include "handle.hpp"
-#include "vertex.hpp"
+#include "../handle.hpp"
+#include "../vertex.hpp"
 
 namespace rs {
 	namespace vertex {
