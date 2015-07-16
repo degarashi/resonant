@@ -177,13 +177,13 @@ namespace rs {
 			}
 		};
 		FrameBuff::FrameBuff(GLuint idFb):
-			GLFBufferCore(idFb), Token(HRes())
+			GLFBufferCore(idFb), TokenR(HRes())
 		{
 			for(auto& p : _ent)
 				p.idRes = 0;
 		}
 		FrameBuff::FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]):
-			GLFBufferCore(idFb), Token(hRes)
+			GLFBufferCore(idFb), TokenR(hRes)
 		{
 			for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++)
 				boost::apply_visitor(Visitor(_ent[i]), att[i]);

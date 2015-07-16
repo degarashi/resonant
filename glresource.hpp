@@ -215,16 +215,17 @@ namespace rs {
 	using Priority64 = uint64_t;
 	namespace draw {
 		struct Token {
-			HLRes	_hlRes;
-			Token(HRes hRes): _hlRes(hRes) {}
 			virtual ~Token() {}
-
 			virtual void exec() = 0;
+		};
+		struct TokenR : Token {
+			HLRes	_hlRes;
+			TokenR(HRes hRes): _hlRes(hRes) {}
 		};
 		using SPToken = std::shared_ptr<Token>;
 		using TokenV = std::vector<SPToken>;
 
-		struct Uniform : Token {
+		struct Uniform : TokenR {
 			GLint	idUnif;
 			Uniform(HRes hRes, GLint id);
 		};
@@ -336,14 +337,14 @@ namespace rs {
 			GLuint getStride() const;
 	};
 	namespace draw {
-		class Buffer : public GLBufferCore, public Token {
+		class Buffer : public GLBufferCore, public TokenR {
 			public:
 				Buffer(const GLBufferCore& core, HRes hRes);
 
 				void exec() override;
 		};
 
-		class Program : public Token {
+		class Program : public TokenR {
 			GLuint		_idProg;
 			public:
 				Program(HRes hRes, GLuint idProg);
@@ -810,7 +811,7 @@ namespace rs {
 
 	namespace draw {
 		// 毎回GLでAttachする
-		class FrameBuff : public GLFBufferCore, public Token {
+		class FrameBuff : public GLFBufferCore, public TokenR {
 			struct Visitor;
 			struct Pair {
 				bool	bTex;

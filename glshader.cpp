@@ -96,7 +96,7 @@ namespace rs {
 	// ---------------------- draw::Program ----------------------
 	namespace draw {
 		Program::Program(HRes hRes, GLuint idProg):
-			Token(hRes), _idProg(idProg) {}
+			TokenR(hRes), _idProg(idProg) {}
 		void Program::exec() {
 			GL.glUseProgram(_idProg);
 		}

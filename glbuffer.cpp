@@ -19,7 +19,7 @@ namespace rs {
 	// --------------------------- draw::Buffer ---------------------------
 	namespace draw {
 		Buffer::Buffer(const GLBufferCore& core, HRes hRes):
-			GLBufferCore(core), Token(hRes) {}
+			GLBufferCore(core), TokenR(hRes) {}
 		void Buffer::exec() {
 			use_begin();
 		}

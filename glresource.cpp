@@ -204,7 +204,6 @@ namespace rs {
 
 	namespace draw {
 		Clear::Clear(const ClearParam& p):
-			Token(HRes()),
 			_param(p)
 		{}
 		void Clear::exec() {

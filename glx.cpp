@@ -539,7 +539,6 @@ namespace rs {
 
 		// -------------- UserFunc --------------
 		UserFunc::UserFunc(const Func& f):
-			Token(HRes()),
 			_func(f)
 		{}
 		void UserFunc::exec() {
@@ -547,7 +546,6 @@ namespace rs {
 		}
 		// -------------- DrawBase --------------
 		DrawBase::DrawBase(VStream&& vs):
-			Token(HRes()),
 			_vstream(std::move(vs))
 		{}
 		RUser<VStream> DrawBase::use() {
@@ -580,7 +578,7 @@ namespace rs {
 		}
 
 		// -------------- Uniforms --------------
-		Uniform::Uniform(HRes hRes, GLint id): Token(hRes), idUnif(id) {}
+		Uniform::Uniform(HRes hRes, GLint id): TokenR(hRes), idUnif(id) {}
 
 		namespace {
 			using IGLF_V = void (*)(GLint, const void*, int);
