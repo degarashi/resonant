@@ -139,9 +139,11 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		};
 		// 引数に追加する描画グループハンドルを渡す？
 		auto upd = sb0.getUpdate();
-		for(int i=0 ; i<50 ; i++) {
-			auto hlTex = Sc_DSort::LoadTexture(i % N_Sprite);
-			auto hlp = rs_mgr_obj.makeDrawable<BoundingSprite>(Sprite::T_Sprite, hDG.first, hlTex, fnPos(), fnSV());
+		std::vector<rs::HLTex> tex(N_Sprite);
+		for(int i=0 ; i<N_Sprite ; i++)
+			tex[i] = Sc_DSort::LoadTexture(i);
+		for(int i=0 ; i<150 ; i++) {
+			auto hlp = rs_mgr_obj.makeDrawable<BoundingSprite>(Sprite::T_Sprite, hDG.first, tex[i % N_Sprite], fnPos(), fnSV());
 			hlp.second->setScale(spn::Vec2(0.2f));
 			upd->get()->addObj(hlp.first.get());
 		}

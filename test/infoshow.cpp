@@ -16,9 +16,12 @@ struct InfoShow::MySt : StateT<MySt> {
 	void onUpdate(InfoShow& self) override;
 };
 void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
-	auto lkb = sharedbase.lock();
-	// FPSの表示
-	int fps = lkb->fps.getFPS();
+	int fps;
+	{
+		auto lkb = sharedbase.lock();
+		// FPSの表示
+		fps = lkb->fps.getFPS();
+	}
 	std::stringstream ss;
 	ss << "FPS: " << fps << std::endl;
 	rs::Object& obj = *mgr_scene.getScene(0).ref();
@@ -37,9 +40,10 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
 #include "spinner/structure/profiler.hpp"
 #include <thread>
 void InfoShow::MySt::onUpdate(InfoShow& self) {
-	auto lk = sharedbase.lock();
-	self._count = lk->diffCount;
-
+	{
+		auto lk = sharedbase.lock();
+		self._count = lk->diffCount;
+	}
 	self._textHud.exportDrawTag(self._dtag);
 }
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
