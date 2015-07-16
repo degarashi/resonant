@@ -6,6 +6,15 @@
 #include "spinner/unituple/operator.hpp"
 
 namespace rs {
+	const int DefaultUnifPoolSize = 0x100;
+	draw::TokenBuffer* MakeUniformTokenBuffer(UniMap& um, UnifPool& pool, GLint id) {
+		auto itr = um.find(id);
+		if(itr == um.end()) {
+			return um[id] = pool.construct();
+		}
+		return itr->second;
+	}
+
 	const GLType_ GLType;
 	const GLInout_ GLInout;
 	const GLSem_ GLSem;
@@ -250,6 +259,7 @@ namespace rs {
 	}
 
 	// -------------- GLEffect::Current --------------
+	UnifPool GLEffect::Current::s_unifPool(DefaultUnifPoolSize);
 	diff::Buffer GLEffect::Current::getDifference() {
 		diff::Buffer diff = {};
 		if(vertex != vertex_prev)
@@ -275,8 +285,9 @@ namespace rs {
 	void GLEffect::Current::_clean_drawvalue() {
 		pass = spn::none;
 		tps = spn::none;
-		tokenV.clear();
 		// セットされているUniform変数を未セット状態にする
+		for(auto& u : uniMap)
+			s_unifPool.destroy(u.second);
 		uniMap.clear();
 		texIndex.clear();
 	}
@@ -303,7 +314,10 @@ namespace rs {
 			// デフォルト値読み込み
 			if(bDefaultParam) {
 				auto& def = tps->getUniformDefault();
-				uniMap = def;
+				for(auto& d : def) {
+					auto* buff = MakeUniformTokenBuffer(uniMap, s_unifPool, d.first);
+					d.second->clone(*buff);
+				}
 			}
 			// テクスチャインデックスリスト作成
 			GLuint pid = tps->getProgram().cref()->getProgramID();
@@ -328,31 +342,31 @@ namespace rs {
 				}
 			}
 
-			tokenV.emplace_back(tps->getProgram()->get()->getDrawToken());
-			tokenV.emplace_back(new draw::UserFunc([&tp_tmp = *tps](){
+			tps->getProgram()->get()->getDrawToken(tokenML);
+			tokenML.allocate<draw::UserFunc>([&tp_tmp = *tps](){
 				tp_tmp.applySetting();
-			}));
+			});
 		}
 	}
-	draw::SPToken GLEffect::Current::outputFramebuffer() {
+	void GLEffect::Current::outputFramebuffer() {
 		if(hlFb) {
 			auto& fb = *hlFb;
 			if(fb)
-				return fb->get()->getDrawToken();
+				fb->get()->getDrawToken(tokenML);
 			else
-				return GLFBufferTmp(0).getDrawToken();
+				GLFBufferTmp(0).getDrawToken(tokenML);
 			hlFb = spn::none;
 		}
-		return draw::SPToken();
 	}
 	void GLEffect::Current::_outputDrawCall(draw::VStream& vs) {
-		if(auto sp = outputFramebuffer())
-			tokenV.emplace_back(std::move(sp));
+		outputFramebuffer();
 		// set uniform value
 		if(!uniMap.empty()) {
 			// 中身shared_ptrなのでコピーする
-			for(auto& sp : uniMap)
-				tokenV.emplace_back(sp.second);
+			for(auto& u : uniMap) {
+				u.second->takeout(tokenML);
+				s_unifPool.destroy(u.second);
+			}
 			uniMap.clear();
 		}
 		// set VBuffer(VDecl)
@@ -360,19 +374,17 @@ namespace rs {
 		// set IBuffer
 		index.extractData(vs);
 	}
-	draw::TokenV GLEffect::Current::outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset) {
+	void GLEffect::Current::outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset) {
 		draw::VStream vs;
 		_outputDrawCall(vs);
 
-		tokenV.emplace_back(std::make_shared<draw::DrawIndexed>(std::move(vs), mode, count, sizeF, offset));
-		return std::move(tokenV);
+		tokenML.allocate<draw::DrawIndexed>(std::move(vs), mode, count, sizeF, offset);
 	}
-	draw::TokenV GLEffect::Current::outputDrawCall(GLenum mode, GLint first, GLsizei count) {
+	void GLEffect::Current::outputDrawCall(GLenum mode, GLint first, GLsizei count) {
 		draw::VStream vs;
 		_outputDrawCall(vs);
 
-		tokenV.emplace_back(std::make_shared<draw::Draw>(std::move(vs), mode, first, count));
-		return std::move(tokenV);
+		tokenML.allocate<draw::Draw>(std::move(vs), mode, first, count);
 	}
 	void GLEffect::onDeviceLost() {
 		if(_bInit) {
@@ -479,17 +491,13 @@ namespace rs {
 
 		// -------------- Task --------------
 		Task::Task(): _curWrite(0), _curRead(0) {}
-		Task::TokenV2& Task::refWriteEnt() {
+		TokenML& Task::refWriteEnt() {
 			UniLock lk(_mutex);
 			return _entry[_curWrite % NUM_ENTRY];
 		}
-		Task::TokenV2& Task::refReadEnt() {
+		TokenML& Task::refReadEnt() {
 			UniLock lk(_mutex);
 			return _entry[_curRead % NUM_ENTRY];
-		}
-		void Task::pushTokenV(TokenV&& tv) {
-			// DThとアクセスするエントリが違うからemplace_back中の同期をとらなくて良い
-			refWriteEnt().emplace_back(std::move(tv));
 		}
 		void Task::beginTask() {
 			UniLock lk(_mutex);
@@ -526,10 +534,7 @@ namespace rs {
 				auto& readent = refReadEnt();
 				lk = spn::none;
 				// MThとアクセスするエントリが違うから同期をとらなくて良い
-				for(auto& entV : readent) {
-					for(auto& ent : entV)
-						ent->exec();
-				}
+				readent.exec();
 				GL.glFlush();
 				lk = spn::construct(std::ref(_mutex));
 				++_curRead;
@@ -543,13 +548,6 @@ namespace rs {
 		{}
 		void UserFunc::exec() {
 			_func();
-		}
-		// -------------- DrawBase --------------
-		DrawBase::DrawBase(VStream&& vs):
-			_vstream(std::move(vs))
-		{}
-		RUser<VStream> DrawBase::use() {
-			return _vstream.use();
 		}
 		// -------------- Tag_Draw --------------
 		Draw::Draw(VStream&& vs, GLenum mode, GLint first, GLsizei count):
@@ -578,8 +576,6 @@ namespace rs {
 		}
 
 		// -------------- Uniforms --------------
-		Uniform::Uniform(HRes hRes, GLint id): TokenR(hRes), idUnif(id) {}
-
 		namespace {
 			using IGLF_V = void (*)(GLint, const void*, int);
 			const IGLF_V c_iglfV[] = {
@@ -617,36 +613,13 @@ namespace rs {
 			c_iglfM[idx](id, ptr, n, bT ? GL_TRUE : GL_FALSE);
 		}
 	}
-	void GLEffect::_clearFramebuffer(const draw::SPToken& tkn) {
-		draw::TokenV tokenV;
-		if(auto sp = _current.outputFramebuffer())
-			tokenV.emplace_back(std::move(sp));
-		tokenV.emplace_back(tkn);
-		_task.pushTokenV(std::move(tokenV));
-	}
 	void GLEffect::clearFramebuffer(const draw::ClearParam& param) {
-		_clearFramebuffer(std::make_shared<draw::Clear>(param));
-	}
-	namespace {
-		struct UniVisitor : boost::static_visitor<> {
-			GLint						_id;
-			const GLEffect::TexIndex&	_tIdx;
-
-			UniVisitor(const GLEffect::TexIndex& ti): _tIdx(ti) {}
-			void operator()(const HLTex& tex) const {
-				auto itr = _tIdx.find(_id);
-				if(itr != _tIdx.end()) {
-					auto& cr = tex.cref();
-					cr->setActiveID(itr->second);
-					auto u = cr->use();
-					GL.glUniform1i(_id, itr->second);
-				} else
-					Assert(Warn, false, "uniform id=%1% is not sampler", _id)
-			}
-		};
+		_current.outputFramebuffer();
+		_current.tokenML.allocate<draw::Clear>(param);
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
-		_task.pushTokenV(_current.outputDrawCall(mode, first, count));
+		_current.outputDrawCall(mode, first, count);
+		_task.refWriteEnt().append(std::move(_current.tokenML));
 
 		_diffCount.buffer += _current.getDifference();
 		++_diffCount.drawNoIndexed;
@@ -655,31 +628,32 @@ namespace rs {
 		HIb hIb = _current.index.getIBuffer();
 		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
-		_task.pushTokenV(_current.outputDrawCallIndexed(mode, count, szF, offsetElem*str));
+		_current.outputDrawCallIndexed(mode, count, szF, offsetElem*str);
+		_task.refWriteEnt().append(std::move(_current.tokenML));
 
 		_diffCount.buffer += _current.getDifference();
 		++_diffCount.drawIndexed;
 	}
 	// Uniform設定は一旦_unifMapに蓄積した後、出力
-	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const bool* b, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const bool* b, int n, bool bT) const {
 		int tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<int>(b[i]);
-		_makeUniformToken(dstToken, id, static_cast<const int*>(tmp), 1, bT);
+		_makeUniformToken(dst, id, static_cast<const int*>(tmp), 1, bT);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const int* iv, int n, bool /*bT*/) const {
-		spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Vec<int, 1>>(id, iv, 1, n));
+	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const int* iv, int n, bool /*bT*/) const {
+		MakeUniformToken<draw::Unif_Vec<int, 1>>(dst, id, id, iv, 1, n);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const float* fv, int n, bool /*bT*/) const {
-		spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Vec<float, 1>>(id, fv, 1, n));
+	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const float* fv, int n, bool /*bT*/) const {
+		MakeUniformToken<draw::Unif_Vec<float, 1>>(dst, id, id, fv, 1, n);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const double* dv, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const double* dv, int n, bool bT) const {
 		float tmp[n];
 		for(int i=0 ; i<n ; i++)
 			tmp[i] = static_cast<float>(dv[i]);
-		_makeUniformToken(dstToken, id, static_cast<const float*>(tmp), n, bT);
+		_makeUniformToken(dst, id, static_cast<const float*>(tmp), n, bT);
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
+	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
 		// テクスチャユニット番号を検索
 		auto itr = _current.texIndex.find(id);
 		Assert(Warn, itr != _current.texIndex.end(), "texture index not found")
@@ -689,27 +663,27 @@ namespace rs {
 				std::vector<const IGLTexture*> pTexA(n);
 				for(int i=0 ; i<n ; i++)
 					pTexA[i] = (hTex[i].cref()).get();
-				spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::TextureA>(id,
-											reinterpret_cast<const HRes*>(hTex),
-											pTexA.data(), aID, n));
+				MakeUniformToken<draw::TextureA>(dst, id, 
+								id, reinterpret_cast<const HRes*>(hTex),
+								pTexA.data(), aID, n);
 				return;
 			}
 			AssertP(Trap, n==1)
 			HTex hTex2(*hTex);
-			spn::EmplaceOrReplace(dstToken, id, hTex2.ref()->getDrawToken(id, 0, aID));
+			hTex2.ref()->getDrawToken(dst, id, 0, aID);
 		}
 	}
-	void GLEffect::_makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool bT) const {
+	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool bT) const {
 		if(n > 1) {
 			std::vector<HLTex> hTexA(n);
 			for(int i=0 ; i<n ; i++)
 				hTexA[i] = hlTex[i].get();
-			_makeUniformToken(dstToken, id, hTexA.data(), n, bT);
+			_makeUniformToken(dst, id, hTexA.data(), n, bT);
 			return;
 		}
 		AssertP(Trap, n==1)
 		HTex hTex = hlTex->get();
-		_makeUniformToken(dstToken, id, &hTex, 1, bT);
+		_makeUniformToken(dst, id, &hTex, 1, bT);
 	}
 	OPGLint GLEffect::getUniformID(const std::string& name) const {
 		AssertP(Trap, _current.tps, "Tech/Pass is not set")

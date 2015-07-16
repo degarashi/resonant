@@ -115,13 +115,14 @@ namespace rs {
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
 	}
-	draw::SPToken IGLTexture::getDrawToken(GLint id, int index, int actID) {
+	void IGLTexture::getDrawToken(draw::TokenDst& dst, GLint id, int index, int actID) {
 		if(_bReset) {
 			_bReset = false;
 			_reallocate();
 		}
-		draw::SPToken ret = std::make_shared<draw::Texture>(handleFromThis(), id, index, actID, *this);
-		return std::move(ret);
+		using UT = draw::Texture;
+		auto* ptr = dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>());
+		new(ptr) UT(handleFromThis(), id, index, actID, *this);
 	}
 
 	// ------------------------- Texture_Mem -------------------------

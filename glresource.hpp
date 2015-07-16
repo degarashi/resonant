@@ -13,6 +13,7 @@
 #include "sdlwrap.hpp"
 #include <array>
 #include "apppath.hpp"
+#include "tokenmemory.hpp"
 
 namespace rs {
 	//! Tech:Pass の組み合わせを表す
@@ -214,27 +215,22 @@ namespace rs {
 	using Priority = uint32_t;
 	using Priority64 = uint64_t;
 	namespace draw {
-		struct Token {
-			virtual ~Token() {}
-			virtual void exec() = 0;
-		};
-		struct TokenR : Token {
+		template <class T>
+		struct TokenR : TokenT<T> {
 			HLRes	_hlRes;
 			TokenR(HRes hRes): _hlRes(hRes) {}
 		};
-		using SPToken = std::shared_ptr<Token>;
-		using TokenV = std::vector<SPToken>;
-
-		struct Uniform : TokenR {
+		template <class T>
+		struct Uniform : TokenR<T> {
 			GLint	idUnif;
-			Uniform(HRes hRes, GLint id);
+			Uniform(HRes hRes, GLint id): TokenR<T>(hRes), idUnif(id) {}
 		};
 		struct ClearParam {
 			spn::Optional<spn::Vec4>	color;
 			spn::Optional<float>		depth;
 			spn::Optional<uint32_t>		stencil;
 		};
-		class Clear : public Token {
+		class Clear : public TokenT<Clear> {
 			private:
 				ClearParam	_param;
 			public:
@@ -246,10 +242,11 @@ namespace rs {
 		void Unif_Mat_Exec(int idx, GLint id, const void* ptr, int n, bool bT);
 		//! ivec[1-4], fvec[1-4]対応
 		template <class T, int DN>
-		class Unif_Vec : public Uniform {
+		class Unif_Vec : public Uniform<Unif_Vec<T,DN>> {
 			protected:
-				using UPT = std::unique_ptr<T>;
-				UPT		_data;
+				using base_t = Uniform<Unif_Vec<T,DN>>;
+				using SPT = std::shared_ptr<T>;
+				SPT		_data;
 				int		_nAr;
 
 			public:
@@ -258,28 +255,38 @@ namespace rs {
 				template <bool A>
 				Unif_Vec(GLint id, const spn::VecT<DN,A>* vp, int n): Unif_Vec(id, vp->m, DN, n) {}
 				Unif_Vec(GLint id, const T* v, int nElem, int n):
-					Uniform(HRes(), id),
+					base_t(HRes(), id),
 					_data(new T[nElem*n]),
 					_nAr(n)
 				{
 					std::memcpy(_data.get(), v, sizeof(T)*nElem*n);
 				}
 				void exec() override {
-					Unif_Vec_Exec(std::is_integral<T>::value * 4 + DN-1, idUnif, _data.get(), _nAr);
+					Unif_Vec_Exec(std::is_integral<T>::value * 4 + DN-1, base_t::idUnif, _data.get(), _nAr);
 				}
 		};
 		template <class T, int DN>
 		class Unif_Mat : public Unif_Vec<T,DN> {
 			private:
-				using base = Unif_Vec<T,DN>;
+				using base_t = Unif_Vec<T,DN>;
 				bool	_bT;
 			public:
 				template <bool A>
 				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>& m, bool bT): Unif_Mat(id, &m, 1, bT) {}
 				template <bool A>
-				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>* mp, int n, bool bT): base(id, mp->data, DN*DN, n), _bT(bT) {}
+				Unif_Mat(GLint id, const spn::MatT<DN,DN,A>* mp, int n, bool bT):
+					base_t(id, mp->data, DN*DN, n), _bT(bT) {}
 				void exec() override {
-					Unif_Mat_Exec(DN-2, Uniform::idUnif, base::_data.get(), base::_nAr, _bT);
+					Unif_Mat_Exec(DN-2, base_t::idUnif, base_t::_data.get(), base_t::_nAr, _bT);
+				}
+				void clone(TokenDst& dst) const override {
+					new(dst.allocate_memory(getSize(), draw::CalcTokenOffset<Unif_Mat>())) Unif_Mat(*this);
+				}
+				void takeout(TokenDst& dst) override {
+					new(dst.allocate_memory(getSize(), draw::CalcTokenOffset<Unif_Mat>())) Unif_Mat(std::move(*this));
+				}
+				std::size_t getSize() const override {
+					return sizeof(*this);
 				}
 		};
 	}
@@ -337,21 +344,17 @@ namespace rs {
 			GLuint getStride() const;
 	};
 	namespace draw {
-		class Buffer : public GLBufferCore, public TokenR {
+		class Buffer : public GLBufferCore, public TokenR<Buffer> {
 			public:
 				Buffer(const GLBufferCore& core, HRes hRes);
-
 				void exec() override;
 		};
-
-		class Program : public TokenR {
+		class Program : public TokenR<Program> {
 			GLuint		_idProg;
 			public:
 				Program(HRes hRes, GLuint idProg);
-
 				void exec() override;
 		};
-		using SPProg_Token = std::shared_ptr<Program>;
 	}
 
 	/*	getDrawTokenの役割:
@@ -464,7 +467,7 @@ namespace rs {
 			~GLProgram() override;
 			void onDeviceLost() override;
 			void onDeviceReset() override;
-			draw::SPProg_Token getDrawToken() const;
+			void getDrawToken(draw::TokenDst& dst) const;
 			const HLSh& getShader(ShType type) const;
 			OPGLint getUniformID(const std::string& name) const;
 			OPGLint getAttribID(const std::string& name) const;
@@ -556,20 +559,17 @@ namespace rs {
 			/*! \param[in] uniform変数の番号
 				\param[in] index idで示されるuniform変数配列のインデックス(デフォルト=0)
 				\param[in] hRes 自身のリソースハンドル */
-			draw::SPToken getDrawToken(GLint id, int index, int actID);
+			void getDrawToken(draw::TokenDst& dst, GLint id, int index, int actID);
 	};
 	namespace draw {
 		// 連番テクスチャはUniformID + Indexとして設定
-		class Texture : public IGLTexture, public Uniform {
+		class Texture : public IGLTexture, public Uniform<Texture> {
 			public:
 				Texture(HRes hRes, GLint id, int index, int baseActID, const IGLTexture& t);
-				Texture(Texture&&) = default;
-				Texture(const Texture&) = delete;
 				virtual ~Texture();
-
 				void exec() override;
 		};
-		class TextureA : public Uniform {
+		class TextureA : public Uniform<TextureA> {
 			private:
 				using TexA = std::vector<Texture>;
 				TexA	_texA;
@@ -811,7 +811,7 @@ namespace rs {
 
 	namespace draw {
 		// 毎回GLでAttachする
-		class FrameBuff : public GLFBufferCore, public TokenR {
+		class FrameBuff : public GLFBufferCore, public TokenR<FrameBuff> {
 			struct Visitor;
 			struct Pair {
 				bool	bTex;
@@ -827,7 +827,6 @@ namespace rs {
 
 				void exec() override;
 		};
-		using SPFb_Token = std::shared_ptr<FrameBuff>;
 	}
 	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
 	class GLFBufferTmp : public GLFBufferCore {
@@ -837,7 +836,7 @@ namespace rs {
 			void attach(Att::Id att, GLuint rb);
 			void use_end() const;
 
-			draw::SPFb_Token getDrawToken() const;
+			void getDrawToken(draw::TokenDst& dst) const;
 			RUser<GLFBufferTmp> use() const;
 	};
 	//! OpenGL: FrameBufferObjectインタフェース
@@ -854,7 +853,7 @@ namespace rs {
 
 			void onDeviceReset() override;
 			void onDeviceLost() override;
-			draw::SPFb_Token getDrawToken() const;
+			void getDrawToken(draw::TokenDst& dst) const;
 			const Res& getAttachment(Att::Id att) const;
 	};
 }

@@ -194,8 +194,9 @@ namespace rs {
 	void GLProgram::use() const {
 		GL.glUseProgram(getProgramID());
 	}
-	draw::SPProg_Token GLProgram::getDrawToken() const {
-		return std::make_shared<draw::Program>(handleFromThis(), getProgramID());
+	void GLProgram::getDrawToken(draw::TokenDst& dst) const {
+		using UT = draw::Program;
+		new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(handleFromThis(), getProgramID());
 	}
 	// ------------------ GLParamInfo ------------------
 	GLParamInfo::GLParamInfo(const GLSLFormatDesc& desc): GLSLFormatDesc(desc) {}

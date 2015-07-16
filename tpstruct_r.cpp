@@ -140,6 +140,7 @@ namespace rs {
 	}
 
 	// ----------------- TPStructR -----------------
+	UnifPool TPStructR::s_unifPool(DefaultUnifPoolSize);
 	TPStructR::TPStructR() {}
 	TPStructR::TPStructR(TPStructR&& tp) {
 		swap(tp);
@@ -240,6 +241,9 @@ namespace rs {
 		// OpenGLのリソースが絡んでる変数を消去
 		std::memset(_vAttrID, 0xff, sizeof(_vAttrID));
 		_noDefValue.clear();
+
+		for(auto& p : _defaultValue)
+			s_unifPool.destroy(p.second);
 		_defaultValue.clear();
 	}
 	namespace {
@@ -248,7 +252,8 @@ namespace rs {
 			GLint		uniID;
 			UniMap		result;
 			const GLEffect&	glx;
-			Visitor(const GLEffect& g): glx(g) {}
+			UnifPool&	pool;
+			Visitor(const GLEffect& g, UnifPool& p): glx(g), pool(p) {}
 
 			bool setKey(const std::string& key) {
 				uniID = GL.glGetUniformLocation(pgID, key.c_str());
@@ -258,8 +263,10 @@ namespace rs {
 			}
 			template <class T>
 			void _addResult(const T& t) {
-				if(uniID >= 0)
-					glx._makeUniformToken(result, uniID, &t, 1, false);
+				if(uniID >= 0) {
+					auto* buff = MakeUniformTokenBuffer(result, pool, uniID);
+					glx._makeUniformToken(*buff, uniID, &t, 1, false);
+				}
 			}
 
 			void operator()(const std::vector<float>& v) {
@@ -294,7 +301,7 @@ namespace rs {
 		}
 
 		// Uniform変数にデフォルト値がセットしてある物をリストアップ
-		Visitor visitor(glx);
+		Visitor visitor(glx, s_unifPool);
 		visitor.pgID = _prog.cref()->getProgramID();
 		for(const auto* p : _unifL) {
 			if(visitor.setKey(p->name)) {

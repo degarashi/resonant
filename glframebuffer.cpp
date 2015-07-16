@@ -135,8 +135,9 @@ namespace rs {
 #endif
 		_attachRenderbuffer(att, rb);
 	}
-	draw::SPFb_Token GLFBufferTmp::getDrawToken() const {
-		return std::make_shared<draw::FrameBuff>(_idFbo);
+	void GLFBufferTmp::getDrawToken(draw::TokenDst& dst) const {
+		using UT = draw::FrameBuff;
+		new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(_idFbo);
 	}
 
 	// ------------------------- GLFBufferCore -------------------------
@@ -286,8 +287,9 @@ namespace rs {
 	void GLFBuffer::detach(Att::Id att) {
 		_attachment[att] = boost::none;
 	}
-	draw::SPFb_Token GLFBuffer::getDrawToken() const {
-		return std::make_shared<draw::FrameBuff>(handleFromThis(), _idFbo, _attachment);
+	void GLFBuffer::getDrawToken(draw::TokenDst& dst) const {
+		using UT = draw::FrameBuff;
+		new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(handleFromThis(), _idFbo, _attachment);
 	}
 	const GLFBuffer::Res& GLFBuffer::getAttachment(Att::Id att) const {
 		return _attachment[att];

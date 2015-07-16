@@ -81,7 +81,6 @@ namespace rs {
 				);
 	}
 	// 連番キューブ: Key=(Path+@, ext) URI=(Path, ext)
-	//
 	HLTex GLRes::_loadCubeTexture(OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
 								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5)
 	{

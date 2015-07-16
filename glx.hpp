@@ -11,6 +11,7 @@
 #include "glx_id.hpp"
 #include "spinner/emplace.hpp"
 #include "differential.hpp"
+#include <boost/pool/object_pool.hpp>
 
 namespace rs {
 	//! OpenGLの値設定関数代理クラス
@@ -116,11 +117,13 @@ namespace rs {
 			bool operator == (const VDecl& vd) const;
 			bool operator != (const VDecl& vd) const;
 	};
-
 	using UniIDSet = std::unordered_set<GLint>;
 	//! [UniformID -> Token]
-	using UniMap = std::unordered_map<GLint, draw::SPToken>;
+	using UniMap = std::unordered_map<GLint, draw::TokenBuffer*>;
+	using UnifPool = boost::object_pool<draw::TokenBuffer>;
+	draw::TokenBuffer* MakeUniformTokenBuffer(UniMap& um, UnifPool& pool, GLint id);
 
+	extern const int DefaultUnifPoolSize;
 	// OpenGLのレンダリング設定
 	using Setting = boost::variant<BoolSettingR, ValueSettingR>;
 	using SettingList = std::vector<Setting>;
@@ -146,6 +149,7 @@ namespace rs {
 
 			UniIDSet		_noDefValue;	//!< Uniform非デフォルト値エントリIDセット (主にユーザーの入力チェック用)
 			UniMap			_defaultValue;	//!< Uniformデフォルト値と対応するID
+			static UnifPool	s_unifPool;
 			bool			_bInit = false;	//!< lost/resetのチェック用 (Debug)
 
 			// ----------- GLXStructから読んだデータ群 -----------
@@ -211,7 +215,7 @@ namespace rs {
 		}
 	}
 	namespace draw {
-		class UserFunc : public Token {
+		class UserFunc : public TokenT<UserFunc> {
 			public:
 				using Func = std::function<void ()>;
 			private:
@@ -240,15 +244,20 @@ namespace rs {
 
 				RUser<VStream> use();
 		};
-		class DrawBase : public Token {
+		template <class T>
+		class DrawBase : public TokenT<T> {
 			private:
 				VStream		_vstream;
 			protected:
-				DrawBase(VStream&& vs);
-				RUser<VStream> use();
+			DrawBase(VStream&& vs):
+				_vstream(std::move(vs))
+			{}
+			RUser<VStream> use() {
+				return _vstream.use();
+			}
 		};
 		//! Draw token (without index)
-		class Draw : public DrawBase {
+		class Draw : public DrawBase<Draw> {
 			private:
 				GLenum		_mode;
 				GLint		_first;
@@ -258,7 +267,7 @@ namespace rs {
 				void exec() override;
 		};
 		//! Draw token (with index)
-		class DrawIndexed : public DrawBase {
+		class DrawIndexed : public DrawBase<DrawIndexed> {
 			private:
 				GLenum		_mode;
 				GLsizei		_count;
@@ -276,21 +285,20 @@ namespace rs {
 		/*! PreFuncとして(TPStructR::applySettingsを追加)
 			[Program, FrameBuff, RenderBuff] */
 		class Task {
-			constexpr static int NUM_ENTRY = 3;
-			//! 描画エントリのリングバッファ
-			using TokenV2 = std::vector<TokenV>;
-			TokenV2	_entry[NUM_ENTRY];
-			//! 読み書きカーソル位置
-			int			_curWrite, _curRead;
-			Mutex		_mutex;
-			CondV		_cond;
+			private:
+				constexpr static int NUM_ENTRY = 3;
+				//! 描画エントリのリングバッファ
+				draw::TokenML	_entry[NUM_ENTRY];
+				//! 読み書きカーソル位置
+				int			_curWrite, _curRead;
+				Mutex		_mutex;
+				CondV		_cond;
 
-			TokenV2& refWriteEnt();
-			TokenV2& refReadEnt();
 			public:
 				Task();
+				draw::TokenML& refWriteEnt();
+				draw::TokenML& refReadEnt();
 				// -------------- from MainThread --------------
-				void pushTokenV(TokenV&& tv);
 				void beginTask();
 				void endTask();
 				void clear();
@@ -360,19 +368,20 @@ namespace rs {
 				bool				bDefaultParam;	//!< Tech切替時、trueならデフォルト値読み込み
 				TPRef				tps;			//!< 現在使用中のTech
 				UniMap				uniMap;			//!< 現在設定中のUniform
+				static UnifPool		s_unifPool;
 				TexIndex			texIndex;		//!< [UniformID : TextureIndex]
-				draw::TokenV		tokenV;
+				draw::TokenML		tokenML;
 
 				void reset();
 				void _clean_drawvalue();
 				void setTech(GLint idTech, bool bDefault);
 				void setPass(GLint idPass, TechMap& tmap);
 				void _outputDrawCall(draw::VStream& vs);
-				draw::SPToken outputFramebuffer();
+				void outputFramebuffer();
 				//! DrawCallに関連するAPI呼び出しTokenを出力
 				/*! Vertex,Index BufferやUniform変数など */
-				draw::TokenV outputDrawCall(GLenum mode, GLint first, GLsizei count);
-				draw::TokenV outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
+				void outputDrawCall(GLenum mode, GLint first, GLsizei count);
+				void outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 			} _current;
 
 			using UnifIdV = std::vector<GLint>;
@@ -398,7 +407,7 @@ namespace rs {
 				動的にリストを削除したりはサポートしない */
 			void _setConstantUniformList(const StrV* src);
 			void _setConstantTechPassList(const StrPairV* src);
-			void _clearFramebuffer(const draw::SPToken& tkn);
+			void _clearFramebuffer(draw::TokenML& ml);
 		public:
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
@@ -482,27 +491,31 @@ namespace rs {
 			//! 配列Uniform変数セット
 			template <class T>
 			void setUniform(GLint id, const T* t, int n, bool bT=false) {
-				_makeUniformToken(_current.uniMap, id, t, n, bT); }
-			void _makeUniformToken(UniMap& dstToken, GLint id, const bool* b, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, GLint id, const float* fv, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, GLint id, const double* fv, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, GLint id, const int* iv, int n, bool) const;
+				_makeUniformToken(*MakeUniformTokenBuffer(_current.uniMap, _current.s_unifPool, id), id, t, n, bT); }
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const bool* b, int n, bool) const;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const float* fv, int n, bool) const;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const double* fv, int n, bool) const;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const int* iv, int n, bool) const;
+			template <class UT, class... Ts>
+			static void MakeUniformToken(draw::TokenDst& dst, GLint id, Ts&&... ts) {
+				new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(std::forward<Ts>(ts)...);
+			}
 			template <int DN, bool A>
-			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
-				spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Vec<float, DN>>(id, v, n)); }
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
+				MakeUniformToken<draw::Unif_Vec<float, DN>>(dst, id, id, v, n); }
 			template <int DM, int DN, bool A>
-			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) const {
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) const {
 				constexpr int DIM = spn::TValue<DM,DN>::great;
 				std::vector<spn::MatT<DIM,DIM,false>> tm(n);
 				for(int i=0 ; i<n ; i++)
 					m[i].convert(tm[i]);
-				_makeUniformToken(dstToken, id, tm.data(), n, bT);
+				_makeUniformToken(dst, id, tm.data(), n, bT);
 			}
 			template <int DN, bool A>
-			void _makeUniformToken(UniMap& dstToken, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) const {
-				spn::EmplaceOrReplace(dstToken, id, std::make_shared<draw::Unif_Mat<float, DN>>(id, m, n, bT)); }
-			void _makeUniformToken(UniMap& dstToken, GLint id, const HTex* hTex, int n, bool) const;
-			void _makeUniformToken(UniMap& dstToken, GLint id, const HLTex* hlTex, int n, bool) const;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) const {
+				MakeUniformToken<draw::Unif_Mat<float, DN>>(dst, id, id, m, n, bT); }
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool) const;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool) const;
 
 			// ----------------- Buffer Clear -----------------
 			void clearFramebuffer(const draw::ClearParam& param);
