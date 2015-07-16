@@ -12,6 +12,7 @@ namespace rs {
 		auto& fx = *lk->hlFx.ref();
 		if(!bSkip) {
 			lk->fps.update();
+			lk.unlock();
 			fx.execTask();
 		}
 		return !bSkip;
