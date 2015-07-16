@@ -360,19 +360,20 @@ namespace rs {
 		// set IBuffer
 		index.extractData(vs);
 	}
-	draw::UPTag GLEffect::Current::outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset) {
+	draw::TokenV GLEffect::Current::outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset) {
 		draw::VStream vs;
 		_outputDrawCall(vs);
-		return std::make_unique<draw::Tag_DrawI>(std::move(tokenV), std::move(vs),
-										mode, count, sizeF, offset);
-	}
-	draw::UPTag GLEffect::Current::outputDrawCall(GLenum mode, GLint first, GLsizei count) {
-		draw::VStream vs;
-		_outputDrawCall(vs);
-		return std::make_unique<draw::Tag_Draw>(std::move(tokenV), std::move(vs),
-										mode, first, count);
-	}
 
+		tokenV.emplace_back(std::make_shared<draw::DrawIndexed>(std::move(vs), mode, count, sizeF, offset));
+		return std::move(tokenV);
+	}
+	draw::TokenV GLEffect::Current::outputDrawCall(GLenum mode, GLint first, GLsizei count) {
+		draw::VStream vs;
+		_outputDrawCall(vs);
+
+		tokenV.emplace_back(std::make_shared<draw::Draw>(std::move(vs), mode, first, count));
+		return std::move(tokenV);
+	}
 	void GLEffect::onDeviceLost() {
 		if(_bInit) {
 			_bInit = false;
@@ -478,18 +479,17 @@ namespace rs {
 
 		// -------------- Task --------------
 		Task::Task(): _curWrite(0), _curRead(0) {}
-		Task::UPTagV& Task::refWriteEnt() {
+		Task::TokenV2& Task::refWriteEnt() {
 			UniLock lk(_mutex);
 			return _entry[_curWrite % NUM_ENTRY];
 		}
-		Task::UPTagV& Task::refReadEnt() {
+		Task::TokenV2& Task::refReadEnt() {
 			UniLock lk(_mutex);
 			return _entry[_curRead % NUM_ENTRY];
 		}
-		void Task::pushTag(UPTag tag) {
-			Assert(Trap, tag, "null pointer detected")
+		void Task::pushTokenV(TokenV&& tv) {
 			// DThとアクセスするエントリが違うからemplace_back中の同期をとらなくて良い
-			refWriteEnt().emplace_back(std::move(tag));
+			refWriteEnt().emplace_back(std::move(tv));
 		}
 		void Task::beginTask() {
 			UniLock lk(_mutex);
@@ -526,8 +526,10 @@ namespace rs {
 				auto& readent = refReadEnt();
 				lk = spn::none;
 				// MThとアクセスするエントリが違うから同期をとらなくて良い
-				for(auto& ent : readent)
-					ent->exec();
+				for(auto& entV : readent) {
+					for(auto& ent : entV)
+						ent->exec();
+				}
 				GL.glFlush();
 				lk = spn::construct(std::ref(_mutex));
 				++_curRead;
@@ -543,46 +545,35 @@ namespace rs {
 		void UserFunc::exec() {
 			_func();
 		}
-
-		// -------------- Tag_Tokens --------------
-		Tag_Tokens::Tag_Tokens(TokenV&& t):
-			_token(std::move(t))
-		{}
-		void Tag_Tokens::exec() {
-			for(auto& t : _token)
-				t->exec();
-		}
-		// -------------- Tag_DrawBase --------------
-		Tag_DrawBase::Tag_DrawBase(TokenV&& t, VStream&& vs):
-			_token(std::move(t)),
+		// -------------- DrawBase --------------
+		DrawBase::DrawBase(VStream&& vs):
+			Token(HRes()),
 			_vstream(std::move(vs))
 		{}
-		RUser<VStream> Tag_DrawBase::use() {
-			for(auto& t : _token)
-				t->exec();
+		RUser<VStream> DrawBase::use() {
 			return _vstream.use();
 		}
 		// -------------- Tag_Draw --------------
-		Tag_Draw::Tag_Draw(TokenV&& t, VStream&& vs, GLenum mode, GLint first, GLsizei count):
-			Tag_DrawBase(std::move(t), std::move(vs)),
+		Draw::Draw(VStream&& vs, GLenum mode, GLint first, GLsizei count):
+			DrawBase(std::move(vs)),
 			_mode(mode),
 			_first(first),
 			_count(count)
 		{}
-		void Tag_Draw::exec() {
+		void Draw::exec() {
 			auto u = use();
 			GL.glDrawArrays(_mode, _first, _count);
 			GLEC_Chk_D(Trap);
 		}
 		// -------------- Tag_DrawI --------------
-		Tag_DrawI::Tag_DrawI(TokenV&& t, VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset):
-			Tag_DrawBase(std::move(t), std::move(vs)),
+		DrawIndexed::DrawIndexed(VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset):
+			DrawBase(std::move(vs)),
 			_mode(mode),
 			_count(count),
 			_sizeF(sizeF),
 			_offset(offset)
 		{}
-		void Tag_DrawI::exec() {
+		void DrawIndexed::exec() {
 			auto u = use();
 			GL.glDrawElements(_mode, _count, _sizeF, reinterpret_cast<const GLvoid*>(_offset));
 			GLEC_Chk_D(Trap);
@@ -633,7 +624,7 @@ namespace rs {
 		if(auto sp = _current.outputFramebuffer())
 			tokenV.emplace_back(std::move(sp));
 		tokenV.emplace_back(tkn);
-		_task.pushTag(std::make_unique<draw::Tag_Tokens>(std::move(tokenV)));
+		_task.pushTokenV(std::move(tokenV));
 	}
 	void GLEffect::clearFramebuffer(const draw::ClearParam& param) {
 		_clearFramebuffer(std::make_shared<draw::Clear>(param));
@@ -657,8 +648,7 @@ namespace rs {
 		};
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
-		auto t = _current.outputDrawCall(mode, first, count);
-		_task.pushTag(std::move(t));
+		_task.pushTokenV(_current.outputDrawCall(mode, first, count));
 
 		_diffCount.buffer += _current.getDifference();
 		++_diffCount.drawNoIndexed;
@@ -667,8 +657,7 @@ namespace rs {
 		HIb hIb = _current.index.getIBuffer();
 		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
-		auto t = _current.outputDrawCallIndexed(mode, count, szF, offsetElem*str);
-		_task.pushTag(std::move(t));
+		_task.pushTokenV(_current.outputDrawCallIndexed(mode, count, szF, offsetElem*str));
 
 		_diffCount.buffer += _current.getDifference();
 		++_diffCount.drawIndexed;

@@ -211,12 +211,6 @@ namespace rs {
 		}
 	}
 	namespace draw {
-		struct ITag {
-			virtual ~ITag() {}
-			virtual void exec() = 0;
-		};
-		using UPTag = std::unique_ptr<ITag>;
-
 		class UserFunc : public Token {
 			public:
 				using Func = std::function<void ()>;
@@ -246,33 +240,25 @@ namespace rs {
 
 				RUser<VStream> use();
 		};
-		class Tag_Tokens : public ITag {
+		class DrawBase : public Token {
 			private:
-				TokenV		_token;
-			public:
-				Tag_Tokens(TokenV&& t);
-				void exec() override;
-		};
-		class Tag_DrawBase : public ITag {
-			private:
-				TokenV		_token;
 				VStream		_vstream;
 			protected:
-				Tag_DrawBase(TokenV&& t, VStream&& vs);
+				DrawBase(VStream&& vs);
 				RUser<VStream> use();
 		};
 		//! Draw token (without index)
-		class Tag_Draw : public Tag_DrawBase {
+		class Draw : public DrawBase {
 			private:
 				GLenum		_mode;
 				GLint		_first;
 				GLsizei		_count;
 			public:
-				Tag_Draw(TokenV&& t, VStream&& vs, GLenum mode, GLint first, GLsizei count);
+				Draw(VStream&& vs, GLenum mode, GLint first, GLsizei count);
 				void exec() override;
 		};
 		//! Draw token (with index)
-		class Tag_DrawI : public Tag_DrawBase {
+		class DrawIndexed : public DrawBase {
 			private:
 				GLenum		_mode;
 				GLsizei		_count;
@@ -283,7 +269,7 @@ namespace rs {
 					\param[in] count 描画に使用される要素数
 					\param[in] sizeF 1要素のサイズを表すフラグ
 					\param[in] offset オフセットバイト数 */
-				Tag_DrawI(TokenV&& t, VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
+				DrawIndexed(VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 				void exec() override;
 		};
 
@@ -292,19 +278,19 @@ namespace rs {
 		class Task {
 			constexpr static int NUM_ENTRY = 3;
 			//! 描画エントリのリングバッファ
-			using UPTagV = std::vector<UPTag>;
-			UPTagV	_entry[NUM_ENTRY];
+			using TokenV2 = std::vector<TokenV>;
+			TokenV2	_entry[NUM_ENTRY];
 			//! 読み書きカーソル位置
 			int			_curWrite, _curRead;
 			Mutex		_mutex;
 			CondV		_cond;
 
-			UPTagV& refWriteEnt();
-			UPTagV& refReadEnt();
+			TokenV2& refWriteEnt();
+			TokenV2& refReadEnt();
 			public:
 				Task();
 				// -------------- from MainThread --------------
-				void pushTag(UPTag tag);
+				void pushTokenV(TokenV&& tv);
 				void beginTask();
 				void endTask();
 				void clear();
@@ -385,8 +371,8 @@ namespace rs {
 				draw::SPToken outputFramebuffer();
 				//! DrawCallに関連するAPI呼び出しTokenを出力
 				/*! Vertex,Index BufferやUniform変数など */
-				draw::UPTag outputDrawCall(GLenum mode, GLint first, GLsizei count);
-				draw::UPTag outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
+				draw::TokenV outputDrawCall(GLenum mode, GLint first, GLsizei count);
+				draw::TokenV outputDrawCallIndexed(GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 			} _current;
 
 			using UnifIdV = std::vector<GLint>;
