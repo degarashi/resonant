@@ -183,7 +183,7 @@ namespace rs {
 		(GL.*infoF)(getProgramID(), n, countof(buff), &len, &sz, &typ, buff);
 		GLParamInfo ret = *GLFormat::QueryGLSLInfo(typ);
 		ret.name = buff;
-		return std::move(ret);
+		return ret;
 	}
 	GLParamInfo GLProgram::getActiveAttribute(int n) const {
 		return _getActiveParam(n, &IGL::glGetActiveAttrib);

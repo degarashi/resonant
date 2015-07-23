@@ -51,7 +51,7 @@ namespace rs {
 		size_t nread = vf.read(&rd.buff[0], totalbyte);
 		rd.buff.resize(nread);
 		rd.format = vf.getFormat();
-		return std::move(rd);
+		return rd;
 	}
 	void VorbisFile::_init() {
 		auto& rw = _hlRW.ref();

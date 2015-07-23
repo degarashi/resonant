@@ -684,7 +684,7 @@ namespace rs {
 			std::tuple<Ret...> call(Args&&... args) {
 				std::tuple<Ret...> ret;
 				this->operator()(ret, std::forward<Args>(args)...);
-				return std::move(ret);
+				return ret;
 			}
 
 			// --- convert function ---

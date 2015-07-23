@@ -155,7 +155,7 @@ namespace rs {
 		if(mode & Binary)
 			*pDst++ = 'b';
 		ret.resize(pDst - &ret[0]);
-		return std::move(ret);
+		return ret;
 	}
 	RWops::~RWops() {
 		close();
@@ -269,7 +269,7 @@ namespace rs {
 		seek(0, Begin);
 		read(&buff[0], sz, 1);
 		seek(pos, Begin);
-		return std::move(buff);
+		return buff;
 	}
 	RWops::Type RWops::getType() const { return _type; }
 	bool RWops::isMemory() const { return _type != File; }
@@ -360,7 +360,7 @@ namespace rs {
 		#endif
 		if(!dirName.empty())
 			path.append(dirName);
-		return std::move(path);
+		return path;
 	}
 	std::pair<HLRW,std::string> RWMgr::createTemporaryFile() {
 		// Temporaryディレクトリ構造を作る

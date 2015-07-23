@@ -92,7 +92,7 @@ namespace rs {
 							mm.insert(std::move(mp));
 						}
 					}
-					return std::move(mm);
+					return mm;
 				}
 				SettingList exportSetting() const {
 					std::vector<ValueSettingR> vsL;
@@ -128,7 +128,7 @@ namespace rs {
 						ret.push_back(b);
 					for(auto& v : vsL)
 						ret.push_back(v);
-					return std::move(ret);
+					return ret;
 				}
 		};
 		template <class DST, class SRC>
@@ -163,7 +163,7 @@ namespace rs {
 				ret.push_back(s);
 			}
 		}
-		return std::move(ret);
+		return ret;
 	}
 	TPStructR::TPStructR(const GLXStruct& gs, int tech, int pass) {
 		auto& tp = gs.tpL.at(tech);

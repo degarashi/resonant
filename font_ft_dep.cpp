@@ -140,7 +140,7 @@ namespace rs {
 				*dst++ = ((int32_t(0) - (pSrc[j/8] & (1<<(7-(j%8)))))>>8) & 0xff;
 			pSrc += pitch;
 		}
-		return std::move(buff);
+		return buff;
 	}
 	namespace {
 		template <int NB>
@@ -156,7 +156,7 @@ namespace rs {
 				}
 				pSrc += pitch;
 			}
-			return std::move(buff);
+			return buff;
 		}
 	}
 	spn::ByteBuff Convert8Bit_Packed24Bit(const void* src, int width, int pitch, int nrow) {

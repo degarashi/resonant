@@ -543,7 +543,7 @@ namespace rs {
 					_doSwitchState();
 					auto ret = std::forward<CB>(cb)();
 					_doSwitchState();
-					return std::move(ret);
+					return ret;
 				}
 				//! 前後をdoSwitchStateで挟む
 				/*! void バージョン */

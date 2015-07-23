@@ -275,7 +275,7 @@ namespace rs {
 	HLAct InputMgr::makeAction(const std::string& name) {
 		HLAct ret = _act.acquire(name, [](const auto&){ return detail::Action(); }).first;
 		_aset.insert(ret);
-		return std::move(ret);
+		return ret;
 	}
 	void InputMgr::linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive) {
 		hAct->addLink(InF::AsButton(hI, num_negative, true));

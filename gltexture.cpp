@@ -435,7 +435,7 @@ namespace rs {
 			}
 			brY.advance();
 		}
-		return std::move(buff);
+		return buff;
 	}
 	// ------------------------- TDCChecker -------------------------
 	TDCChecker::TDCChecker(int nDivW, int nDivH)/*: _nDivW(nDivW), _nDivH(nDivH)*/ {}
@@ -450,7 +450,7 @@ namespace rs {
 		};
 		spn::ByteBuff buff(sizeof(tex));
 		memcpy(&buff[0], tex, sizeof(tex));
-		return std::move(buff);
+		return buff;
 	}
 
 	// ------------------------- TDBorder -------------------------

@@ -202,7 +202,7 @@ namespace rs {
 			// valueは取り除きkeyはlua_nextのために保持
 			lsc.pop(1);
 		}
-		return std::move(ret);
+		return ret;
 	}
 	//TODO: アドレスを出力しても他のテーブルの区別がつかずあまり意味がないので改善する(出力階層の制限した上で列挙など)
 	std::ostream& LCV<LCTable>::operator()(std::ostream& os, const LCTable& t) const {

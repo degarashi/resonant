@@ -85,7 +85,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 rs::HLTex Sc_DSort::LoadTexture(int index) {
 	rs::HLTex hlST = mgr_gl.loadTexture((boost::format("spr%1%.png") % index).str());
 	hlST->get()->setFilter(rs::IGLTexture::MipmapLinear, true, true);
-	return std::move(hlST);
+	return hlST;
 }
 struct Sc_DSort::St_Init : StateT<St_Init> {
 	void onConnected(Sc_DSort& self, rs::HGroup hGroup) override {

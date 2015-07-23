@@ -22,7 +22,7 @@ namespace rs {
 					LHdl hdl(itr->second.lock());
 					if(!hdl.get().valid())
 						_resource.erase(itr);
-					return std::move(hdl);
+					return hdl;
 				}
 				return LHdl();
 			}

@@ -45,7 +45,7 @@ namespace rs {
 			key_k.popBack();
 			key_k.pushBack(str);
 		}
-		return std::move(key_k);
+		return key_k;
 	}
 	HLTex GLRes::loadTexture(const std::string& name, OPInCompressedFmt fmt) {
 		_setResourceTypeId(ResourceType::Texture);
@@ -188,7 +188,7 @@ namespace rs {
 			ret = loadEffect(uri.plain_utf8(), [](AdaptSDL& as){
 					return new GLEffect(as); });
 		}
-		return std::move(ret);
+		return ret;
 	}
 	HLFb GLRes::makeFBuffer() {
 		LHdl lh = base_type::acquire(UPResource(new GLFBuffer()));

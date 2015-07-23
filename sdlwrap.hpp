@@ -202,13 +202,13 @@ namespace rs {
 		SpinInner<SP, T2> castAndMove() {
 			SpinInner<SP, T2> ret(_src, reinterpret_cast<T2*>(_data));
 			_data = nullptr;
-			return std::move(ret);
+			return ret;
 		}
 		template <class T2>
 		SpinInner<SP, T2> castAndMoveDeRef() {
 			SpinInner<SP, T2> ret(_src, reinterpret_cast<T2*>(*_data));
 			_data = nullptr;
-			return std::move(ret);
+			return ret;
 		}
 	};
 

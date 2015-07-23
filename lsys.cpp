@@ -71,7 +71,7 @@ namespace rs {
 			LCValue lcv(h);
 			spn::TryEmplace(ret, std::move(ent), h);
 		});
-		return std::move(ret);
+		return ret;
 	}
 	// 非同期ロードスレッドで読み込む
 	UInt_MainT LSysFunc::loadResourcesASync(LValueG tbl) {
@@ -99,7 +99,7 @@ namespace rs {
 		LCValue ret(std::move(itr->second.result));
 		// エントリを削除
 		_async.erase(itr);
-		return std::move(ret);
+		return ret;
 	}
 	float LSysFunc::queryProgress(UInt_MainT id) {
 		UniLock lk(_mutex);

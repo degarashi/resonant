@@ -484,7 +484,7 @@ namespace rs {
 		call(1,1);
 		std::string ret = toString(-1);
 		pop(1);
-		return std::move(ret);
+		return ret;
 	}
 	float LuaState::toNumber(int idx) const {
 		return LCV<float>()(idx, getLS());
@@ -552,7 +552,7 @@ namespace rs {
 		void* ptr = lua_touserdata(ls, -1);
 		SPLua sp = reinterpret_cast<LuaState*>(ptr)->shared_from_this();
 		lua_pop(ls, 1);
-		return std::move(sp);
+		return sp;
 	}
 	void LuaState::_checkError(int code) const {
 		_CheckError(getLS(), code);

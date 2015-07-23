@@ -210,7 +210,7 @@ namespace rs {
 					w,h,
 					myformat.format, lk.getBits(), lk.getPitch(),
 					dstFmt, &dst[0], w*upFmt->BytesPerPixel);
-		return std::move(dst);
+		return dst;
 	}
 	SDL_Surface* Surface::getSurface() {
 		return _sfc;
@@ -251,7 +251,7 @@ namespace rs {
 		blitScaled(nsfc, srcRect, dstRect);
 
 		self->setBlendMode(bm);
-		return std::move(nsfc);
+		return nsfc;
 	}
 	SPSurface Surface::makeBlank() const {
 		return Create(width(), height(), getFormatEnum());
@@ -259,7 +259,7 @@ namespace rs {
 	SPSurface Surface::duplicate() const {
 		auto sp = makeBlank();
 		blit(sp, {0,width(),0,height()}, 0, 0);
-		return std::move(sp);
+		return sp;
 	}
 	SPSurface Surface::flipHorizontal() const {
 		auto sp = makeBlank();
@@ -267,7 +267,7 @@ namespace rs {
 			h = height();
 		for(int i=0 ; i<w ; i++)
 			blit(sp, {i,i+1,0,h}, w-i-1, 0);
-		return std::move(sp);
+		return sp;
 	}
 	SPSurface Surface::flipVertical() const {
 		auto sp = makeBlank();
@@ -275,7 +275,7 @@ namespace rs {
 			h = height();
 		for(int i=0 ; i<h ; i++)
 			blit(sp, {0,w,i,i+1}, 0, h-i-1);
-		return std::move(sp);
+		return sp;
 	}
 	void Surface::setEnableColorKey(uint32_t key) {
 		SDLEC(Trap, SDL_SetColorKey, _sfc, SDL_TRUE, key);
