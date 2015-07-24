@@ -220,7 +220,13 @@ namespace rs {
 				flag |= GL_STENCIL_BUFFER_BIT;
 				GL.glClearStencil(*_param.stencil);
 			}
+			// WindowsではDepthMaskをTrueにしないとクリアされない為、一旦値を退避
+			GLboolean b;
+			GL.glGetBooleanv(GL_DEPTH_TEST, &b);
+			GL.glDepthMask(GL_TRUE);
 			GL.glClear(flag);
+			// DepthMask値を戻す
+			GL.glDepthMask(b);
 		}
 	}
 }

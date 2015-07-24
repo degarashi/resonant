@@ -29,13 +29,6 @@ namespace rs {
 
 		// ----------------- GHelper_Draw -----------------
 		bool GHelper_Draw::runU(uint64_t accum, bool bSkip) {
-			if(!bSkip) {
-				GL.glClearColor(0,0,0.1f,1);
-				GL.glClearDepth(1.0f);
-				GL.glDepthMask(GL_TRUE);
-				GL.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-				GL.glDepthMask(GL_FALSE);
-			}
 			return DrawProc::runU(accum, bSkip);
 		}
 
