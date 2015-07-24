@@ -33,17 +33,23 @@ namespace rs {
 		}
 
 		// --------------------- FBSwitch ---------------------
-		FBSwitch::FBSwitch(rs::Priority dprio, rs::HFb hFb):
-			_hlFb(hFb)
+		FBSwitch::FBSwitch(rs::Priority dprio, rs::HFb hFb, const ClearParam_OP& cp):
+			_hlFb(hFb),
+			_cparam(cp)
 		{
 			_dtag.priority = dprio;
 		}
+		void FBSwitch::setClearParam(const ClearParam_OP& p) {
+			_cparam = p;
+		}
+		// これ自体の描画はしない
 		void FBSwitch::onDraw(rs::GLEffect& e) const {
 			if(_hlFb)
 				e.setFramebuffer(_hlFb);
 			else
 				e.resetFramebuffer();
-			// これ自体の描画はしない
+			if(_cparam)
+				e.clearFramebuffer(*_cparam);
 		}
 
 		// --------------------- FBClear ---------------------

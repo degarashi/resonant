@@ -21,10 +21,13 @@ namespace rs {
 		};
 		class FBSwitch : public DrawableObjT<FBSwitch> {
 			private:
-				HLFb		_hlFb;
+				HLFb			_hlFb;
+				using ClearParam_OP = spn::Optional<draw::ClearParam>;
+				ClearParam_OP	_cparam;
 			public:
-				FBSwitch(Priority dprio, HFb hFb);
+				FBSwitch(Priority dprio, HFb hFb, const ClearParam_OP& p=spn::none);
 				void onDraw(GLEffect& e) const override;
+				void setClearParam(const ClearParam_OP& p);
 		};
 		class FBClear : public DrawableObjT<FBClear> {
 			private:
