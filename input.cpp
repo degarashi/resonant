@@ -25,7 +25,7 @@ namespace rs {
 		}
 	}
 	// ----------------- Keyboard -----------------
-	std::string Keyboard::s_name("(default keyboard)");
+	const std::string Keyboard::s_name("(default keyboard)");
 	InputType Keyboard::getType() const {
 		return InputType::Keyboard;
 	}
@@ -46,6 +46,7 @@ namespace rs {
 	}
 
 	// ----------------- Mouse -----------------
+	const std::string Mouse::s_name("(default mouse)");
 	InputType Mouse::getType() const {
 		return InputType::Mouse;
 	}
@@ -72,7 +73,7 @@ namespace rs {
 		return MouseDep::OpenMouse<Mouse>(num);
 	}
 	const std::string& Mouse::name() const {
-		return name();
+		return s_name;
 	}
 	void Mouse::setMouseMode(MouseMode mode) {
 		dep_setMode(mode, _hlPtr.ref());

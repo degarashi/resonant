@@ -31,7 +31,7 @@ namespace rs {
 		public:
 			static int NumKeyboards(); */
 	class Keyboard : public KeyboardDep, public IInput {
-		static std::string		s_name;
+		const static std::string		s_name;
 		public:
 			using KeyboardDep::KeyboardDep;
 			InputType getType() const override;
@@ -59,6 +59,7 @@ namespace rs {
 	class Mouse : public MouseDep, public IInput {
 		DZoneL		_axisDZ = DZoneL(MouseDep::dep_numAxes());
 		HLPtr		_hlPtr = mgr_pointer.acquire(TPos2D(TPos2D::Clean));
+		const static std::string		s_name;
 
 		public:
 			using MouseDep::MouseDep;
