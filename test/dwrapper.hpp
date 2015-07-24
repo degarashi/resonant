@@ -25,6 +25,9 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 				auto hl = self.handleFromThis();
 				self._getDGroup()->get()->remObj(hl);
 			}
+			void onUpdate(DWrapper& self) override {
+				self.refreshDrawTag();
+			}
 			void onDraw(const DWrapper& self, rs::GLEffect& e) const override {
 				auto& fx = static_cast<Engine&>(e);
 				fx.setTechPassId(self._tpId);

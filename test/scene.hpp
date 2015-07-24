@@ -37,6 +37,8 @@ class Sc_Sound : public rs::Scene<Sc_Sound> {
 	public:
 		Sc_Sound(Sc_Base& b);
 };
+DefineDrawGroup(MyDG)
+DefineDrawGroupProxy(MyP)
 //! スプライトによる描画ソートテスト(static)
 class Sc_DSort : public rs::Scene<Sc_DSort> {
 	private:
@@ -45,6 +47,7 @@ class Sc_DSort : public rs::Scene<Sc_DSort> {
 		struct St_Test;
 		using HLSprV = std::vector<rs::HLDObj>;
 		HLSprV		_hlSpriteV;
+		rs::HLDGroup	_myDg;
 	public:
 		static rs::HLTex LoadTexture(int index);
 		Sc_DSort(Sc_Base& b);

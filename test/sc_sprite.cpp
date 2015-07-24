@@ -54,7 +54,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 	int	_index;
 	St_Test(Sc_DSort& self, int index, bool bFirst, bool bSort) {
 		_index = index;
-		self.getBase().getDraw()->get()->setSortAlgorithm(c_makeds[index](), false);
+		self._myDg->get()->setSortAlgorithm(c_makeds[index](), false);
 	}
 	void onUpdate(Sc_DSort& self) override {
 		// 一定時間ごとにランダムなスプライトを選んで一旦グループから外し、再登録
@@ -87,25 +87,31 @@ rs::HLTex Sc_DSort::LoadTexture(int index) {
 	hlST->get()->setFilter(rs::IGLTexture::MipmapLinear, true, true);
 	return hlST;
 }
+ImplDrawGroup(MyP, 0x2000)
+ImplDrawGroup(MyDG, 0x1000)
 struct Sc_DSort::St_Init : StateT<St_Init> {
 	void onConnected(Sc_DSort& self, rs::HGroup hGroup) override {
+		self.getDrawGroup().setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
 		// 前シーンのアップデートグループを流用
 		{	auto hG = mgr_scene.getSceneBase(1).getUpdate();
 			mgr_scene.getSceneBase(0).getUpdate()->get()->addObj(hG); }
+		// ---- make FBClear ----
+		self.getDrawGroup().addObj(MakeFBClear(0x0000));
 		// 前シーンの描画グループを流用
 		{	auto hDGroup = mgr_scene.getSceneBase(1).getDraw();
-			self.getBase().getDraw()->get()->addObj(hDGroup); }
-
+			self.getDrawGroup().addObj(rs_mgr_obj.makeDrawGroup<MyP>(hDGroup).first.get()); }
+		self._myDg = rs_mgr_obj.makeDrawGroup<MyDG>().first;
+		self.getDrawGroup().addObj(self._myDg.get());
 		// スプライト画像の読み込み
 		using SpriteObj = DWrapper<Sprite>;
-		auto& upd = self.getBase().getUpdate().ref();
 		for(int i=0 ; i<self._hlSpriteV.size() ; i++) {
 			rs::HLTex hlST = LoadTexture(i);
-			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, rs::HDGroup(), hlST, i*0.1f);
+			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, self._myDg, hlST, i*0.1f);
 			hlp.second->setScale(spn::Vec2(0.3f));
 			hlp.second->setOffset(spn::Vec2(-1.f + i*0.2f,
 									(i&1)*-0.1f));
 			self._hlSpriteV[i] = hlp.first;
+			auto& upd = self.getBase().getUpdate().ref();
 			upd.get()->addObj(hlp.first.get());
 		}
 		self.setStateNew<St_Test>(std::ref(self), 0, true, false);

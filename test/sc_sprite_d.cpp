@@ -60,6 +60,7 @@ enum CPriority : rs::Priority {
 	p_curScene,
 	p_blur0,
 	p_fbsw1,
+	p_fbcl1,
 	p_blur1,
 	p_prevScene
 };
@@ -86,23 +87,23 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 	void onConnected(Sc_DSortD& self, rs::HGroup hGroup) override {
 		auto	&sb0 = mgr_scene.getSceneBase(0),
 				&sb1 = mgr_scene.getSceneBase(1);
+		auto &dg0 = sb0.getDraw()->operator *();
 		// 前シーンのアップデートグループを流用
 		{	auto hG = sb1.getUpdate();
 			sb0.getUpdate()->get()->addObj(hG); }
 
-		auto &dg0 = sb0.getDraw()->operator *();
 		// メイン描画グループ (ユーザー定義の優先度でソート)
 		dg0.setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
 		// [FBSwitch(Cur)]
 		{
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw0, _hlFb);
-			self.getDrawGroup().addObj(hlp.first);
+			dg0.addObj(hlp.first);
 		}
 		// [FBClear]
 		{
 			rs::draw::ClearParam cp{spn::Vec4(0,0,0,1.f), 1.f, 0};
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBClear>(p_fbclear, cp);
-			self.getDrawGroup().addObj(hlp.first);
+			dg0.addObj(hlp.first);
 		}
 		// [現シーンのDG] Z値でソート(Dynamic)
 		auto hDG = rs_mgr_obj.makeDrawGroup<MyDGroup>(rs::DSortV{rs::cs_dsort_z_asc}, true);
@@ -111,16 +112,21 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		{
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(p_blur0);
 			hlp.second->setAlpha(0);
-			self.getDrawGroup().addObj(hlp.first);
+			dg0.addObj(hlp.first);
 			_pBlur0 = hlp.second;
 		}
 		// [FBSwitch(Default)]
-		self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw1, rs::HFb()).first);
+		dg0.addObj(rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw1, rs::HFb()).first);
+		// [FBClear(Default-Z)]
+		{
+			rs::draw::ClearParam clp{spn::none, 1.f};
+			dg0.addObj(rs_mgr_obj.makeDrawable<rs::util::FBClear>(p_fbcl1, clp).first);
+		}
 		// [Blur(今回のベタ描画)]
 		{
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(p_blur1);
 			hlp.second->setAlpha(1.f);
-			self.getDrawGroup().addObj(hlp.first);
+			dg0.addObj(hlp.first);
 			_pBlur1 = hlp.second;
 		}
 		// [前シーンのDG]

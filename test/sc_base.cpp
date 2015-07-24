@@ -6,6 +6,7 @@
 #include "../updater.hpp"
 #include "../gameloophelper.hpp"
 #include "../font.hpp"
+#include "../util/screen.hpp"
 
 ImplDrawGroup(BaseDRG, 0x8000)
 const rs::GMessageId MSG_StateName = rs::GMessage::RegMsgId("MSG_StateName");
@@ -16,6 +17,10 @@ struct Sc_Base::St_Default : StateT<St_Default> {
 	void onConnected(Sc_Base& self, rs::HGroup hGroup) override;
 	void onDisconnected(Sc_Base& self, rs::HGroup hGroup) override;
 };
+rs::HLDObj MakeFBClear(rs::Priority priority) {
+	rs::draw::ClearParam clp{spn::Vec4{0,0,0,0}, 1.f};
+	return rs_mgr_obj.makeDrawable<rs::util::FBClear>(priority, clp).first;
+}
 void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
 	mgr_random.initEngine(RandomId);
 	self._random = mgr_random.get(RandomId);

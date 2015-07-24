@@ -14,6 +14,8 @@ rs::LCValue Sc_Cube::St_Default::recvMsg(Sc_Cube& self, rs::GMessageId id, const
 	return rs::LCValue();
 }
 void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
+	// ---- make FBClear ----
+	self.getDrawGroup().addObj(MakeFBClear(0x0000));
 	// 前シーンの描画 & アップデートグループを流用
 	{	auto hDGroup = mgr_scene.getSceneBase(1).getDraw();
 		mgr_scene.getDrawGroup().addObj(hDGroup); }
