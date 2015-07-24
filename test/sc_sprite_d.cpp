@@ -56,11 +56,9 @@ class BoundingSprite : public DWrapper<Sprite> {
 };
 enum CPriority : rs::Priority {
 	p_fbsw0,
-	p_fbclear,
 	p_curScene,
 	p_blur0,
 	p_fbsw1,
-	p_fbcl1,
 	p_blur1,
 	p_prevScene
 };
@@ -94,15 +92,10 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 
 		// メイン描画グループ (ユーザー定義の優先度でソート)
 		dg0.setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
-		// [FBSwitch(Cur)]
-		{
-			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw0, _hlFb);
-			dg0.addObj(hlp.first);
-		}
-		// [FBClear]
+		// [FBSwitch&Clear(Cur)]
 		{
 			rs::draw::ClearParam cp{spn::Vec4(0,0,0,1.f), 1.f, 0};
-			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBClear>(p_fbclear, cp);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw0, _hlFb, cp);
 			dg0.addObj(hlp.first);
 		}
 		// [現シーンのDG] Z値でソート(Dynamic)
@@ -115,12 +108,10 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 			dg0.addObj(hlp.first);
 			_pBlur0 = hlp.second;
 		}
-		// [FBSwitch(Default)]
-		dg0.addObj(rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw1, rs::HFb()).first);
-		// [FBClear(Default-Z)]
+		// [FBSwitch&ClearZ(Default)]
 		{
 			rs::draw::ClearParam clp{spn::none, 1.f};
-			dg0.addObj(rs_mgr_obj.makeDrawable<rs::util::FBClear>(p_fbcl1, clp).first);
+			dg0.addObj(rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw1, rs::HFb(), clp).first);
 		}
 		// [Blur(今回のベタ描画)]
 		{
