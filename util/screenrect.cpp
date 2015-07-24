@@ -4,43 +4,36 @@
 
 namespace rs {
 	namespace util {
-		WVb ScreenRect::s_wVb;
-		WIb ScreenRect::s_wIb;
-		// ---------------------- ScreenRect ----------------------
-		ScreenRect::ScreenRect() {
-			if(auto h = s_wVb.lock())
-				_hlVb = h;
-			else {
-				_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-				const vertex::screen c_vertex[] = {
-					{{-1,-1}, {0,0}},
-					{{-1,1}, {0,1}},
-					{{1,1}, {1,1}},
-					{{1,-1}, {1,0}}
-				};
-				_hlVb->get()->initData(c_vertex, countof(c_vertex), sizeof(c_vertex[0]));
-				s_wVb = _hlVb.weak();
-			}
-			if(auto h = s_wIb.lock())
-				_hlIb = h;
-			else {
-				const GLubyte c_index[] = {
-					0,1,2, 2,3,0
-				};
-				_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
-				_hlIb->get()->initData(c_index, countof(c_index));
-				s_wIb = _hlIb.weak();
-			}
+		// ---------------------- Rect01 ----------------------
+		HLVb Rect01::MakeVertex() {
+			HLVb hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+			const vertex::screen c_vertex[] = {
+				{{-1,-1}, {0,0}},
+				{{-1,1}, {0,1}},
+				{{1,1}, {1,1}},
+				{{1,-1}, {1,0}}
+			};
+			hlVb->get()->initData(c_vertex, countof(c_vertex), sizeof(c_vertex[0]));
+			return hlVb;
 		}
+		HLIb Rect01::MakeIndex() {
+			const GLubyte c_index[] = {
+				0,1,2, 2,3,0
+			};
+			HLIb hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+			hlIb->get()->initData(c_index, countof(c_index));
+			return hlIb;
+		}
+		// ---------------------- ScreenRect ----------------------
 		void ScreenRect::exportDrawTag(DrawTag& tag) const {
-			tag.idIBuffer = _hlIb;
-			tag.idVBuffer[0] = _hlVb;
+			tag.idIBuffer = _rect01.getIndex();
+			tag.idVBuffer[0] = _rect01.getVertex();
 		}
 		void ScreenRect::draw(GLEffect& e) const {
 			e.setVDecl(DrawDecl<vdecl::screen>::GetVDecl());
-			e.setVStream(_hlVb, 0);
-			e.setIStream(_hlIb);
-			e.drawIndexed(GL_TRIANGLES, _hlIb->get()->getNElem());
+			e.setVStream(_rect01.getVertex(), 0);
+			e.setIStream(_rect01.getIndex());
+			e.drawIndexed(GL_TRIANGLES, _rect01.getIndex()->get()->getNElem());
 		}
 	}
 	// ---------------------- Screen頂点宣言 ----------------------

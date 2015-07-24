@@ -1,4 +1,5 @@
 #pragma once
+#include "sharedgeom.hpp"
 #include "../handle.hpp"
 #include "../vertex.hpp"
 
@@ -19,15 +20,17 @@ DefineVDecl(::rs::vdecl::screen)
 namespace rs {
 	struct DrawTag;
 	namespace util {
+		//! [-1, 1]の正方形ジオメトリ
+		class Rect01 : public SharedGeometry<Rect01> {
+			public:
+				static HLVb MakeVertex();
+				static HLIb MakeIndex();
+		};
 		//! 画面全体を覆う矩形ポリゴン (ポストエフェクト用)
 		class ScreenRect {
 			private:
-				static WVb		s_wVb;
-				static WIb		s_wIb;
-				HLVb			_hlVb;
-				HLIb			_hlIb;
+				Rect01	_rect01;
 			public:
-				ScreenRect();
 				void exportDrawTag(DrawTag& tag) const;
 				void draw(GLEffect& e) const;
 		};
