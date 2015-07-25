@@ -4,11 +4,14 @@
 #include "../gameloophelper.hpp"
 #include "../differential.hpp"
 #include "engine.hpp"
+#include "dwrapper.hpp"
+#include "../util/screenrect.hpp"
 
 const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("Text", "Default");
 const std::string g_fontName("IPAGothic");
 // ---------------------- InfoShow::MySt ----------------------
 struct InfoShow::MySt : StateT<MySt> {
+	rs::util::WindowRect* pRect;
 	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
@@ -45,23 +48,37 @@ void InfoShow::MySt::onUpdate(InfoShow& self) {
 		self._count = lk->diffCount;
 	}
 	self._textHud.exportDrawTag(self._dtag);
+	auto sz = self._textHud.getText()->getSize();
+	pRect->setScale({sz.width, -sz.height});
+	pRect->setOffset(self._offset);
 }
+
+const rs::IdValue T_Rect = GlxId::GenTechId("Sprite", "Rect");
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
+	auto* d = self._hDg->get();
+	{
+		auto hlp = rs_mgr_obj.makeDrawable<DWrapper<rs::util::WindowRect>>(T_Rect, rs::HDGroup());
+		hlp.second->setAlpha(0.5f);
+		hlp.second->setColor({0,1,0});
+		d->addObj(hlp.first);
+		pRect = hlp.second;
+	}
 	auto lh = self.handleFromThis();
-	auto d = mgr_scene.getSceneBase().getDraw();
-	d->get()->addObj(lh);
+	d->addObj(lh);
 }
 void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
+	auto* d = self._hDg->get();
 	auto lh = self.handleFromThis();
-	auto d = mgr_scene.getSceneBase().getDraw();
-	d->get()->remObj(lh);
+	d->remObj(lh);
 }
 rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) {
 	return rs::LCValue();
 }
 // ---------------------- InfoShow ----------------------
-InfoShow::InfoShow():
-	_textHud(T_Info)
+InfoShow::InfoShow(rs::HDGroup hDg):
+	_hDg(hDg),
+	_textHud(T_Info),
+	_offset(0)
 {
 	//  フォント読み込み
 	rs::CCoreID cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 20, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel));
@@ -78,5 +95,9 @@ InfoShow::InfoShow():
 			<< "DriverVersion: " << info.driverVersion() << std::endl;
 	_infotext = spn::Text::UTFConvertTo32(ss.str());
 	setStateNew<MySt>();
+}
+void InfoShow::setOffset(const spn::Vec2& ofs) {
+	_offset = ofs;
+	_textHud.setWindowOffset(ofs);
 }
 rs::Priority InfoShow::getPriority() const { return 0x1000; }

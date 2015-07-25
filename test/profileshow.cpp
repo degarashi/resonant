@@ -4,16 +4,25 @@
 #include "engine.hpp"
 #include "../gameloophelper.hpp"
 #include <iomanip>
+#include "dwrapper.hpp"
 
 // ---------------------- ProfileShow::St_Default ----------------------
 struct ProfileShow::St_Default : StateT<St_Default> {
+	rs::util::WindowRect* pRect;
 	void onConnected(ProfileShow& self, rs::HGroup hGroup) override {
-		auto d = mgr_scene.getSceneBase().getDraw();
-		d->get()->addObj(self.handleFromThis());
+		auto* dg = self._hDg->get();
+		{
+			auto hlp = rs_mgr_obj.makeDrawable<DWrapper<rs::util::WindowRect>>(T_Rect, rs::HDGroup());
+			hlp.second->setColor({0,0,1});
+			hlp.second->setAlpha(0.5f);
+			dg->addObj(hlp.first);
+			pRect = hlp.second;
+		}
+		dg->addObj(self.handleFromThis());
 	}
 	void onDisconnected(ProfileShow& self, rs::HGroup hGroup) override {
-		auto d = mgr_scene.getSceneBase().getDraw();
-		d->get()->remObj(self.handleFromThis());
+		auto* dg = self._hDg->get();
+		dg->remObj(self.handleFromThis());
 	}
 	void onDraw(const ProfileShow& self, rs::GLEffect& e) const override {
 		if(self._spProfile) {
@@ -40,16 +49,25 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 	void onUpdate(ProfileShow& self) override {
 		// プロファイラの(1フレーム前の)情報を取得
 		self._spProfile = spn::profiler.getRoot();
+		auto sz = self._textHud.getText()->getSize();
+		pRect->setScale({sz.width, -sz.height});
+		pRect->setOffset(self._offset);
 	}
 };
 
 // ---------------------- ProfileShow ----------------------
-ProfileShow::ProfileShow(rs::CCoreID cid):
-	_textHud(InfoShow::T_Info)
+ProfileShow::ProfileShow(rs::CCoreID cid, rs::HDGroup hDg):
+	_hDg(hDg),
+	_textHud(InfoShow::T_Info),
+	_offset(0)
 {
 	_textHud.setCCoreId(cid);
 	_textHud.setScreenOffset({-1,0});
 	_textHud.setDepth(0.f);
 	setStateNew<St_Default>();
+}
+void ProfileShow::setOffset(const spn::Vec2& ofs) {
+	_offset = ofs;
+	_textHud.setWindowOffset(ofs);
 }
 rs::Priority ProfileShow::getPriority() const { return 0x2000; }

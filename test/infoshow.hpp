@@ -12,13 +12,16 @@ class InfoShow : public rs::DrawableObjT<InfoShow>,
 				public spn::EnableFromThis<rs::HDObj>
 {
 	private:
+		rs::HDGroup			_hDg;
 		rs::util::TextHUD	_textHud;
 		std::u32string		_infotext;
 		rs::diff::Effect	_count;
+		spn::Vec2			_offset;
 
 		struct MySt;
 	public:
 		static const rs::IdValue	T_Info;
-		InfoShow();
+		InfoShow(rs::HDGroup hDg);
+		void setOffset(const spn::Vec2& ofs);
 		rs::Priority getPriority() const override;
 };

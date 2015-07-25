@@ -45,6 +45,9 @@ class DWrapper : public rs::DrawableObjT<DWrapper<Base>>,
 			base_dt::_dtag.idTechPass = tpId;
 			base_dt::template setStateNew<St_Default>();
 		}
+		void setPriority(rs::Priority p) {
+			base_dt::_dtag.priority = p;
+		}
 		void refreshDrawTag() {
 			Base::exportDrawTag(base_dt::_dtag);
 		}

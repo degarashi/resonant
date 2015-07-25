@@ -25,16 +25,22 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
 	mgr_random.initEngine(RandomId);
 	self._random = mgr_random.get(RandomId);
 
+	// ---- FBClear(Z) ----
+	rs::draw::ClearParam clp{spn::none, 1.f};
+	self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<rs::util::FBClear>(0x0000, clp).first);
+
+	auto hDg = self.getBase().getDraw();
 	// ---- make InfoShow ----
-	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>().first;
+	rs::HLDObj hlInfo = rs_mgr_obj.makeDrawable<InfoShow>(hDg).first;
 	auto* upd = self.getBase().getUpdate()->get();
 	upd->addObj(hlInfo.get());
 	self._hInfo = hlInfo;
 
 	rs::CCoreID cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
 	// ---- make ProfileShow ----
-	auto hlProf = rs_mgr_obj.makeDrawable<ProfileShow>(cid).first;
-	upd->addObj(hlProf.get());
+	auto hlProf = rs_mgr_obj.makeDrawable<ProfileShow>(cid, hDg);
+	upd->addObj(hlProf.first.get());
+	hlProf.second->setOffset({0, 480});
 
 	auto hlFP = rs_mgr_obj.makeObj<FPSCamera>().first;
 	self.getBase().getUpdate()->get()->addObj(hlFP);

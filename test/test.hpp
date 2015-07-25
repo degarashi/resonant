@@ -57,3 +57,4 @@ struct SharedValue {
 using GlxId = rs::GLEffect::GlxId;
 extern const rs::GMessageId MSG_StateName;
 rs::HLDObj MakeFBClear(rs::Priority priority);
+extern const rs::IdValue T_Rect;
