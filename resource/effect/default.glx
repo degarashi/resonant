@@ -102,6 +102,9 @@ uniform SpriteUnif {
 	float sys_fDepth;
 	float sys_fAlpha;
 }
+uniform RectUnif : SpriteUnif {
+	vec3 sys_vColor;
+}
 vertexshader(400) SpriteVS() {
 	gl_Position.xyz = vec3(atPos, 1) * sys_mTrans2d;
 	gl_Position.z = sys_fDepth;
@@ -115,8 +118,16 @@ fragmentshader(400) SpriteFS() {
 		discard;
 	gl_FragColor = c;
 }
+fragmentshader(400) RectFS() {
+	vec4 c;
+	c.xyz = sys_vColor;
+	c.w = sys_fAlpha;
+	if(c.w < 0.1)
+		discard;
+	gl_FragColor = c;
+}
 technique Sprite {
-	CullFace = true;
+	CullFace = false;
 	FrontFace = cw;
 	Blend = true;
 	BlendFunc = SrcAlpha InvSrcAlpha;
@@ -129,8 +140,12 @@ technique Sprite {
 		VertexShader = SpriteVS();
 		FragmentShader = SpriteFS();
 	}
+	pass Rect {
+		Uniform = RectUnif;
+		VertexShader = SpriteVS();
+		FragmentShader = RectFS();
+	}
 }
-
 uniform PFxUnif {
 	sampler2D sys_texDiffuse;
 	float sys_fDepth;

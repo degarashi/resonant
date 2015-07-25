@@ -33,6 +33,7 @@ namespace rs {
 			public:
 				Text(IdValue idTech);
 				void setCCoreId(CCoreID cid);
+				HText getText() const;
 				CCoreID getCCoreId() const;
 				void setTextSize(Size_OP s=spn::none);
 				void setText(spn::To32Str str);

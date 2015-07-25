@@ -3,7 +3,8 @@
 
 namespace rs {
 	namespace unif {
-		extern const IdValue		Alpha;			// "sys_fAlpha"
+		extern const IdValue		Alpha,			// "sys_fAlpha"
+									Color;			// "sys_vColor"
 		namespace texture {
 			extern const IdValue Diffuse;		// "sys_texDiffuse"
 		}

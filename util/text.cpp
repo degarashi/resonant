@@ -34,6 +34,11 @@ namespace rs {
 		CCoreID Text::getCCoreId() const {
 			return _charId;
 		}
+		HText Text::getText() const {
+			if(!_hlText)
+				_makeTextCache();
+			return _hlText;
+		}
 		void Text::_makeTextCache() const {
 			_hlText = mgr_text.createText(_charId, _text);
 		}

@@ -4,7 +4,8 @@
 namespace rs {
 	using GlxId = GLEffect::GlxId;
 	namespace unif {
-		const IdValue Alpha = GlxId::GenUnifId("sys_fAlpha");
+		const IdValue Alpha = GlxId::GenUnifId("sys_fAlpha"),
+					Color = GlxId::GenUnifId("sys_vColor");
 		namespace texture {
 			const IdValue Diffuse = GlxId::GenUnifId("sys_texDiffuse");
 		}
