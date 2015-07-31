@@ -49,7 +49,7 @@ void Sprite::draw(Engine& e) const {
 	e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
 	e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
 	e.setUniform(rs::unif::Alpha, _alpha);
-	e.ref2d().setWorld(getToWorld().convertA33());
+	e.ref<rs::SystemUniform2D>().setWorld(getToWorld().convertA33());
 	e.setVStream(_hlVb, 0);
 	e.setIStream(_hlIb);
 	e.drawIndexed(GL_TRIANGLES, 6);

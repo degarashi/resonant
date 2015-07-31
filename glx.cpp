@@ -618,6 +618,7 @@ namespace rs {
 		_current.tokenML.allocate<draw::Clear>(param);
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
+		_prepareUniforms();
 		_current.outputDrawCall(mode, first, count);
 		_task.refWriteEnt().append(std::move(_current.tokenML));
 
@@ -625,6 +626,7 @@ namespace rs {
 		++_diffCount.drawNoIndexed;
 	}
 	void GLEffect::drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem) {
+		_prepareUniforms();
 		HIb hIb = _current.index.getIBuffer();
 		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
@@ -776,6 +778,7 @@ namespace rs {
 	diff::Effect GLEffect::getDifference() const {
 		return _diffCount;
 	}
+	void GLEffect::_prepareUniforms() {}
 	GLEffect::GlxId GLEffect::s_myId;
 
 	// ------------- ShStruct -------------

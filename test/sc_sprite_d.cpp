@@ -1,14 +1,15 @@
 #include "test.hpp"
 #include "scene.hpp"
-#include "dwrapper.hpp"
+#include "../util/dwrapper.hpp"
 #include "sprite.hpp"
 #include "spinner/random.hpp"
 #include "../util/screen.hpp"
 #include "../input.hpp"
+#include "../sys_uniform_value.hpp"
 
-class BoundingSprite : public DWrapper<Sprite> {
+class BoundingSprite : public rs::util::DWrapper<Sprite, CnvToEngine> {
 	private:
-		using base_t = DWrapper<Sprite>;
+		using base_t = rs::util::DWrapper<Sprite, CnvToEngine>;
 		spn::Vec2	_svec;
 		struct St_Default : base_t::St_Default {
 			void onUpdate(base_t& self) override {

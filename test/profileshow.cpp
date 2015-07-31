@@ -4,7 +4,7 @@
 #include "engine.hpp"
 #include "../gameloophelper.hpp"
 #include <iomanip>
-#include "dwrapper.hpp"
+#include "../util/dwrapper.hpp"
 
 // ---------------------- ProfileShow::St_Default ----------------------
 struct ProfileShow::St_Default : StateT<St_Default> {
@@ -12,7 +12,7 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 	void onConnected(ProfileShow& self, rs::HGroup hGroup) override {
 		auto* dg = self._hDg->get();
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<DWrapper<rs::util::WindowRect>>(T_Rect, rs::HDGroup());
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::DWrapper<rs::util::WindowRect, CnvToEngine>>(T_Rect, rs::HDGroup());
 			hlp.second->setColor({0,0,1});
 			hlp.second->setAlpha(0.5f);
 			dg->addObj(hlp.first);

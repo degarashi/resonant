@@ -3,7 +3,6 @@
 #include "../handle.hpp"
 #include "spinner/structure/range.hpp"
 
-class Engine;
 namespace rs {
 	struct DrawTag;
 }

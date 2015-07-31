@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 		// init Effect
 		{
 			lk->pEngine = static_cast<Engine*>(lkb->hlFx->get());
-			lk->pEngine->ref3d().setCamera(lk->hlCam);
+			lk->pEngine->ref<rs::SystemUniform3D>().setCamera(lk->hlCam);
 		}
 		// init Input
 		{

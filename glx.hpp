@@ -408,6 +408,8 @@ namespace rs {
 			void _setConstantUniformList(const StrV* src);
 			void _setConstantTechPassList(const StrPairV* src);
 			void _clearFramebuffer(draw::TokenML& ml);
+		protected:
+			virtual void _prepareUniforms();
 		public:
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
@@ -524,12 +526,12 @@ namespace rs {
 			/*! \param[in] mode 描画モードフラグ(OpenGL)
 				\param[in] count 描画に使用される要素数
 				\param[in] offsetElem オフセット要素数 */
-			virtual void drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem=0);
+			void drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem=0);
 			//! IStreamを使わず描画
 			/*! \param[in] mode 描画モードフラグ(OpenGL)
 				\param[in] first 描画を開始する要素オフセット
 				\param[in] count 描画に使用される要素数 */
-			virtual void draw(GLenum mode, GLint first, GLsizei count);
+			void draw(GLenum mode, GLint first, GLsizei count);
 
 			// ----------------- Task switching -----------------
 			// ---- from MainThread ----

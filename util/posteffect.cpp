@@ -4,6 +4,9 @@
 
 namespace rs {
 	namespace util {
+		void DWrapper_SetTPId(GLEffect& e, IdValue id) {
+			e.setTechPassId(id);
+		}
 		// --------------------- PostEffect ---------------------
 		const rs::IdValue T_PostEffect = GLEffect::GlxId::GenTechId("PostEffect", "Default");
 		PostEffect::PostEffect(rs::Priority dprio):

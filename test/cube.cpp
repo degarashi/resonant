@@ -79,7 +79,7 @@ void Cube::draw(Engine& e) const {
 
 	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());
 	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
-	e.ref3d().setWorld(getToWorld().convertA44());
+	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
 	e.setUniform(U_litpos, spn::Vec3(0,2,2), false);
 	e.draw(GL_TRIANGLES, 0, 6*6);

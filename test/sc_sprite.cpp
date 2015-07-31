@@ -1,6 +1,6 @@
 #include "test.hpp"
 #include "scene.hpp"
-#include "dwrapper.hpp"
+#include "../util/dwrapper.hpp"
 #include "sprite.hpp"
 #include "../input.hpp"
 #include "spinner/random.hpp"
@@ -103,7 +103,7 @@ struct Sc_DSort::St_Init : StateT<St_Init> {
 		self._myDg = rs_mgr_obj.makeDrawGroup<MyDG>().first;
 		self.getDrawGroup().addObj(self._myDg.get());
 		// スプライト画像の読み込み
-		using SpriteObj = DWrapper<Sprite>;
+		using SpriteObj = rs::util::DWrapper<Sprite, CnvToEngine>;
 		for(int i=0 ; i<self._hlSpriteV.size() ; i++) {
 			rs::HLTex hlST = LoadTexture(i);
 			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, self._myDg, hlST, i*0.1f);

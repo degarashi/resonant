@@ -4,7 +4,7 @@
 #include "../gameloophelper.hpp"
 #include "../differential.hpp"
 #include "engine.hpp"
-#include "dwrapper.hpp"
+#include "../util/dwrapper.hpp"
 #include "../util/screenrect.hpp"
 
 const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("Text", "Default");
@@ -53,11 +53,14 @@ void InfoShow::MySt::onUpdate(InfoShow& self) {
 	pRect->setOffset(self._offset);
 }
 
+Engine& CnvToEngine::operator()(rs::GLEffect& e) const {
+	return static_cast<Engine&>(e);
+}
 const rs::IdValue T_Rect = GlxId::GenTechId("Sprite", "Rect");
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 	auto* d = self._hDg->get();
 	{
-		auto hlp = rs_mgr_obj.makeDrawable<DWrapper<rs::util::WindowRect>>(T_Rect, rs::HDGroup());
+		auto hlp = rs_mgr_obj.makeDrawable<rs::util::DWrapper<rs::util::WindowRect, CnvToEngine>>(T_Rect, rs::HDGroup());
 		hlp.second->setAlpha(0.5f);
 		hlp.second->setColor({0,1,0});
 		d->addObj(hlp.first);

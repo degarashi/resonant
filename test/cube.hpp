@@ -6,7 +6,6 @@
 namespace rs {
 	struct DrawTag;
 }
-class Engine;
 class Cube : public spn::Pose3D {
 	private:
 		static rs::WVb s_wVb;

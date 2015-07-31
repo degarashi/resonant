@@ -1,5 +1,5 @@
 #include "test.hpp"
-#include "dwrapper.hpp"
+#include "../util/dwrapper.hpp"
 #include "cube.hpp"
 #include "scene.hpp"
 
@@ -20,7 +20,7 @@ void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
 	// ---- make cube ----
 	rs::HLTex hlTex = mgr_gl.loadTexture("block.jpg");
 	{
-		using CubeObj = DWrapper<Cube>;
+		using CubeObj = rs::util::DWrapper<Cube, CnvToEngine>;
 		auto hlp = rs_mgr_obj.makeDrawable<CubeObj>(Cube::T_Cube, rs::HDGroup(), 1.f, hlTex);
 		hlp.second->setOffset(spn::Vec3(0,0,2));
 		self.getBase().getUpdate()->get()->addObj(hlp.first.get());
