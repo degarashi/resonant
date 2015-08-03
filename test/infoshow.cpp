@@ -62,7 +62,7 @@ const rs::IdValue T_Rect = GlxId::GenTechId("Sprite", "Rect");
 void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 	auto* d = self._hDg->get();
 	{
-		auto hlp = rs_mgr_obj.makeDrawable<rs::util::DWrapper<rs::util::WindowRect, CnvToEngine>>(T_Rect, rs::HDGroup());
+		auto hlp = rs_mgr_obj.makeDrawable<rs::util::DWrapper<rs::util::WindowRect>>(CnvToEngine(), T_Rect, rs::HDGroup());
 		hlp.second->setAlpha(0.5f);
 		hlp.second->setColor({0,1,0});
 		d->addObj(hlp.first);

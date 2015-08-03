@@ -7,13 +7,15 @@ namespace rs {
 	namespace util {
 		void DWrapper_SetTPId(GLEffect& e, IdValue id);
 
-		template <class Base, class Convert>
-		class DWrapper : public DrawableObjT<DWrapper<Base, Convert>>,
+		template <class Base>
+		class DWrapper : public DrawableObjT<DWrapper<Base>>,
 						public Base,
 						public spn::EnableFromThis<HDObj>
 		{
 			private:
-				using base_dt = DrawableObjT<DWrapper<Base, Convert>>;
+				using Convert_f = std::function<void (const DWrapper&, GLEffect&)>;
+				Convert_f	_cnvF;
+				using base_dt = DrawableObjT<DWrapper<Base>>;
 				IdValue		_tpId;
 				WDGroup		_wDGroup;
 				HDGroup _getDGroup() const {
@@ -36,13 +38,15 @@ namespace rs {
 					}
 					void onDraw(const DWrapper& self, GLEffect& e) const override {
 						DWrapper_SetTPId(e, self._tpId);
-						self.Base::draw(Convert()(e));
+						self._cnvF(self, e);
 					}
 				};
 			public:
-				template <class... Ts>
-				DWrapper(IdValue tpId, HDGroup hDg, Ts&&... ts):
+				template <class Cnv, class... Ts>
+				DWrapper(Cnv&& cnv, IdValue tpId, HDGroup hDg, Ts&&... ts):
 					Base(std::forward<Ts>(ts)...),
+					_cnvF([c=std::forward<Cnv>(cnv)] (auto& self, GLEffect& e) {
+							self.Base::draw(c(e)); }),
 					_tpId(tpId)
 				{
 					if(hDg)

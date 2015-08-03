@@ -7,9 +7,9 @@
 #include "../input.hpp"
 #include "../sys_uniform_value.hpp"
 
-class BoundingSprite : public rs::util::DWrapper<Sprite, CnvToEngine> {
+class BoundingSprite : public rs::util::DWrapper<Sprite> {
 	private:
-		using base_t = rs::util::DWrapper<Sprite, CnvToEngine>;
+		using base_t = rs::util::DWrapper<Sprite>;
 		spn::Vec2	_svec;
 		struct St_Default : base_t::St_Default {
 			void onUpdate(base_t& self) override {
@@ -47,7 +47,7 @@ class BoundingSprite : public rs::util::DWrapper<Sprite, CnvToEngine> {
 		};
 	public:
 		BoundingSprite(rs::IdValue tpId, rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
-			base_t(tpId, hDg, hTex, 0.f),
+			base_t(CnvToEngine(), tpId, hDg, hTex, 0.f),
 			_svec(svec)
 		{
 			setOffset(pos);
