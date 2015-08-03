@@ -1,9 +1,6 @@
 #include "camera2d.hpp"
-#include "glx.hpp"
 
 namespace rs {
-	using GlxId = rs::GLEffect::GlxId;
-
 	Camera2D::Camera2D() {
 		setAccum(1);
 		setAspectRatio(1.f);

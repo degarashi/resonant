@@ -9,9 +9,11 @@
 
 namespace rs {
 	class Window;
+	struct IEffect;
 	using SPWindow = std::shared_ptr<Window>;
 	struct SharedBaseValue {
 		HLFx			hlFx;
+		IEffect*		pEffect;		//!< 中身はhlFxと同一
 		HInput			hlIk,
 						hlIm;
 		FPSCounter		fps;

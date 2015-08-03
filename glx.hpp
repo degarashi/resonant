@@ -1,6 +1,7 @@
 #pragma once
 #include "glhead.hpp"
 #include "glresource.hpp"
+#include "glx_if.hpp"
 #include "glx_parse.hpp"
 #include "spinner/matrix.hpp"
 #include "spinner/adaptstream.hpp"
@@ -306,9 +307,8 @@ namespace rs {
 				void execTask();
 		};
 	}
-
 	//! GLXエフェクト管理クラス
-	class GLEffect : public IGLResource {
+	class GLEffect : public IGLResource, public IEffect {
 		public:
 			struct tagConstant {};
 			using GlxId = rs::IdMgr_Glx<tagConstant>;
@@ -440,111 +440,73 @@ namespace rs {
 
 			// ----------------- Tech&Pass -----------------
 			//! Technique
-			OPGLint getTechId(const std::string& tech) const;
-			OPGLint getPassId(const std::string& pass) const;
-			OPGLint getPassId(const std::string& tech, const std::string& pass) const;
-			OPGLint getCurTechId() const;
-			OPGLint getCurPassId() const;
-			void setTechPassId(IdValue id);
+			OPGLint getTechId(const std::string& tech) const override;
+			OPGLint getPassId(const std::string& pass) const override;
+			OPGLint getPassId(const std::string& tech, const std::string& pass) const override;
+			OPGLint getCurTechId() const override;
+			OPGLint getCurPassId() const override;
+			void setTechPassId(IdValue id) override;
 			//! TechID, PassIDに該当するProgramハンドルを返す
 			/*! \param[in] techId (-1 = currentTechId)
 				\param[in] passId (-1 = currentPassId)
 				\return 該当があればそのハンドル、なければ無効なハンドル */
-			HLProg getProgram(int techId=-1, int passId=-1) const;
+			HLProg getProgram(int techId=-1, int passId=-1) const override;
 			//! Tech切替時に初期値をセットするか
-			void setTechnique(int id, bool bReset);
+			void setTechnique(int id, bool bReset) override;
 			//! Pass指定
-			void setPass(int id);
+			void setPass(int id) override;
 
 			// ----------------- Framebuffer -----------------
-			void setFramebuffer(HFb fb);
+			void setFramebuffer(HFb fb) override;
 			//! アプリケーション初期化時のデフォルトフレームバッファに戻す
-			void resetFramebuffer();
+			void resetFramebuffer() override;
 
 			// ----------------- Vertex&Index Stream -----------------
 			//! 頂点宣言
 			/*! \param[in] decl 頂点定義クラスのポインタ(定数を前提) */
-			void setVDecl(const SPVDecl& decl);
-			void setVStream(HVb vb, int n);
-			void setIStream(HIb ib);
+			void setVDecl(const SPVDecl& decl) override;
+			void setVStream(HVb vb, int n) override;
+			void setIStream(HIb ib) override;
 
 			// ----------------- Uniform Value -----------------
 			//! Uniform変数設定 (Tech/Passで指定された名前とセマンティクスのすり合わせを行う)
-			OPGLint getUniformID(const std::string& name) const;
-			OPGLint getUnifId(IdValue id) const;
-			//! 定数値を使ったUniform変数設定。Uniform値が存在しなくてもエラーにならない
-			template <class T>
-			void setUniform_try(IdValue id, T&& t, bool bT=false) {
-				if(auto idv = getUnifId(id))
-					setUniform(*idv, std::forward<T>(t), bT);
-			}
-			//! 定数値を使ったUniform変数設定
-			template <class T>
-			void setUniform(IdValue id, T&& t, bool bT=false) {
-				auto idv = getUnifId(id);
-				// 定数値に対応するUniform変数が見つからない時は警告を出す
-				Assert(Warn, idv, "Uniform-ConstantId: %1% not found", id.value)
-				setUniform(*idv, std::forward<T>(t), bT);
-			}
-			//! 単体Uniform変数セット
-			template <class T, class = typename std::enable_if< !std::is_pointer<T>::value >::type>
-			void setUniform(GLint id, const T& t, bool bT=false) {
-				setUniform(id, &t, 1, bT); }
-			//! 配列Uniform変数セット
-			template <class T>
-			void setUniform(GLint id, const T* t, int n, bool bT=false) {
-				_makeUniformToken(*MakeUniformTokenBuffer(_current.uniMap, _current.s_unifPool, id), id, t, n, bT); }
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const bool* b, int n, bool) const;
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const float* fv, int n, bool) const;
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const double* fv, int n, bool) const;
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const int* iv, int n, bool) const;
-			template <class UT, class... Ts>
-			static void MakeUniformToken(draw::TokenDst& dst, GLint /*id*/, Ts&&... ts) {
-				new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(std::forward<Ts>(ts)...);
-			}
-			template <int DN, bool A>
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
-				MakeUniformToken<draw::Unif_Vec<float, DN>>(dst, id, id, v, n); }
-			template <int DM, int DN, bool A>
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::MatT<DM,DN,A>* m, int n, bool bT) const {
-				constexpr int DIM = spn::TValue<DM,DN>::great;
-				std::vector<spn::MatT<DIM,DIM,false>> tm(n);
-				for(int i=0 ; i<n ; i++)
-					m[i].convert(tm[i]);
-				_makeUniformToken(dst, id, tm.data(), n, bT);
-			}
-			template <int DN, bool A>
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::MatT<DN,DN,A>* m, int n, bool bT) const {
-				MakeUniformToken<draw::Unif_Mat<float, DN>>(dst, id, id, m, n, bT); }
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool) const;
-			void _makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool) const;
+			OPGLint getUniformID(const std::string& name) const override;
+			OPGLint getUnifId(IdValue id) const override;
+			using IEffect::_makeUniformToken;
+			draw::TokenBuffer& _makeUniformTokenBuffer(GLint id) override;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const bool* b, int n, bool) const override;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const float* fv, int n, bool) const override;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const double* fv, int n, bool) const override;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const int* iv, int n, bool) const override;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool) const override;
+			void _makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool) const override;
 
 			// ----------------- Buffer Clear -----------------
-			void clearFramebuffer(const draw::ClearParam& param);
+			void clearFramebuffer(const draw::ClearParam& param) override;
 			// ----------------- Draw call -----------------
 			//! IStreamを使用して描画
 			/*! \param[in] mode 描画モードフラグ(OpenGL)
 				\param[in] count 描画に使用される要素数
 				\param[in] offsetElem オフセット要素数 */
-			void drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem=0);
+			void drawIndexed(GLenum mode, GLsizei count, GLuint offsetElem=0) override;
 			//! IStreamを使わず描画
 			/*! \param[in] mode 描画モードフラグ(OpenGL)
 				\param[in] first 描画を開始する要素オフセット
 				\param[in] count 描画に使用される要素数 */
-			void draw(GLenum mode, GLint first, GLsizei count);
+			void draw(GLenum mode, GLint first, GLsizei count) override;
 
 			// ----------------- Task switching -----------------
 			// ---- from MainThread ----
 			//! バッファを2つともクリア(主にスリープ時)
-			void clearTask();
+			void clearTask() override;
 			//! バッファを切り替えて古いバッファをクリア
 			/*! まだDrawThreadが描画を終えてない場合はブロック */
-			void beginTask();
+			void beginTask() override;
 			//! OpenGLコマンドをFlushする
-			void endTask();
+			void endTask() override;
 			// ---- from DrawThread ----
-			void execTask();
+			void execTask() override;
 			//! 1フレームあたりのドローコール回数など
-			diff::Effect getDifference() const;
+			diff::Effect getDifference() const override;
 	};
 }

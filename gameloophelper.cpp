@@ -1,7 +1,8 @@
 #include "gameloophelper.hpp"
-#include "glx.hpp"
 #include "adaptsdl.hpp"
 #include "input.hpp"
+#include "glresource.hpp"
+#include "glx_if.hpp"
 
 namespace rs {
 	namespace detail {
@@ -41,6 +42,7 @@ namespace rs {
 
 			// GLEffectは名前固定: default.glx
 			lkb->hlFx = mgr_gl.loadEffect("default.glx", cbEngine);
+			lkb->pEffect = GLEffectToIEffect(lkb->hlFx->get());
 			_upsv = cbMakeSV();
 			cbInit();
 			_pushFirstScene(cbScene());

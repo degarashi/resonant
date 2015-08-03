@@ -1,15 +1,15 @@
 #include "prochelper.hpp"
-#include "glx.hpp"
 #include "input.hpp"
 #include "sound.hpp"
 #include "spinner/unituple/operator.hpp"
 #include "spinner/structure/profiler.hpp"
+#include "glx_if.hpp"
 
 namespace rs {
 	// ------------------------------ DrawProc ------------------------------
 	bool DrawProc::runU(uint64_t /*accum*/, bool bSkip) {
 		auto lk = sharedbase.lock();
-		auto& fx = *lk->hlFx.ref();
+		IEffect& fx = *lk->pEffect;
 		if(!bSkip) {
 			lk->fps.update();
 			lk.unlock();
@@ -67,10 +67,10 @@ namespace rs {
 		mgr_sound.update();
 }
 		// 描画コマンド
-		rs::GLEffect* fx;
+		rs::IEffect* fx;
 		{
 			auto lk = sharedbase.lock();
-			fx = lk->hlFx->get();
+			fx = lk->pEffect;
 		}
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
 		fx->beginTask();
@@ -95,9 +95,9 @@ namespace rs {
 	}
 	void MainProc::_endProc() {
 		auto lk = sharedbase.lock();
-		auto& fx = lk->hlFx.ref();
-		fx->endTask();
-		lk->diffCount = fx->getDifference();
+		IEffect& fx = *lk->pEffect;
+		fx.endTask();
+		lk->diffCount = fx.getDifference();
 	}
 	void MainProc::onPause() {
 		mgr_scene.onPause(); }
@@ -105,7 +105,8 @@ namespace rs {
 		mgr_scene.onResume(); }
 	void MainProc::onStop() {
 		auto lk = sharedbase.lock();
-		lk->hlFx.ref()->clearTask();
+		IEffect& e = *lk->pEffect;
+		e.clearTask();
 		mgr_scene.onStop();
 	}
 	void MainProc::onReStart() {

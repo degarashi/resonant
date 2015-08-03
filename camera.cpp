@@ -1,6 +1,4 @@
 #include "camera.hpp"
-#include "glx.hpp"
-#include "sys_uniform.hpp"
 
 namespace rs {
 	using spn::AMat43; using spn::AMat44;

@@ -67,7 +67,7 @@ namespace rs {
 	LCValue Object::recvMsg(GMessageId /*id*/, const LCValue& /*arg*/) {
 		return LCValue();
 	}
-	void Object::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
+	void Object::proc(UpdProc /*p*/, bool /*bRecursive*/, Priority /*prioBegin*/, Priority /*prioEnd*/) {
 		Assert(Warn, "not supported operation")
 	}
 	void Object::onDraw(GLEffect& /*e*/) const {}
@@ -183,10 +183,10 @@ namespace rs {
 	UpdGroup::~UpdGroup() {
 		AssertP(Trap, _nParent==0)
 	}
-	void UpdGroup::onConnected(HGroup hGroup) {
+	void UpdGroup::onConnected(HGroup /*hGroup*/) {
 		++_nParent;
 	}
-	void UpdGroup::onDisconnected(HGroup hGroup) {
+	void UpdGroup::onDisconnected(HGroup /*hGroup*/) {
 		// 親グループから切り離された数のチェック
 		--_nParent;
 		AssertP(Trap, _nParent >= 0)
@@ -268,7 +268,7 @@ namespace rs {
 		}
 	}
 	// -------------------- UpdTask --------------------
-	UpdTask::UpdTask(Priority p, HGroup hGroup):
+	UpdTask::UpdTask(Priority /*p*/, HGroup hGroup):
 		_idleCount(0), _accum(0),
 		_hlGroup(hGroup)
 	{}
