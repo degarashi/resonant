@@ -5,8 +5,7 @@
 namespace rs {
 	namespace util {
 		// ---------------------- Text3D ----------------------
-		Text3D::Text3D(IdValue idTech, float lh, bool bBillboard):
-			Text(idTech),
+		Text3D::Text3D(float lh, bool bBillboard):
 			_lineHeight(lh),
 			_bBillboard(bBillboard)
 		{}

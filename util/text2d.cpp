@@ -6,8 +6,7 @@
 namespace rs {
 	namespace util {
 		// ---------------------- Text2D ----------------------
-		Text2D::Text2D(IdValue idTech, float lh):
-			Text(idTech),
+		Text2D::Text2D(float lh):
 			_lineHeight(lh),
 			_depth(1)
 		{}

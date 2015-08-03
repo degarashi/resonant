@@ -37,6 +37,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
 	ss << "DrawNoIndexed: " << self._count.drawNoIndexed << std::endl;
 
 	auto& ths = const_cast<InfoShow&>(self);
+	e.setTechPassId(T_Info);
 	ths._textHud.setText(self._infotext+ spn::Text::UTFConvertTo32(ss.str()).c_str());
 	self._textHud.draw(e);
 }
@@ -48,6 +49,7 @@ void InfoShow::MySt::onUpdate(InfoShow& self) {
 		self._count = lk->diffCount;
 	}
 	self._textHud.exportDrawTag(self._dtag);
+	self._dtag.idTechPass = InfoShow::T_Info;
 	auto sz = self._textHud.getText()->getSize();
 	pRect->setScale({sz.width, -sz.height});
 	pRect->setOffset(self._offset);
@@ -80,7 +82,6 @@ rs::LCValue InfoShow::MySt::recvMsg(InfoShow& /*self*/, rs::GMessageId /*msg*/, 
 // ---------------------- InfoShow ----------------------
 InfoShow::InfoShow(rs::HDGroup hDg):
 	_hDg(hDg),
-	_textHud(T_Info),
 	_offset(0)
 {
 	//  フォント読み込み

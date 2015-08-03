@@ -43,6 +43,7 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 				return spn::Iterate::StepIn;
 			});
 			const_cast<ProfileShow&>(self)._textHud.setText(ss.str());
+			e.setTechPassId(InfoShow::T_Info);
 			self._textHud.draw(e);
 		}
 	}
@@ -58,7 +59,6 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 // ---------------------- ProfileShow ----------------------
 ProfileShow::ProfileShow(rs::CCoreID cid, rs::HDGroup hDg):
 	_hDg(hDg),
-	_textHud(InfoShow::T_Info),
 	_offset(0)
 {
 	_textHud.setCCoreId(cid);

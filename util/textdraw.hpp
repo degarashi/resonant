@@ -20,7 +20,6 @@ namespace rs {
 		class Text {
 			private:
 				static CCoreID_OP	cs_defaultCid;
-				IdValue				_idTech;
 				std::u32string		_text;
 				CCoreID				_charId;
 				Size_OP				_textSize;
@@ -31,7 +30,7 @@ namespace rs {
 				static CCoreID _GetDefaultCID();
 				using CBPreDraw = std::function<void (GLEffect&)>;
 			public:
-				Text(IdValue idTech);
+				Text();
 				void setCCoreId(CCoreID cid);
 				HText getText() const;
 				CCoreID getCCoreId() const;
@@ -55,7 +54,7 @@ namespace rs {
 
 				spn::Mat33 _makeMatrix() const;
 			public:
-				TextHUD(IdValue idTech);
+				TextHUD();
 				const static IdValue U_Text;
 				//! ウィンドウ座標系で範囲指定
 				void setWindowOffset(const spn::Vec2& ofs);
@@ -73,7 +72,7 @@ namespace rs {
 				float		_lineHeight,
 							_depth;
 			public:
-				Text2D(IdValue idTech, float lh);
+				Text2D(float lh);
 				void setLineHeight(float lh);
 				void setDepth(float d);
 
@@ -87,7 +86,7 @@ namespace rs {
 				float	_lineHeight;
 				bool	_bBillboard;		//!< trueなら描画時にビルボード変換
 			public:
-				Text3D(IdValue idTech, float lh, bool bBillboard);
+				Text3D(float lh, bool bBillboard);
 				void setLineHeight(float lh);
 				void setBillboard(bool b);
 

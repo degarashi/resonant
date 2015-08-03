@@ -13,8 +13,7 @@ namespace rs {
 			}
 			return *cs_defaultCid;
 		}
-		Text::Text(IdValue idTech):
-			_idTech(idTech),
+		Text::Text():
 			_alpha(1.f)
 		{
 			_charId = _GetDefaultCID();
@@ -45,7 +44,6 @@ namespace rs {
 		void Text::draw(GLEffect& e, const CBPreDraw& cbPre) const {
 			_makeTextCache();
 
-			e.setTechPassId(_idTech);
 			cbPre(e);
 			e.setUniform(unif::Alpha, _alpha);
 			_hlText->draw(&e);
@@ -54,7 +52,6 @@ namespace rs {
 			if(!_hlText)
 				_makeTextCache();
 			_hlText->exportDrawTag(d);
-			d.idTechPass = _idTech;
 		}
 	}
 }

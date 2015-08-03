@@ -7,8 +7,7 @@ namespace rs {
 	namespace util {
 		// ---------------------- TextHUD ----------------------
 		const IdValue TextHUD::U_Text = GLEffect::GlxId::GenUnifId("mText");
-		TextHUD::TextHUD(IdValue idTech):
-			Text(idTech),
+		TextHUD::TextHUD():
 			_coordType(Coord::Window),
 			_offset(0),
 			_scale(1),
