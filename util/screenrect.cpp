@@ -58,7 +58,8 @@ namespace rs {
 			tag.idVBuffer[0] = _rect01.getVertex();
 			tag.zOffset = _depth;
 		}
-		void WindowRect::draw(IEffect& e, SystemUniform2D& s2) const {
+		void WindowRect::draw(IEffect& e) const {
+			auto& s2 = e.ref2D();
 			auto lkb = sharedbase.lock();
 			auto s = lkb->screenSize;
 			float rx = spn::Rcp22Bit(s.width/2),

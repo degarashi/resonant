@@ -41,9 +41,9 @@ namespace rs {
 				};
 			public:
 				template <class... Ts>
-				DWrapper(const CallDrawF& cd, IdValue tpId, HDGroup hDg, Ts&&... ts):
+				DWrapper(const CallDrawF& cf, IdValue tpId, HDGroup hDg, Ts&&... ts):
 					Base(std::forward<Ts>(ts)...),
-					_callDrawF(cd),
+					_callDrawF(cf),
 					_tpId(tpId)
 				{
 					if(hDg)

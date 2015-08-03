@@ -5,6 +5,8 @@
 
 namespace rs {
 	using OPGLint = spn::Optional<GLint>;
+	class SystemUniform2D;
+	class SystemUniform3D;
 	struct IEffect : IGLResource {
 		struct tagConstant {};
 		using GlxId = rs::IdMgr_Glx<tagConstant>;
@@ -87,5 +89,8 @@ namespace rs {
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const int* iv, int n, bool) const = 0;
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool) const = 0;
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool) const = 0;
+
+		virtual SystemUniform2D& ref2D() { Assert(Trap, false, "this class has no SystemUniform2D interface") throw 0; }
+		virtual SystemUniform3D& ref3D() { Assert(Trap, false, "this class has no SystemUniform3D interface") throw 0; }
 	};
 }

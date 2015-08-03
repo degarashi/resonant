@@ -75,10 +75,7 @@ namespace rs {
 				Text2D(float lh);
 				void setLineHeight(float lh);
 				void setDepth(float d);
-
-				template <class T>
-				void draw(T& t) const { draw(t, t, false); }
-				void draw(IEffect& e, SystemUniform2D& su2d, bool bRefresh) const;
+				void draw(IEffect& e, bool bRefresh=false) const;
 		};
 		//! テキスト描画クラス (for 3D sprite)
 		class Text3D : public spn::Pose3D, public Text {
@@ -89,10 +86,7 @@ namespace rs {
 				Text3D(float lh, bool bBillboard);
 				void setLineHeight(float lh);
 				void setBillboard(bool b);
-
-				template <class T>
-				void draw(T& t) const { draw(t, t, false); }
-				void draw(IEffect& e, SystemUniform3D& su3d, bool bRefresh) const;
+				void draw(IEffect& e, bool bRefresh=false) const;
 		};
 	}
 }

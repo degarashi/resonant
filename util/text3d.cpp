@@ -1,6 +1,7 @@
 #include "textdraw.hpp"
 #include "../sys_uniform.hpp"
 #include "../camera.hpp"
+#include "../glx.hpp"
 
 namespace rs {
 	namespace util {
@@ -15,7 +16,8 @@ namespace rs {
 		void Text3D::setBillboard(bool b) {
 			_bBillboard = b;
 		}
-		void Text3D::draw(IEffect& e, SystemUniform3D& su3d, bool bRefresh) const {
+		void Text3D::draw(IEffect& e, bool bRefresh) const {
+			auto& su3d = e.ref3D();
 			auto cid = getCCoreId();
 			float s = float(_lineHeight) / cid.at<CCoreID::Height>();
 			auto mScale = spn::AMat44::Scaling(s, s, s, 1);

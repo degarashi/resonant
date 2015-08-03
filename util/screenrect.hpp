@@ -50,9 +50,7 @@ namespace rs {
 				void setAlpha(float a);
 				void setDepth(float d);
 				void exportDrawTag(DrawTag& tag) const;
-				void draw(IEffect& e, SystemUniform2D& s2) const;
-				template <class T>
-				void draw(T& t) const { draw(t, t); }
+				void draw(IEffect& e) const;
 		};
 		//! 画面全体を覆う矩形ポリゴン (ポストエフェクト用)
 		class ScreenRect {
