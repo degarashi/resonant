@@ -1,6 +1,6 @@
 #pragma once
-#include "updater.hpp"
-#include "gameloophelper.hpp"
+#include "../updater.hpp"
+#include "../gameloophelper.hpp"
 
 namespace rs {
 	class GLEffect;
