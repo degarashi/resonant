@@ -83,7 +83,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		for(auto& ht : _hlTex)
 			ht = mgr_gl.createTexture(s, GL_RGBA8, false, false);
 	}
-	void onConnected(Sc_DSortD& self, rs::HGroup hGroup) override {
+	void onConnected(Sc_DSortD& self, rs::HGroup /*hGroup*/) override {
 		auto	&sb0 = mgr_scene.getSceneBase(0),
 				&sb1 = mgr_scene.getSceneBase(1);
 		auto &dg0 = sb0.getDraw()->operator *();
@@ -111,7 +111,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		}
 		// [FBSwitch&ClearZ(Default)]
 		{
-			rs::draw::ClearParam clp{spn::none, 1.f};
+			rs::draw::ClearParam clp{spn::none, 1.f, {}};
 			dg0.addObj(rs_mgr_obj.makeDrawable<rs::util::FBSwitch>(p_fbsw1, rs::HFb(), clp).first);
 		}
 		// [Blur(今回のベタ描画)]
@@ -146,7 +146,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 			upd->get()->addObj(hlp.first.get());
 		}
 	}
-	void onDraw(const Sc_DSortD& self, rs::GLEffect& e) const override {
+	void onDraw(const Sc_DSortD& /*self*/, rs::GLEffect& /*e*/) const override {
 		_hlFb->get()->attach(rs::GLFBuffer::Att::COLOR0, _hlTex[swt]);
 		_pBlur0->setTexture(rs::unif::texture::Diffuse, _hlTex[swt ^ 1]);
 		_pBlur1->setTexture(rs::unif::texture::Diffuse, _hlTex[swt]);
@@ -161,7 +161,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		// 他のシーンへ切り替え
 		self._base.checkSwitchScene();
 	}
-	rs::LCValue recvMsg(Sc_DSortD& self, rs::GMessageId id, const rs::LCValue& arg) override {
+	rs::LCValue recvMsg(Sc_DSortD& /*self*/, rs::GMessageId id, const rs::LCValue& /*arg*/) override {
 		if(id == MSG_StateName)
 			return "Sc_DSort(Dynamic)";
 		return rs::LCValue();

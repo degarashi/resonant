@@ -56,12 +56,12 @@ namespace rs {
 		int nV = std::min(s.value.size(), countof(value));
 		for(int i=0 ; i<nV ; i++)
 			value[i] = s.value[i];
-		for(int i=nV ; i<countof(value) ; i++)
+		for(int i=nV ; i<static_cast<int>(countof(value)) ; i++)
 			value[i] = boost::blank();
 	}
 	void ValueSettingR::action() const { func(*this); }
 	bool ValueSettingR::operator == (const ValueSettingR& s) const {
-		for(int i=0 ; i<countof(value) ; i++)
+		for(int i=0 ; i<static_cast<int>(countof(value)) ; i++)
 			if(!(value[i] == s.value[i]))
 				return false;
 		return func == s.func;
@@ -131,7 +131,7 @@ namespace rs {
 		_ost << b << ';' << std::endl;
 	}
 	void ArgChecker::finalizeCheck() {
-		if(_cursor >=countof(_target))
+		if(_cursor >=static_cast<int>(countof(_target)))
 			return;
 		if(_target[_cursor] != NONE)
 			throw GLE_InvalidArgument(_shName, "(missing arguments)");
@@ -223,7 +223,7 @@ namespace rs {
 	{
 		Assert(Trap, _spVDecl, "VDecl is not set")
 		dst.spVDecl = _spVDecl;
-		for(int i=0 ; i<countof(_vbuff) ; i++) {
+		for(int i=0 ; i<static_cast<int>(countof(_vbuff)) ; i++) {
 			if(_vbuff[i])
 				dst.vbuff[i] = _vbuff[i]->get()->getDrawToken();
 		}
@@ -232,7 +232,7 @@ namespace rs {
 	bool GLEffect::Current::Vertex::operator != (const Vertex& v) const {
 		if(_spVDecl != v._spVDecl)
 			return true;
-		for(int i=0 ; i<countof(_vbuff) ; i++) {
+		for(int i=0 ; i<static_cast<int>(countof(_vbuff)) ; i++) {
 			if(_vbuff[i] != v._vbuff[i])
 				return true;
 		}
@@ -753,7 +753,7 @@ namespace rs {
 	}
 	OPGLint GLEffect::getUnifId(IdValue id) const {
 		// 定数値に対応するUniform変数が見つからない時は警告を出す
-		if(_unifId.resultCur->size() <= id.value)
+		if(static_cast<int>(_unifId.resultCur->size()) <= id.value)
 			return spn::none;
 		auto ret = (*_unifId.resultCur)[id.value];
 		if(ret < 0)
@@ -761,7 +761,7 @@ namespace rs {
 		return ret;
 	}
 	GLEffect::IdPair GLEffect::_getTechPassId(IdValue id) const {
-		Assert(Trap, (_techId.result.size() > id.value), "TechPass-ConstantId: Invalid Id (%1%)", id.value)
+		Assert(Trap, (static_cast<int>(_techId.result.size()) > id.value), "TechPass-ConstantId: Invalid Id (%1%)", id.value)
 		return _techId.result[id.value];
 	}
 	void GLEffect::setTechPassId(IdValue id) {

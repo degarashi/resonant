@@ -7,7 +7,7 @@
 
 namespace rs {
 	// ------------------------------ DrawProc ------------------------------
-	bool DrawProc::runU(uint64_t accum, bool bSkip) {
+	bool DrawProc::runU(uint64_t /*accum*/, bool bSkip) {
 		auto lk = sharedbase.lock();
 		auto& fx = *lk->hlFx.ref();
 		if(!bSkip) {

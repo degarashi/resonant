@@ -126,7 +126,7 @@ namespace rs {
 	}
 
 	// ------------------------- Texture_Mem -------------------------
-	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore):
+	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool /*bStream*/, bool bRestore):
 		IGLTexture(fmt, sz, bCube), /*_bStream(bStream),*/ _bRestore(bRestore)
 	{}
 	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff):
@@ -176,7 +176,7 @@ namespace rs {
 		}
 	}
 	// DeviceLostの時にこのメソッドを読んでも無意味
-	void Texture_Mem::writeData(spn::AB_Byte buff, GLTypeFmt srcFmt, CubeFace face) {
+	void Texture_Mem::writeData(spn::AB_Byte buff, GLTypeFmt srcFmt, CubeFace /*face*/) {
 		// バッファ容量がサイズ以上かチェック
 		auto szInput = GLFormat::QuerySize(srcFmt);
 		Assert(Trap, buff.getLength() >= _size.width*_size.height*szInput)
@@ -197,7 +197,7 @@ namespace rs {
 			}
 		}
 	}
-	void Texture_Mem::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace face) {
+	void Texture_Mem::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace /*face*/) {
 		size_t bs = GLFormat::QueryByteSize(_format.get(), GL_UNSIGNED_BYTE);
 		auto sz = buff.getLength();
 		int height = sz / (width * bs);
@@ -412,7 +412,7 @@ namespace rs {
 	{}
 	uint32_t TDChecker::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDChecker::isSingle() const { return true; }
-	spn::ByteBuff TDChecker::generate(const spn::Size& size, CubeFace face) const {
+	spn::ByteBuff TDChecker::generate(const spn::Size& size, CubeFace /*face*/) const {
 		GLubyte pack[2][4];
 		for(int k=0 ; k<2 ; k++) {
 			for(int i=0 ; i<4 ; i++)
@@ -438,10 +438,10 @@ namespace rs {
 		return buff;
 	}
 	// ------------------------- TDCChecker -------------------------
-	TDCChecker::TDCChecker(int nDivW, int nDivH)/*: _nDivW(nDivW), _nDivH(nDivH)*/ {}
+	TDCChecker::TDCChecker(int /*nDivW*/, int /*nDivH*/)/*: _nDivW(nDivW), _nDivH(nDivH)*/ {}
 	uint32_t TDCChecker::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDCChecker::isSingle() const { return true; }
-	spn::ByteBuff TDCChecker::generate(const spn::Size& size, CubeFace face) const {
+	spn::ByteBuff TDCChecker::generate(const spn::Size& /*size*/, CubeFace /*face*/) const {
 		const static GLubyte tex[] = {
 			255, 255, 255, 255,     0,   0,   0, 255,   255, 255, 255 ,255,     0,   0,   0, 255,
 			255,   0,   0, 255,     0, 255,   0, 255,     0,   0, 255 ,255,   255, 255, 255, 255,
@@ -459,7 +459,7 @@ namespace rs {
 	}
 	uint32_t TDBorder::getFormat() const { return SDL_PIXELFORMAT_RGBA8888; }
 	bool TDBorder::isSingle() const { return true; }
-	spn::ByteBuff TDBorder::generate(const spn::Size& size, CubeFace face) const {
+	spn::ByteBuff TDBorder::generate(const spn::Size& /*size*/, CubeFace /*face*/) const {
 		Assert(Trap, false, "not implemented yet") throw 0;
 	}
 }

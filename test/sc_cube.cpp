@@ -8,12 +8,12 @@ struct Sc_Cube::St_Default : StateT<St_Default> {
 	void onUpdate(Sc_Cube& self) override;
 	rs::LCValue recvMsg(Sc_Cube& self, rs::GMessageId id, const rs::LCValue& arg) override;
 };
-rs::LCValue Sc_Cube::St_Default::recvMsg(Sc_Cube& self, rs::GMessageId id, const rs::LCValue& arg) {
+rs::LCValue Sc_Cube::St_Default::recvMsg(Sc_Cube& /*self*/, rs::GMessageId id, const rs::LCValue& /*arg*/) {
 	if(id == MSG_StateName)
 		return "Sc_Cube";
 	return rs::LCValue();
 }
-void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup hGroup) {
+void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup /*hGroup*/) {
 	self.getDrawGroup().setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
 	// ---- make FBClear ----
 	self.getDrawGroup().addObj(MakeFBClear(0x0000));

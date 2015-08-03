@@ -127,12 +127,12 @@ namespace rs {
 	void ASource_depAL::setPitch(float pitch) {
 		ALEC_D(Trap, alSourcef, _id, AL_PITCH, pitch);
 	}
-	Duration ASource_depAL::timeTell(Duration def) {
+	Duration ASource_depAL::timeTell(Duration /*def*/) {
 		float ret;
 		ALEC_D(Trap, alGetSourcef, _id, AL_SEC_OFFSET, &ret);
 		return std::chrono::milliseconds(static_cast<uint32_t>(ret * 1000.f));
 	}
-	int64_t ASource_depAL::pcmTell(int64_t def) {
+	int64_t ASource_depAL::pcmTell(int64_t /*def*/) {
 		float ret;
 		ALEC_D(Trap, alGetSourcef, _id, AL_SAMPLE_OFFSET, & ret);
 		return static_cast<int64_t>(ret);

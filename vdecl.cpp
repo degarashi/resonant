@@ -48,7 +48,7 @@ namespace rs {
 
 		_func.resize(_vdInfo.size());
 		int cur = 0;
-		for(int i=0 ; i<countof(tmp) ; i++) {
+		for(int i=0 ; i<static_cast<int>(countof(tmp)) ; i++) {
 			_nEnt[i] = cur;
 			for(auto& t2 : tmp[i]) {
 				_func[cur] = [t2](GLuint stride, const VData::AttrA& attr) {

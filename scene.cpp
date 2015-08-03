@@ -37,7 +37,7 @@ namespace rs {
 		return getScene(0);
 	}
 	HObj SceneMgr::getScene(int n) const {
-		if(_scene.size() > n)
+		if(static_cast<int>(_scene.size()) > n)
 			return _scene.at(_scene.size()-1-n);
 		return HObj();
 	}

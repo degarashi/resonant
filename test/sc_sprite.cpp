@@ -52,7 +52,7 @@ namespace {
 }
 struct Sc_DSort::St_Test : StateT<St_Test> {
 	int	_index;
-	St_Test(Sc_DSort& self, int index, bool bFirst, bool bSort) {
+	St_Test(Sc_DSort& self, int index, bool /*bFirst*/, bool /*bSort*/) {
 		_index = index;
 		self._myDg->get()->setSortAlgorithm(c_makeds[index](), false);
 	}
@@ -67,7 +67,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 		}
 		auto lk = sharedv.lock();
 		// 他のテストへ切り替え
-		for(int i=0 ; i<countof(c_makeds) ; i++) {
+		for(int i=0 ; i<static_cast<int>(countof(c_makeds)) ; i++) {
 			if(mgr_input.isKeyPressed(lk->actNumber[i])) {
 				self.setStateNew<St_Test>(std::ref(static_cast<Sc_DSort&>(self)), i, false, false);
 				return;
@@ -76,7 +76,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 		// 他のシーンへ切り替え
 		self._base.checkSwitchScene();
 	}
-	rs::LCValue recvMsg(Sc_DSort& self, rs::GMessageId id, const rs::LCValue& arg) override {
+	rs::LCValue recvMsg(Sc_DSort& /*self*/, rs::GMessageId id, const rs::LCValue& /*arg*/) override {
 		if(id == MSG_StateName)
 			return (boost::format("Sc_DSort: %1%") % c_name[_index]).str();
 		return rs::LCValue();
@@ -90,7 +90,7 @@ rs::HLTex Sc_DSort::LoadTexture(int index) {
 ImplDrawGroup(MyP, 0x2000)
 ImplDrawGroup(MyDG, 0x1000)
 struct Sc_DSort::St_Init : StateT<St_Init> {
-	void onConnected(Sc_DSort& self, rs::HGroup hGroup) override {
+	void onConnected(Sc_DSort& self, rs::HGroup /*hGroup*/) override {
 		self.getDrawGroup().setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
 		// 前シーンのアップデートグループを流用
 		{	auto hG = mgr_scene.getSceneBase(1).getUpdate();
@@ -104,7 +104,7 @@ struct Sc_DSort::St_Init : StateT<St_Init> {
 		self.getDrawGroup().addObj(self._myDg.get());
 		// スプライト画像の読み込み
 		using SpriteObj = rs::util::DWrapper<Sprite, CnvToEngine>;
-		for(int i=0 ; i<self._hlSpriteV.size() ; i++) {
+		for(int i=0 ; i<static_cast<int>(self._hlSpriteV.size()) ; i++) {
 			rs::HLTex hlST = LoadTexture(i);
 			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(Sprite::T_Sprite, self._myDg, hlST, i*0.1f);
 			hlp.second->setScale(spn::Vec2(0.3f));

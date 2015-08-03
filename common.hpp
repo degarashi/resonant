@@ -44,7 +44,7 @@ namespace rs {
 		void newPointer(WPtr wptr) override;
 	};
 	struct RecvPtrDummy : IRecvPointer {
-		void newPointer(WPtr wptr) override {}
+		void newPointer(WPtr /*wptr*/) override {}
 	};
 	enum class InputType {
 		Keyboard,
@@ -71,19 +71,19 @@ namespace rs {
 			virtual bool scan() = 0;
 			virtual const std::string& name() const = 0;
 			// ---- relative input querying ----
-			virtual int getButton(int num) const { return 0;}
-			virtual int getAxis(int num) const { return 0; }
-			virtual int getHat(int num) const { return -1; }
+			virtual int getButton(int /*num*/) const { return 0;}
+			virtual int getAxis(int /*num*/) const { return 0; }
+			virtual int getHat(int /*num*/) const { return -1; }
 			virtual int numButtons() const { return 0; }
 			virtual int numAxes() const { return 0; }
 			virtual int numHats() const { return 0; }
-			virtual void setDeadZone(int num, float r, float dz) {}
+			virtual void setDeadZone(int /*num*/, float /*r*/, float /*dz*/) {}
 
-			virtual void setMouseMode(MouseMode mode) {}
+			virtual void setMouseMode(MouseMode /*mode*/) {}
 			virtual MouseMode getMouseMode() const { return MouseMode::Absolute; }
 			// ---- absolute input querying ----
-			virtual void addListener(IRecvPointer* r) {}
-			virtual void remListener(IRecvPointer* r) {}
+			virtual void addListener(IRecvPointer* /*r*/) {}
+			virtual void remListener(IRecvPointer* /*r*/) {}
 			// 1つ以上の座標が検出されたら何れかを返す
 			virtual WPtr getPointer() const { return WPtr(); }
 	};

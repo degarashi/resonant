@@ -43,7 +43,7 @@ namespace rs {
 		static SDL_Window*	s_window;
 		protected:
 			template <class T>
-			static HLInput OpenMouse(int num) {
+			static HLInput OpenMouse(int /*num*/) {
 				if(!s_hlInput.valid())
 					s_hlInput = mgr_inputb.acquire(std::unique_ptr<T>(new T()));
 				return s_hlInput;

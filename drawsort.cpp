@@ -3,7 +3,7 @@
 #include "glx.hpp"
 
 namespace rs {
-	void DSort::apply(const DrawTag& d, GLEffect& glx) {}
+	void DSort::apply(const DrawTag& /*d*/, GLEffect& /*glx*/) {}
 	void DSort::DoSort(const DSortV& alg, int cursor, typename DLObjV::iterator itr0, typename DLObjV::iterator itr1) {
 		if(cursor == int(alg.size()))
 			return;
@@ -38,7 +38,7 @@ namespace rs {
 		return d0.zOffset > d1.zOffset;
 	}
 	// ------------------- DSort_Priority_Asc -------------------
-	bool DSort_Priority_Asc::hasInfo(const DrawTag& d) const {
+	bool DSort_Priority_Asc::hasInfo(const DrawTag& /*d*/) const {
 		return true;
 	}
 	bool DSort_Priority_Asc::compare(const DrawTag& d0, const DrawTag& d1) const {
@@ -71,7 +71,7 @@ namespace rs {
 		void DSort_UniformPairBase::_refreshUniformId(GLEffect& glx, const std::string* name, GLint* id, size_t length) {
 			if(_pFx != &glx) {
 				_pFx = &glx;
-				for(int i=0 ; i<length ; i++) {
+				for(int i=0 ; i<static_cast<int>(length) ; i++) {
 					auto& s = name[i];
 					id[i] = (!s.empty()) ? *glx.getUniformID(s) : -1;
 				}

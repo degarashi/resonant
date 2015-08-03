@@ -23,11 +23,11 @@ namespace rs {
 				}
 			protected:
 				struct St_Default : base_dt::template StateT<St_Default> {
-					void onConnected(DWrapper& self, HGroup hGroup) override {
+					void onConnected(DWrapper& self, HGroup /*hGroup*/) override {
 						auto hl = self.handleFromThis();
 						self._getDGroup()->get()->addObj(hl);
 					}
-					void onDisconnected(DWrapper& self, HGroup hGroup) override {
+					void onDisconnected(DWrapper& self, HGroup /*hGroup*/) override {
 						auto hl = self.handleFromThis();
 						self._getDGroup()->get()->remObj(hl);
 					}

@@ -74,7 +74,7 @@ void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
 	auto lh = self.handleFromThis();
 	d->remObj(lh);
 }
-rs::LCValue InfoShow::MySt::recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) {
+rs::LCValue InfoShow::MySt::recvMsg(InfoShow& /*self*/, rs::GMessageId /*msg*/, const rs::LCValue& /*arg*/) {
 	return rs::LCValue();
 }
 // ---------------------- InfoShow ----------------------

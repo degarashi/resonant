@@ -181,7 +181,7 @@ namespace rs {
 		std::stringstream ss;
 		TPSDupl dupl(gs, tech, pass);
 		HLSh shP[ShType::NUM_SHTYPE];
-		for(int i=0 ; i<countof(selectSh) ; i++) {
+		for(int i=0 ; i<static_cast<int>(countof(selectSh)) ; i++) {
 			auto* shp = selectSh[i];
 			if(!shp)
 				continue;

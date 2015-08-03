@@ -179,7 +179,7 @@ namespace rs {
 			AssertP(Trap, lsc.type(-1) == LuaType::Table)
 		}
 	}
-	SHandle LCV<SHandle>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	SHandle LCV<SHandle>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		// userdata or nil
 		LuaState lsc(ls);
 		if(lsc.type(idx) == LuaType::Nil)

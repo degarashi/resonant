@@ -5,7 +5,7 @@
 
 namespace rs {
 	// --------------------- RWE_Error ---------------------
-	RWops::RWE_Error::RWE_Error(const std::string& title): std::runtime_error("") {}
+	RWops::RWE_Error::RWE_Error(const std::string& /*title*/): std::runtime_error("") {}
 	void RWops::RWE_Error::setMessage(const std::string& msg) {
 		std::stringstream ss;
 		ss << "RWops - " << _title << std::endl << msg;
@@ -203,7 +203,7 @@ namespace rs {
 				return e.size;
 			}
 			template <class T>
-			int64_t operator()(T& t) const {
+			int64_t operator()(T& /*t*/) const {
 				auto pos = _ops.tell();
 				_ops.seek(0, RWops::Hence::End);
 				int64_t ret = _ops.tell();
@@ -426,14 +426,14 @@ namespace rs {
 		}
 		return nullptr;
 	}
-	HLRW UriH_PackedZip::openURI_RW(const spn::URI& uri, int access) {
+	HLRW UriH_PackedZip::openURI_RW(const spn::URI& /*uri*/, int /*access*/) {
 		return HLRW();
 	}
 
 	// ---------------------------- UriH_AssetZip ----------------------------
 	// ---------------------------- UriH_File ----------------------------
 	UriH_File::UriH_File(spn::ToPathStr path): _basePath(path.moveTo()) {}
-	bool UriH_File::Capable(const spn::URI& uri, int access) {
+	bool UriH_File::Capable(const spn::URI& uri, int /*access*/) {
 		auto typ = uri.getType_utf8();
 		return (typ == "file" || typ == "res");
 	}

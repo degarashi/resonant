@@ -25,7 +25,7 @@ namespace rs {
 		private:
 			friend class boost::serialization::access;
 			template <class Archive>
-			void serialize(Archive& ar, const unsigned int ver) {
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
 				ar & _format & _duration;
 			}
 		public:
@@ -35,9 +35,9 @@ namespace rs {
 			/*! \param[in] offset	取得したいサンプルのオフセット(bytes)
 				\param[in] buffLen	受信バッファサイズ(bytes)
 				\return コピーされたデータサイズ(bytes)  */
-			virtual size_t getData(void* dst, uint64_t offset, size_t buffLen) const { Assert(Trap, false); throw 0; }
+			virtual size_t getData(void* /*dst*/, uint64_t /*offset*/, size_t /*buffLen*/) const { Assert(Trap, false); throw 0; }
 			/*! \param[in] offset 受信オフセット(bytes) */
-			virtual std::pair<const void*, size_t> getAllData(uint64_t offset) const { Assert(Trap, false); throw 0; }
+			virtual std::pair<const void*, size_t> getAllData(uint64_t /*offset*/) const { Assert(Trap, false); throw 0; }
 			Duration getDuration() const { return _duration; }
 			const AFormatF& getFormat() const { return _format; }
 			virtual void invalidate() {}
@@ -148,18 +148,18 @@ namespace rs {
 			};
 			struct IState {
 				virtual ~IState() {}
-				virtual void play(ASource& self, Duration fadeIn) {}
-				virtual void pause(ASource& self, Duration fadeOut) {}
-				virtual void stop(ASource& self, Duration fadeOut) {}
-				virtual void update(ASource& self) {}
-				virtual void timeSeek(ASource& self, Duration t) {}
-				virtual void pcmSeek(ASource& self, int64_t t) {}
-				virtual void onEnter(ASource& self, AState prev) {}
-				virtual void onExit(ASource& self, AState next) {}
-				virtual void setFadeTo(ASource& self, float gain, Duration dur) {}
-				virtual void setBuffer(ASource& self, HAb hAb, uint32_t nLoop) {}
-				virtual void sys_pause(ASource& self) {}
-				virtual void sys_resume(ASource& self) {}
+				virtual void play(ASource& /*self*/, Duration /*fadeIn*/) {}
+				virtual void pause(ASource& /*self*/, Duration /*fadeOut*/) {}
+				virtual void stop(ASource& /*self*/, Duration /*fadeOut*/) {}
+				virtual void update(ASource& /*self*/) {}
+				virtual void timeSeek(ASource& /*self*/, Duration /*t*/) {}
+				virtual void pcmSeek(ASource& /*self*/, int64_t /*t*/) {}
+				virtual void onEnter(ASource& /*self*/, AState /*prev*/) {}
+				virtual void onExit(ASource& /*self*/, AState /*next*/) {}
+				virtual void setFadeTo(ASource& /*self*/, float /*gain*/, Duration /*dur*/) {}
+				virtual void setBuffer(ASource& /*self*/, HAb /*hAb*/, uint32_t /*nLoop*/) {}
+				virtual void sys_pause(ASource& /*self*/) {}
+				virtual void sys_resume(ASource& /*self*/) {}
 				virtual AState getState() const = 0;
 			};
 
@@ -427,7 +427,7 @@ namespace rs {
 
 		friend class boost::serialization::access;
 		template <class Archive>
-		void serialize(Archive& ar, const unsigned int ver) {
+		void serialize(Archive& ar, const unsigned int /*ver*/) {
 			makeCurrent();
 			try {
 				ar & _buffMgr & _srcMgr & _sgMgr;
@@ -466,7 +466,7 @@ BOOST_CLASS_IMPLEMENTATION(rs::AOggStream, object_serializable)
 namespace boost {
 	namespace serialization {
 		template <class Archive>
-		inline void load_construct_data(Archive& ar, rs::SoundMgr* smgr, const unsigned int ver) {
+		inline void load_construct_data(Archive& ar, rs::SoundMgr* smgr, const unsigned int /*ver*/) {
 			try {
 				int rate;
 				ar & rate;
@@ -476,7 +476,7 @@ namespace boost {
 			}
 		}
 		template <class Archive>
-		inline void save_construct_data(Archive& ar, const rs::SoundMgr* smgr, const unsigned int ver) {
+		inline void save_construct_data(Archive& ar, const rs::SoundMgr* smgr, const unsigned int /*ver*/) {
 			int rate = smgr->getRate();
 			ar & rate;
 		}

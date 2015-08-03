@@ -273,7 +273,7 @@ namespace rs {
 		fdChg.fromGain = fdChg.toGain = 1;
 	}
 	ASource::ASource(ASource&& s): Move_Ctor(ASource_SEQ, s) {
-		for(int i=0 ; i<countof(_fade) ; i++)
+		for(int i=0 ; i<static_cast<int>(countof(_fade)) ; i++)
 			_fade[i] = std::move(s._fade[i]);
 	}
 	ASource::~ASource() {
@@ -398,7 +398,7 @@ namespace rs {
 	void ASource::setFadeOut(Duration dur) {
 		_fadeOutTime = dur;
 	}
-	float ASource::_applyFades(float gain) {
+	float ASource::_applyFades(float /*gain*/) {
 		float r = std::min(_fade[FADE_BEGIN].calcGain(*this),
 						_fade[FADE_END].calcGain(*this));
 		return std::min(r, _fade[FADE_CHANGE].calcGain(*this));
@@ -429,8 +429,8 @@ namespace rs {
 		}
 	}
 	// --------------------- ASource::S_Empty ---------------------
-	ASource::S_Empty::S_Empty(ASource& s) {}
-	void ASource::S_Empty::onEnter(ASource& self, AState prev) {
+	ASource::S_Empty::S_Empty(ASource& /*s*/) {}
+	void ASource::S_Empty::onEnter(ASource& self, AState /*prev*/) {
 		LogOutput("S_Empty");
 		self._pcmPos = 0;
 		self._timePos = std::chrono::seconds(0);
@@ -443,9 +443,9 @@ namespace rs {
 	}
 
 	// --------------------- ASource::S_Initial ---------------------
-	ASource::S_Initial::S_Initial(ASource& s, HAb hAb, uint32_t nLoop): _hlAb(hAb), _nLoop(nLoop) {}
-	ASource::S_Initial::S_Initial(ASource& s) {}
-	void ASource::S_Initial::onEnter(ASource& self, AState prev) {
+	ASource::S_Initial::S_Initial(ASource& /*s*/, HAb hAb, uint32_t nLoop): _hlAb(hAb), _nLoop(nLoop) {}
+	ASource::S_Initial::S_Initial(ASource& /*s*/) {}
+	void ASource::S_Initial::onEnter(ASource& self, AState /*prev*/) {
 		LogOutput("S_Initial");
 		self._dep.reset();
 		self._dep.clearBlock();
@@ -493,8 +493,8 @@ namespace rs {
 	}
 
 	// --------------------- ASource::S_Playing ---------------------
-	ASource::S_Playing::S_Playing(ASource& s, Duration fadeIn): _fadeIn(fadeIn), _bSysPause(false) {}
-	void ASource::S_Playing::onEnter(ASource& self, AState prev) {
+	ASource::S_Playing::S_Playing(ASource& /*s*/, Duration fadeIn): _fadeIn(fadeIn), _bSysPause(false) {}
+	void ASource::S_Playing::onEnter(ASource& self, AState /*prev*/) {
 		LogOutput("S_Playing");
 
 		self._tmUpdate = Clock::now();
@@ -507,7 +507,7 @@ namespace rs {
 		update(self);
 		self._dep.play();
 	}
-	void ASource::S_Playing::play(ASource& self, Duration fadeIn) {}
+	void ASource::S_Playing::play(ASource& /*self*/, Duration /*fadeIn*/) {}
 	template <class State>
 	void ASource::S_Playing::_fadeOut(ASource& self, Duration fadeOut) {
 		if(fadeOut == cs_zeroDur)
@@ -566,7 +566,7 @@ namespace rs {
 		self._pcmSeek(t);
 		self._dep.play();
 	}
-	void ASource::S_Playing::onExit(ASource& self, AState next) {
+	void ASource::S_Playing::onExit(ASource& self, AState /*next*/) {
 		Duration dur = Clock::now() - self._tmUpdate;
 		self._timePos += dur;
 		self._fade[FADE_CHANGE].init(cs_zeroDur, cs_zeroDur, 1.f, 1.f);
@@ -594,15 +594,15 @@ namespace rs {
 	}
 
 	// --------------------- ASource::S_Paused ---------------------
-	ASource::S_Paused::S_Paused(ASource& s) {}
-	void ASource::S_Paused::onEnter(ASource& self, AState prev) {
+	ASource::S_Paused::S_Paused(ASource& /*s*/) {}
+	void ASource::S_Paused::onEnter(ASource& self, AState /*prev*/) {
 		LogOutput("S_Paused");
 		self._dep.pause();
 	}
 	void ASource::S_Paused::play(ASource& self, Duration fadeIn) {
 		self._setState<S_Playing>(fadeIn);
 	}
-	void ASource::S_Paused::stop(ASource& self, Duration fadeOut) {
+	void ASource::S_Paused::stop(ASource& self, Duration /*fadeOut*/) {
 		self._setState<S_Initial>();
 	}
 	void ASource::S_Paused::timeSeek(ASource& self, Duration t) {

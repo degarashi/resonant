@@ -8,12 +8,12 @@ struct Sc_Sound::St_Default : StateT<St_Default> {
 	void onUpdate(Sc_Sound& self) override;
 	rs::LCValue recvMsg(Sc_Sound& self, rs::GMessageId id, const rs::LCValue& arg) override;
 };
-rs::LCValue Sc_Sound::St_Default::recvMsg(Sc_Sound& self, rs::GMessageId id, const rs::LCValue& arg) {
+rs::LCValue Sc_Sound::St_Default::recvMsg(Sc_Sound& /*self*/, rs::GMessageId id, const rs::LCValue& /*arg*/) {
 	if(id == MSG_StateName)
 		return "Sc_Sound";
 	return rs::LCValue();
 }
-void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup hGroup) {
+void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup /*hGroup*/) {
 	// ---- make FBClear ----
 	self.getDrawGroup().addObj(MakeFBClear(0x0000));
 	// 前シーンの描画 & アップデートグループを流用

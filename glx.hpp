@@ -499,7 +499,7 @@ namespace rs {
 			void _makeUniformToken(draw::TokenDst& dst, GLint id, const double* fv, int n, bool) const;
 			void _makeUniformToken(draw::TokenDst& dst, GLint id, const int* iv, int n, bool) const;
 			template <class UT, class... Ts>
-			static void MakeUniformToken(draw::TokenDst& dst, GLint id, Ts&&... ts) {
+			static void MakeUniformToken(draw::TokenDst& dst, GLint /*id*/, Ts&&... ts) {
 				new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(std::forward<Ts>(ts)...);
 			}
 			template <int DN, bool A>

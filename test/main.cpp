@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 			lk->actSpriteD = mgr_input.makeAction("mode_spriteD");
 			lk->actSpriteD->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_V));
 			const int c_scancode[] = { SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6};
-			for(int i=0 ; i<countof(lk->actNumber) ; i++) {
+			for(int i=0 ; i<static_cast<int>(countof(lk->actNumber)) ; i++) {
 				lk->actNumber[i] = mgr_input.makeAction((boost::format("number_%1%")%i).str());
 				lk->actNumber[i]->addLink(rs::InF::AsButton(lkb->hlIk, c_scancode[i]));
 			}

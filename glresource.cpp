@@ -63,7 +63,7 @@ namespace rs {
 		_setResourceTypeId(ResourceType::Texture);
 		// 0を付加してリソース検索
 		spn::PathBlock pb(name);
-		pb.setPathNum([](auto num) -> spn::Int_OP{ return 0; });
+		pb.setPathNum([](auto /*num*/) -> spn::Int_OP{ return 0; });
 
 		pb = _uriFromResourceName(pb.plain_utf8()).path();
 		// 末尾の0を除く
@@ -176,7 +176,7 @@ namespace rs {
 				r->onDeviceReset();
 		}
 	}
-	spn::LHandle GLRes::loadResource(spn::AdaptStream& ast, const spn::URI& uri) {
+	spn::LHandle GLRes::loadResource(spn::AdaptStream& /*ast*/, const spn::URI& uri) {
 		auto ext = uri.getExtension();
 		spn::LHandle ret;
 		// is it Texture?

@@ -39,7 +39,7 @@ namespace rs {
 	namespace {
 		std::string c_name("(default touchpad)");
 	}
-	std::string SDLTouchpad::GetTouchpadName(int num) {
+	std::string SDLTouchpad::GetTouchpadName(int /*num*/) {
 		return c_name;
 	}
 	int SDLTouchpad::ProcessEvent(void*, SDL_Event* e) {

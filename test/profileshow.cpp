@@ -9,7 +9,7 @@
 // ---------------------- ProfileShow::St_Default ----------------------
 struct ProfileShow::St_Default : StateT<St_Default> {
 	rs::util::WindowRect* pRect;
-	void onConnected(ProfileShow& self, rs::HGroup hGroup) override {
+	void onConnected(ProfileShow& self, rs::HGroup /*hGroup*/) override {
 		auto* dg = self._hDg->get();
 		{
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::DWrapper<rs::util::WindowRect, CnvToEngine>>(T_Rect, rs::HDGroup());
@@ -20,7 +20,7 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 		}
 		dg->addObj(self.handleFromThis());
 	}
-	void onDisconnected(ProfileShow& self, rs::HGroup hGroup) override {
+	void onDisconnected(ProfileShow& self, rs::HGroup /*hGroup*/) override {
 		auto* dg = self._hDg->get();
 		dg->remObj(self.handleFromThis());
 	}

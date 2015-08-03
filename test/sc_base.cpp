@@ -18,15 +18,15 @@ struct Sc_Base::St_Default : StateT<St_Default> {
 	void onDisconnected(Sc_Base& self, rs::HGroup hGroup) override;
 };
 rs::HLDObj MakeFBClear(rs::Priority priority) {
-	rs::draw::ClearParam clp{spn::Vec4{0,0,0,0}, 1.f};
+	rs::draw::ClearParam clp{spn::Vec4{0,0,0,0}, 1.f, {}};
 	return rs_mgr_obj.makeDrawable<rs::util::FBClear>(priority, clp).first;
 }
-void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
+void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup /*hGroup*/) {
 	mgr_random.initEngine(RandomId);
 	self._random = mgr_random.get(RandomId);
 
 	// ---- FBClear(Z) ----
-	rs::draw::ClearParam clp{spn::none, 1.f};
+	rs::draw::ClearParam clp{spn::none, 1.f, {}};
 	self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<rs::util::FBClear>(0x0000, clp).first);
 
 	auto hDg = self.getBase().getDraw();
@@ -47,7 +47,7 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup hGroup) {
 
 	mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(self).first, false);
 }
-void Sc_Base::St_Default::onDisconnected(Sc_Base& self, rs::HGroup hGroup) {
+void Sc_Base::St_Default::onDisconnected(Sc_Base& self, rs::HGroup /*hGroup*/) {
 	self._random = spn::none;
 	mgr_random.removeEngine(RandomId);
 
