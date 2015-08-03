@@ -13,8 +13,8 @@ namespace rs {
 						public spn::EnableFromThis<HDObj>
 		{
 			private:
-				using Convert_f = std::function<void (const DWrapper&, GLEffect&)>;
-				Convert_f	_cnvF;
+				using CallDrawF = std::function<void (const Base&, GLEffect& e)>;
+				CallDrawF	_callDrawF;
 				using base_dt = DrawableObjT<DWrapper<Base>>;
 				IdValue		_tpId;
 				WDGroup		_wDGroup;
@@ -38,15 +38,14 @@ namespace rs {
 					}
 					void onDraw(const DWrapper& self, GLEffect& e) const override {
 						DWrapper_SetTPId(e, self._tpId);
-						self._cnvF(self, e);
+						self._callDrawF(self, e);
 					}
 				};
 			public:
-				template <class Cnv, class... Ts>
-				DWrapper(Cnv&& cnv, IdValue tpId, HDGroup hDg, Ts&&... ts):
+				template <class... Ts>
+				DWrapper(const CallDrawF& cd, IdValue tpId, HDGroup hDg, Ts&&... ts):
 					Base(std::forward<Ts>(ts)...),
-					_cnvF([c=std::forward<Cnv>(cnv)] (auto& self, GLEffect& e) {
-							self.Base::draw(c(e)); }),
+					_callDrawF(cd),
 					_tpId(tpId)
 				{
 					if(hDg)

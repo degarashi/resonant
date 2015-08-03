@@ -106,7 +106,7 @@ struct Sc_DSort::St_Init : StateT<St_Init> {
 		using SpriteObj = rs::util::DWrapper<Sprite>;
 		for(int i=0 ; i<static_cast<int>(self._hlSpriteV.size()) ; i++) {
 			rs::HLTex hlST = LoadTexture(i);
-			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(CnvToEngine(), Sprite::T_Sprite, self._myDg, hlST, i*0.1f);
+			auto hlp = rs_mgr_obj.makeDrawable<SpriteObj>(::MakeCallDraw<Engine>(), Sprite::T_Sprite, self._myDg, hlST, i*0.1f);
 			hlp.second->setScale(spn::Vec2(0.3f));
 			hlp.second->setOffset(spn::Vec2(-1.f + i*0.2f,
 									(i&1)*-0.1f));

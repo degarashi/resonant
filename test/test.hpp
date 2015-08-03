@@ -12,6 +12,7 @@
 #include "../vertex.hpp"
 #include "../differential.hpp"
 #include "../glx.hpp"
+#include "../util/dwrapper_calldraw.hpp"
 
 namespace vertex {
 	//! キューブ描画用頂点
@@ -60,6 +61,6 @@ rs::HLDObj MakeFBClear(rs::Priority priority);
 extern const rs::IdValue T_Rect;
 
 class Engine;
-struct CnvToEngine {
-	Engine& operator()(rs::GLEffect&) const;
-};
+Engine& CnvToEngine(rs::GLEffect& e);
+template <class T>
+auto MakeCallDraw() { return rs::util::CallDraw<Engine>(&CnvToEngine); }

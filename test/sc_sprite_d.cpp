@@ -6,6 +6,7 @@
 #include "../util/screen.hpp"
 #include "../input.hpp"
 #include "../sys_uniform_value.hpp"
+#include "engine.hpp"
 
 class BoundingSprite : public rs::util::DWrapper<Sprite> {
 	private:
@@ -47,7 +48,7 @@ class BoundingSprite : public rs::util::DWrapper<Sprite> {
 		};
 	public:
 		BoundingSprite(rs::IdValue tpId, rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
-			base_t(CnvToEngine(), tpId, hDg, hTex, 0.f),
+			base_t(::MakeCallDraw<Engine>(), tpId, hDg, hTex, 0.f),
 			_svec(svec)
 		{
 			setOffset(pos);

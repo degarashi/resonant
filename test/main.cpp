@@ -10,6 +10,9 @@
 #include "scene.hpp"
 #include "engine.hpp"
 
+Engine& CnvToEngine(rs::GLEffect& e) {
+	return static_cast<Engine&>(e);
+}
 namespace {
 	constexpr int RESOLUTION_X = 1024,
 				RESOLUTION_Y = 768;
