@@ -27,7 +27,7 @@ namespace rs {
 			  LuaState::ENT_THREAD = 2,
 			  LuaState::ENT_NREF = 3;
 	spn::FreeList<int> LuaState::s_index(std::numeric_limits<int>::max(), 1);
-	void LuaState::Nothing(lua_State* ls) {}
+	void LuaState::Nothing(lua_State* /*ls*/) {}
 	void LuaState::Delete(lua_State* ls) {
 		// これが呼ばれる時は依存するスレッドなどが全て削除された時なので直接lua_closeを呼ぶ
 		lua_close(ls);
@@ -186,7 +186,7 @@ namespace rs {
 		int res = lua_load(ls, &Reader::Proc, &reader, (chunkName ? chunkName : ""), mode);
 		LuaState::_CheckError(ls, res);
 	}
-	const char* LuaState::Reader::Proc(lua_State* ls, void* data, size_t* size) {
+	const char* LuaState::Reader::Proc(lua_State* /*ls*/, void* data, size_t* size) {
 		auto* self = reinterpret_cast<Reader*>(data);
 		auto remain = self->size;
 		if(remain > 0) {
@@ -391,7 +391,7 @@ namespace rs {
 	void LuaState::replace(int idx) {
 		lua_replace(getLS(), idx);
 	}
-	bool LuaState::resume(const SPLua& from, int narg) {
+	bool LuaState::resume(const SPLua& /*from*/, int narg) {
 		SPLua mls(getMainLS_SP());
 		lua_State *ls0 = mls->getLS(),
 					*ls1 = getLS();

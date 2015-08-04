@@ -38,11 +38,11 @@ namespace rs {
 			return HLFT();
 		return itr->second.makeFont();
 	}
-	HLFT FontFamily::fontFromFile(const std::string& path) {
+	HLFT FontFamily::fontFromFile(const std::string& /*path*/) {
 		Assert(Trap, false, "not implemented yet")
 		return HLFT();
 	}
-	HLFT FontFamily::fontFromID(CCoreID id) const {
+	HLFT FontFamily::fontFromID(CCoreID /*id*/) const {
 		Assert(Trap, false, "not implemented yet")
 		return HLFT();
 	}

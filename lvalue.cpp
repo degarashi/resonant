@@ -12,9 +12,9 @@ namespace rs {
 	}
 	// ------------------- LCValue -------------------
 	// --- LCV<boost::blank> = LUA_TNONE
-	void LCV<boost::blank>::operator()(lua_State* ls, boost::blank) const {
+	void LCV<boost::blank>::operator()(lua_State* /*ls*/, boost::blank) const {
 		Assert(Trap, false); }
-	boost::blank LCV<boost::blank>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	boost::blank LCV<boost::blank>::operator()(int /*idx*/, lua_State* /*ls*/, LPointerSP* /*spm*/) const {
 		Assert(Trap, false); throw 0; }
 	std::ostream& LCV<boost::blank>::operator()(std::ostream& os, boost::blank) const {
 		return os << "(none)"; }
@@ -24,7 +24,7 @@ namespace rs {
 	// --- LCV<LuaNil> = LUA_TNIL
 	void LCV<LuaNil>::operator()(lua_State* ls, LuaNil) const {
 		lua_pushnil(ls); }
-	LuaNil LCV<LuaNil>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	LuaNil LCV<LuaNil>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Nil);
 		return LuaNil(); }
 	std::ostream& LCV<LuaNil>::operator()(std::ostream& os, LuaNil) const {
@@ -35,7 +35,7 @@ namespace rs {
 	// --- LCV<bool> = LUA_TBOOL
 	void LCV<bool>::operator()(lua_State* ls, bool b) const {
 		lua_pushboolean(ls, b); }
-	bool LCV<bool>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	bool LCV<bool>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Boolean);
 		return lua_toboolean(ls, idx) != 0; }
 	std::ostream& LCV<bool>::operator()(std::ostream& os, bool b) const {
@@ -46,7 +46,7 @@ namespace rs {
 	// --- LCV<const char*> = LUA_TSTRING
 	void LCV<const char*>::operator()(lua_State* ls, const char* c) const {
 		lua_pushstring(ls, c); }
-	const char* LCV<const char*>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	const char* LCV<const char*>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::String);
 		return lua_tostring(ls, idx); }
 	std::ostream& LCV<const char*>::operator()(std::ostream& os, const char* c) const {
@@ -57,7 +57,7 @@ namespace rs {
 	// --- LCV<std::string> = LUA_TSTRING
 	void LCV<std::string>::operator()(lua_State* ls, const std::string& s) const {
 		lua_pushlstring(ls, s.c_str(), s.length()); }
-	std::string LCV<std::string>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	std::string LCV<std::string>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::String);
 		size_t len;
 		const char* c =lua_tolstring(ls, idx, &len);
@@ -70,7 +70,7 @@ namespace rs {
 	// --- LCV<Int_MainT> = LUA_TNUMBER
 	void LCV<Int_MainT>::operator()(lua_State* ls, Int_MainT i) const {
 		lua_pushinteger(ls, i); }
-	Int_MainT LCV<Int_MainT>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	Int_MainT LCV<Int_MainT>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tointeger(ls, idx); }
 	std::ostream& LCV<Int_MainT>::operator()(std::ostream& os, Int_MainT i) const {
@@ -80,10 +80,10 @@ namespace rs {
 
 	// TODO: 中身をちゃんと実装する
 	// --- LCV<spn::Vec4> = LUA_TABLE
-	void LCV<spn::Vec4>::operator()(lua_State* ls, const spn::Vec4& v) const {
+	void LCV<spn::Vec4>::operator()(lua_State* /*ls*/, const spn::Vec4& /*v*/) const {
 		Assert(Trap, false, "not implemented yet.")
 	}
-	spn::Vec4 LCV<spn::Vec4>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	spn::Vec4 LCV<spn::Vec4>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Table);
 		Assert(Trap, false, "not implemented yet.") throw 0;
 	}
@@ -94,10 +94,10 @@ namespace rs {
 	
 	// TODO: 中身をちゃんと実装する
 	// --- LCV<spn::Quat> = LUA_TABLE
-	void LCV<spn::Quat>::operator()(lua_State* ls, const spn::Quat& q) const {
+	void LCV<spn::Quat>::operator()(lua_State* /*ls*/, const spn::Quat& /*q*/) const {
 		Assert(Trap, false, "not implemented yet.")
 	}
-	spn::Quat LCV<spn::Quat>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	spn::Quat LCV<spn::Quat>::operator()(int /*idx*/, lua_State* /*ls*/, LPointerSP* /*spm*/) const {
 		Assert(Trap, false, "not implemented yet.") throw 0;
 	}
 	std::ostream& LCV<spn::Quat>::operator()(std::ostream& os, const spn::Quat& q) const {
@@ -108,7 +108,7 @@ namespace rs {
 	// --- LCV<UInt_MainT> = LUA_TNUMBER
 	void LCV<UInt_MainT>::operator()(lua_State* ls, UInt_MainT i) const {
 		lua_pushunsigned(ls, i); }
-	UInt_MainT LCV<UInt_MainT>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	UInt_MainT LCV<UInt_MainT>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tounsigned(ls, idx); }
 	std::ostream& LCV<UInt_MainT>::operator()(std::ostream& os, UInt_MainT i) const {
@@ -119,7 +119,7 @@ namespace rs {
 	// --- LCV<double> = LUA_TNUMBER
 	void LCV<double>::operator()(lua_State* ls, double f) const {
 		lua_pushnumber(ls, f); }
-	double LCV<double>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	double LCV<double>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tonumber(ls, idx); }
 	std::ostream& LCV<double>::operator()(std::ostream& os, double f) const {
@@ -132,11 +132,11 @@ namespace rs {
 		sp->pushSelf();
 		lua_xmove(sp->getLS(), ls, 1);
 	}
-	SPLua LCV<SPLua>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	SPLua LCV<SPLua>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Thread);
 		return SPLua(new LuaState(lua_tothread(ls, idx), LuaState::TagThread));
 	}
-	std::ostream& LCV<SPLua>::operator()(std::ostream& os, const SPLua& sp) const {
+	std::ostream& LCV<SPLua>::operator()(std::ostream& os, const SPLua& /*sp*/) const {
 		return os;
 	}
 	LuaType LCV<SPLua>::operator()() const {
@@ -145,7 +145,7 @@ namespace rs {
 	// --- LCV<void*> = LUA_TLIGHTUSERDATA
 	void LCV<void*>::operator()(lua_State* ls, const void* ud) const {
 		lua_pushlightuserdata(ls, const_cast<void*>(ud)); }
-	void* LCV<void*>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	void* LCV<void*>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		try {
 			LuaState::_CheckType(ls, idx, LuaType::Userdata);
 		} catch(const LuaState::EType& e) {
@@ -160,7 +160,7 @@ namespace rs {
 	// --- LCV<lua_CFunction> = LUA_TFUNCTION
 	void LCV<lua_CFunction>::operator()(lua_State* ls, lua_CFunction f) const {
 		lua_pushcclosure(ls, f, 0); }
-	lua_CFunction LCV<lua_CFunction>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	lua_CFunction LCV<lua_CFunction>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Function);
 		return lua_tocfunction(ls, idx);
 	}
@@ -213,8 +213,8 @@ namespace rs {
 	// --- LCV<LCValue>
 	namespace {
 		const std::function<LCValue (lua_State* ls, int idx, LPointerSP* spm)> c_toLCValue[LUA_NUMTAGS+1] = {
-			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(boost::blank()); },
-			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LuaNil()); },
+			[](lua_State* /*ls*/, int /*idx*/, LPointerSP* /*spm*/){ return LCValue(boost::blank()); },
+			[](lua_State* /*ls*/, int /*idx*/, LPointerSP* /*spm*/){ return LCValue(LuaNil()); },
 			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<bool>()(idx,ls,spm)); },
 			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<void*>()(idx,ls,spm)); },
 			[](lua_State* ls, int idx, LPointerSP* spm){ return LCValue(LCV<lua_Number>()(idx,ls,spm)); },
@@ -240,7 +240,7 @@ namespace rs {
 	void LCV<LValueG>::operator()(lua_State* ls, const LValueG& t) const {
 		t.prepareValue(ls);
 	}
-	LValueG LCV<LValueG>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+	LValueG LCV<LValueG>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		lua_pushvalue(ls, idx);
 		SPLua sp = LuaState::GetMainLS_SP(ls);
 		return LValueG(sp);
@@ -267,10 +267,10 @@ namespace rs {
 			template <class T>
 			LuaType operator()(const T&) const {
 				return LCV<T>()(); }
-			LuaType operator()(const SPLua& sp) const {
+			LuaType operator()(const SPLua& /*sp*/) const {
 				return LCV<SPLua>()(); }
 			template <class T>
-			LuaType operator()(const std::shared_ptr<T>& sp) const {
+			LuaType operator()(const std::shared_ptr<T>& /*sp*/) const {
 				return LCV<T>()(); }
 		};
 		struct PrintVisitor : boost::static_visitor<std::ostream*> {

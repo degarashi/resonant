@@ -37,11 +37,11 @@ namespace rs {
 		};
 	}
 	void Window::GLParam::getStdAttributes() {
-		for(int i=0 ; i<countof(c_AttrId) ; i++)
+		for(int i=0 ; i<static_cast<int>(countof(c_AttrId)) ; i++)
 			Window::GetGLAttributes(c_AttrId[i], this->*c_AttrPtr[i]);
 	}
 	void Window::GLParam::setStdAttributes() const {
-		for(int i=0 ; i<countof(c_AttrId) ; i++)
+		for(int i=0 ; i<static_cast<int>(countof(c_AttrId)) ; i++)
 			Window::SetGLAttributes(c_AttrId[i], this->*c_AttrPtr[i]);
 
 		SetGLAttributes(SDL_GL_CONTEXT_PROFILE_MASK,
