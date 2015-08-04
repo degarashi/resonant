@@ -10,7 +10,7 @@
 #include "scene.hpp"
 #include "engine.hpp"
 
-Engine& CnvToEngine(rs::GLEffect& e) {
+Engine& CnvToEngine(rs::IEffect& e) {
 	return static_cast<Engine&>(e);
 }
 namespace {

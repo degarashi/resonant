@@ -168,7 +168,7 @@ namespace rs {
 			//! OpenGL関連のリソースを解放
 			/*! GLResourceの物とは別。GLEffectから呼ぶ */
 			void ts_onDeviceLost();
-			void ts_onDeviceReset(const GLEffect& glx);
+			void ts_onDeviceReset(const IEffect& e);
 
 			bool findSetting(const Setting& s) const;
 			void swap(TPStructR& tp) noexcept;
@@ -308,13 +308,8 @@ namespace rs {
 		};
 	}
 	//! GLXエフェクト管理クラス
-	class GLEffect : public IGLResource, public IEffect {
+	class GLEffect : public IEffect {
 		public:
-			struct tagConstant {};
-			using GlxId = rs::IdMgr_Glx<tagConstant>;
-			//! Uniform & TechPass 定数にIdを割り当てるクラス
-			static GlxId	s_myId;
-
 			//! [UniformID -> TextureActiveIndex]
 			using TexIndex = std::unordered_map<GLint, GLint>;
 			//! [(TechID|PassID) -> ProgramClass]

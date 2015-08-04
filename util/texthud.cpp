@@ -1,12 +1,12 @@
 #include "textdraw.hpp"
-#include "../glx.hpp"
+#include "../glx_if.hpp"
 #include "../sys_uniform_value.hpp"
 #include "../gameloophelper.hpp"
 
 namespace rs {
 	namespace util {
 		// ---------------------- TextHUD ----------------------
-		const IdValue TextHUD::U_Text = GLEffect::GlxId::GenUnifId("mText");
+		const IdValue TextHUD::U_Text = IEffect::GlxId::GenUnifId("mText");
 		TextHUD::TextHUD():
 			_coordType(Coord::Window),
 			_offset(0),
@@ -50,7 +50,7 @@ namespace rs {
 		void TextHUD::setDepth(float d) {
 			_depth = d;
 		}
-		void TextHUD::draw(GLEffect& e) const {
+		void TextHUD::draw(IEffect& e) const {
 			// Zが0.0未満や1.0以上だと描画されないので、それより少し狭い範囲でクリップする
 			float d = spn::Saturate(_depth, 0.f, 1.f-1e-4f);
 			Text::draw(e, [d, this](auto& e){

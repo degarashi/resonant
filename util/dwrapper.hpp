@@ -5,15 +5,13 @@
 namespace rs {
 	class GLEffect;
 	namespace util {
-		void DWrapper_SetTPId(GLEffect& e, IdValue id);
-
 		template <class Base>
 		class DWrapper : public DrawableObjT<DWrapper<Base>>,
 						public Base,
 						public spn::EnableFromThis<HDObj>
 		{
 			private:
-				using CallDrawF = std::function<void (const Base&, GLEffect& e)>;
+				using CallDrawF = std::function<void (const Base&, IEffect& e)>;
 				CallDrawF	_callDrawF;
 				using base_dt = DrawableObjT<DWrapper<Base>>;
 				IdValue		_tpId;
@@ -36,8 +34,8 @@ namespace rs {
 					void onUpdate(DWrapper& self) override {
 						self.refreshDrawTag();
 					}
-					void onDraw(const DWrapper& self, GLEffect& e) const override {
-						DWrapper_SetTPId(e, self._tpId);
+					void onDraw(const DWrapper& self, IEffect& e) const override {
+						e.setTechPassId(self._tpId);
 						self._callDrawF(self, e);
 					}
 				};

@@ -78,6 +78,7 @@ namespace rs {
 		struct DrawGroup {};
 	}
 
+	struct IEffect;
 	class UpdGroup;
 	using UpdProc = std::function<void (HObj)>;
 	using CBFindGroup = std::function<bool (HGroup)>;
@@ -120,7 +121,7 @@ namespace rs {
 								Priority prioEnd=std::numeric_limits<Priority>::max());
 
 			// ---------- Object/Scene用メソッド ----------
-			virtual void onDraw(GLEffect& e) const;
+			virtual void onDraw(IEffect& e) const;
 			// ---------- Scene用メソッド ----------
 			virtual void onDown(ObjTypeId prevId, const LCValue& arg);
 			virtual void onPause();
@@ -230,7 +231,7 @@ namespace rs {
 			void onConnected(HGroup hGroup) override;
 			void onDisconnected(HGroup hGroup) override;
 			void onUpdate() override;
-			void onDraw(GLEffect& e) const override;
+			void onDraw(IEffect& e) const override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			const std::string& getName() const override;
 			//! グループ内のオブジェクト全てに配信
@@ -304,13 +305,13 @@ namespace rs {
 	using DSortSP = std::shared_ptr<DSort>;
 	using DSortV = std::vector<DSortSP>;
 
-	class GLEffect;
+	struct IEffect;
 	// ---- Draw sort algorithms ----
 	struct DSort {
 		//! ソートに必要な情報が記録されているか(デバッグ用)
 		virtual bool hasInfo(const DrawTag& d) const = 0;
 		virtual bool compare(const DrawTag& d0, const DrawTag& d1) const = 0;
-		virtual void apply(const DrawTag& d, GLEffect& glx);
+		virtual void apply(const DrawTag& d, IEffect& e);
 		static void DoSort(const DSortV& alg, int cursor, typename DLObjV::iterator itr0, typename DLObjV::iterator itr1);
 	};
 	//! 描画ソート: Z距離の昇順
@@ -338,15 +339,15 @@ namespace rs {
 		const static uint32_t cs_invalidValue;
 		bool hasInfo(const DrawTag& d) const override;
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
-		void apply(const DrawTag& d, GLEffect& glx) override;
+		void apply(const DrawTag& d, IEffect& e) override;
 	};
 	namespace detail {
 		class DSort_UniformPairBase {
 			private:
-				GLEffect*	_pFx = nullptr;
+				IEffect*	_pFx = nullptr;
 			protected:
 				//! UniformIdがまだ取得されて無ければ or 前回と違うEffectの時にIdを更新
-				void _refreshUniformId(GLEffect& glx, const std::string* name, int* id, size_t length);
+				void _refreshUniformId(IEffect& e, const std::string* name, int* id, size_t length);
 		};
 		template <size_t N>
 		class DSort_UniformPair : public DSort_UniformPairBase {
@@ -366,8 +367,8 @@ namespace rs {
 				}
 			protected:
 				constexpr static int length = N;
-				const ArId& _getUniformId(GLEffect& glx) {
-					_refreshUniformId(glx, _strUniform.data(), _unifId.data(), N);
+				const ArId& _getUniformId(IEffect& e) {
+					_refreshUniformId(e, _strUniform.data(), _unifId.data(), N);
 					return _unifId;
 				}
 				template <class... Ts>
@@ -386,7 +387,7 @@ namespace rs {
 			using base_t::base_t;
 			bool hasInfo(const DrawTag& d) const override;
 			bool compare(const DrawTag& d0, const DrawTag& d1) const override;
-			void apply(const DrawTag& d, GLEffect& glx) override;
+			void apply(const DrawTag& d, IEffect& e) override;
 	};
 
 	//! 描画ソート: Vertex&Index Buffer
@@ -395,7 +396,7 @@ namespace rs {
 
 		bool hasInfo(const DrawTag& d) const override;
 		bool compare(const DrawTag& d0, const DrawTag& d1) const override;
-		void apply(const DrawTag& d, GLEffect& glx) override;
+		void apply(const DrawTag& d, IEffect& e) override;
 	};
 	extern const DSortSP	cs_dsort_z_asc,
 							cs_dsort_z_desc,
@@ -424,7 +425,7 @@ namespace rs {
 			const DLObjV& getMember() const;
 
 			bool isNode() const override;
-			void onDraw(GLEffect& e) const override;
+			void onDraw(IEffect& e) const override;
 			const std::string& getName() const override;
 			DrawTag& refDTag();
 	};
@@ -439,7 +440,7 @@ namespace rs {
 			const DLObjV& getMember() const;
 
 			bool isNode() const override;
-			void onDraw(GLEffect& e) const override;
+			void onDraw(IEffect& e) const override;
 			const std::string& getName() const override;
 			DrawTag& refDTag();
 	};
@@ -464,7 +465,7 @@ namespace rs {
 					virtual void onConnected(T& self, HGroup hGroup) { self.Base::onConnected(hGroup); }
 					virtual void onDisconnected(T& self, HGroup hGroup) { self.Base::onDisconnected(hGroup); }
 					// --------- Scene用メソッド ---------
-					virtual void onDraw(const T& self, GLEffect& e) const { self.Base::onDraw(e); }
+					virtual void onDraw(const T& self, IEffect& e) const { self.Base::onDraw(e); }
 					virtual void onDown(T& self, ObjTypeId prevId, const LCValue& arg) { self.Base::onDown(prevId, arg); }
 					virtual void onPause(T& self) { self.Base::onPause(); }
 					virtual void onStop(T& self) { self.Base::onStop(); }
@@ -593,7 +594,7 @@ namespace rs {
 					setTerminationState();
 				}
 				//! 毎フレームの描画 (Scene用)
-				void onDraw(GLEffect& e) const override {
+				void onDraw(IEffect& e) const override {
 					// ステート遷移はナシ
 					_state->onDraw(getRef(), e);
 				}

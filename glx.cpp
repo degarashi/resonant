@@ -6,9 +6,7 @@
 #include "spinner/unituple/operator.hpp"
 
 namespace rs {
-	IEffect* GLEffectToIEffect(GLEffect* e) {
-		return e;
-	}
+	IEffect::GlxId IEffect::s_myId;
 	const int DefaultUnifPoolSize = 0x100;
 	draw::TokenBuffer* MakeUniformTokenBuffer(UniMap& um, UnifPool& pool, GLint id) {
 		auto itr = um.find(id);
@@ -471,6 +469,9 @@ namespace rs {
 			return itr->second.getProgram();
 		return HLProg();
 	}
+	draw::TokenBuffer& GLEffect::_makeUniformTokenBuffer(GLint id) {
+		return *MakeUniformTokenBuffer(_current.uniMap, _current.s_unifPool, id);
+	}
 
 	namespace draw {
 		// -------------- VStream --------------
@@ -579,9 +580,6 @@ namespace rs {
 		}
 
 		// -------------- Uniforms --------------
-		draw::TokenBuffer& GLEffect::_makeUniformTokenBuffer(GLint id) {
-			return *MakeUniformTokenBuffer(_current.uniMap, _current.s_unifPool, id);
-		}
 		namespace {
 			using IGLF_V = void (*)(GLint, const void*, int);
 			const IGLF_V c_iglfV[] = {
@@ -785,7 +783,6 @@ namespace rs {
 		return _diffCount;
 	}
 	void GLEffect::_prepareUniforms() {}
-	GLEffect::GlxId GLEffect::s_myId;
 
 	// ------------- ShStruct -------------
 	void ShStruct::swap(ShStruct& a) noexcept {

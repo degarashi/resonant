@@ -1,9 +1,9 @@
 #include "sys_uniform.hpp"
 #include "camera.hpp"
-#include "glx.hpp"
+#include "glx_if.hpp"
 
 namespace rs {
-	using GlxId = GLEffect::GlxId;
+	using GlxId = IEffect::GlxId;
 	namespace sysunif3d {
 		namespace matrix {
 			const IdValue	Transform = GlxId::GenUnifId("sys_mTrans"),
@@ -62,10 +62,10 @@ namespace rs {
 	SystemUniform3D::SystemUniform3D() {
 		setWorld(spn::AMat44(1, spn::AMat44::TagDiagonal));
 	}
-	void SystemUniform3D::outputUniforms(GLEffect& glx) const {
+	void SystemUniform3D::outputUniforms(IEffect& e) const {
 		#define DEF_SETUNIF(name, func) \
-			if(auto idv = glx.getUnifId(sysunif3d::matrix::name)) \
-				glx.setUniform(*idv, func##name(), true);
+			if(auto idv = e.getUnifId(sysunif3d::matrix::name)) \
+				e.setUniform(*idv, func##name(), true);
 		DEF_SETUNIF(World, get)
 		DEF_SETUNIF(WorldInv, get)
 		if(auto& hc = getCamera()) {
@@ -76,10 +76,10 @@ namespace rs {
 			DEF_SETUNIF(ViewProjInv, cd.get)
 
 			auto& ps = cd.getPose();
-			if(auto idv = glx.getUnifId(sysunif3d::matrix::EyePos))
-				glx.setUniform(*idv, ps.getOffset(), true);
-			if(auto idv = glx.getUnifId(sysunif3d::matrix::EyeDir))
-				glx.setUniform(*idv, ps.getRot().getZAxis(), true);
+			if(auto idv = e.getUnifId(sysunif3d::matrix::EyePos))
+				e.setUniform(*idv, ps.getOffset(), true);
+			if(auto idv = e.getUnifId(sysunif3d::matrix::EyeDir))
+				e.setUniform(*idv, ps.getRot().getZAxis(), true);
 		}
 		DEF_SETUNIF(Transform, get)
 		DEF_SETUNIF(TransformInv, get)

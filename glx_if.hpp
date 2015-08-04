@@ -5,7 +5,12 @@
 
 namespace rs {
 	using OPGLint = spn::Optional<GLint>;
-	struct IEffect {
+	struct IEffect : IGLResource {
+		struct tagConstant {};
+		using GlxId = rs::IdMgr_Glx<tagConstant>;
+		//! Uniform & TechPass 定数にIdを割り当てるクラス
+		static GlxId	s_myId;
+
 		virtual OPGLint getTechId(const std::string& tech) const = 0;
 		virtual OPGLint getPassId(const std::string& pass) const = 0;
 		virtual OPGLint getPassId(const std::string& tech, const std::string& pass) const = 0;
@@ -83,6 +88,4 @@ namespace rs {
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool) const = 0;
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool) const = 0;
 	};
-	class GLEffect;
-	IEffect* GLEffectToIEffect(GLEffect* e);
 }

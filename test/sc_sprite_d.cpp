@@ -147,7 +147,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 			upd->get()->addObj(hlp.first.get());
 		}
 	}
-	void onDraw(const Sc_DSortD& /*self*/, rs::GLEffect& /*e*/) const override {
+	void onDraw(const Sc_DSortD& /*self*/, rs::IEffect& /*e*/) const override {
 		_hlFb->get()->attach(rs::GLFBuffer::Att::COLOR0, _hlTex[swt]);
 		_pBlur0->setTexture(rs::unif::texture::Diffuse, _hlTex[swt ^ 1]);
 		_pBlur1->setTexture(rs::unif::texture::Diffuse, _hlTex[swt]);

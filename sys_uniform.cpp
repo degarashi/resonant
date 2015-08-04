@@ -1,8 +1,8 @@
 #include "sys_uniform.hpp"
-#include "glx.hpp"
+#include "glx_if.hpp"
 
 namespace rs {
-	using GlxId = GLEffect::GlxId;
+	using GlxId = IEffect::GlxId;
 	namespace unif {
 		const IdValue Alpha = GlxId::GenUnifId("sys_fAlpha"),
 					Color = GlxId::GenUnifId("sys_vColor");
@@ -18,11 +18,11 @@ namespace rs {
 
 	// --------------------- SystemUniform ---------------------
 	namespace {
-		using SetF = std::function<void (const SystemUniform&, GLEffect&)>;
+		using SetF = std::function<void (const SystemUniform&, IEffect&)>;
 		const SetF c_systagF[] = {
-			[](const SystemUniform& s, GLEffect& glx) {
+			[](const SystemUniform& s, IEffect& e) {
 				auto& ss = s.getScreenSize();
-				glx.setUniform_try(sysunif::screen::Size,
+				e.setUniform_try(sysunif::screen::Size,
 									spn::Vec4(ss.width,
 										ss.height,
 										spn::Rcp22Bit(ss.width),
@@ -36,9 +36,9 @@ namespace rs {
 	void SystemUniform::setScreenSize(const spn::Size& s) {
 		_screenSize = s;
 	}
-	void SystemUniform::outputUniforms(GLEffect& glx) const {
+	void SystemUniform::outputUniforms(IEffect& e) const {
 		for(auto& f : c_systagF)
-			f(*this, glx);
+			f(*this, e);
 	}
 }
 

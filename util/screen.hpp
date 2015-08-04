@@ -17,7 +17,7 @@ namespace rs {
 				PostEffect(Priority dprio);
 				void setAlpha(float a);
 				void setTexture(IdValue id, HTex hTex);
-				void onDraw(GLEffect& e) const override;
+				void onDraw(IEffect& e) const override;
 		};
 		class FBSwitch : public DrawableObjT<FBSwitch> {
 			private:
@@ -26,7 +26,7 @@ namespace rs {
 				ClearParam_OP	_cparam;
 			public:
 				FBSwitch(Priority dprio, HFb hFb, const ClearParam_OP& p=spn::none);
-				void onDraw(GLEffect& e) const override;
+				void onDraw(IEffect& e) const override;
 				void setClearParam(const ClearParam_OP& p);
 		};
 		class FBClear : public DrawableObjT<FBClear> {
@@ -35,7 +35,7 @@ namespace rs {
 			public:
 				FBClear(Priority dprio,
 						const draw::ClearParam& p);
-				void onDraw(GLEffect& e) const override;
+				void onDraw(IEffect& e) const override;
 		};
 	}
 }

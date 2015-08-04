@@ -11,8 +11,8 @@ namespace rs {
 	struct IGLResource;
 	class GLRes;
 	using UPResource = std::unique_ptr<IGLResource>;
-	class GLEffect;
-	using UPEffect = std::unique_ptr<GLEffect>;
+	struct IEffect;
+	using UPEffect = std::unique_ptr<IEffect>;
 	class VDecl;
 	using SPVDecl = std::shared_ptr<VDecl>;
 	class TPStructR;

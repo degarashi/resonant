@@ -15,10 +15,10 @@ struct InfoShow::MySt : StateT<MySt> {
 	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
-	void onDraw(const InfoShow& self, rs::GLEffect& e) const override;
+	void onDraw(const InfoShow& self, rs::IEffect& e) const override;
 	void onUpdate(InfoShow& self) override;
 };
-void InfoShow::MySt::onDraw(const InfoShow& self, rs::GLEffect& e) const {
+void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 	int fps;
 	{
 		auto lkb = sharedbase.lock();

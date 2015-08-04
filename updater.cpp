@@ -70,7 +70,7 @@ namespace rs {
 	void Object::proc(UpdProc /*p*/, bool /*bRecursive*/, Priority /*prioBegin*/, Priority /*prioEnd*/) {
 		Assert(Warn, "not supported operation")
 	}
-	void Object::onDraw(GLEffect& /*e*/) const {}
+	void Object::onDraw(IEffect& /*e*/) const {}
 	void Object::onDown(ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
 	void Object::onPause() {}
 	void Object::onStop() {}
@@ -143,7 +143,7 @@ namespace rs {
 
 		AssertP(Trap, _objV.empty() && _groupV.empty() && _addObj.empty() && _remObj.empty())
 	}
-	void UpdGroup::onDraw(GLEffect& e) const {
+	void UpdGroup::onDraw(IEffect& e) const {
 		// DrawUpdate中のオブジェクト追加削除はナシ
 		for(auto& h : _objV)
 			h->get()->onDraw(e);
@@ -362,7 +362,7 @@ namespace rs {
 	void DrawGroup::onUpdate() {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
 	}
-	void DrawGroup::onDraw(GLEffect& e) const {
+	void DrawGroup::onDraw(IEffect& e) const {
 		if(_bDynamic) {
 			// 微妙な実装
 			const_cast<DrawGroup*>(this)->_doDrawSort();
@@ -387,7 +387,7 @@ namespace rs {
 	bool DrawGroupProxy::isNode() const {
 		return true;
 	}
-	void DrawGroupProxy::onDraw(GLEffect& e) const {
+	void DrawGroupProxy::onDraw(IEffect& e) const {
 		_hlDGroup->get()->onDraw(e);
 	}
 	const std::string& DrawGroupProxy::getName() const {

@@ -24,7 +24,7 @@ struct ProfileShow::St_Default : StateT<St_Default> {
 		auto* dg = self._hDg->get();
 		dg->remObj(self.handleFromThis());
 	}
-	void onDraw(const ProfileShow& self, rs::GLEffect& e) const override {
+	void onDraw(const ProfileShow& self, rs::IEffect& e) const override {
 		if(self._spProfile) {
 			std::stringstream ss;
 			ss.precision(2);

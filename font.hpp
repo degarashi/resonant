@@ -96,7 +96,7 @@ namespace rs {
 			CCoreID& refCoreID();
 			const SPString& getFaceName() const;
 			// 上位クラスで位置調整など行列をセットしてからメソッドを呼ぶ
-			void draw(GLEffect* gle) const;
+			void draw(IEffect& gle) const;
 			const spn::SizeF& getSize() const;
 			void exportDrawTag(DrawTag& d) const;
 	};

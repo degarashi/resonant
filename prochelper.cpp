@@ -9,7 +9,7 @@ namespace rs {
 	// ------------------------------ DrawProc ------------------------------
 	bool DrawProc::runU(uint64_t /*accum*/, bool bSkip) {
 		auto lk = sharedbase.lock();
-		IEffect& fx = *lk->pEffect;
+		IEffect& fx = *lk->hlFx.ref();
 		if(!bSkip) {
 			lk->fps.update();
 			lk.unlock();
@@ -51,9 +51,9 @@ namespace rs {
 { auto p = spn::profiler.beginBlockObj("scene_draw");
 		if(b && q.canDraw()) {
 			auto lk = sharedbase.lock();
-			auto* ptr = lk->hlFx->get();
+			auto& fx= *lk->hlFx.ref();
 			lk.unlock();
-			mgr_scene.onDraw(*ptr);
+			mgr_scene.onDraw(fx);
 			q.setDraw(true);
 		}
 }
@@ -70,7 +70,7 @@ namespace rs {
 		rs::IEffect* fx;
 		{
 			auto lk = sharedbase.lock();
-			fx = lk->pEffect;
+			fx = lk->hlFx->get();
 		}
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
 		fx->beginTask();
@@ -95,7 +95,7 @@ namespace rs {
 	}
 	void MainProc::_endProc() {
 		auto lk = sharedbase.lock();
-		IEffect& fx = *lk->pEffect;
+		IEffect& fx = *lk->hlFx.ref();
 		fx.endTask();
 		lk->diffCount = fx.getDifference();
 	}
@@ -105,7 +105,7 @@ namespace rs {
 		mgr_scene.onResume(); }
 	void MainProc::onStop() {
 		auto lk = sharedbase.lock();
-		IEffect& e = *lk->pEffect;
+		IEffect& e = *lk->hlFx.ref();
 		e.clearTask();
 		mgr_scene.onStop();
 	}

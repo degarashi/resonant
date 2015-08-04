@@ -6,7 +6,7 @@
 
 namespace rs {
 	struct DrawTag;
-	class GLEffect;
+	struct IEffect;
 	class SystemUniform2D;
 	class SystemUniform3D;
 	namespace util {
@@ -28,7 +28,7 @@ namespace rs {
 				void _makeTextCache() const;
 
 				static CCoreID _GetDefaultCID();
-				using CBPreDraw = std::function<void (GLEffect&)>;
+				using CBPreDraw = std::function<void (IEffect&)>;
 			public:
 				Text();
 				void setCCoreId(CCoreID cid);
@@ -37,7 +37,7 @@ namespace rs {
 				void setTextSize(Size_OP s=spn::none);
 				void setText(spn::To32Str str);
 				void setAlpha(float a);
-				void draw(GLEffect& e, const CBPreDraw& cbPre=[](auto&){}) const;
+				void draw(IEffect& e, const CBPreDraw& cbPre=[](auto&){}) const;
 				void exportDrawTag(DrawTag& d) const;
 		};
 		//! テキスト描画クラス (for HUD)
@@ -62,7 +62,7 @@ namespace rs {
 				void setScreenOffset(const spn::Vec2& ofs);
 				void setScale(const spn::Vec2& s);
 				void setDepth(float d);
-				void draw(GLEffect& e) const;
+				void draw(IEffect& e) const;
 		};
 		// 1行の縦をY=1としたサイズに内部変換
 		// H,V {Negative, Positive, Middle}
@@ -78,7 +78,7 @@ namespace rs {
 
 				template <class T>
 				void draw(T& t) const { draw(t, t, false); }
-				void draw(GLEffect& e, SystemUniform2D& su2d, bool bRefresh) const;
+				void draw(IEffect& e, SystemUniform2D& su2d, bool bRefresh) const;
 		};
 		//! テキスト描画クラス (for 3D sprite)
 		class Text3D : public spn::Pose3D, public Text {
@@ -92,7 +92,7 @@ namespace rs {
 
 				template <class T>
 				void draw(T& t) const { draw(t, t, false); }
-				void draw(GLEffect& e, SystemUniform3D& su3d, bool bRefresh) const;
+				void draw(IEffect& e, SystemUniform3D& su3d, bool bRefresh) const;
 		};
 	}
 }

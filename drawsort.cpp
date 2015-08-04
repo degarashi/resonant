@@ -1,9 +1,9 @@
 #include "updater.hpp"
 #include "spinner/sort.hpp"
-#include "glx.hpp"
+#include "glx_if.hpp"
 
 namespace rs {
-	void DSort::apply(const DrawTag& /*d*/, GLEffect& /*glx*/) {}
+	void DSort::apply(const DrawTag& /*d*/, IEffect& /*e*/) {}
 	void DSort::DoSort(const DSortV& alg, int cursor, typename DLObjV::iterator itr0, typename DLObjV::iterator itr1) {
 		if(cursor == int(alg.size()))
 			return;
@@ -56,24 +56,24 @@ namespace rs {
 	bool DSort_TechPass::compare(const DrawTag& d0, const DrawTag& d1) const {
 		return d0.idTechPass.value < d1.idTechPass.value;
 	}
-	void DSort_TechPass::apply(const DrawTag& d, GLEffect& glx) {
+	void DSort_TechPass::apply(const DrawTag& d, IEffect& e) {
 		if(hasInfo(d)) {
 			if(d.idTechPass.bId16) {
-				glx.setTechnique(d.idTechPass.tpId[0], true);
-				glx.setPass(d.idTechPass.tpId[1]);
+				e.setTechnique(d.idTechPass.tpId[0], true);
+				e.setPass(d.idTechPass.tpId[1]);
 			} else {
-				glx.setTechPassId(d.idTechPass.preId);
+				e.setTechPassId(d.idTechPass.preId);
 			}
 		}
 	}
 
 	namespace detail {
-		void DSort_UniformPairBase::_refreshUniformId(GLEffect& glx, const std::string* name, GLint* id, size_t length) {
-			if(_pFx != &glx) {
-				_pFx = &glx;
+		void DSort_UniformPairBase::_refreshUniformId(IEffect& e, const std::string* name, GLint* id, size_t length) {
+			if(_pFx != &e) {
+				_pFx = &e;
 				for(int i=0 ; i<static_cast<int>(length) ; i++) {
 					auto& s = name[i];
-					id[i] = (!s.empty()) ? *glx.getUniformID(s) : -1;
+					id[i] = (!s.empty()) ? *e.getUniformID(s) : -1;
 				}
 			}
 		}
@@ -85,11 +85,11 @@ namespace rs {
 	bool DSort_Texture::compare(const DrawTag& d0, const DrawTag& d1) const {
 		return d0.idTex < d1.idTex;
 	}
-	void DSort_Texture::apply(const DrawTag& d, GLEffect& glx) {
-		auto& id = _getUniformId(glx);
+	void DSort_Texture::apply(const DrawTag& d, IEffect& e) {
+		auto& id = _getUniformId(e);
 		for(int i=0 ; i<length ; i++) {
 			if(id[i] >= 0)
-				glx.setUniform(id[i], d.idTex[i]);
+				e.setUniform(id[i], d.idTex[i]);
 		}
 	}
 
@@ -106,12 +106,12 @@ namespace rs {
 			return false;
 		return d0.idVBuffer < d1.idVBuffer;
 	}
-	void DSort_Buffer::apply(const DrawTag& d, GLEffect& glx) {
+	void DSort_Buffer::apply(const DrawTag& d, IEffect& e) {
 		for(int i=0 ; i<length ; i++) {
 			auto& hdl = d.idVBuffer[i];
 			if(hdl)
-				glx.setVStream(hdl, i);
+				e.setVStream(hdl, i);
 		}
-		glx.setIStream(d.idIBuffer);
+		e.setIStream(d.idIBuffer);
 	}
 }

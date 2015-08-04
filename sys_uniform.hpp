@@ -8,6 +8,7 @@
 #include "sys_uniform_value.hpp"
 
 namespace rs {
+	struct IEffect;
 	//! (3D/2D共通)
 	/*! 予め変数名がsys_*** の形で決められていて, 存在すれば計算&設定される
 		固定変数リスト:
@@ -19,7 +20,7 @@ namespace rs {
 		public:
 			const spn::Size& getScreenSize() const;
 			void setScreenSize(const spn::Size& s);
-			void outputUniforms(GLEffect& glx) const;
+			void outputUniforms(IEffect& glx) const;
 	};
 	class SystemUniform3D : public spn::CheckAlign<16, SystemUniform3D> {
 		private:
@@ -38,7 +39,7 @@ namespace rs {
 			#undef SEQ_SYSUNI3D
 
 			SystemUniform3D();
-			void outputUniforms(GLEffect& glx) const;
+			void outputUniforms(IEffect& glx) const;
 	};
 	//! システムuniform変数をセットする(2D)
 	/*! 変数リスト:
@@ -60,6 +61,6 @@ namespace rs {
 			#undef SEQ_SYSUNI2D
 
 			SystemUniform2D();
-			void outputUniforms(GLEffect& glx) const;
+			void outputUniforms(IEffect& glx) const;
 	};
 }

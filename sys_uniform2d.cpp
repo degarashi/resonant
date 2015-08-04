@@ -1,9 +1,9 @@
 #include "sys_uniform.hpp"
-#include "glx.hpp"
+#include "glx_if.hpp"
 #include "camera2d.hpp"
 
 namespace rs {
-	using GlxId = GLEffect::GlxId;
+	using GlxId = IEffect::GlxId;
 	namespace unif2d {
 		const IdValue	Depth = GlxId::GenUnifId("sys_fDepth");
 	}
@@ -55,10 +55,10 @@ namespace rs {
 	SystemUniform2D::SystemUniform2D() {
 		setWorld(spn::Mat33(1, spn::Mat33::TagDiagonal));
 	}
-	void SystemUniform2D::outputUniforms(GLEffect& glx) const {
+	void SystemUniform2D::outputUniforms(IEffect& e) const {
 		#define DEF_SETUNIF(name, func) \
-			if(auto idv = glx.getUnifId(sysunif2d::matrix::name)) \
-				glx.setUniform(*idv, func##name(), true);
+			if(auto idv = e.getUnifId(sysunif2d::matrix::name)) \
+				e.setUniform(*idv, func##name(), true);
 		DEF_SETUNIF(World, get)
 		DEF_SETUNIF(WorldInv, get)
 		if(auto& hc = getCamera()) {

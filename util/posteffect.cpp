@@ -1,14 +1,11 @@
 #include "../sys_uniform_value.hpp"
 #include "screen.hpp"
-#include "../glx.hpp"
+#include "../glx_if.hpp"
 
 namespace rs {
 	namespace util {
-		void DWrapper_SetTPId(GLEffect& e, IdValue id) {
-			e.setTechPassId(id);
-		}
 		// --------------------- PostEffect ---------------------
-		const rs::IdValue T_PostEffect = GLEffect::GlxId::GenTechId("PostEffect", "Default");
+		const rs::IdValue T_PostEffect = IEffect::GlxId::GenTechId("PostEffect", "Default");
 		PostEffect::PostEffect(rs::Priority dprio):
 			_alpha(0.5f)
 		{
@@ -17,7 +14,7 @@ namespace rs {
 		void PostEffect::setAlpha(float a) {
 			_alpha = a;
 		}
-		void PostEffect::onDraw(rs::GLEffect& e) const {
+		void PostEffect::onDraw(IEffect& e) const {
 			e.setTechPassId(T_PostEffect);
 			for(auto& p : _texture)
 				e.setUniform(p.first, p.second);
@@ -46,7 +43,7 @@ namespace rs {
 			_cparam = p;
 		}
 		// これ自体の描画はしない
-		void FBSwitch::onDraw(rs::GLEffect& e) const {
+		void FBSwitch::onDraw(IEffect& e) const {
 			if(_hlFb)
 				e.setFramebuffer(_hlFb);
 			else
@@ -62,7 +59,7 @@ namespace rs {
 		{
 			_dtag.priority = dprio;
 		}
-		void FBClear::onDraw(rs::GLEffect& e) const {
+		void FBClear::onDraw(IEffect& e) const {
 			e.clearFramebuffer(_param);
 		}
 	}

@@ -15,7 +15,7 @@ namespace rs {
 		void Text3D::setBillboard(bool b) {
 			_bBillboard = b;
 		}
-		void Text3D::draw(GLEffect& e, SystemUniform3D& su3d, bool bRefresh) const {
+		void Text3D::draw(IEffect& e, SystemUniform3D& su3d, bool bRefresh) const {
 			auto cid = getCCoreId();
 			float s = float(_lineHeight) / cid.at<CCoreID::Height>();
 			auto mScale = spn::AMat44::Scaling(s, s, s, 1);

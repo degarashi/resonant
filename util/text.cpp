@@ -1,6 +1,6 @@
 #include "textdraw.hpp"
 #include "../drawtag.hpp"
-#include "../glx.hpp"
+#include "../glx_if.hpp"
 #include "../sys_uniform_value.hpp"
 
 namespace rs {
@@ -41,12 +41,12 @@ namespace rs {
 		void Text::_makeTextCache() const {
 			_hlText = mgr_text.createText(_charId, _text);
 		}
-		void Text::draw(GLEffect& e, const CBPreDraw& cbPre) const {
+		void Text::draw(IEffect& e, const CBPreDraw& cbPre) const {
 			_makeTextCache();
 
 			cbPre(e);
 			e.setUniform(unif::Alpha, _alpha);
-			_hlText->draw(&e);
+			_hlText->draw(e);
 		}
 		void Text::exportDrawTag(DrawTag& d) const {
 			if(!_hlText)

@@ -3,7 +3,6 @@
 #include "prochelper.hpp"
 
 namespace rs {
-	class GLEffect;
 	struct AdaptSDL;
 	namespace detail {
 		struct ISharedBase {
@@ -17,7 +16,7 @@ namespace rs {
 		};
 
 		using CBMakeSV = std::function<SharedBase_UP ()>;
-		using CBEngine = std::function<GLEffect* (rs::AdaptSDL&)>;
+		using CBEngine = std::function<IEffect* (rs::AdaptSDL&)>;
 		using CBInit = std::function<void ()>;
 		using CBScene = std::function<HLObj ()>;
 		//! ゲームループヘルパークラスの実装

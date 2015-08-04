@@ -2,7 +2,7 @@
 
 namespace myunif {
 	namespace light {
-		using GlxId = rs::GLEffect::GlxId;
+		using GlxId = rs::IEffect::GlxId;
 		const rs::IdValue Position = GlxId::GenUnifId("m_vLightPos"),
 							Color = GlxId::GenUnifId("m_vLightColor"),
 							Dir =	GlxId::GenUnifId("m_vLightDir"),

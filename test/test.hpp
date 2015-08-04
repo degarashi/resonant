@@ -11,7 +11,7 @@
 #include "../scene.hpp"
 #include "../vertex.hpp"
 #include "../differential.hpp"
-#include "../glx.hpp"
+#include "../glx_if.hpp"
 #include "../util/dwrapper_calldraw.hpp"
 
 namespace vertex {
@@ -55,12 +55,12 @@ struct SharedValue {
 	rs::HLCam	hlCam;
 };
 #define sharedv (::rs::GameloopHelper<Engine, SharedValue, Sc_Base>::SharedValueC::_ref())
-using GlxId = rs::GLEffect::GlxId;
+using GlxId = rs::IEffect::GlxId;
 extern const rs::GMessageId MSG_StateName;
 rs::HLDObj MakeFBClear(rs::Priority priority);
 extern const rs::IdValue T_Rect;
 
 class Engine;
-Engine& CnvToEngine(rs::GLEffect& e);
+Engine& CnvToEngine(rs::IEffect& e);
 template <class T>
 auto MakeCallDraw() { return rs::util::CallDraw<Engine>(&CnvToEngine); }

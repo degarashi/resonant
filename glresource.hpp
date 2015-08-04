@@ -191,7 +191,7 @@ namespace rs {
 			HLProg makeProgram(HSh vsh, HSh fsh);
 
 			// ------------ Buffer ------------
-			using CBCreateFx = std::function<GLEffect* (AdaptSDL&)>;
+			using CBCreateFx = std::function<IEffect* (AdaptSDL&)>;
 			//! ファイルからエフェクトの読み込み
 			AnotherLHandle<UPEffect,true> loadEffect(const std::string& name, const CBCreateFx& cb);
 			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri, const CBCreateFx& cb);

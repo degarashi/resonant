@@ -42,7 +42,6 @@ namespace rs {
 
 			// GLEffectは名前固定: default.glx
 			lkb->hlFx = mgr_gl.loadEffect("default.glx", cbEngine);
-			lkb->pEffect = GLEffectToIEffect(lkb->hlFx->get());
 			_upsv = cbMakeSV();
 			cbInit();
 			_pushFirstScene(cbScene());

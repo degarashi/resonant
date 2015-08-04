@@ -251,9 +251,9 @@ namespace rs {
 			GLuint		pgID;
 			GLint		uniID;
 			UniMap		result;
-			const GLEffect&	glx;
+			const IEffect&	glx;
 			UnifPool&	pool;
-			Visitor(const GLEffect& g, UnifPool& p): glx(g), pool(p) {}
+			Visitor(const IEffect& g, UnifPool& p): glx(g), pool(p) {}
 
 			bool setKey(const std::string& key) {
 				uniID = GL.glGetUniformLocation(pgID, key.c_str());
@@ -281,7 +281,7 @@ namespace rs {
 			}
 		};
 	}
-	void TPStructR::ts_onDeviceReset(const GLEffect& glx) {
+	void TPStructR::ts_onDeviceReset(const IEffect& e) {
 		AssertP(Trap, !_bInit)
 		_bInit = true;
 		auto& prog = *_prog.cref();
@@ -301,7 +301,7 @@ namespace rs {
 		}
 
 		// Uniform変数にデフォルト値がセットしてある物をリストアップ
-		Visitor visitor(glx, s_unifPool);
+		Visitor visitor(e, s_unifPool);
 		visitor.pgID = _prog.cref()->getProgramID();
 		for(const auto* p : _unifL) {
 			if(visitor.setKey(p->name)) {

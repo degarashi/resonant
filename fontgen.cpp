@@ -193,13 +193,13 @@ namespace rs {
 	}
 	CCoreID& TextObj::refCoreID() { return _coreID; }
 	const SPString& TextObj::getFaceName() const { return _faceName; }
-	void TextObj::draw(GLEffect* gle) const {
-		gle->setVDecl(DrawDecl<drawtag::text>::GetVDecl());
+	void TextObj::draw(IEffect& e) const {
+		e.setVDecl(DrawDecl<drawtag::text>::GetVDecl());
 		for(auto& ds : _drawSet) {
-			gle->setUniform(unif::texture::Diffuse, ds.hTex);
-			gle->setVStream(ds.hlVb.get(), 0);
-			gle->setIStream(ds.hlIb.get());
-			gle->drawIndexed(GL_TRIANGLES, ds.nChar*6, 0);
+			e.setUniform(unif::texture::Diffuse, ds.hTex);
+			e.setVStream(ds.hlVb.get(), 0);
+			e.setIStream(ds.hlIb.get());
+			e.drawIndexed(GL_TRIANGLES, ds.nChar*6, 0);
 		}
 	}
 	const spn::SizeF& TextObj::getSize() const {

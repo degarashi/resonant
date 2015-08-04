@@ -50,7 +50,7 @@ namespace rs {
 				void setAlpha(float a);
 				void setDepth(float d);
 				void exportDrawTag(DrawTag& tag) const;
-				void draw(GLEffect& e, SystemUniform2D& s2) const;
+				void draw(IEffect& e, SystemUniform2D& s2) const;
 				template <class T>
 				void draw(T& t) const { draw(t, t); }
 		};
@@ -60,7 +60,7 @@ namespace rs {
 				Rect11	_rect11;
 			public:
 				void exportDrawTag(DrawTag& tag) const;
-				void draw(GLEffect& e) const;
+				void draw(IEffect& e) const;
 		};
 	}
 }

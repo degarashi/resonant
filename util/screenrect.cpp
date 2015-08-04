@@ -58,7 +58,7 @@ namespace rs {
 			tag.idVBuffer[0] = _rect01.getVertex();
 			tag.zOffset = _depth;
 		}
-		void WindowRect::draw(GLEffect& e, SystemUniform2D& s2) const {
+		void WindowRect::draw(IEffect& e, SystemUniform2D& s2) const {
 			auto lkb = sharedbase.lock();
 			auto s = lkb->screenSize;
 			float rx = spn::Rcp22Bit(s.width/2),
@@ -82,7 +82,7 @@ namespace rs {
 			tag.idIBuffer = _rect11.getIndex();
 			tag.idVBuffer[0] = _rect11.getVertex();
 		}
-		void ScreenRect::draw(GLEffect& e) const {
+		void ScreenRect::draw(IEffect& e) const {
 			e.setVDecl(DrawDecl<vdecl::screen>::GetVDecl());
 			e.setVStream(_rect11.getVertex(), 0);
 			e.setIStream(_rect11.getIndex());

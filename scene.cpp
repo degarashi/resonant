@@ -109,7 +109,7 @@ namespace rs {
 		// スタックが空だったらtrue = 終了の合図 を返す
 		return _scene.empty();
 	}
-	void SceneMgr::onDraw(GLEffect& e) {
+	void SceneMgr::onDraw(IEffect& e) {
 		if(_scene.empty())
 			return;
 
