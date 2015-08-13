@@ -245,9 +245,11 @@ namespace rs {
 	GLenum GLFBufferCore::_AttIDtoGL(Att::Id att) {
 		const GLenum c_num[Att::NUM_ATTACHMENT] = {
 			GL_COLOR_ATTACHMENT0,
+#ifndef USE_OPENGLES2
 			GL_COLOR_ATTACHMENT1,
 			GL_COLOR_ATTACHMENT2,
 			GL_COLOR_ATTACHMENT3,
+#endif
 			GL_DEPTH_ATTACHMENT,
 			GL_STENCIL_ATTACHMENT
 		};

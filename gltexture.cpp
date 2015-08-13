@@ -148,9 +148,9 @@ namespace rs {
 				//	OpenGL ES2ではglTexImage2Dが実装されていないのでFramebufferにセットしてglReadPixelsで取得
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
 				auto u = tmp.use();
-				tmp.attach(GLFBuffer::COLOR0, _idTex);
+				tmp.attach(GLFBuffer::Att::COLOR0, _idTex);
 				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.baseType, info.elementType, &_buff->operator[](0));
-				tmp.attach(GLFBuffer::COLOR0, 0);
+				tmp.attach(GLFBuffer::Att::COLOR0, 0);
 	#else
 				auto u = use();
 				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.baseType, info.elementType, &_buff->operator[](0));

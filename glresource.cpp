@@ -214,7 +214,12 @@ namespace rs {
 			}
 			if(_param.depth) {
 				flag |= GL_DEPTH_BUFFER_BIT;
-				GL.glClearDepth(*_param.depth);
+#ifndef USE_OPENGLES2
+				GL.glClearDepth
+#else
+				GL.glClearDepthf
+#endif
+					(*_param.depth);
 			}
 			if(_param.stencil) {
 				flag |= GL_STENCIL_BUFFER_BIT;
