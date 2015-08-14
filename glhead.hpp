@@ -103,6 +103,7 @@ namespace rs {
 		void stencilMaskBack(int mask)  override;
 	};
 	extern TLS<IGL*>	tls_GL;
+	extern TLS<bool>	tls_GLPost;
 	#define GL	(*(*::rs::tls_GL))
 
 	#define GLW	(::rs::GLWrap::_ref())

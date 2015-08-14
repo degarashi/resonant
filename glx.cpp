@@ -515,7 +515,10 @@ namespace rs {
 			}
 			auto& we = refWriteEnt();
 			lk.unlock();
+			// 解放処理ではGL APIの呼び出しが終わるのを待つ必要はないのでフラグを下げる
+			tls_GLPost = false;
 			we.clear();
+			tls_GLPost = true;
 		}
 		void Task::endTask() {
 			GL.glFlush();
