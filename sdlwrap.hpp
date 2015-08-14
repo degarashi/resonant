@@ -338,6 +338,8 @@ namespace rs {
 				return const_cast<SpinLock*>(this)->_lock<CInner>(false);
 			}
 	};
+	//! 一時的なロック解除機能を備えたSpinLock
+	/*! あるスレッドがロック中でも一旦アンロックし、別のスレッドがロックできるようにする */
 	template <class T>
 	class SpinLockP {
 		struct InnerP {
@@ -357,18 +359,19 @@ namespace rs {
 		using Inner = detail::SpinInner<SpinLockP<T>, T, detail::CallUnlock>;
 		using CInner = detail::SpinInner<SpinLockP<T>, const T, detail::CallUnlock>;
 		friend struct detail::CallUnlock;
+		using ThreadID_OP = spn::Optional<SDL_threadID>;
 
 		TLS<int>		_tlsCount;
-		SDL_threadID	_lockID;
+		ThreadID_OP		_lockID;
 		int				_lockCount;
 		Mutex			_mutex;
 		T				_data;
 
 		void _unlock() {
-			AssertP(Trap, _lockID == *tls_threadID)
+			AssertP(Trap, _lockID && *_lockID == *tls_threadID)
 			AssertP(Trap, _lockCount >= 1)
 			if(--_lockCount == 0)
-				_lockID = 0;
+				_lockID = spn::none;
 			_mutex.unlock();
 		}
 		template <class I>
@@ -376,11 +379,11 @@ namespace rs {
 			if(bBlock)
 				_mutex.lock();
 			if(bBlock || _mutex.try_lock()) {
-				if(_lockID == 0) {
+				if(!_lockID) {
 					_lockCount = 1;
 					_lockID = *tls_threadID;
 				} else {
-					AssertP(Trap, _lockID == *tls_threadID)
+					AssertP(Trap, *_lockID == *tls_threadID)
 					++_lockCount;
 				}
 				return I(*this, &_data);
@@ -389,6 +392,7 @@ namespace rs {
 		}
 		void _put_reset() {
 			_mutex.lock();
+			// TLS変数に対比してた回数分、再度MutexのLock関数を呼ぶ
 			_lockID = *tls_threadID;
 			_lockCount = _tlsCount.get()-1;
 			*_tlsCount = -1;
@@ -402,10 +406,11 @@ namespace rs {
 			if(_mutex.try_lock()) {
 				if(_lockCount > 0) {
 					++_lockCount;
-					*_tlsCount = _lockCount;
+					*_tlsCount = _lockCount;	// ロックしてた回数をTLS変数に退避
 					int tmp = _lockCount;
 					_lockCount = 0;
-					_lockID = 0;
+					_lockID = spn::none;
+					// 今までロックしてた回数分、MutexのUnlock回数を呼ぶ
 					while(tmp-- != 0)
 						_mutex.unlock();
 					return true;
@@ -416,7 +421,9 @@ namespace rs {
 		}
 
 		public:
-			SpinLockP(): _lockID(0), _lockCount(0) {
+			SpinLockP():
+				_lockCount(0)
+			{
 				_tlsCount = -1;
 			}
 			Inner lock() {
