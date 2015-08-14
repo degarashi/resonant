@@ -163,6 +163,7 @@ namespace rs {
 			void unlock();
 			bool tryLock();
 			bool isLocked() const;
+			explicit operator bool () const;
 			SDL_mutex* getMutex();
 	};
 	class CondV {
@@ -232,50 +233,64 @@ namespace rs {
 			}
 	};
 	namespace detail {
-		template <class SP, class T>
-		struct SpinInner {
-			SP&		_src;
-			T*		_data;
+		struct CallUnlockR {
+			template <class T>
+			void operator()(T& t) const {
+				return t._unlockR();
+			}
+		};
+		struct CallUnlock {
+			template <class T>
+			void operator()(T& t) const {
+				return t._unlock();
+			}
+		};
+		template <class SP, class T, class UnlockT>
+		class SpinInner {
+			private:
+				SP&		_src;
+				T*		_data;
 
-			SpinInner(const SpinInner&) = delete;
-			SpinInner& operator = (const SpinInner&) = delete;
-			SpinInner(SpinInner&& n): _src(n._src), _data(n._data) {
-				n._data = nullptr;
-			}
-			SpinInner(SP& src, T* data): _src(src), _data(data) {}
-			~SpinInner() {
-				unlock();
-			}
-			T& operator * () { return *_data; }
-			T* operator -> () { return _data; }
-			bool valid() const { return _data != nullptr; }
-			void unlock() {
-				if(_data) {
-					_src._unlock();
-					_data = nullptr;
+			public:
+				SpinInner(const SpinInner&) = delete;
+				SpinInner& operator = (const SpinInner&) = delete;
+				SpinInner(SpinInner&& n): _src(n._src), _data(n._data) {
+					n._data = nullptr;
 				}
-			}
-			template <class T2>
-			SpinInner<SP, T2> castAndMove() {
-				SpinInner<SP, T2> ret(_src, reinterpret_cast<T2*>(_data));
-				_data = nullptr;
-				return ret;
-			}
-			template <class T2>
-			SpinInner<SP, T2> castAndMoveDeRef() {
-				SpinInner<SP, T2> ret(_src, reinterpret_cast<T2*>(*_data));
-				_data = nullptr;
-				return ret;
-			}
+				SpinInner(SP& src, T* data): _src(src), _data(data) {}
+				~SpinInner() {
+					unlock();
+				}
+				T& operator * () { return *_data; }
+				T* operator -> () { return _data; }
+				bool valid() const { return _data != nullptr; }
+				explicit operator bool () const { return valid(); }
+				void unlock() {
+					if(_data) {
+						UnlockT()(_src);
+						_data = nullptr;
+					}
+				}
+				template <class T2>
+				auto castAndMove() {
+					SpinInner<SP, T2, UnlockT> ret(_src, reinterpret_cast<T2*>(_data));
+					_data = nullptr;
+					return ret;
+				}
+				template <class T2>
+				auto castAndMoveDeRef() {
+					SpinInner<SP, T2, UnlockT> ret(_src, reinterpret_cast<T2*>(*_data));
+					_data = nullptr;
+					return ret;
+				}
 		};
 	}
 	//! 再帰対応のスピンロック
 	template <class T>
 	class SpinLock {
-		using Inner = detail::SpinInner<SpinLock<T>, T>;
-		using CInner = detail::SpinInner<SpinLock<T>, const T>;
-		friend Inner;
-		friend CInner;
+		using Inner = detail::SpinInner<SpinLock<T>, T, detail::CallUnlock>;
+		using CInner = detail::SpinInner<SpinLock<T>, const T, detail::CallUnlock>;
+		friend struct detail::CallUnlock;
 
 		SDL_atomic_t	_atmLock,
 						_atmCount;
@@ -339,10 +354,9 @@ namespace rs {
 					_s._put_reset();
 			}
 		};
-		using Inner = detail::SpinInner<SpinLockP<T>, T>;
-		using CInner = detail::SpinInner<SpinLockP<T>, const T>;
-		template <class T0, class T1>
-		friend struct detail::SpinInner;
+		using Inner = detail::SpinInner<SpinLockP<T>, T, detail::CallUnlock>;
+		using CInner = detail::SpinInner<SpinLockP<T>, const T, detail::CallUnlock>;
+		friend struct detail::CallUnlock;
 
 		TLS<int>		_tlsCount;
 		SDL_threadID	_lockID;

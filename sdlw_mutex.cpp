@@ -70,6 +70,9 @@ namespace rs {
 			return _mutex->getMutex();
 		return nullptr;
 	}
+	UniLock::operator bool() const {
+		return isLocked();
+	}
 
 	// ----- CondV -----
 	CondV::CondV(): _cond(SDL_CreateCond()) {}
