@@ -123,11 +123,11 @@ namespace rs {
 		Handler*			_drawHandler;
 
 		// ---- Context共有データ ----
-		using SharedP = SpinLockP<void*>;
+		using SharedP = SpinLockRW<void*, 4>;
 		using Shared = std::unordered_map<int, SharedP>;
 		Shared		_pShared;
 
-		using SharedPutV = std::vector<decltype(std::declval<SharedP>().put())>;
+		using SharedPutV = int;
 		TLS<SharedPutV>		tls_shared;
 		struct Put {
 			void operator()(GLWrap* g) const {
@@ -173,8 +173,8 @@ namespace rs {
 	class GLSharedData {
 		const static int Id;
 		private:
-			decltype(GLW.refShared()[Id].lock().castAndMove<T*>()) _lock() {
-				return GLW.refShared()[Id].lock().castAndMove<T*>();
+			decltype(auto) _lock() {
+				return GLW.refShared()[Id].writeLock().castAndMove<T*>();
 			}
 
 		public:
@@ -186,8 +186,11 @@ namespace rs {
 				auto lk = _lock();
 				delete reinterpret_cast<T*>(*lk);
 			}
-			decltype(GLW.refShared()[Id].lock().castAndMoveDeRef<T>()) lock() {
-				return GLW.refShared()[Id].lock().castAndMoveDeRef<T>();
+			decltype(auto) lock() {
+				return GLW.refShared()[Id].writeLock().castAndMoveDeRef<T>();
+			}
+			decltype(auto) lockR() {
+				return GLW.refShared()[Id].readLock().castAndMoveDeRef<const T>();
 			}
 	};
 	template <class T, int ID>

@@ -187,14 +187,16 @@ namespace rs {
 		return _pShared;
 	}
 	GLWrap::PutCall GLWrap::putShared() {
-		if(!tls_shared)
-			tls_shared = SharedPutV();
-		auto& sh = *tls_shared;
-		for(auto& s : _pShared)
-			sh.emplace_back(s.second.put());
+		// SpinLockPをRWにした際の応急処置
+		// if(!tls_shared)
+		// 	tls_shared = SharedPutV();
+		// auto& sh = *tls_shared;
+		// for(auto& s : _pShared)
+		// 	sh.emplace_back(s.second.put());
 		return PutCall(this);
 	}
 	void GLWrap::_putReset() {
-		(*tls_shared).clear();
+		// SpinLockPをRWにした際の応急処置
+		// (*tls_shared).clear();
 	}
 }
