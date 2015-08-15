@@ -8,16 +8,20 @@ namespace rs {
 	}
 	Mutex::~Mutex() {
 		if(_mutex)
-			SDL_DestroyMutex(_mutex);
+			SDLEC_D(Warn, SDL_DestroyMutex, _mutex);
 	}
 	bool Mutex::lock() {
 		return SDLEC_D(Trap, SDL_LockMutex, _mutex) == 0;
 	}
 	bool Mutex::try_lock() {
-		return SDLEC_D(Warn, SDL_TryLockMutex, _mutex) == 0;
+		// 単に他がロックしている時もTryLockが失敗するのでSDL_GetErrorによるエラーチェックはしない
+		auto res = SDL_TryLockMutex(_mutex);
+		// TryLockが失敗した時に後のエラーチェックに響くため、ここでリセット
+		SDL_ClearError();
+		return res == 0;
 	}
 	void Mutex::unlock() {
-		SDLEC_D(Trap, SDL_UnlockMutex, _mutex);
+		SDLEC_D(Warn, SDL_UnlockMutex, _mutex);
 	}
 	SDL_mutex* Mutex::getMutex() {
 		return _mutex;
