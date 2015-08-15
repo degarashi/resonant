@@ -38,7 +38,6 @@ namespace rs {
 			MainProc(sp, true)
 		{
 			auto lkb = sharedbase.lock();
-			lkb->hlIk.ref();
 
 			// GLEffectは名前固定: default.glx
 			lkb->hlFx = mgr_gl.loadEffect("default.glx", cbEngine);

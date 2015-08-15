@@ -50,8 +50,8 @@ namespace rs {
 		bool b = userRunU();
 { auto p = spn::profiler.beginBlockObj("scene_draw");
 		if(b && q.canDraw()) {
-			auto lk = sharedbase.lock();
-			auto& fx= *lk->hlFx.ref();
+			auto lk = sharedbase.lockR();
+			auto& fx= *lk->hlFx.cref();
 			lk.unlock();
 			mgr_scene.onDraw(fx);
 			q.setDraw(true);
@@ -69,7 +69,7 @@ namespace rs {
 		// 描画コマンド
 		rs::IEffect* fx;
 		{
-			auto lk = sharedbase.lock();
+			auto lk = sharedbase.lockR();
 			fx = lk->hlFx->get();
 		}
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
@@ -83,11 +83,12 @@ namespace rs {
 
 		// 画面のサイズとアスペクト比合わせ
 		{
-			auto lk = sharedbase.lock();
+			auto lk = sharedbase.lockR();
 			auto& scs = lk->screenSize;
 			auto sz = lk->spWindow->getSize();
 			if(scs != sz) {
-				scs = sz;
+				auto lkw = sharedbase.lock();
+				lkw->screenSize = sz;
 				GL.glViewport(0,0, sz.width, sz.height);
 			}
 		}
@@ -95,7 +96,7 @@ namespace rs {
 	}
 	void MainProc::_endProc() {
 		auto lk = sharedbase.lock();
-		IEffect& fx = *lk->hlFx.ref();
+		IEffect& fx = *lk->hlFx.cref();
 		fx.endTask();
 		lk->diffCount = fx.getDifference();
 	}
@@ -104,8 +105,8 @@ namespace rs {
 	void MainProc::onResume() {
 		mgr_scene.onResume(); }
 	void MainProc::onStop() {
-		auto lk = sharedbase.lock();
-		IEffect& e = *lk->hlFx.ref();
+		auto lk = sharedbase.lockR();
+		IEffect& e = *lk->hlFx.cref();
 		e.clearTask();
 		mgr_scene.onStop();
 	}

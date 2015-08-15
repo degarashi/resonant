@@ -17,7 +17,7 @@ namespace rs {
 			float rx, ry,
 				  ox, oy,
 				  diry;
-			auto lkb = sharedbase.lock();
+			auto lkb = sharedbase.lockR();
 			auto s = lkb->screenSize;
 			rx = spn::Rcp22Bit(s.width/2);
 			ry = spn::Rcp22Bit(s.height/2);

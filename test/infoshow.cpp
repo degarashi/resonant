@@ -21,7 +21,7 @@ struct InfoShow::MySt : StateT<MySt> {
 void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 	int fps;
 	{
-		auto lkb = sharedbase.lock();
+		auto lkb = sharedbase.lockR();
 		// FPSの表示
 		fps = lkb->fps.getFPS();
 	}
@@ -45,7 +45,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 #include <thread>
 void InfoShow::MySt::onUpdate(InfoShow& self) {
 	{
-		auto lk = sharedbase.lock();
+		auto lk = sharedbase.lockR();
 		self._count = lk->diffCount;
 	}
 	self._textHud.exportDrawTag(self._dtag);

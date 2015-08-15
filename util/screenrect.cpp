@@ -60,7 +60,7 @@ namespace rs {
 		}
 		void WindowRect::draw(IEffect& e) const {
 			auto& s2 = e.ref2D();
-			auto lkb = sharedbase.lock();
+			auto lkb = sharedbase.lockR();
 			auto s = lkb->screenSize;
 			float rx = spn::Rcp22Bit(s.width/2),
 					ry = spn::Rcp22Bit(s.height/2);

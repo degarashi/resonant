@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	auto cbInit = [](){
-		auto lkb = sharedbase.lock();
+		auto lkb = sharedbase.lockR();
 		auto lk = sharedv.lock();
 		// init Camera
 		{

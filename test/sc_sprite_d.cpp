@@ -76,7 +76,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 	int swt = 0;
 	bool bBlur = false;
 	St_Default() {
-		auto lk = sharedbase.lock();
+		auto lk = sharedbase.lockR();
 		auto s = lk->screenSize;
 		_hlFb = mgr_gl.makeFBuffer();
 		auto hlDp = mgr_gl.createTexture(s, GL_RGBA8, false, false);

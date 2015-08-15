@@ -8,12 +8,12 @@ struct FPSCamera::St_Default : StateT<St_Default> {
 	void onUpdate(FPSCamera& self) override;
 };
 void FPSCamera::St_Default::onUpdate(FPSCamera& self) {
-	auto lkb = sharedbase.lock();
+	auto lkb = sharedbase.lockR();
 	auto lk = sharedv.lock();
 	// カメラ操作
 	auto btn = mgr_input.isKeyPressing(lk->actPress);
 	if(btn ^ self._bPress) {
-		lkb->hlIm.ref()->setMouseMode((!self._bPress) ? rs::MouseMode::Relative : rs::MouseMode::Absolute);
+		lkb->hlIm.cref()->setMouseMode((!self._bPress) ? rs::MouseMode::Relative : rs::MouseMode::Absolute);
 		self._bPress = btn;
 	}
 	constexpr float speed = 0.25f;
