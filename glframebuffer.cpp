@@ -18,8 +18,8 @@ namespace rs {
 	}
 	void GLRBuffer::onDeviceLost() {
 		if(_idRbo != 0) {
-			GL.glDeleteRenderbuffers(1, &_idRbo);
 			cs_onLost[_behLost](mgr_gl.getTmpFramebuffer(), *this);
+			GL.glDeleteRenderbuffers(1, &_idRbo);
 			_idRbo = 0;
 		}
 	}
