@@ -71,13 +71,8 @@ namespace rs {
 					});
 					return ret;
 				} else {
-					RET ret;
-					rs::Message msg;
-					msg.exec = [&ret, cb](){
-						ret = cb();
-					};
-					h.post(std::move(msg));
-					return ret;
+					AssertP(Trap, false, "API呼び出し待ちフラグを下げたまま戻り値ありの関数を呼び出すのは無効")
+					return RET();
 				}
 			}
 		};
