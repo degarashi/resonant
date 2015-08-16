@@ -109,12 +109,10 @@ namespace rs {
 	}
 	void UpdGroup::addObj(HObj hObj) {
 		_registerUGVec();
+		AssertP(Trap, std::count_if(_addObj.begin(), _addObj.end(),
+					[hObj](const HLObj& hl){ return hl.get() == hObj; }) == 0, "オブジェクトの重複登録")
 		// すぐ追加するとリスト巡回が不具合起こすので後で一括処理
-		if(std::count_if(_addObj.begin(), _addObj.end(),
-					[hObj](const HLObj& hl){ return hl.get() == hObj; }) == 0)
-		{
-			_addObj.emplace_back(hObj);
-		}
+		_addObj.emplace_back(hObj);
 	}
 	void UpdGroup::_registerUGVec() {
 		if(_addObj.empty() && _remObj.empty())
@@ -124,8 +122,8 @@ namespace rs {
 		_registerUGVec();
 		// すぐ削除するとリスト巡回が不具合起こすので後で一括削除
 		// onUpdateの最後で削除する
-		if(std::find(_remObj.begin(), _remObj.end(), hObj) == _remObj.end())
-			_remObj.emplace_back(hObj);
+		AssertP(Trap, std::find(_remObj.begin(), _remObj.end(), hObj) == _remObj.end(), "同一オブジェクトの複数回削除")
+		_remObj.emplace_back(hObj);
 	}
 	const UpdGroup::ObjV& UpdGroup::getList() const {
 		return _objV;
@@ -233,12 +231,8 @@ namespace rs {
 					// Groupリスト自体はソートしない
 					_groupV.emplace_back(rs_mgr_obj.CastToGroup(h));
 				}
-
-				// 末尾に追加してソートをかける
+				// 末尾に追加
 				_objV.emplace_back(h);
-				// 優先度値は変化しないので多分、単純挿入ソートが最適
-				spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
-						return hl0->get()->getPriority() < hl1->get()->getPriority(); });
 				p->onConnected(hThis);
 			}
 			// -- remove --
@@ -263,8 +257,12 @@ namespace rs {
 					_objV.erase(itr);
 				}
 			}
-			if(_addObj.empty() && _remObj.empty())
+			if(_addObj.empty() && _remObj.empty()) {
+				// 優先度値は変化しないので多分、単純挿入ソートが最適
+				spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
+						return hl0->get()->getPriority() < hl1->get()->getPriority(); });
 				break;
+			}
 		}
 	}
 	// -------------------- UpdTask --------------------
