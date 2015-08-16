@@ -193,7 +193,32 @@ namespace rs {
 				nmm[0] = tpTech.name;
 				for(int passID=0 ; passID<nJ ; passID++) {
 					nmm[passID+1] = tpTech.tpL.at(passID).get().name;
-					_techMap.insert(std::make_pair(GL16Id{{uint8_t(techID), uint8_t(passID)}}, TPStructR(_result, techID, passID)));
+					GL16Id tpid{{uint8_t(techID), uint8_t(passID)}};
+					auto res = _techMap.insert(std::make_pair(tpid, TPStructR(_result, techID, passID)));
+					// テクスチャインデックスリスト作成
+					TPStructR& tpr = res.first->second;
+					GLuint pid = tpr.getProgram().cref()->getProgramID();
+					GLint nUnif;
+					GL.glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
+
+					// Sampler2D変数が見つかった順にテクスチャIdを割り振る
+					GLint curI = 0;
+					TexIndex& texIndex = _texMap[tpid];
+					for(GLint i=0 ; i<nUnif ; i++) {
+						GLsizei len;
+						int size;
+						GLenum typ;
+						GLchar cbuff[0x100];	// GLSL変数名の最大がよくわからない (ので、数は適当)
+
+						GLEC_D(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
+						auto opInfo = GLFormat::QueryGLSLInfo(typ);
+						if(opInfo->type == GLSLType::TextureT) {
+							// GetActiveUniformでのインデックスとGetUniformLocationIDは異なる場合があるので・・
+							GLint id = GLEC_D(Trap, glGetUniformLocation, pid, cbuff);
+							Assert(Trap, id>=0)
+							texIndex.insert(std::make_pair(id, curI++));
+						}
+					}
 				}
 			}
 		} catch(const std::exception& e) {
@@ -286,11 +311,11 @@ namespace rs {
 	void GLEffect::Current::_clean_drawvalue() {
 		pass = spn::none;
 		tps = spn::none;
+		pTexIndex = nullptr;
 		// セットされているUniform変数を未セット状態にする
 		for(auto& u : uniMap)
 			s_unifPool.destroy(u.second);
 		uniMap.clear();
-		texIndex.clear();
 	}
 	void GLEffect::Current::setTech(GLint idTech, bool bDefault) {
 		if(!tech || *tech != idTech) {
@@ -300,7 +325,7 @@ namespace rs {
 			_clean_drawvalue();
 		}
 	}
-	void GLEffect::Current::setPass(GLint idPass, TechMap& tmap) {
+	void GLEffect::Current::setPass(GLint idPass, TechMap& tmap, TexMap& texMap) {
 		// TechIdをセットせずにPassIdをセットするのは禁止
 		AssertT(Trap, tech, (GLE_Error)(const char*), "tech is not selected")
 		if(!pass || *pass != idPass) {
@@ -311,6 +336,7 @@ namespace rs {
 			GL16Id id{{uint8_t(*tech), uint8_t(*pass)}};
 			Assert(Trap, tmap.count(id)==1)
 			tps = tmap.at(id);
+			pTexIndex = &texMap.at(id);
 
 			// デフォルト値読み込み
 			if(bDefaultParam) {
@@ -320,29 +346,7 @@ namespace rs {
 					d.second->clone(*buff);
 				}
 			}
-			// テクスチャインデックスリスト作成
-			GLuint pid = tps->getProgram().cref()->getProgramID();
-			GLint nUnif;
-			GL.glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &nUnif);
-
-			GLsizei len;
-			int size;
-			GLenum typ;
-			GLchar cbuff[0x100];	// GLSL変数名の最大がよくわからない (ので、数は適当)
-			// Sampler2D変数が見つかった順にテクスチャIdを割り振る
-			GLint curI = 0;
-			texIndex.clear();
-			for(GLint i=0 ; i<nUnif ; i++) {
-				GLEC_D(Trap, glGetActiveUniform, pid, i, sizeof(cbuff), &len, &size, &typ, cbuff);
-				auto opInfo = GLFormat::QueryGLSLInfo(typ);
-				if(opInfo->type == GLSLType::TextureT) {
-					// GetActiveUniformでのインデックスとGetUniformLocationIDは異なる場合があるので・・
-					GLint id = GL.glGetUniformLocation(pid, cbuff);
-					Assert(Trap, id>=0)
-					texIndex.insert(std::make_pair(id, curI++));
-				}
-			}
-
+			// 各種セッティングをするTokenをリストに追加
 			tps->getProgram()->get()->getDrawToken(tokenML);
 			tokenML.allocate<draw::UserFunc>([&tp_tmp = *tps](){
 				tp_tmp.applySetting();
@@ -417,7 +421,7 @@ namespace rs {
 		_unifId.resultCur = nullptr;
 	}
 	void GLEffect::setPass(int passId) {
-		_current.setPass(passId, _techMap);
+		_current.setPass(passId, _techMap, _texMap);
 		if(_unifId.src)
 			_unifId.resultCur = &_unifId.result.at(GL16Id{{uint8_t(*_current.tech), uint8_t(passId)}});
 	}
@@ -664,9 +668,9 @@ namespace rs {
 	}
 	void GLEffect::_makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool /*bT*/) const {
 		// テクスチャユニット番号を検索
-		auto itr = _current.texIndex.find(id);
-		Assert(Warn, itr != _current.texIndex.end(), "texture index not found")
-		if(itr != _current.texIndex.end()) {
+		auto itr = _current.pTexIndex->find(id);
+		Assert(Warn, itr != _current.pTexIndex->end(), "texture index not found")
+		if(itr != _current.pTexIndex->end()) {
 			auto aID = itr->second;
 			if(n > 1) {
 				std::vector<const IGLTexture*> pTexA(n);

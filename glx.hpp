@@ -314,6 +314,7 @@ namespace rs {
 			using TexIndex = std::unordered_map<GLint, GLint>;
 			//! [(TechID|PassID) -> ProgramClass]
 			using TechMap = std::unordered_map<GL16Id, TPStructR>;
+			using TexMap = std::unordered_map<GL16Id, TexIndex>;
 			//! Tech名とPass名のセット
 			using TechName = std::vector<std::vector<std::string>>;
 			using TPRef = spn::Optional<const TPStructR&>;
@@ -322,6 +323,7 @@ namespace rs {
 			GLXStruct		_result;			//!< 元になった構造体 (Effectファイル解析結果)
 			TechMap			_techMap;			//!< ゼロから設定を構築する場合の情報や頂点セマンティクス
 			TechName		_techName;
+			TexMap			_texMap;
 			bool			_bInit = false;		//!< deviceLost/Resetの状態区別
 			diff::Effect	_diffCount;			/*!< バッファのカウントクリアはclearTask()かbeginTask()の呼び出しタイミング */
 
@@ -360,17 +362,18 @@ namespace rs {
 				// passをセットしたタイミングでProgramを検索し、tpsにセット
 				OPGLint				tech,
 									pass;
+
+				TexIndex*			pTexIndex;
 				bool				bDefaultParam;	//!< Tech切替時、trueならデフォルト値読み込み
 				TPRef				tps;			//!< 現在使用中のTech
 				UniMap				uniMap;			//!< 現在設定中のUniform
 				static UnifPool		s_unifPool;
-				TexIndex			texIndex;		//!< [UniformID : TextureIndex]
 				draw::TokenML		tokenML;
 
 				void reset();
 				void _clean_drawvalue();
 				void setTech(GLint idTech, bool bDefault);
-				void setPass(GLint idPass, TechMap& tmap);
+				void setPass(GLint idPass, TechMap& tmap, TexMap& texMap);
 				void _outputDrawCall(draw::VStream& vs);
 				void outputFramebuffer();
 				//! DrawCallに関連するAPI呼び出しTokenを出力
