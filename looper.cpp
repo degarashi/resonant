@@ -123,15 +123,18 @@ namespace rs {
 	const WPLooper& Handler::getLooper() const {
 		return _looper;
 	}
-	void Handler::postExec(Callback cb) {
+	void Handler::postExec(const Exec& f) {
 		CondV cond;
 		Mutex mutex;
 		UniLock lk(mutex);
 		postArgs(msg::Exec(), [&](){
-			cb();
+			f();
 			UniLock lk2(mutex);
 			cond.signal();
 		});
 		cond.wait(lk);
+	}
+	void Handler::postExecNoWait(Exec cb) {
+		postArgs(msg::Exec(), std::move(cb));
 	}
 }

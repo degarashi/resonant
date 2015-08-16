@@ -141,7 +141,10 @@ namespace rs {
 			Handler(Handler&& h);
 			Handler(const WPLooper& loop, Callback cb=Callback());
 			const WPLooper& getLooper() const;
-			void postExec(Callback cb);
+			//! コールバック関数を渡し、それの実行が終わるまで待機
+			void postExec(const Exec& f);
+			//! コールバック関数を渡し、実行完了を待たずに戻る
+			void postExecNoWait(Exec f);
 			void post(Message&& m);
 			template <class... Args>
 			void postArgsDelay(Args&&... args) {
