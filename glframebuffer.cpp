@@ -1,4 +1,5 @@
 #include "glresource.hpp"
+#include "event.hpp"
 
 namespace rs {
 	// ------------------------- GLRBuffer -------------------------
@@ -18,8 +19,17 @@ namespace rs {
 	}
 	void GLRBuffer::onDeviceLost() {
 		if(_idRbo != 0) {
+			// 復帰処理が必要な場合はここでする
 			cs_onLost[_behLost](mgr_gl.getTmpFramebuffer(), *this);
-			GL.glDeleteRenderbuffers(1, &_idRbo);
+
+			GLW.getDrawHandler().postExecNoWait([buffId=_idRbo](){
+				GLuint num;
+				GLEC_D(Warn, glGetIntegerv, GL_RENDERBUFFER_BINDING, reinterpret_cast<GLint*>(&num));
+				if(num == buffId)
+					GLEC_D(Warn, glBindRenderbuffer, GL_RENDERBUFFER, 0);
+				GLEC_D(Warn, glDeleteRenderbuffers, 1, &buffId);
+			});
+
 			_idRbo = 0;
 		}
 	}
@@ -257,16 +267,17 @@ namespace rs {
 	}
 	void GLFBuffer::onDeviceLost() {
 		if(_idFbo != 0) {
-			{
-				auto u = use();
+			GLW.getDrawHandler().postExecNoWait([buffId=getBufferID()](){
+				GLEC_D(Warn, glBindFramebuffer, GL_FRAMEBUFFER, buffId);
 				for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++) {
 					// AttachmentのDetach
-					GLEC(Trap, glFramebufferRenderbuffer, GL_FRAMEBUFFER, _AttIDtoGL(Att::Id(i)), GL_RENDERBUFFER, 0);
+					GLEC_D(Warn, glFramebufferRenderbuffer, GL_FRAMEBUFFER, _AttIDtoGL(Att::Id(i)), GL_RENDERBUFFER, 0);
 				}
-			}
-			GL.glDeleteFramebuffers(1, &_idFbo);
+				GLEC_D(Warn, glBindFramebuffer, GL_FRAMEBUFFER, 0);
+				GLEC_D(Warn, glDeleteFramebuffers, 1, &buffId);
+				GLEC_Chk(Trap)
+			});
 			_idFbo = 0;
-			GLEC_Chk(Trap)
 			// Attachmentの解放は各ハンドルに任せる
 		}
 	}

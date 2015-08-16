@@ -81,7 +81,9 @@ namespace rs {
 	}
 	void GLShader::onDeviceLost() {
 		if(_idSh!=0) {
-			GL.glDeleteShader(_idSh);
+			GLW.getDrawHandler().postExecNoWait([buffId=getShaderID()](){
+				GLEC_D(Warn, glDeleteShader, buffId);
+			});
 			_idSh = 0;
 		}
 	}
@@ -135,8 +137,14 @@ namespace rs {
 	}
 	void GLProgram::onDeviceLost() {
 		if(_idProg != 0) {
-			// ShaderはProgramをDeleteすれば自動的にdetachされる
-			GL.glDeleteProgram(_idProg);
+			GLW.getDrawHandler().postExecNoWait([buffId=getProgramID()](){
+				GLuint num;
+				GLEC_D(Warn, glGetIntegerv, GL_CURRENT_PROGRAM, reinterpret_cast<GLint*>(&num));
+				if(num == buffId)
+					GLEC_D(Warn, glUseProgram, 0);
+				// ShaderはProgramをDeleteすれば自動的にdetachされる
+				GLEC_D(Warn, glDeleteProgram, buffId);
+			});
 			_idProg = 0;
 		}
 	}

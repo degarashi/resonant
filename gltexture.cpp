@@ -2,6 +2,7 @@
 #include "sdlwrap.hpp"
 #include <functional>
 #include "glhead.hpp"
+#include "event.hpp"
 
 namespace rs {
 	// ------------------------- IGLTexture -------------------------
@@ -102,7 +103,15 @@ namespace rs {
 
 	void IGLTexture::onDeviceLost() {
 		if(_idTex != 0) {
-			GL.glDeleteTextures(1, &_idTex);
+			GLW.getDrawHandler().postExecNoWait([actId=_actID, buffId=getTextureID(), texFlag=_texFlag](){
+				GLEC_D(Warn, glActiveTexture, GL_TEXTURE0 + actId);
+				GLint num;
+				GLEC_D(Warn, glGetIntegerv, GL_TEXTURE_BINDING_2D, &num);
+				if(num == buffId)
+					GLEC_D(Warn, glBindTexture, texFlag, 0);
+				GLuint id = buffId;
+				GLEC_D(Warn, glDeleteTextures, 1, &id);
+			});
 			_idTex = 0;
 			_bReset = false;
 			GLEC_Chk_D(Warn);

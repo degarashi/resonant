@@ -1,4 +1,5 @@
 #include "glresource.hpp"
+#include "event.hpp"
 
 namespace rs {
 	// --------------------------- GLBufferCore ---------------------------
@@ -28,16 +29,27 @@ namespace rs {
 	// --------------------------- GLBuffer ---------------------------
 	void GLBuffer::onDeviceLost() {
 		if(_idBuff != 0) {
-			GL.glDeleteBuffers(1, &_idBuff);
+			GLW.getDrawHandler().postExecNoWait([buffId=getBuffID(), buffType=getBuffType()](){
+				GLuint num;
+				GLEC_D(Warn, glGetIntegerv, GL_ARRAY_BUFFER_BINDING, reinterpret_cast<GLint*>(&num));
+				if(num == buffId)
+					GLEC_D(Warn, glBindBuffer, buffType, 0);
+				else {
+					GLEC_D(Warn, glGetIntegerv, GL_ELEMENT_ARRAY_BUFFER_BINDING, reinterpret_cast<GLint*>(&num));
+					if(num == buffId)
+						GLEC_D(Warn, glBindBuffer, buffType, 0);
+				}
+				GLEC_D(Warn, glDeleteBuffers, 1, &buffId);
+			});
 			_idBuff = 0;
 		}
 	}
 	void GLBuffer::onDeviceReset() {
 		if(_idBuff == 0) {
-			GL.glGenBuffers(1, &_idBuff);
+			GLEC_D(Warn, glGenBuffers, 1, &_idBuff);
 			if(_buff) {
 				auto u = use();
-				GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
+				GLEC_D(Warn, glBufferData, _buffType, _buffSize, _pBuffer, _drawType);
 			}
 		}
 	}
@@ -48,7 +60,7 @@ namespace rs {
 	void GLBuffer::_initData() {
 		if(getBuffID() > 0) {
 			auto u = use();
-			GL.glBufferData(_buffType, _buffSize, _pBuffer, _drawType);
+			GLEC_D(Warn, glBufferData, _buffType, _buffSize, _pBuffer, _drawType);
 		}
 	}
 	void GLBuffer::initData(const void* src, size_t nElem, GLuint stride) {
@@ -63,7 +75,7 @@ namespace rs {
 		std::memcpy(reinterpret_cast<char*>(_pBuffer)+ofs, src, szCopy);
 		if(getBuffID() > 0) {
 			auto u = use();
-			GL.glBufferSubData(_buffType, ofs, szCopy, src);
+			GLEC_D(Warn, glBufferSubData, _buffType, ofs, szCopy, src);
 		}
 	}
 	GLuint GLBuffer::getSize() const {
