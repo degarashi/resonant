@@ -3,7 +3,6 @@
 
 namespace rs {
 	TLS<IGL*>	tls_GL;
-	TLS<bool>	tls_GLPost;
 	void IGL_Draw::stencilFuncFront(int func, int ref, int mask) {
 		GLWrap::glStencilFuncSeparate(GL_FRONT, func, ref, mask);
 	}
@@ -64,46 +63,26 @@ namespace rs {
 		struct CallHandler {
 			template <class CB>
 			RET operator()(Handler& h, CB cb) const {
-				if(*tls_GLPost) {
-					RET ret;
-					h.postExec([&](){
-						ret = cb();
-					});
-					return ret;
-				} else {
-					AssertP(Trap, false, "API呼び出し待ちフラグを下げたまま戻り値ありの関数を呼び出すのは無効")
-					return RET();
-				}
+				RET ret;
+				h.postExec([&](){
+					ret = cb();
+				});
+				return ret;
 			}
 		};
 		template <>
 		struct CallHandler<void> {
 			template <class CB>
 			void operator()(Handler& h, CB cb) const {
-				if(*tls_GLPost) {
-					h.postExec([&](){
-						cb();
-					});
-				} else {
-					rs::Message msg;
-					msg.exec = cb;
-					h.post(std::move(msg));
-				}
+				h.postExec([&](){
+					cb();
+				});
 			}
 		};
-	}
-	namespace {
-		bool CheckFP(GLenum (IGL_OtherSingle::*ptr)()) {
-			return (ptr == &IGL_OtherSingle::glGetError) ||
-					(ptr == &IGL_OtherSingle::glGetError_NC);
-		}
-		bool CheckFP(...) { return false; }
 	}
 	#define GLCall(func, seq)	GLWrap::func(BOOST_PP_SEQ_ENUM(seq));
 	#define DEF_SINGLE_METHOD(ret_type, name, args, argnames) \
 		ret_type IGL_OtherSingle::name(BOOST_PP_SEQ_ENUM(args)) { \
-			if(CheckFP(&IGL_OtherSingle::name)) \
-				return IGL_Draw().name(BOOST_PP_SEQ_ENUM(argnames)); \
 			auto p = GLW.putShared(); \
 			return CallHandler<ret_type>()(GLW.getDrawHandler(), [=](){ \
 				return IGL_Draw().name(BOOST_PP_SEQ_ENUM(argnames)); }); }
@@ -155,7 +134,6 @@ namespace rs {
 
 	void GLWrap::initializeMainThread() {
 		Assert(Trap, !tls_GL.initialized())
-		tls_GLPost = true;
 		if(_bShare)
 			tls_GL = &_ctxDraw;
 		else
@@ -163,7 +141,6 @@ namespace rs {
 	}
 	void GLWrap::initializeDrawThread(Handler& handler) {
 		Assert(Trap, !tls_GL.initialized())
-		tls_GLPost = true;
 		_drawHandler = &handler;
 		tls_GL = &_ctxDraw;
 	}
@@ -171,7 +148,6 @@ namespace rs {
 		Assert(Trap, tls_GL.initialized())
 		Assert(Trap, _drawHandler)
 		tls_GL.terminate();
-		tls_GLPost.terminate();
 		_drawHandler = nullptr;
 	}
 	Handler& GLWrap::getDrawHandler() {
