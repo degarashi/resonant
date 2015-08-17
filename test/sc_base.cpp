@@ -38,7 +38,7 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup /*hGroup*/) {
 
 	rs::CCoreID cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
 	// ---- make ProfileShow ----
-	auto hlProf = rs_mgr_obj.makeDrawable<rs::util::ProfileShow>(InfoShow::T_Info, T_Rect, cid, hDg);
+	auto hlProf = rs_mgr_obj.makeDrawable<rs::util::ProfileShow>(InfoShow::T_Info, T_Rect, cid, hDg, 0x0000, 0x0000);
 	upd->addObj(hlProf.first.get());
 	hlProf.second->setOffset({0, 480});
 

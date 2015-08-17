@@ -58,12 +58,14 @@ namespace rs {
 		};
 
 		// ---------------------- ProfileShow ----------------------
-		ProfileShow::ProfileShow(IdValue idText, IdValue idRect, CCoreID cid, HDGroup hDg):
+		ProfileShow::ProfileShow(IdValue idText, IdValue idRect, CCoreID cid, HDGroup hDg, Priority uprio, Priority dprio):
 			_idText(idText),
 			_idRect(idRect),
 			_hDg(hDg),
+			_uprio(uprio),
 			_offset(0)
 		{
+			_dtag.priority = dprio;
 			_textHud.setCCoreId(cid);
 			_textHud.setScreenOffset({-1,0});
 			_textHud.setDepth(0.f);
@@ -73,6 +75,8 @@ namespace rs {
 			_offset = ofs;
 			_textHud.setWindowOffset(ofs);
 		}
-		Priority ProfileShow::getPriority() const { return 0x2000; }
+		Priority ProfileShow::getPriority() const {
+			return _uprio;
+		}
 	}
 }
