@@ -18,7 +18,7 @@ void Sc_Cube::St_Default::onConnected(Sc_Cube& self, rs::HGroup /*hGroup*/) {
 	// ---- make FBClear ----
 	self.getDrawGroup().addObj(MakeFBClear(0x0000));
 	// ---- make cube ----
-	rs::HLTex hlTex = mgr_gl.loadTexture("block.jpg");
+	rs::HLTex hlTex = mgr_gl.loadTexture("block.jpg", rs::MipmapLinear);
 	{
 		using CubeObj = rs::util::DWrapper<Cube>;
 		auto hlp = rs_mgr_obj.makeDrawable<CubeObj>(::MakeCallDraw<Engine>(), Cube::T_Cube, rs::HDGroup(), 1.f, hlTex);

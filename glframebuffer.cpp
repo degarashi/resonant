@@ -213,7 +213,7 @@ namespace rs {
 			}
 			// この時点で有効なフレームバッファになって無ければエラー
 			GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-			Assert(Trap, e == GL_FRAMEBUFFER_COMPLETE)
+			Assert(Trap, e==GL_FRAMEBUFFER_COMPLETE, GLFormat::QueryEnumString(e).c_str())
 		}
 	}
 	// ------------------------- GLFBuffer -------------------------

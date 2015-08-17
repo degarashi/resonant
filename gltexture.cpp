@@ -11,17 +11,16 @@ namespace rs {
 		{GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR},
 		{GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR}
 	};
-	IGLTexture::IGLTexture(OPInCompressedFmt fmt, const spn::Size& sz, bool bCube):
+	IGLTexture::IGLTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::Size& sz, bool bCube):
 		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE),
-		_actID(0), _mipLevel(NoMipmap), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D),
+		_actID(0), _mipLevel(miplevel), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D),
 		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _coeff(0), _size(sz), _format(fmt) {}
 	#define FUNC_COPY(z, data, elem)	(elem(data.elem))
 	#define FUNC_MOVE(z, data, elem)	(elem(std::move(data.elem)))
 	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_actID)\
-						(_mipLevel)(_texFlag)(_faceFlag)(_coeff)(_size)(_format)(_bReset)
+						(_mipLevel)(_texFlag)(_faceFlag)(_coeff)(_size)(_format)
 	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_MOVE, t, SEQ_TEXTURE)) {
 		t._idTex = 0;
-		t._bReset = false;
 	}
 	IGLTexture::IGLTexture(const IGLTexture& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_COPY, t, SEQ_TEXTURE)) {}
 
@@ -40,7 +39,7 @@ namespace rs {
 
 	bool IGLTexture::_onDeviceReset() {
 		if(_idTex == 0) {
-			GLEC_D(Warn, glGenTextures, 1, &_idTex);
+			GL.glGenTextures(1, &_idTex);
 			return true;
 		}
 		return false;
@@ -60,7 +59,7 @@ namespace rs {
 	void IGLTexture::setActiveID(GLuint n) { _actID = n; }
 	bool IGLTexture::isMipmap() const { return  IsMipmap(_mipLevel); }
 	bool IGLTexture::isCubemap() const { return _texFlag != GL_TEXTURE_2D; }
-	bool IGLTexture::IsMipmap(State level) {
+	bool IGLTexture::IsMipmap(MipState level) {
 		return level >= MipmapNear;
 	}
 	void IGLTexture::save(const std::string& path) {
@@ -85,35 +84,17 @@ namespace rs {
 	void IGLTexture::setAnisotropicCoeff(float coeff) {
 		_coeff = coeff;
 	}
-	void IGLTexture::_reallocate() {
-		UniLock lk(_mutex);
-		onDeviceLost();
-		onDeviceReset();
-	}
-	void IGLTexture::setFilter(State miplevel, bool bLinearMag, bool bLinearMin) {
+	void IGLTexture::setFilter(bool bLinearMag, bool bLinearMin) {
 		_iLinearMag = bLinearMag ? 1 : 0;
 		_iLinearMin = bLinearMin ? 1 : 0;
-		bool b = isMipmap() ^ IsMipmap(miplevel);
-		_mipLevel = miplevel;
-		if(b) {
-			// ミップマップの有りなしを切り替える時はテクスチャを作りなおす
-			_bReset = true;
-		}
 	}
-
 	void IGLTexture::onDeviceLost() {
 		if(_idTex != 0) {
-			GLW.getDrawHandler().postExecNoWait([actId=_actID, buffId=getTextureID(), texFlag=_texFlag](){
-				GLEC_D(Warn, glActiveTexture, GL_TEXTURE0 + actId);
-				GLint num;
-				GLEC_D(Warn, glGetIntegerv, GL_TEXTURE_BINDING_2D, &num);
-				if(num == buffId)
-					GLEC_D(Warn, glBindTexture, texFlag, 0);
+			GLW.getDrawHandler().postExecNoWait([buffId=getTextureID()](){
 				GLuint id = buffId;
-				GLEC_D(Warn, glDeleteTextures, 1, &id);
+				GL.glDeleteTextures(1, &id);
 			});
 			_idTex = 0;
-			_bReset = false;
 			GLEC_Chk_D(Warn);
 		}
 	}
@@ -125,10 +106,6 @@ namespace rs {
 		return getTextureID() == t.getTextureID();
 	}
 	void IGLTexture::getDrawToken(draw::TokenDst& dst, GLint id, int index, int actID) {
-		if(_bReset) {
-			_bReset = false;
-			_reallocate();
-		}
 		using UT = draw::Texture;
 		auto* ptr = dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>());
 		new(ptr) UT(handleFromThis(), id, index, actID, *this);
@@ -136,7 +113,7 @@ namespace rs {
 
 	// ------------------------- Texture_Mem -------------------------
 	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool /*bStream*/, bool bRestore):
-		IGLTexture(fmt, sz, bCube), /*_bStream(bStream),*/ _bRestore(bRestore)
+		IGLTexture(NoMipmap, fmt, sz, bCube), /*_bStream(bStream),*/ _bRestore(bRestore)
 	{}
 	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff):
 		Texture_Mem(bCube, fmt, sz, bStream, bRestore)
@@ -281,8 +258,8 @@ namespace rs {
 	}
 
 	// ------------------------- Texture_StaticURI -------------------------
-	Texture_StaticURI::Texture_StaticURI(const spn::URI& uri, OPInCompressedFmt fmt):
-		IGLTexture(fmt, spn::Size(0,0), false), _uri(uri) {}
+	Texture_StaticURI::Texture_StaticURI(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt):
+		IGLTexture(miplevel, fmt, spn::Size(0,0), false), _uri(uri) {}
 	Texture_StaticURI::Texture_StaticURI(Texture_StaticURI&& t):
 		IGLTexture(std::move(static_cast<IGLTexture&>(t))), _uri(std::move(t._uri)) {}
 	void Texture_StaticURI::onDeviceReset() {
@@ -363,10 +340,10 @@ namespace rs {
 
 	// ------------------------- Texture_StaticCubeURI -------------------------
 	Texture_StaticCubeURI::Texture_StaticCubeURI(Texture_StaticCubeURI&& t): IGLTexture(std::move(static_cast<IGLTexture&>(t))), _uri(std::move(t._uri)) {}
-	Texture_StaticCubeURI::Texture_StaticCubeURI(const spn::URI& uri, OPInCompressedFmt fmt): IGLTexture(fmt, spn::Size(0,0), true), _uri(new OPArray<spn::URI, 1>(uri)) {}
+	Texture_StaticCubeURI::Texture_StaticCubeURI(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt): IGLTexture(miplevel, fmt, spn::Size(0,0), true), _uri(new OPArray<spn::URI, 1>(uri)) {}
 	Texture_StaticCubeURI::Texture_StaticCubeURI(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
-			const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt):
-			IGLTexture(fmt, spn::Size(0,0), true), _uri(new OPArray<spn::URI, 6>(uri0, uri1, uri2, uri3, uri4, uri5)) {}
+			const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, MipState miplevel, OPInCompressedFmt fmt):
+			IGLTexture(miplevel, fmt, spn::Size(0,0), true), _uri(new OPArray<spn::URI, 6>(uri0, uri1, uri2, uri3, uri4, uri5)) {}
 	void Texture_StaticCubeURI::onDeviceReset() {
 		if(_onDeviceReset()) {
 			int mask = _uri->getNPacked()==1 ? 0x00 : 0xff;
@@ -379,7 +356,7 @@ namespace rs {
 	}
 
 	// ------------------------- Texture_Debug -------------------------
-	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube): IGLTexture(GLFormat::QuerySDLtoGL(gen->getFormat())->format, size, bCube), _gen(gen) {}
+	Texture_Debug::Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube, MipState miplevel): IGLTexture(miplevel, GLFormat::QuerySDLtoGL(gen->getFormat())->format, size, bCube), _gen(gen) {}
 	void Texture_Debug::onDeviceReset() {
 		if(_onDeviceReset()) {
 			GLenum fmt = GLFormat::QuerySDLtoGL(this->_gen->getFormat())->format;

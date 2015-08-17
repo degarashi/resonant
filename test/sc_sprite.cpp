@@ -83,8 +83,8 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 	}
 };
 rs::HLTex Sc_DSort::LoadTexture(int index) {
-	rs::HLTex hlST = mgr_gl.loadTexture((boost::format("spr%1%.png") % index).str());
-	hlST->get()->setFilter(rs::IGLTexture::MipmapLinear, true, true);
+	rs::HLTex hlST = mgr_gl.loadTexture((boost::format("spr%1%.png") % index).str(), rs::MipmapLinear);
+	hlST->get()->setFilter(true, true);
 	return hlST;
 }
 ImplDrawGroup(MyP, 0x2000)

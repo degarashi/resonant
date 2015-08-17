@@ -107,6 +107,11 @@ namespace rs {
 		using GLE_Error::GLE_Error;
 	};
 
+	enum MipState {
+		NoMipmap,
+		MipmapNear,
+		MipmapLinear
+	};
 	// ------------------ GLリソース管理 ------------------
 	class GLFBufferTmp;
 	struct AdaptSDL;
@@ -154,18 +159,18 @@ namespace rs {
 			/*! 圧縮テクスチャはファイルヘッダで判定
 				\param[in] fmt OpenGLの内部フォーマット(not ファイルのフォーマット)<br>
 								指定しなければファイルから推定 */
-			HLTex loadTexture(const spn::URI& uri, OPInCompressedFmt fmt=spn::none);
-			HLTex loadTexture(const std::string& name, OPInCompressedFmt fmt=spn::none);
+			HLTex loadTexture(const spn::URI& uri, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
+			HLTex loadTexture(const std::string& name, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
 			//! 連番ファイルからキューブテクスチャを作成
-			HLTex loadCubeTexture(const spn::URI& uri, OPInCompressedFmt fmt=spn::none);
-			HLTex loadCubeTexture(const std::string& name, OPInCompressedFmt fmt=spn::none);
+			HLTex loadCubeTexture(const spn::URI& uri, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
+			HLTex loadCubeTexture(const std::string& name, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
 			//! 個別のファイルからキューブテクスチャを作成
 			/*! 画像サイズとフォーマットは全て一致していなければならない */
-			HLTex _loadCubeTexture(OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+			HLTex _loadCubeTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
 								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5);
 			template <class... Ts>
-			HLTex loadCubeTexture(OPInCompressedFmt fmt, Ts&&... ts) {
-				return loadCubeTexture(fmt, _uriFromResourceName(std::forward<Ts>(ts))...);
+			HLTex loadCubeTexture(MipState miplevel, OPInCompressedFmt fmt, Ts&&... ts) {
+				return loadCubeTexture(miplevel, fmt, _uriFromResourceName(std::forward<Ts>(ts))...);
 			}
 			//! 空のテクスチャを作成
 			/*! 領域だけ確保 */
@@ -496,11 +501,6 @@ namespace rs {
 	/*!	フィルターはNEARESTとLINEARしか無いからboolで管理 */
 	class IGLTexture : public IGLResource {
 		public:
-			enum State {
-				NoMipmap,
-				MipmapNear,
-				MipmapLinear
-			};
 			friend class RUser<IGLTexture>;
 			friend class draw::Texture;
 			friend class draw::TextureA;
@@ -516,25 +516,22 @@ namespace rs {
 			GLuint		_actID;		//!< セットしようとしているActiveTextureID (for Use())
 			//! [mipLevel][Nearest / Linear]
 			const static GLuint cs_Filter[3][2];
-			State				_mipLevel;
+			const MipState		_mipLevel;
 			GLuint				_texFlag,	//!< TEXTURE_2D or TEXTURE_CUBE_MAP
 								_faceFlag;	//!< TEXTURE_2D or TEXTURE_CUBE_MAP_POSITIVE_X
 			float				_coeff;
 			spn::Size			_size;
 			OPInCompressedFmt	_format;	//!< 値が無効 = 不定
-			bool				_bReset;
-			Mutex				_mutex;		//!< _reallocate用
 
 			bool _onDeviceReset();
-			void _reallocate();
-			IGLTexture(OPInCompressedFmt fmt, const spn::Size& sz, bool bCube);
+			IGLTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::Size& sz, bool bCube);
 			IGLTexture(const IGLTexture& t);
 
 		public:
 			IGLTexture(IGLTexture&& t);
 			virtual ~IGLTexture();
 
-			void setFilter(State miplevel, bool bLinearMag, bool bLinearMin);
+			void setFilter(bool bLinearMag, bool bLinearMin);
 			void setAnisotropicCoeff(float coeff);
 			void setUVWrap(GLuint s, GLuint t);
 
@@ -549,7 +546,7 @@ namespace rs {
 			//! テクスチャユニット番号を指定してBind
 			void setActiveID(GLuint n);
 
-			static bool IsMipmap(State level);
+			static bool IsMipmap(MipState level);
 			bool isMipmap() const;
 			//! 内容をファイルに保存 (主にデバッグ用)
 			void save(const std::string& path);
@@ -665,7 +662,7 @@ namespace rs {
 		public:
 			static std::pair<spn::Size, GLInCompressedFmt> LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face);
 			Texture_StaticURI(Texture_StaticURI&& t);
-			Texture_StaticURI(const spn::URI& uri, OPInCompressedFmt fmt);
+			Texture_StaticURI(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt);
 			void onDeviceReset() override;
 	};
 	//! 連番または6つの画像ファイルからCubeテクスチャを読む
@@ -674,9 +671,9 @@ namespace rs {
 		OPInCompressedFmt	_opFmt;
 		public:
 			Texture_StaticCubeURI(Texture_StaticCubeURI&& t);
-			Texture_StaticCubeURI(const spn::URI& uri, OPInCompressedFmt fmt);
+			Texture_StaticCubeURI(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt);
 			Texture_StaticCubeURI(const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
-				const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, OPInCompressedFmt fmt);
+				const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5, MipState miplevel, OPInCompressedFmt fmt);
 			void onDeviceReset() override;
 	};
 
@@ -723,7 +720,7 @@ namespace rs {
 		// デバッグ用なので他との共有を考えず、UniquePtrとする
 		UPTDGen		_gen;
 		public:
-			Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube);
+			Texture_Debug(ITDGen* gen, const spn::Size& size, bool bCube, MipState miplevel);
 			void onDeviceReset() override;
 	};
 

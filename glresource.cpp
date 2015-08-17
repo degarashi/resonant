@@ -47,19 +47,19 @@ namespace rs {
 		}
 		return key_k;
 	}
-	HLTex GLRes::loadTexture(const std::string& name, OPInCompressedFmt fmt) {
+	HLTex GLRes::loadTexture(const std::string& name, MipState miplevel, OPInCompressedFmt fmt) {
 		_setResourceTypeId(ResourceType::Texture);
-		return loadTexture(_uriFromResourceName(name), fmt);
+		return loadTexture(_uriFromResourceName(name), miplevel, fmt);
 	}
-	HLTex GLRes::loadTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
+	HLTex GLRes::loadTexture(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt) {
 		_chPostfix = spn::none;
 		return Cast<UPTexture>(
 			loadResourceApp(uri,
-				MakeStaticTex<Texture_StaticURI>(fmt),
+				MakeStaticTex<Texture_StaticURI>(miplevel, fmt),
 				_cbInit)
 		);
 	}
-	HLTex GLRes::loadCubeTexture(const std::string& name, OPInCompressedFmt fmt) {
+	HLTex GLRes::loadCubeTexture(const std::string& name, MipState miplevel, OPInCompressedFmt fmt) {
 		_setResourceTypeId(ResourceType::Texture);
 		// 0を付加してリソース検索
 		spn::PathBlock pb(name);
@@ -68,20 +68,20 @@ namespace rs {
 		pb = _uriFromResourceName(pb.plain_utf8()).path();
 		// 末尾の0を除く
 		pb.setPathNum([](auto) ->spn::Int_OP{ return spn::none; });
-		return loadCubeTexture(spn::URI("file", pb), fmt);
+		return loadCubeTexture(spn::URI("file", pb), miplevel, fmt);
 	}
-	HLTex GLRes::loadCubeTexture(const spn::URI& uri, OPInCompressedFmt fmt) {
+	HLTex GLRes::loadCubeTexture(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt) {
 		// 連番CubeTexutreの場合はキーとなるURIの末尾に"@"を付加する
 		_chPostfix = '@';
 		// Uriの連番展開
 		return Cast<UPTexture>(
 					loadResourceApp(uri,
-						MakeStaticTex<Texture_StaticCubeURI>(fmt),
+						MakeStaticTex<Texture_StaticCubeURI>(miplevel, fmt),
 						_cbInit)
 				);
 	}
 	// 連番キューブ: Key=(Path+@, ext) URI=(Path, ext)
-	HLTex GLRes::_loadCubeTexture(OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
+	HLTex GLRes::_loadCubeTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
 								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5)
 	{
 		_chPostfix = spn::none;
@@ -92,7 +92,7 @@ namespace rs {
 
 		return Cast<UPTexture>(
 			loadResourceApp(spn::URI("file", tmp),
-				[&](const spn::URI&){ return UPResource(new Texture_StaticCubeURI(uri0,uri1,uri2,uri3,uri4,uri5,fmt)); },
+				[&](const spn::URI&){ return UPResource(new Texture_StaticCubeURI(uri0,uri1,uri2,uri3,uri4,uri5,miplevel,fmt)); },
 				_cbInit)
 		);
 	}
