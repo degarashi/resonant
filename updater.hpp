@@ -201,12 +201,13 @@ namespace rs {
 			static UGVec	s_ug;
 
 			using ObjV = std::vector<HLObj>;
+			using ObjVP = std::vector<std::pair<Priority, HLObj>>;
 			using ObjVH = std::vector<HObj>;
 			using GroupVH = std::vector<HGroup>;
 
 			Priority	_priority;
-			ObjV		_objV,
-						_addObj;	//!< (onUpdateが終った後に)追加予定のオブジェクト
+			ObjVP		_objV;		//!< 優先度は実行中に変わることはないのでキャッシュしておく
+			ObjV		_addObj;	//!< (onUpdateが終った後に)追加予定のオブジェクト
 			ObjVH		_remObj;	//!< (onUpdateが終った後に)削除予定のオブジェクト
 			GroupVH		_groupV;	//!< Idでグループ検索する時用
 			int			_nParent;
@@ -238,8 +239,8 @@ namespace rs {
 			LCValue recvMsg(GMessageId msg, const LCValue& arg) override;
 			void proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) override;
 
-			const ObjV& getList() const;
-			ObjV& getList();
+			const ObjVP& getList() const;
+			ObjVP& getList();
 			//! 子要素を全て削除
 			void clear();
 	};

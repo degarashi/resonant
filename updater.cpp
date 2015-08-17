@@ -125,17 +125,18 @@ namespace rs {
 		AssertP(Trap, std::find(_remObj.begin(), _remObj.end(), hObj) == _remObj.end(), "同一オブジェクトの複数回削除")
 		_remObj.emplace_back(hObj);
 	}
-	const UpdGroup::ObjV& UpdGroup::getList() const {
+	const UpdGroup::ObjVP& UpdGroup::getList() const {
 		return _objV;
 	}
-	UpdGroup::ObjV& UpdGroup::getList() {
+	UpdGroup::ObjVP& UpdGroup::getList() {
 		return _objV;
 	}
 	void UpdGroup::clear() {
 		_addObj.clear();
 		_remObj.clear();
 		// Remove時の処理をする為、一旦RemoveListに追加
-		std::copy(_objV.begin(), _objV.end(), std::back_inserter(_remObj));
+		for(auto& obj : _objV)
+			_remObj.push_back(obj.second);
 		std::copy(_groupV.begin(), _groupV.end(), std::back_inserter(_remObj));
 		_doAddRemove();
 
@@ -143,8 +144,8 @@ namespace rs {
 	}
 	void UpdGroup::onDraw(IEffect& e) const {
 		// DrawUpdate中のオブジェクト追加削除はナシ
-		for(auto& h : _objV)
-			h->get()->onDraw(e);
+		for(auto& obj : _objV)
+			obj.second->get()->onDraw(e);
 	}
 	void UpdGroup::onUpdate() {
 		{
@@ -158,12 +159,12 @@ namespace rs {
 						tls_bUpdateRoot = _bRootPrev; }
 			} flagset;
 
-			for(auto& h : _objV) {
-				auto* ent = h->get();
+			for(auto& obj : _objV) {
+				auto* ent = obj.second->get();
 				auto b = ent->onUpdateUpd();
 				if(b) {
 					// 次のフレーム直前で消す
-					remObj(h.get());
+					remObj(obj.second.get());
 				}
 			}
 		}
@@ -201,21 +202,21 @@ namespace rs {
 		for(;;) {
 			if(itr == itrE)
 				return;
-			if((*itr)->get()->getPriority() >= prioBegin)
+			if(itr->first >= prioBegin)
 				break;
 			++itr;
 		}
 		// prEndに達したらそれ以上処理しない
 		do {
-			if(itr == itrE || (*itr)->get()->getPriority() > prioEnd)
+			if(itr == itrE || itr->first > prioEnd)
 				return;
-			(*itr)->get()->proc(p, bRecursive);
+			itr->second->get()->proc(p, bRecursive);
 			++itr;
 		} while(itr != itrE);
 	}
 	LCValue UpdGroup::recvMsg(GMessageId msg, const LCValue& arg) {
-		for(auto& h : _objV)
-			h->get()->recvMsg(msg, arg);
+		for(auto& obj : _objV)
+			obj.second->get()->recvMsg(msg, arg);
 		return LCValue();
 	}
 	UpdGroup::UGVec UpdGroup::s_ug;
@@ -232,7 +233,7 @@ namespace rs {
 					_groupV.emplace_back(rs_mgr_obj.CastToGroup(h));
 				}
 				// 末尾に追加
-				_objV.emplace_back(h);
+				_objV.emplace_back(h->get()->getPriority(), h);
 				p->onConnected(hThis);
 			}
 			// -- remove --
@@ -249,8 +250,8 @@ namespace rs {
 					else
 						continue;
 				}
-				auto itr = std::find_if(_objV.begin(), _objV.end(), [&h](const HLObj& hl){
-											return hl.get() == h;
+				auto itr = std::find_if(_objV.begin(), _objV.end(), [&h](const auto& obj){
+											return obj.second.get() == h;
 										});
 				if(itr != _objV.end()) {
 					p->onDisconnected(hThis);
@@ -259,8 +260,8 @@ namespace rs {
 			}
 			if(_addObj.empty() && _remObj.empty()) {
 				// 優先度値は変化しないので多分、単純挿入ソートが最適
-				spn::insertion_sort(_objV.begin(), _objV.end(), [](const HLObj& hl0, const HLObj& hl1){
-						return hl0->get()->getPriority() < hl1->get()->getPriority(); });
+				spn::insertion_sort(_objV.begin(), _objV.end(), [](const auto& obj0, const auto& obj1){
+						return obj0.first < obj1.first;});
 				break;
 			}
 		}
