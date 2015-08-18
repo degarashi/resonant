@@ -6,30 +6,31 @@ namespace rs {
 	namespace util {
 		// --------------------- PostEffect ---------------------
 		PostEffect::PostEffect(IdValue idTech, rs::Priority dprio):
-			_idTech(idTech),
-			_alpha(0.5f)
+			_idTech(idTech)
 		{
 			_dtag.priority = dprio;
 		}
-		void PostEffect::setAlpha(float a) {
-			_alpha = a;
+		void PostEffect::_applyParam(IEffect& e) const {
+			for(auto& p : _param)
+				p.second(e);
+		}
+		void PostEffect::setParamFunc(IdValue id, const ParamF& f) {
+			auto itr = std::find_if(_param.begin(), _param.end(), [id](auto& p){
+				return p.first == id;
+			});
+			if(itr == _param.end())
+				_param.emplace_back(id, f);
+			else
+				*itr = std::make_pair(id, f);
+		}
+		void PostEffect::clearParam() {
+			_param.clear();
 		}
 		void PostEffect::onDraw(IEffect& e) const {
 			e.setTechPassId(_idTech);
-			for(auto& p : _texture)
-				e.setUniform(p.first, p.second);
-			e.setUniform(unif::Alpha, _alpha);
+			_applyParam(e);
 			// 重ねて描画
 			_rect.draw(e);
-		}
-		void PostEffect::setTexture(IdValue id, HTex hTex) {
-			auto itr = std::find_if(_texture.begin(), _texture.end(), [id](auto& p){
-				return p.first == id;
-			});
-			if(itr == _texture.end())
-				_texture.emplace_back(id, hTex);
-			else
-				*itr = std::make_pair(id, hTex);
 		}
 
 		// --------------------- FBSwitch ---------------------

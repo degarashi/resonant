@@ -8,16 +8,21 @@ namespace rs {
 		class PostEffect : public DrawableObjT<PostEffect> {
 			private:
 				using base_t = DrawableObjT<PostEffect>;
-				using TPair = std::pair<IdValue, HLTex>;
-				using TPairV = std::vector<TPair>;
-				IdValue		_idTech;
-				TPairV		_texture;
-				float		_alpha;
-				ScreenRect	_rect;
+				using ParamF = std::function<void (IEffect&)>;
+				using ParamFV = std::vector<std::pair<IdValue, ParamF>>;
+				IdValue			_idTech;
+				ParamFV			_param;
+				ScreenRect		_rect;
+
+				void _applyParam(IEffect& e) const;
 			public:
 				PostEffect(IdValue idTech, Priority dprio);
-				void setAlpha(float a);
-				void setTexture(IdValue id, HTex hTex);
+				template <class T>
+				void setParam(IdValue id, const T& t) {
+					setParamFunc(id, [id,tv=t](auto& e){ e.setUniform(id, tv); });
+				}
+				void setParamFunc(IdValue id, const ParamF& f);
+				void clearParam();
 				void onDraw(IEffect& e) const override;
 		};
 		class FBSwitch : public DrawableObjT<FBSwitch> {

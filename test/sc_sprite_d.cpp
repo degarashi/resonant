@@ -109,7 +109,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		// [Blur(前回の重ね)]
 		{
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(T_PostEffect, p_blur0);
-			hlp.second->setAlpha(0);
+			hlp.second->setParam(rs::unif::Alpha, 0.f);
 			dg0.addObj(hlp.first);
 			_pBlur0 = hlp.second;
 		}
@@ -121,7 +121,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		// [Blur(今回のベタ描画)]
 		{
 			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(T_PostEffect, p_blur1);
-			hlp.second->setAlpha(1.f);
+			hlp.second->setParam(rs::unif::Alpha, 1.f);
 			dg0.addObj(hlp.first);
 			_pBlur1 = hlp.second;
 		}
@@ -152,15 +152,15 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 	}
 	void onDraw(const Sc_DSortD& /*self*/, rs::IEffect& /*e*/) const override {
 		_hlFb->get()->attach(rs::GLFBuffer::Att::COLOR0, _hlTex[swt]);
-		_pBlur0->setTexture(rs::unif::texture::Diffuse, _hlTex[swt ^ 1]);
-		_pBlur1->setTexture(rs::unif::texture::Diffuse, _hlTex[swt]);
+		_pBlur0->setParam(rs::unif::texture::Diffuse, _hlTex[swt ^ 1]);
+		_pBlur1->setParam(rs::unif::texture::Diffuse, _hlTex[swt]);
 		const_cast<St_Default&>(*this).swt ^= 1;
 	}
 	void onUpdate(Sc_DSortD& self) override {
 		auto lk = sharedv.lock();
 		if(mgr_input.isKeyPressed(lk->actNumber[0])) {
 			bBlur = bBlur^1;
-			_pBlur0->setAlpha((bBlur) ? 0.9f : 0.f);
+			_pBlur0->setParam(rs::unif::Alpha, (bBlur) ? 0.9f : 0.f);
 		}
 		// 他のシーンへ切り替え
 		self._base.checkSwitchScene();
