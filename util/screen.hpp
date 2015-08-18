@@ -10,11 +10,12 @@ namespace rs {
 				using base_t = DrawableObjT<PostEffect>;
 				using TPair = std::pair<IdValue, HLTex>;
 				using TPairV = std::vector<TPair>;
+				IdValue		_idTech;
 				TPairV		_texture;
 				float		_alpha;
 				ScreenRect	_rect;
 			public:
-				PostEffect(Priority dprio);
+				PostEffect(IdValue idTech, Priority dprio);
 				void setAlpha(float a);
 				void setTexture(IdValue id, HTex hTex);
 				void onDraw(IEffect& e) const override;

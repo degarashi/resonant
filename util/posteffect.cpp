@@ -5,8 +5,8 @@
 namespace rs {
 	namespace util {
 		// --------------------- PostEffect ---------------------
-		const rs::IdValue T_PostEffect = IEffect::GlxId::GenTechId("PostEffect", "Default");
-		PostEffect::PostEffect(rs::Priority dprio):
+		PostEffect::PostEffect(IdValue idTech, rs::Priority dprio):
+			_idTech(idTech),
 			_alpha(0.5f)
 		{
 			_dtag.priority = dprio;
@@ -15,7 +15,7 @@ namespace rs {
 			_alpha = a;
 		}
 		void PostEffect::onDraw(IEffect& e) const {
-			e.setTechPassId(T_PostEffect);
+			e.setTechPassId(_idTech);
 			for(auto& p : _texture)
 				e.setUniform(p.first, p.second);
 			e.setUniform(unif::Alpha, _alpha);

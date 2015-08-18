@@ -68,6 +68,9 @@ DefineDrawGroupProxy(PrevDGroup)
 ImplDrawGroup(PrevDGroup, p_prevScene)
 DefineDrawGroup(MyDGroup)
 ImplDrawGroup(MyDGroup, p_curScene)
+namespace {
+	const rs::IdValue T_PostEffect = rs::IEffect::GlxId::GenTechId("PostEffect", "Default");
+}
 struct Sc_DSortD::St_Default : StateT<St_Default> {
 	rs::HLFb	_hlFb;
 	rs::HLTex	_hlTex[2];
@@ -105,7 +108,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		dg0.addObj(hDG.first.get());
 		// [Blur(前回の重ね)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(p_blur0);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(T_PostEffect, p_blur0);
 			hlp.second->setAlpha(0);
 			dg0.addObj(hlp.first);
 			_pBlur0 = hlp.second;
@@ -117,7 +120,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		}
 		// [Blur(今回のベタ描画)]
 		{
-			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(p_blur1);
+			auto hlp = rs_mgr_obj.makeDrawable<rs::util::PostEffect>(T_PostEffect, p_blur1);
 			hlp.second->setAlpha(1.f);
 			dg0.addObj(hlp.first);
 			_pBlur1 = hlp.second;
