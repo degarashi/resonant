@@ -358,15 +358,22 @@ namespace rs {
 			LuaState(const SPILua& ls);
 			LuaState(lua_State* ls);
 
-			void load(HRW hRW, const char* chunkName=nullptr, const char* mode=cs_defaultmode, bool bExec=true);
+			//! リソースパスからファイル名指定でスクリプトを読み込み、標準ライブラリもロードする
+			static SPLua FromResource(const std::string& name);
 			const static char* cs_defaultmode;
+			//! Text/Binary形式でLuaソースを読み取り、チャンクをスタックトップに積む
+			void load(HRW hRW, const char* chunkName=nullptr, const char* mode=cs_defaultmode, bool bExec=true);
 			//! ソースコードを読み取り、チャンクをスタックトップに積む
 			/*! \param[in] bExec チャンクを実行するか */
 			void loadFromSource(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
 			//! コンパイル済みバイナリを読み取り、チャンクをスタックトップに積む
 			void loadFromBinary(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
+			//! 任意の値をスタックに積む
 			void push(const LCValue& v);
+			//! C関数をスタックに積む
+			/*! \param[in] nvalue 関連付けるUpValueの数 */
 			void pushCClosure(lua_CFunction func, int nvalue);
+			//! 任意の複数値をスタックに積む
 			template <class A, class... Args>
 			void pushArgs(A&& a, Args&&... args) {
 				push(std::forward<A>(a));
@@ -833,6 +840,9 @@ namespace rs {
 	};
 
 	namespace luaNS {
+		extern const std::string ScriptResourceEntry,
+								SystemScriptResourceEntry,
+								ScriptExtension;
 		extern const std::string Udata,
 								Pointer,
 								ToString;
@@ -855,6 +865,12 @@ namespace rs {
 				extern const std::string HandleId,
 										NumRef;
 			}
+		}
+		namespace system {
+			extern const std::string PathSeparation,
+									PathReplaceMark,
+									Package,
+									Path;
 		}
 	}
 }

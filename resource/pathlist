@@ -6,3 +6,7 @@ resource/texture
 resource/font
 [effect]
 resource/effect
+[system_script]
+resource/sys_script
+[script]
+resource/script

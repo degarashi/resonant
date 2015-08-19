@@ -4,6 +4,7 @@
 #include <sstream>
 #include <limits>
 #include "sdlwrap.hpp"
+#include "apppath.hpp"
 
 namespace rs {
 	// ----------------- LuaState::Exceptions -----------------
@@ -113,6 +114,37 @@ namespace rs {
 		}
 
 		lsc.setTop(top);
+	}
+	SPLua LuaState::FromResource(const std::string& name) {
+		SPLua sp;
+		if(auto hlRW = mgr_path.getRW(luaNS::ScriptResourceEntry, name+"."+luaNS::ScriptExtension, nullptr)) {
+			static spn::Optional<std::string> addpath;
+			if(!addpath) {
+				std::string path;
+				auto fnCollectPath = [&path](const std::string& ent){
+					mgr_path.enumPath(ent, "", [&path](const spn::Dir& d){
+						auto d2 = d;
+						d2 <<= luaNS::system::PathReplaceMark;
+						d2.setExtension(luaNS::ScriptExtension);
+						path += luaNS::system::PathSeparation;
+						path += d2.plain_utf8();
+						return true;
+					});
+				};
+				fnCollectPath(luaNS::ScriptResourceEntry);
+				fnCollectPath(luaNS::SystemScriptResourceEntry);
+				addpath = std::move(path);
+			}
+			sp = std::make_shared<LuaState>();
+			sp->loadLibraries();
+
+			// パッケージのロードパスにアプリケーションリソースパスを追加
+			sp->getGlobal(luaNS::system::Package);
+			LValueS pkg(sp->getLS());
+			pkg[luaNS::system::Path] = std::string(LValueS(pkg[luaNS::system::Path]).toString()) + *addpath;
+			sp->load(hlRW);
+		}
+		return sp;
 	}
 	SPILua LuaState::_RegisterNewThread(LuaState& lsc, int id) {
 		int top = lsc.getTop();

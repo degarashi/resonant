@@ -1,5 +1,3 @@
--- TODO: あとで絶対パスを直す
-package.path = package.path .. ";/home/degarashi/projects/resonant/?.lua"
 require("sysfunc")
 
 -- グローバル変数は全てここに含める

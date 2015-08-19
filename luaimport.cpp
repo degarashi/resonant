@@ -5,6 +5,7 @@
 #include "sdlwrap.hpp"
 #include <cstring>
 #include "scene.hpp"
+#include "apppath.hpp"
 
 /*	Luaハンドル仕様：
 	object = {
@@ -18,6 +19,9 @@ namespace rs {
 	using spn::SHandle;
 	using spn::WHandle;
 	namespace luaNS {
+		const std::string ScriptResourceEntry("script"),
+								SystemScriptResourceEntry("system_script"),
+								ScriptExtension("lua");
 		const std::string Udata("udata"),
 						Pointer("pointer"),
 						ToString("tostring");
@@ -40,6 +44,12 @@ namespace rs {
 				const std::string HandleId("handleId"),
 									NumRef("numRef");
 			}
+		}
+		namespace system {
+			const std::string PathSeparation(";"),
+								PathReplaceMark("?"),
+								Package("package"),
+								Path("path");
 		}
 	}
 	namespace {
@@ -121,9 +131,11 @@ namespace rs {
 		lsc.setTable(-3);
 		// ObjectBase = {...}
 		lsc.setGlobal(luaNS::ObjectBase);
-		// TODO: あとで絶対パスを直す
-		HLRW hlRW = mgr_rw.fromFile("/home/degarashi/projects/resonant/base.lua", RWops::Access::Read);
-		lsc.loadFromSource(hlRW, "base.lua", true);
+
+		std::string fileName("base." + luaNS::ScriptExtension);
+		HLRW hlRW = mgr_path.getRW(luaNS::SystemScriptResourceEntry, fileName, nullptr);
+		Assert(Trap, hlRW, "system script file \"%1%\" not found.", fileName)
+		lsc.loadFromSource(hlRW, fileName.c_str(), true);
 	}
 
 	void LuaImport::LoadClass(LuaState& lsc, const std::string& name, HRW hRW) {
