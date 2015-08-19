@@ -86,8 +86,17 @@ namespace rs {
 		lua_pop(ls, 1);
 		return ret;
 	}
+	bool LuaImport::IsObjectBaseRegistered(LuaState& lsc) {
+		lsc.getGlobal(luaNS::ObjectBase);
+		bool res = lsc.type(-1) == LuaType::Table;
+		lsc.pop();
+		return res;
+	}
 	// オブジェクトハンドルの基本メソッド定義
 	void LuaImport::RegisterObjectBase(LuaState& lsc) {
+		if(IsObjectBaseRegistered(lsc))
+			return;
+
 		lsc.newTable();
 
 		// ValueRの初期化
@@ -139,6 +148,8 @@ namespace rs {
 	}
 
 	void LuaImport::LoadClass(LuaState& lsc, const std::string& name, HRW hRW) {
+		RegisterObjectBase(lsc);
+
 		lsc.newTable();
 		lsc.getGlobal(luaNS::MakePreENV);
 		lsc.pushValue(-2);

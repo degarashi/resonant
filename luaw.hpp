@@ -1034,6 +1034,7 @@ namespace rs {
 			static void RegisterBaseClass(LuaState& lsc) {
 				lua::LuaExport(lsc, static_cast<T*>(nullptr));
 			}
+			static bool IsObjectBaseRegistered(LuaState& lsc);
 			//! C++クラス登録基盤を初期化
 			static void RegisterObjectBase(LuaState& lsc);
 			//! ベースオブジェクトを使った派生クラスの読み込み
@@ -1045,6 +1046,8 @@ namespace rs {
 				リソースマネージャやシステムクラス用 */
 			template <class T>
 			static void ImportClass(LuaState& lsc, const std::string& name, T* ptr) {
+				RegisterObjectBase(lsc);
+
 				auto* dummy = static_cast<T*>(nullptr);
 				lua::LuaExport(lsc, dummy);
 				lsc.getGlobal(lua::LuaName(dummy));
