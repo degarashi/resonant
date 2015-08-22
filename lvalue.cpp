@@ -67,17 +67,6 @@ namespace rs {
 	LuaType LCV<std::string>::operator()() const {
 		return LuaType::String; }
 
-	// --- LCV<Int_MainT> = LUA_TNUMBER
-	void LCV<Int_MainT>::operator()(lua_State* ls, Int_MainT i) const {
-		lua_pushinteger(ls, i); }
-	Int_MainT LCV<Int_MainT>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
-		LuaState::_CheckType(ls, idx, LuaType::Number);
-		return lua_tointeger(ls, idx); }
-	std::ostream& LCV<Int_MainT>::operator()(std::ostream& os, Int_MainT i) const {
-		return os << i; }
-	LuaType LCV<Int_MainT>::operator()() const {
-		return LuaType::Number; }
-
 	// TODO: 中身をちゃんと実装する
 	// --- LCV<spn::Vec4> = LUA_TABLE
 	void LCV<spn::Vec4>::operator()(lua_State* /*ls*/, const spn::Vec4& /*v*/) const {
@@ -105,26 +94,26 @@ namespace rs {
 	LuaType LCV<spn::Quat>::operator()() const {
 		return LuaType::Table; }
 
-	// --- LCV<UInt_MainT> = LUA_TNUMBER
-	void LCV<UInt_MainT>::operator()(lua_State* ls, UInt_MainT i) const {
-		lua_pushunsigned(ls, i); }
-	UInt_MainT LCV<UInt_MainT>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
+	// --- LCV<lua_Integer> = LUA_TNUMBER
+	void LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {
+		lua_pushinteger(ls, i); }
+	lua_Integer LCV<lua_Integer>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
-		return lua_tounsigned(ls, idx); }
-	std::ostream& LCV<UInt_MainT>::operator()(std::ostream& os, UInt_MainT i) const {
+		return lua_tointeger(ls, idx); }
+	std::ostream& LCV<lua_Integer>::operator()(std::ostream& os, lua_Integer i) const {
 		return os << i; }
-	LuaType LCV<UInt_MainT>::operator()() const {
+	LuaType LCV<lua_Integer>::operator()() const {
 		return LuaType::Number; }
 
-	// --- LCV<double> = LUA_TNUMBER
-	void LCV<double>::operator()(lua_State* ls, double f) const {
+	// --- LCV<lua_Number> = LUA_TNUMBER
+	void LCV<lua_Number>::operator()(lua_State* ls, lua_Number f) const {
 		lua_pushnumber(ls, f); }
-	double LCV<double>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
+	lua_Number LCV<lua_Number>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		LuaState::_CheckType(ls, idx, LuaType::Number);
 		return lua_tonumber(ls, idx); }
-	std::ostream& LCV<double>::operator()(std::ostream& os, double f) const {
+	std::ostream& LCV<lua_Number>::operator()(std::ostream& os, lua_Number f) const {
 		return os << f; }
-	LuaType LCV<double>::operator()() const {
+	LuaType LCV<lua_Number>::operator()() const {
 		return LuaType::Number; }
 
 	// --- LCV<SPLua> = LUA_TTHREAD
@@ -318,8 +307,10 @@ namespace rs {
 	LCValue::LCValue(): LCVar(boost::blank()) {}
 	LCValue::LCValue(const LCValue& lc): LCVar(static_cast<const LCVar&>(lc)) {}
 	LCValue::LCValue(LCValue&& lcv): LCVar(std::move(static_cast<LCVar&>(lcv))) {}
-	LCValue::LCValue(Int_OtherT t): LCVar(static_cast<Int_MainT>(t)) {}
-	LCValue::LCValue(UInt_OtherT t): LCVar(static_cast<UInt_MainT>(t)) {}
+	LCValue::LCValue(lua_OtherNumber num): LCValue(static_cast<lua_Number>(num)) {}
+	LCValue::LCValue(lua_IntegerU num): LCValue(static_cast<lua_Integer>(num)) {}
+	LCValue::LCValue(lua_OtherInteger num): LCValue(static_cast<lua_Integer>(num)) {}
+	LCValue::LCValue(lua_OtherIntegerU num): LCValue(static_cast<lua_Integer>(num)) {}
 	LCValue::LCValue(const spn::Vec4& v): LCVar(v) {}
 	LCValue& LCValue::operator = (const spn::Vec4& v) {
 		static_cast<LCVar&>(*this) = v;

@@ -74,7 +74,7 @@ namespace rs {
 		return ret;
 	}
 	// 非同期ロードスレッドで読み込む
-	UInt_MainT LSysFunc::loadResourcesASync(LValueG tbl) {
+	lua_Integer LSysFunc::loadResourcesASync(LValueG tbl) {
 		UniLock lk(_mutex);
 		auto id = _serialCur++;
 		Block block;
@@ -85,7 +85,7 @@ namespace rs {
 		_cond.signal_all();
 		return id;
 	}
-	LCValue LSysFunc::getResult(UInt_MainT id) {
+	LCValue LSysFunc::getResult(lua_Integer id) {
 		UniLock lk(_mutex);
 		if(id >= _procCur + static_cast<int>(_state)) {
 			// まだ処理が完了していないタスク番号
@@ -101,7 +101,7 @@ namespace rs {
 		_async.erase(itr);
 		return ret;
 	}
-	float LSysFunc::queryProgress(UInt_MainT id) {
+	lua_Number LSysFunc::queryProgress(lua_Integer id) {
 		UniLock lk(_mutex);
 		if(id > _procCur) {
 			// まだ処理されていない
@@ -118,7 +118,7 @@ namespace rs {
 		UniLock lk(_mutex);
 		return static_cast<int>(_serialCur - _procCur);
 	}
-	void LSysFunc::sleep(UInt_MainT ms) const {
+	void LSysFunc::sleep(lua_Integer ms) const {
 		SDL_Delay(ms);
 	}
 }

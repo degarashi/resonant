@@ -291,7 +291,7 @@ namespace rs {
 		int err = lua_pcall(getLS(), nargs, nresults, 0);
 		_checkError(err);
 	}
-	void LuaState::callk(int nargs, int nresults, int ctx, lua_CFunction k) {
+	void LuaState::callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k) {
 		int err = lua_pcallk(getLS(), nargs, nresults, 0, ctx, k);
 		_checkError(err);
 	}
@@ -308,7 +308,7 @@ namespace rs {
 		lua_copy(getLS(), from, to);
 	}
 	void LuaState::dump(lua_Writer writer, void* data) {
-		lua_dump(getLS(), writer, data);
+		lua_dump(getLS(), writer, data, 0);
 	}
 	void LuaState::error() {
 		lua_error(getLS());
@@ -318,9 +318,6 @@ namespace rs {
 	}
 	lua_Alloc LuaState::getAllocf(void** ud) const {
 		return lua_getallocf(getLS(), ud);
-	}
-	int LuaState::getCtx(int* ctx) const {
-		return lua_getctx(getLS(), ctx);
 	}
 	void LuaState::getField(int idx, const LCValue& key) {
 		idx = absIndex(idx);
@@ -504,8 +501,8 @@ namespace rs {
 	lua_CFunction LuaState::toCFunction(int idx) const {
 		return LCV<lua_CFunction>()(idx, getLS());
 	}
-	Int_MainT LuaState::toInteger(int idx) const {
-		return LCV<Int_MainT>()(idx, getLS());
+	lua_Integer LuaState::toInteger(int idx) const {
+		return LCV<lua_Integer>()(idx, getLS());
 	}
 	std::string LuaState::toString(int idx) const {
 		return LCV<std::string>()(idx, getLS());
@@ -518,17 +515,14 @@ namespace rs {
 		pop(1);
 		return ret;
 	}
-	float LuaState::toNumber(int idx) const {
-		return LCV<float>()(idx, getLS());
+	lua_Number LuaState::toNumber(int idx) const {
+		return LCV<lua_Number>()(idx, getLS());
 	}
 	const void* LuaState::toPointer(int idx) const {
 		return lua_topointer(getLS(), idx);
 	}
 	SPLua LuaState::toThread(int idx) const {
 		return LCV<SPLua>()(idx, getLS());
-	}
-	UInt_MainT LuaState::toUnsigned(int idx) const {
-		return LCV<UInt_MainT>()(idx, getLS());
 	}
 	void* LuaState::toUserData(int idx) const {
 		return LCV<void*>()(idx, getLS());
@@ -565,7 +559,7 @@ namespace rs {
 	int LuaState::yield(int nresults) {
 		return lua_yield(getLS(), nresults);
 	}
-	int LuaState::yieldk(int nresults, int ctx, lua_CFunction k) {
+	int LuaState::yieldk(int nresults, lua_KContext ctx, lua_KFunction k) {
 		return lua_yieldk(getLS(), nresults, ctx, k);
 	}
 	lua_State* LuaState::getLS() const {

@@ -22,11 +22,11 @@ namespace rs {
 			Block(Block&& blk);
 		};
 		// 問い合わせID : 非同期ロードクラス
-		using ASync = std::unordered_map<UInt_MainT, Block>;
+		using ASync = std::unordered_map<lua_Integer, Block>;
 
-		UInt_MainT		_serialCur,		//!< 次に生成されるタスクの通し番号
+		lua_Integer		_serialCur,		//!< 次に生成されるタスクの通し番号
 						_procCur;		//!< 現在処理中のタスク番号(processing時)
-		float			_progress;		//!< 進捗状況(0-1)
+		lua_Number		_progress;		//!< 進捗状況(0-1)
 		enum class State {
 			Idle = 0x00,			//!< 次のタスク待ち
 			Processing = 0x01		//!< タスク処理中
@@ -45,17 +45,17 @@ namespace rs {
 			//! Luaのテーブルからリソースを一括読み込み
 			LCTable loadResources(LValueG tbl);
 			//! 非同期で読み込み
-			UInt_MainT loadResourcesASync(LValueG tbl);
-			float queryProgress(UInt_MainT id);
+			lua_Integer loadResourcesASync(LValueG tbl);
+			lua_Number queryProgress(lua_Integer id);
 			//! 非同期読み込みの結果を取得
 			/*! 一度取得すると消去される
 				\retval LCTable
 				\retval nil (該当IDがない場合 or 既に取得されている場合) */
-			LCValue getResult(UInt_MainT id);
+			LCValue getResult(lua_Integer id);
 			//! キューに溜まってるタスク数
 			int getNTask();
 			//! (主にデバッグ用途)
-			void sleep(UInt_MainT ms) const;
+			void sleep(lua_Integer ms) const;
 	};
 	DEF_LUAIMPORT(LSysFunc)
 }

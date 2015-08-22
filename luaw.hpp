@@ -33,17 +33,18 @@ namespace std {
 }
 
 namespace rs {
-	#if __x86_64__ || _LP64
-		using Int_MainT = int64_t;
-		using UInt_MainT = uint64_t;
-		using Int_OtherT = int32_t;
-		using UInt_OtherT = uint32_t;
-	#else
-		using Int_MainT = int32_t;
-		using UInt_MainT = uint32_t;
-		using Int_OtherT = int64_t;
-		using UInt_OtherT = uint64_t;
-	#endif
+	double LuaOtherNumber(std::integral_constant<int,4>);
+	float LuaOtherNumber(std::integral_constant<int,8>);
+	int32_t LuaOtherInteger(std::integral_constant<int,8>);
+	int64_t LuaOtherInteger(std::integral_constant<int,4>);
+
+	//! lua_Numberがfloatならdouble、doubleならfloat
+	using lua_OtherNumber = decltype(LuaOtherNumber(std::integral_constant<int,sizeof(lua_Number)>()));
+	//! lua_Integerがint32_tならint64_t、int64_tならint32_t
+	using lua_OtherInteger = decltype(LuaOtherInteger(std::integral_constant<int,sizeof(lua_Integer)>()));
+	using lua_IntegerU = std::make_unsigned<lua_Integer>::type;
+	using lua_OtherIntegerU = std::make_unsigned<lua_OtherInteger>::type;
+
 	template <class T>
 	T& DeclVal() { return *(reinterpret_cast<T*>(0)); }
 	class LuaState;
@@ -66,7 +67,7 @@ namespace rs {
 	class LCTable;
 	using SPLCTable = std::shared_ptr<LCTable>;
 	using LCVar = boost::variant<boost::blank, LuaNil,
-					bool, const char*, float, double, Int_MainT, UInt_MainT,
+					bool, const char*, lua_Integer, lua_Number,
 					spn::Vec4, spn::Quat,
 					spn::LHandle, spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, std::string, SPLCTable>;
 	class LCValue : public LCVar {
@@ -83,9 +84,11 @@ namespace rs {
 			LCValue();
 			LCValue(const LCValue& lc);
 			LCValue(LCValue&& lcv);
-			LCValue(Int_OtherT t);
-			LCValue(UInt_OtherT t);
 			LCValue(const spn::Vec4& v);
+			LCValue(lua_OtherNumber num);
+			LCValue(lua_IntegerU num);
+			LCValue(lua_OtherIntegerU num);
+			LCValue(lua_OtherInteger num);
 			LCValue& operator =(const spn::Vec4& v);
 			//! 任意のベクトルからVec4型への変換
 			template <int N, bool B>
@@ -196,6 +199,7 @@ namespace rs {
 	DEF_LCV(bool, bool)
 	DEF_LCV(const char*, const char*)
 	DEF_LCV(std::string, const std::string&)
+	DERIVED_LCV(const std::string&, std::string)
 	DEF_LCV(SPLua, const SPLua&)
 	DEF_LCV(void*, const void*)
 	DEF_LCV(lua_CFunction, lua_CFunction)
@@ -203,15 +207,15 @@ namespace rs {
 	DEF_LCV(LCValue, const LCValue&)
 	DEF_LCV(spn::SHandle, spn::SHandle)
 	DEF_LCV(spn::WHandle, spn::WHandle)
-	DEF_LCV(double, double)
 	DEF_LCV(LValueG, const LValueG&)
 	DEF_LCV(spn::Vec4, const spn::Vec4&)
 	DEF_LCV(spn::Quat, const spn::Quat&)
-	DERIVED_LCV(float, double)
-	DEF_LCV(Int_MainT, Int_MainT)
-	DEF_LCV(UInt_MainT, UInt_MainT)
-	DERIVED_LCV(Int_OtherT, Int_MainT)
-	DERIVED_LCV(UInt_OtherT, UInt_MainT)
+	DEF_LCV(lua_Number, lua_Number)
+	DERIVED_LCV(lua_OtherNumber, lua_Number)
+	DEF_LCV(lua_Integer, lua_Integer)
+	DERIVED_LCV(lua_IntegerU, lua_Integer)
+	DERIVED_LCV(lua_OtherInteger, lua_Integer)
+	DERIVED_LCV(lua_OtherIntegerU, lua_OtherInteger)
 #undef DEF_LCV
 #undef DEF_LCV0
 #undef DERIVED_LCV
@@ -409,7 +413,7 @@ namespace rs {
 			lua_CFunction atPanic(lua_CFunction panicf);
 			// 内部ではpcallに置き換え、エラーを検出したら例外を投げる
 			void call(int nargs, int nresults);
-			void callk(int nargs, int nresults, int ctx, lua_CFunction k);
+			void callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k);
 			bool checkStack(int extra);
 			bool compare(int idx1, int idx2, CMP cmp) const;
 			void concat(int n);
@@ -418,7 +422,6 @@ namespace rs {
 			void error();
 			int gc(GC what, int data);
 			lua_Alloc getAllocf(void** ud) const;
-			int getCtx(int* ctx) const;
 			void getField(int idx, const LCValue& key);
 			void getGlobal(const LCValue& key);
 			void getTable(int idx);
@@ -466,12 +469,11 @@ namespace rs {
 			// --- convert function ---
 			bool toBoolean(int idx) const;
 			lua_CFunction toCFunction(int idx) const;
-			Int_MainT toInteger(int idx) const;
+			lua_Integer toInteger(int idx) const;
 			std::string toString(int idx) const;
 			std::string cnvString(int idx);
-			float toNumber(int idx) const;
+			lua_Number toNumber(int idx) const;
 			const void* toPointer(int idx) const;
-			UInt_MainT toUnsigned(int idx) const;
 			void* toUserData(int idx) const;
 			SPLua toThread(int idx) const;
 			LCTable toTable(int idx, LPointerSP* spm=nullptr) const;
@@ -489,7 +491,7 @@ namespace rs {
 			const lua_Number* version() const;
 			void xmove(const SPLua& to, int n);
 			int yield(int nresults);
-			int yieldk(int nresults, int ctx, lua_CFunction k);
+			int yieldk(int nresults, lua_KContext ctx, lua_KFunction k);
 
 			lua_State* getLS() const;
 			SPLua getLS_SP();
@@ -698,9 +700,8 @@ namespace rs {
 			#define DEF_FUNC(typ, name) typ name() const { \
 				return LCV<typ>()(VPop(*this), T::getLS()); }
 			DEF_FUNC(bool, toBoolean)
-			DEF_FUNC(Int_MainT, toInteger)
-			DEF_FUNC(float, toNumber)
-			DEF_FUNC(UInt_MainT, toUnsigned)
+			DEF_FUNC(lua_Integer, toInteger)
+			DEF_FUNC(lua_Number, toNumber)
 			DEF_FUNC(void*, toUserData)
 			DEF_FUNC(const char*, toString)
 			DEF_FUNC(LCValue, toLCValue)

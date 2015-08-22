@@ -30,8 +30,7 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/spinner
 					${PROJECT_SOURCE_DIR}/boomstick
 					${CMAKE_INSTALL_PREFIX}/include
-					${CMAKE_INSTALL_PREFIX}/include/SDL
-					${CMAKE_INSTALL_PREFIX}/include/lua)
+					${CMAKE_INSTALL_PREFIX}/include/SDL)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib_${TOOL_PREFIX})
 if(DEFINED ARCHITECTURE)
 	# Android環境

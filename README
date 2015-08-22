@@ -5,15 +5,16 @@
 <例のごとく開発途中なので実用性はありません>
 
 依存ライブラリ:
-Spinner
-Boomstick
-Boost-1.58.0(boost_regex, boost_serialization, boost_system)
+Spinner(libspinner)
+Boomstick(libboomstick)
+Boost-1.59.0(libboost_regex, libboost_serialization, libboost_system)
 SDL2(libSDL2-2.0)
 SDL2_image(libSDL2_image-2.0)
 FreeType2(libfreetype)
 OggVorbis(libogg, libvorbis, libvorbisfile)
 LibPng(libpng)
 LibJpeg(libjpeg)
+Lua5.3.1(liblua)
 ZLib(zlib)
 
 OpenAL(libopenal)
