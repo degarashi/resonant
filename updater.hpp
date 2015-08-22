@@ -140,7 +140,7 @@ namespace rs {
 			delete reinterpret_cast<T*>(p);
 		}
 		template <class P>
-		auto _makeHandle(P&& p) -> std::pair<LHdl, decltype(p.get())> {
+		decltype(auto) _makeHandle(P&& p) {
 			auto* ptr = p.get();
 			return std::make_pair(base::acquire(std::move(p)), ptr);
 		}

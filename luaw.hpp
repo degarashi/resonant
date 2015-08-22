@@ -221,25 +221,27 @@ namespace rs {
 #undef DERIVED_LCV
 	template <class T, bool D>
 	struct LCV<spn::HdlLock<T,D>> {
-		using SH = decltype(std::declval<spn::HdlLock<T,D>>().get());
-		void operator()(lua_State* ls, const spn::HdlLock<T,D>& t) const {
+		using Handle_t = spn::HdlLock<T,D>;
+		using SH = decltype(std::declval<Handle_t>().get());
+		void operator()(lua_State* ls, const Handle_t& t) const {
 			LCV<SH>()(ls, t.get()); }
-		spn::HdlLock<T,D> operator()(int idx, lua_State* ls) const {
+		Handle_t operator()(int idx, lua_State* ls) const {
 			return LCV<SH>()(idx, ls); }
-		std::ostream& operator()(std::ostream& os, const spn::HdlLock<T,D>& t) const {
+		std::ostream& operator()(std::ostream& os, const Handle_t& t) const {
 			return LCV<SH>()(os, t.get()); }
 		LuaType operator()() const {
 			return LCV<SH>()(); }
 	};
 
-	template <class T>
-	struct LCV<spn::SHandleT<T>> {
-		void operator()(lua_State* ls, const spn::SHandleT<T>& t) const {
+	template <class... Ts>
+	struct LCV<spn::SHandleT<Ts...>> {
+		using Handle_t = spn::SHandleT<Ts...>;
+		void operator()(lua_State* ls, const Handle_t& t) const {
 			LCV<spn::SHandle>()(ls, static_cast<spn::SHandle>(t));
 		}
-		spn::SHandleT<T> operator()(int idx, lua_State* ls) const {
-			return  spn::SHandleT<T>::FromSHandle(LCV<spn::SHandle>()(idx, ls)); }
-		std::ostream& operator()(std::ostream& os, const spn::SHandleT<T>& t) const {
+		Handle_t operator()(int idx, lua_State* ls) const {
+			return  Handle_t::FromHandle(LCV<spn::SHandle>()(idx, ls)); }
+		std::ostream& operator()(std::ostream& os, const Handle_t& t) const {
 			return LCV<spn::SHandle>()(os, static_cast<spn::SHandle>(t)); }
 		LuaType operator()() const {
 			return LCV<spn::SHandle>()(); }
@@ -767,9 +769,9 @@ namespace rs {
 	template <class Ts0A, class... Ts0>
 	struct FuncCall<Ts0A, Ts0...> {
 		template <class CB, class... Ts1>
-		static auto callCB(CB cb, lua_State* ls, int idx, Ts1&&... ts1) -> decltype(FuncCall<Ts0...>::callCB(cb, ls, idx+1, std::forward<Ts1>(ts1)..., LCV<DecayT<Ts0A>>()(idx, ls))) {
+		static decltype(auto) callCB(CB&& cb, lua_State* ls, int idx, Ts1&&... ts1) {
 			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
-			return FuncCall<Ts0...>::callCB(cb,
+			return FuncCall<Ts0...>::callCB(std::forward<CB>(cb),
 					ls,
 					idx+1,
 					std::forward<Ts1>(ts1)...,
@@ -847,9 +849,10 @@ namespace rs {
 		extern const std::string Udata,
 								Pointer,
 								ToString;
-		extern const std::string GetHandle,
-								DeleteHandle,
+		extern const std::string GetInstance,
 								ObjectBase,
+								ConstructPtr,
+								ObjTypedef,
 								DerivedHandle,
 								MakeFSMachine,
 								MakePreENV,
@@ -879,12 +882,18 @@ DEF_LUAIMPORT_BASE
 namespace rs {
 	// --- Lua->C++グルーコードにおけるクラスポインタの取得方法 ---
 	//! "pointer"に生ポインタが記録されている
-	struct LI_GetPtr {
+	struct LI_GetPtrBase {
 		void* operator()(lua_State* ls, int idx) const;
 	};
 	struct LI_GetHandleBase {
 		void* operator()(lua_State* ls, int idx) const;
 		spn::SHandle getHandle(lua_State* ls, int idx) const;
+	};
+	template <class T>
+	struct LI_GetPtr : LI_GetPtrBase {
+		T* operator()(lua_State* ls, int idx) const {
+			return reinterpret_cast<T*>(LI_GetPtrBase()(ls, idx));
+		}
 	};
 	//! "udata"にハンドルが記録されている -> void*からそのままポインタ変換
 	template <class T>
@@ -1033,6 +1042,7 @@ namespace rs {
 			//! C++クラスの登録(登録名はクラスから取得)
 			template <class T>
 			static void RegisterBaseClass(LuaState& lsc) {
+				RegisterObjectBase(lsc);
 				lua::LuaExport(lsc, static_cast<T*>(nullptr));
 			}
 			static bool IsObjectBaseRegistered(LuaState& lsc);
@@ -1052,7 +1062,7 @@ namespace rs {
 				auto* dummy = static_cast<T*>(nullptr);
 				lua::LuaExport(lsc, dummy);
 				lsc.getGlobal(lua::LuaName(dummy));
-				lsc.getField(-1, "ConstructPtr");
+				lsc.getField(-1, luaNS::ConstructPtr);
 				lsc.push(static_cast<void*>(ptr));
 				lsc.call(1,1);
 				lsc.setGlobal(name);

@@ -3,23 +3,24 @@
 #include "luaw.hpp"
 
 namespace rs {
-	//! (LuaのClassT::New()から呼ばれる)オブジェクトのリソースハンドルを作成&メタテーブルの設定
-	template <class T, class... Ts>
-	int MakeObj(lua_State* ls) {
-		auto fn = [](Ts&&... ts) {
-			return rs_mgr_obj.makeObj<T>(std::forward<Ts>(ts)...);
+	//! (LuaのClassT::New()から呼ばれる)オブジェクトのリソースハンドルを作成
+	template <class Mgr_t, class... Ts>
+	int MakeHandle(lua_State* ls) {
+		auto fn = [](auto&&... ts) {
+			return Mgr_t::_ref().makeHandle(std::forward<typename std::decay<decltype(ts)>::type>(ts)...);
 		};
-		HLObj hlObj = FuncCall<Ts...>::callCB(fn, ls, -sizeof...(Ts)).first;
-		using spn::SHandle;
+		auto hlObj = FuncCall<Ts...>::callCB(fn, ls, static_cast<int>(-sizeof...(Ts)));
 		LuaState lsc(ls);
 		// LightUserdataでハンドル値を保持
-		SHandle sh = hlObj.get();
+		spn::SHandle sh = hlObj.get();
 		lsc.push(reinterpret_cast<void*>(sh.getValue()));
 		// ハンドルが開放されてしまわないようにハンドル値だけリセットする
 		hlObj.setNull();
-		// Userdataへのメタテーブル設定はC++からでしか行えないので、ここでする
-		lsc.push(sh.getValue());
-		return 2;
+		return 1;
+	}
+	template <class... Ts>
+	int MakeHandle_Fake(lua_State* /*ls*/) {
+		Assert(Trap, false, "not constructor defined.(can't construct this type of object)")
+		return 0;
 	}
 }
-

@@ -1,115 +1,99 @@
 require("sysfunc")
 
+-- ObjMgr以外はResource毎に固定
+-- ObjMgrは内部でGetLuaName()
+
 -- グローバル変数は全てここに含める
 Global = {}
 -- ゲームエンジンに関する変数など
 -- System = {}
--- HandleID -> ObjInstance(fake)
-local handleId2Obj = {}
--- HandleID -> ObjInstance(substance)
-local handleId2ObjSub = {}
--- ObjInstance -> HandleID
-local ud2HandleId = {}
-setmetatable(handleId2Obj, {
-	__mode = "v"
-})
+-- HandleUD -> ObjInstance
+ObjTypedef = {}
 -- ObjMgrはLuaグローバルステートを持つ
 -- ObjMgrのreleaseメソッドを改変してカウントがゼロになった時に初めてLuaからテーブルを削除
--- リソースハンドルの登録・削除関数
 
--- ハンドルIDからインスタンスを取得
--- From C++(LCV<SHandle>)
-function GetHandle(id, ud)
-	local h = handleId2Obj[id]
-	if h ~= nil then
-		return h
-	end
-	assert(type(ud) == "userdata")
-	-- C++で生成されたハンドルの場合はこちら
-	local sub = {udata = ud}
-	handleId2ObjSub[id] = sub
-
-	local ret = {}
-	setmetatable(ret, {
-		__index = sub,
-		__newindex = sub,
-		__gc = DecrementHandle
-	})
-	IncrementHandle(sub)
-	ud2HandleId[id] = ud
-	handleId2Obj[id] = ret
-	return ret
-end
--- ObjMgr.release()で参照カウンタがゼロになった際に呼ばれる
-function DeleteHandle(ud)
-	local id = ud2HandleId[ud]
-	assert(id)
-	ud2HandleId[ud] = nil
-	handleId2Obj[id] = nil
-	handleId2ObjSub[id] = nil
-end
-
--- ObjectBaseは事前にC++で定義しておく
--- オブジェクトハンドルの継承 => オブジェクトベースの定義
--- これにLuaで記述された各種メソッドを足したものがオブジェクト
+-- オブジェクト型定義
+--[[ \param[in] base 事前にC++で定義しておいたObjectBase
+	オブジェクトハンドルの継承 => オブジェクトベースの定義
+	これにLuaで記述された各種メソッドを足したものがオブジェクト ]]
 function DerivedHandle(base)
-	-- ハンドルを登録 (ユーザーテーブルの作成)
-	-- 引数にはClass_New()で生成したmetatable設定済みのUserData
-	local object = {}
 	local _r, _w, _f = {},{},{}
+	local _mt = {
+		__index = function(tbl, key)
+			local r = _r[key]
+			if r~=nil then
+				-- メンバ変数(C++)読み込み
+				return r(tbl)
+			end
+			-- メンバ関数(C++)呼び出し
+			return _f[key]
+		end,
+		__newindex = function(tbl, key, val)
+			local w = _w[key]
+			if w~=nil then
+				-- メンバ変数(C++)書き込み
+				w(tbl, val)
+			end
+			-- メンバ変数(Lua)書き込み
+			rawset(tbl, key, val)
+		end
+	}
 	local object = {
 		_base = base,
 		_valueR = _r,
 		_valueW = _w,
 		_func = _f,
-		_mt = {
-			__index = function(tbl, key)
-				local r = _r[key]
-				if r~=nil then
-					return r(tbl)
-				end
-				return _f[key]
-			end,
-			__newindex = function(tbl, key, val)
-				local r = _w[key]
-				if r~=nil then
-					r(tbl, val)
-				end
-				rawset(tbl, key, val)
-			end
-		},
+		_mt = _mt,
 		_New = false -- 後で定義する用のダミー
 	}
-	-- ポインタからオブジェクトを構築
+	local instance_mt = {
+		__index = _mt.__index,
+		__newindex = _mt.__newindex,
+		__gc = DecrementHandle
+	}
+	local instance = {}
+	setmetatable(instance, {
+		__mode = "v"
+	})
+	-- (from LCV<SHandle> [C++])
+	-- ハンドルIDからLua内のクラスインスタンスを取得
+	-- 同一ハンドルなら同じインスタンスを返す
+	--[[ \param[in] handle value(light userdata) ]]
+	function object.GetInstance(ud)
+		assert(type(ud) == "userdata")
+		local obj = instance[ud]
+		if obj == nil then
+			obj = {udata = ud}
+			setmetatable(obj, instance_mt)
+			instance[ud] = obj
+		end
+		return obj
+	end
+	-- ポインタからオブジェクトを構築 (from C++)
 	--[[ \param[in] ptr(light userdata) ]]
 	function object.ConstructPtr(ptr)
+		-- LightUserDataでは個別のmetatableを持てないのでtableで包む
 		local ret = {pointer = ptr}
 		setmetatable(ret, object._mt)
 		return ret
 	end
-	-- selfにはtableを指定する
-	function object.Construct(self, ...)
-		local ud,id = object._New(...)
-		assert(not handleId2ObjSub[id])
 
+	local makeInstanceAt = function(dst, ud)
+		assert(not instance[ud])
+		instance[ud] = dst
+		dst.udata = ud
+		setmetatable(dst, _mt)
+	end
+	-- selfにはtableを指定する (from [Lua])
+	function object.ConstructAt(self, ...)
 		-- 初回のオブジェクトインスタンス作成
-		local sub = {udata = ud}
-		setmetatable(sub, object._mt)
-		handleId2ObjSub[id] = sub
-		ud2HandleId[ud] = id
-
-		handleId2Obj[id] = self
-		return {
-			__index = sub,
-			__newindex = sub,
-			__gc = DecrementHandle
-		}
+		local ud = object._New(...)
+		makeInstanceAt(self, ud)
 	end
 	-- 各種C++テーブルの継承
 	setmetatable(_r, {__index = base._valueR})
 	setmetatable(_w, {__index = base._valueW})
 	setmetatable(_f, {__index = base._func})
-	setmetatable(object, object._mt)
 	return object
 end
 -- DerivedHandleで基礎を定義した後、C++で_valueR, _valueW, _func, _Newを追加定義する

@@ -13,8 +13,8 @@
 		...(ユーザーのデータ色々)
 	}
 */
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, U_Scene, NOTHING, NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop), NOTHING)
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, U_Scene, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop))
 namespace rs {
 	using spn::SHandle;
 	using spn::WHandle;
@@ -25,9 +25,10 @@ namespace rs {
 		const std::string Udata("udata"),
 						Pointer("pointer"),
 						ToString("tostring");
-		const std::string GetHandle("GetHandle"),
-						DeleteHandle("DeleteHandle"),
+		const std::string GetInstance("GetInstance"),
 						ObjectBase("ObjectBase"),
+						ConstructPtr("ConstructPtr"),
+						ObjTypedef("ObjTypedef"),
 						DerivedHandle("DerivedHandle"),
 						MakeFSMachine("MakeFSMachine"),
 						MakePreENV("MakePreENV"),
@@ -70,10 +71,11 @@ namespace rs {
 	lua_Integer LuaImport::NumRef(SHandle sh) {
 		return sh.count(); }
 
-	void* LI_GetPtr::operator()(lua_State* ls, int idx) const {
-		lua_getfield(ls, idx, luaNS::Pointer.c_str());
+	void* LI_GetPtrBase::operator()(lua_State* ls, int idx) const {
+		LuaState lsc(ls);
+		lsc.getField(idx, luaNS::Pointer);
 		void* ret = LCV<void*>()(-1, ls);
-		lua_pop(ls, 1);
+		lsc.pop();
 		return ret;
 	}
 	void* LI_GetHandleBase::operator()(lua_State* ls, int idx) const {
@@ -81,9 +83,10 @@ namespace rs {
 		return spn::ResMgrBase::GetPtr(sh);
 	}
 	SHandle LI_GetHandleBase::getHandle(lua_State* ls, int idx) const {
-		lua_getfield(ls, idx, luaNS::Udata.c_str());
+		LuaState lsc(ls);
+		lsc.getField(idx, luaNS::Udata);
 		SHandle ret(reinterpret_cast<uintptr_t>(LCV<void*>()(-1, ls)));
-		lua_pop(ls, 1);
+		lsc.pop();
 		return ret;
 	}
 	bool LuaImport::IsObjectBaseRegistered(LuaState& lsc) {
@@ -92,13 +95,12 @@ namespace rs {
 		lsc.pop();
 		return res;
 	}
-	// オブジェクトハンドルの基本メソッド定義
+	// オブジェクト類を定義する為の基本関数定義など
 	void LuaImport::RegisterObjectBase(LuaState& lsc) {
 		if(IsObjectBaseRegistered(lsc))
 			return;
 
 		lsc.newTable();
-
 		// ValueRの初期化
 		// ValueR = { HandleId=(HandleId), NumRef=(NumRef) }
 		lsc.push(luaNS::objBase::ValueR);
@@ -128,18 +130,19 @@ namespace rs {
 		lsc.setTable(-3);
 		lsc.setTable(-3);
 
-		// IncrementHandle = (IncrementHandle)
-		lsc.pushCClosure(IncrementHandle, 0);
-		lsc.setGlobal("IncrementHandle");
-		// DecrementHandle = (DecrementHandle)
-		lsc.pushCClosure(DecrementHandle, 0);
-		lsc.setGlobal("DecrementHandle");
-
+		// RecvMsg = func(RecvMsg)
 		lsc.push(luaNS::RecvMsg);
 		lsc.pushCClosure(LuaImport::RecvMsg, 0);
 		lsc.setTable(-3);
-		// ObjectBase = {...}
+		// global["ObjectBase"] = {...}
 		lsc.setGlobal(luaNS::ObjectBase);
+
+		// global["IncrementHandle"] = (IncrementHandle)
+		lsc.pushCClosure(IncrementHandle, 0);
+		lsc.setGlobal("IncrementHandle");
+		// global["DecrementHandle"] = (DecrementHandle)
+		lsc.pushCClosure(DecrementHandle, 0);
+		lsc.setGlobal("DecrementHandle");
 
 		std::string fileName("base." + luaNS::ScriptExtension);
 		HLRW hlRW = mgr_path.getRW(luaNS::SystemScriptResourceEntry, fileName, nullptr);
@@ -195,10 +198,13 @@ namespace rs {
 		} else {
 			// Luaのハンドルテーブルからオブジェクトの実体を取得
 			LuaState lsc(ls);
-			lsc.getGlobal(luaNS::GetHandle);
-			lsc.push(h.getValue());
+			auto& name = h.getResourceName();
+			AssertP(Trap, !name.empty(), "invaild resource name.")
+			lsc.getGlobal(name);
+			lsc.getField(-1, luaNS::GetInstance);
 			lsc.push(reinterpret_cast<void*>(h.getValue()));
-			lsc.call(2,1);
+			lsc.call(1,1);
+			lsc.remove(-2);
 			AssertP(Trap, lsc.type(-1) == LuaType::Table)
 		}
 	}
