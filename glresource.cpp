@@ -3,6 +3,11 @@
 #include "adaptsdl.hpp"
 
 namespace rs {
+	const std::string& IGLResource::getResourceName() const {
+		static std::string str("IGLResource");
+		return str;
+	}
+
 	namespace {
 		template <class Tex_t, class... Ts>
 		auto MakeStaticTex(Ts&&... ts) {
@@ -35,6 +40,10 @@ namespace rs {
 		// 破棄フラグを立ててからOnDeviceLost関数を呼ぶ
 		_bInDtor = true;
 		onDeviceLost();
+	}
+	const std::string& GLRes::getResourceName(spn::SHandle sh) const {
+		IGLResource* gr = HRes::FromHandle(sh)->get();
+		return gr->getResourceName();
 	}
 	spn::URI GLRes::_modifyResourceName(spn::URI& key) const {
 		spn::URI key_k = base_type::_modifyResourceName(key);

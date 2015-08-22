@@ -153,6 +153,7 @@ namespace rs {
 			//! ベースクラスのacquireメソッドを隠す為のダミー
 			void acquire();
 
+			const std::string& getResourceName(spn::SHandle sh) const override;
 			// ------------ Texture ------------
 			using HLTex = AnotherLHandle<UPTexture, true>;
 			//! ファイルからテクスチャを読み込む
@@ -301,6 +302,7 @@ namespace rs {
 		virtual void onDeviceLost() {}
 		virtual void onDeviceReset() {}
 		virtual ~IGLResource() {}
+		virtual const std::string& getResourceName() const;
 	};
 
 	//! GLシェーダークラス
