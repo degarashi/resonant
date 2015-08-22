@@ -1014,7 +1014,7 @@ namespace rs {
 				using F = RT (FT::*)(Args...);
 				void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
 				F f = *reinterpret_cast<F*>(tmp);
-				auto* ptr = static_cast<T*>(GET()(ls, 1));
+				auto* ptr = dynamic_cast<T*>(GET()(ls, 1));
 				return RetSize<RT>::proc(ls, [ls,ptr,f]() { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
 			}
 			//! luaスタックから関数ポインタと引数を取り出しcall
