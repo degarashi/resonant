@@ -2,7 +2,6 @@
 #include "adaptsdl.hpp"
 #include "spinner/emplace.hpp"
 
-DEF_LUAIMPLEMENT_PTR(LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep))
 namespace rs {
 	using spn::SHandle;
 	using spn::LHandle;

@@ -396,6 +396,3 @@ namespace rs {
 		return _dtag;
 	}
 }
-#include "luaw.hpp"
-#include "updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(ObjMgr, Object, NOTHING, NOTHING)

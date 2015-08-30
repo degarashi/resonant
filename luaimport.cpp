@@ -13,8 +13,6 @@
 		...(ユーザーのデータ色々)
 	}
 */
-DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, U_Scene, "Object", NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop))
 namespace rs {
 	using spn::SHandle;
 	using spn::WHandle;
