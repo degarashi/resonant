@@ -448,4 +448,12 @@ namespace rs {
 	spn::ByteBuff TDBorder::generate(const spn::Size& /*size*/, CubeFace /*face*/) const {
 		Assert(Trap, false, "not implemented yet") throw 0;
 	}
+
+	const std::string& IGLTexture::getResourceName() const {
+		static std::string str("IGLTexture");
+		return str;
+	}
 }
+#include "luaw.hpp"
+#include "updater_lua.hpp"
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(GLRes, IGLTexture, NOTHING, (getResourceName)(getTextureID))

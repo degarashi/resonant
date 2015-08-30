@@ -634,3 +634,5 @@ namespace rs {
 	template <class T>
 	using DrawableObjT = ObjectT<T, DrawableObj>;
 }
+#include "luaimport.hpp"
+DEF_LUAIMPORT(Object)

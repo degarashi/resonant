@@ -374,6 +374,7 @@ namespace rs {
 			void loadFromSource(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
 			//! コンパイル済みバイナリを読み取り、チャンクをスタックトップに積む
 			void loadFromBinary(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
+			void loadModule(const std::string& name);
 			//! 任意の値をスタックに積む
 			void push(const LCValue& v);
 			//! C関数をスタックに積む
@@ -852,10 +853,11 @@ namespace rs {
 		extern const std::string GetInstance,
 								ObjectBase,
 								ConstructPtr,
-								ObjTypedef,
 								DerivedHandle,
 								MakeFSMachine,
+								FSMachine,
 								MakePreENV,
+								Ctor,
 								RecvMsg,
 								System;
 		namespace objBase {
@@ -1041,13 +1043,15 @@ namespace rs {
 			}
 			//! C++クラスの登録(登録名はクラスから取得)
 			template <class T>
-			static void RegisterBaseClass(LuaState& lsc) {
+			static void RegisterClass(LuaState& lsc) {
 				RegisterObjectBase(lsc);
 				lua::LuaExport(lsc, static_cast<T*>(nullptr));
 			}
 			static bool IsObjectBaseRegistered(LuaState& lsc);
+			static bool IsUpdaterObjectRegistered(LuaState& lsc);
 			//! C++クラス登録基盤を初期化
 			static void RegisterObjectBase(LuaState& lsc);
+			static void RegisterUpdaterObject(LuaState& lsc);
 			//! ベースオブジェクトを使った派生クラスの読み込み
 			/*! 1クラス1ファイルの対応
 				ベースクラスの名前はファイルに記載 */

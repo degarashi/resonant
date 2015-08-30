@@ -1,36 +1,45 @@
 -- C++でベースにするクラス
-BaseClass = "MyClass"
+BaseClass = "Tekito"
 -- 初期ステート設定
 InitialState = "st_idle"
 -- クラスstatic変数。動作中に書き換え可能
 static_value = 100
 -- クラスメンバ関数
-function doIt(self)
+-- function doIt(self)
 	-- 基本的にself.xxxはユーザー変数、self.XXXはシステム変数
 	-- 自オブジェクトのstatic変数を参照
 -- 	static_value = "HELLO"
 	-- 他オブジェクトのstatic変数を参照
 -- 	local os = System:GetStatic("ObjectName")
 -- 	print(os.value)
-end
+-- end
+-- local print = RS.PrintValue
+-- Global.value
+-- System.func
+-- G.rawget
+-- RS.func
 -- コンストラクタ
 function Ctor(self, ...)
-	-- 残りの引数がC++::_Newに渡される
-	self:CallBaseCtor(InitialState, ...)
+	self._base.Ctor(self, InitialState, ...)
 end
 
 st_idle = {
+	OnEnter = function(self, slc, ...)
+		G.print("Idle")
+		self:CPP()
+		self:SetState("st_second")
+	end,
+	hello = function(self, slc, ...)
+		G.print("received", ...)
+	end
 }
+st_second = G.DerivedState(st_idle, {
+	OnEnter = function(self, slc, ...)
+		G.print("Second")
+		self:RecvMsg("hello", 1, 2, 3)
+	end
+})
 --[[
-BaseClass {
-	udata
-	Cfuncs...
-	Cvalues...
-	New() -> {udata} meta
-}
-UserClass {
-	udata
-}
 -- ステート定義
 st_shared = {
 	OnEnter = function (self, lc)

@@ -13,7 +13,7 @@
 		...(ユーザーのデータ色々)
 	}
 */
-DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, U_Scene, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, U_Scene, "Object", NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop))
 namespace rs {
 	using spn::SHandle;
@@ -28,10 +28,11 @@ namespace rs {
 		const std::string GetInstance("GetInstance"),
 						ObjectBase("ObjectBase"),
 						ConstructPtr("ConstructPtr"),
-						ObjTypedef("ObjTypedef"),
 						DerivedHandle("DerivedHandle"),
 						MakeFSMachine("MakeFSMachine"),
+						FSMachine("FSMachine"),
 						MakePreENV("MakePreENV"),
+						Ctor("Ctor"),
 						RecvMsg("RecvMsg"),
 						System("System");
 		namespace objBase {
@@ -95,6 +96,9 @@ namespace rs {
 		lsc.pop();
 		return res;
 	}
+	namespace {
+		int EmptyFunction(lua_State*) { return 0; }
+	}
 	// オブジェクト類を定義する為の基本関数定義など
 	void LuaImport::RegisterObjectBase(LuaState& lsc) {
 		if(IsObjectBaseRegistered(lsc))
@@ -120,19 +124,13 @@ namespace rs {
 		lsc.push(luaNS::objBase::Func);
 		lsc.newTable();
 		lsc.setTable(-3);
-
-		// C++リソースハンドル用メタテーブル
-		// UdataMT = { __gc = (DecrementHandle) }
-		lsc.push(luaNS::objBase::UdataMT);
-		lsc.newTable();
-		lsc.push("__gc");
-		lsc.pushCClosure(DecrementHandle, 0);
-		lsc.setTable(-3);
-		lsc.setTable(-3);
-
 		// RecvMsg = func(RecvMsg)
 		lsc.push(luaNS::RecvMsg);
 		lsc.pushCClosure(LuaImport::RecvMsg, 0);
+		lsc.setTable(-3);
+		// Ctor = func(Ctor)
+		lsc.push(luaNS::Ctor);
+		lsc.pushCClosure(EmptyFunction, 0);
 		lsc.setTable(-3);
 		// global["ObjectBase"] = {...}
 		lsc.setGlobal(luaNS::ObjectBase);
@@ -144,33 +142,48 @@ namespace rs {
 		lsc.pushCClosure(DecrementHandle, 0);
 		lsc.setGlobal("DecrementHandle");
 
-		std::string fileName("base." + luaNS::ScriptExtension);
+		lsc.loadModule("base");
+	}
+	bool LuaImport::IsUpdaterObjectRegistered(LuaState& lsc) {
+		lsc.getGlobal(luaNS::FSMachine);
+		bool res = lsc.type(-1) == LuaType::Table;
+		lsc.pop();
+		return res;
+	}
+	void LuaImport::RegisterUpdaterObject(LuaState& lsc) {
+		if(IsUpdaterObjectRegistered(lsc))
+			return;
+		LuaImport::RegisterClass<Object>(lsc);
+
+		std::string fileName("fsmachine." + luaNS::ScriptExtension);
 		HLRW hlRW = mgr_path.getRW(luaNS::SystemScriptResourceEntry, fileName, nullptr);
 		Assert(Trap, hlRW, "system script file \"%1%\" not found.", fileName)
 		lsc.loadFromSource(hlRW, fileName.c_str(), true);
 	}
-
 	void LuaImport::LoadClass(LuaState& lsc, const std::string& name, HRW hRW) {
 		RegisterObjectBase(lsc);
+		RegisterUpdaterObject(lsc);
 
+		// グローバルテーブルの付け替え
 		lsc.newTable();
 		lsc.getGlobal(luaNS::MakePreENV);
 		lsc.pushValue(-2);
 		lsc.call(1,0);
-		// スタックに積むが、まだ実行はしない
+		// ユーザーのクラス定義をスタックに積むが、まだ実行はしない
 		lsc.load(hRW, "LuaImport::LoadClass", "bt", false);
 		// _ENVをクラステーブルに置き換えてからチャンクを実行
 		// グローバル変数に代入しようとしたらクラスのstatic変数として扱う
 		lsc.pushValue(-2);
-		// [NewClassSrc][Chunk][NewClassSrc]
+		// [NewClassTable][UserChunk][NewClassTable]
 		lsc.setUpvalue(-2, 1);
-		// [NewClassSrc][Chunk]
+		// [NewClassTable][UserChunk]
 		lsc.call(0,0);
-		// [NewClassSrc]
+		// [NewClassTable]
 		lsc.getGlobal(luaNS::MakeFSMachine);
 		lsc.pushValue(1);
-		// [NewClassSrc][Func(DerivedClass)][NewClassSrc]
-		lsc.call(1,1);
+		lsc.push(name);
+		// [NewClassTable][Func(MakeFSMachine)][ObjName][NewClassTable]
+		lsc.call(2,1);
 		lsc.setGlobal(name);
 		lsc.pop(1);
 		return;

@@ -22,17 +22,18 @@
 		void LuaExport(LuaState& lsc, clazz*); \
 	}}
 
-#define DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, seq_member, seq_method, seq_ctor, makeobj) \
+#define DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, base, seq_member, seq_method, seq_ctor, makeobj) \
 		namespace rs{ namespace lua{ \
 			template <> \
 			const char* LuaName(clazz*) { return #clazz; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
-				lsc.getGlobal(::rs::luaNS::ObjectBase); \
-				lsc.call(1,1); \
+				lsc.getGlobal(base); \
+				lsc.push(#clazz); \
+				lsc.call(2,1); \
 				lsc.push(::rs::luaNS::objBase::_New); \
-				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((mgr)seq_ctor)>); \
+				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((mgr)(clazz)seq_ctor)>); \
 				lsc.setTable(-3); \
 				\
 				lsc.getField(-1, ::rs::luaNS::objBase::ValueR); \
@@ -47,10 +48,14 @@
 				lsc.setGlobal(#clazz); \
 			} \
 		}}
-#define DEF_LUAIMPLEMENT_HDL(mgr, clazz, seq_member, seq_method, seq_ctor) \
-	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, seq_member, seq_method,  seq_ctor, ::rs::MakeHandle)
-#define DEF_LUAIMPLEMENT_HDL_NOCTOR(mgr, clazz, seq_member, seq_method) \
-	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
+#define DEF_LUAIMPLEMENT_HDL(mgr, clazz, base, seq_member, seq_method, seq_ctor) \
+	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, base, seq_member, seq_method,  seq_ctor, ::rs::MakeHandle)
+#define DEF_LUAIMPLEMENT_HDL_NOBASE(mgr, clazz, seq_member, seq_method, seq_ctor) \
+	DEF_LUAIMPLEMENT_HDL(mgr, clazz, ::rs::luaNS::ObjectBase, seq_member, seq_method, seq_ctor)
+#define DEF_LUAIMPLEMENT_HDL_NOCTOR(mgr, clazz, base, seq_member, seq_method) \
+	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, base, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
+#define DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(mgr, clazz, seq_member, seq_method) \
+	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, ::rs::luaNS::ObjectBase, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
 
 #define DEF_LUAIMPLEMENT_PTR(clazz, seq_member, seq_method) \
 		namespace rs{ namespace lua{ \
@@ -60,7 +65,8 @@
 			void LuaExport(LuaState& lsc, clazz*) { \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(::rs::luaNS::ObjectBase); \
-				lsc.call(1,1); \
+				lsc.push(#clazz); \
+				lsc.call(2,1); \
 				\
 				lsc.getField(-1, ::rs::luaNS::objBase::ValueR); \
 				lsc.getField(-2, ::rs::luaNS::objBase::ValueW); \

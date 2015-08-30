@@ -257,6 +257,13 @@ namespace rs {
 	void LuaState::loadFromBinary(HRW hRW, const char* chunkName, bool bExec) {
 		load(hRW, chunkName, "b", bExec);
 	}
+	void LuaState::loadModule(const std::string& name) {
+		std::string s("require(\"");
+		s.append(name);
+		s.append("\")");
+		HLRW hlRW = mgr_rw.fromConstMem(s.data(), s.length());
+		loadFromSource(hlRW, name.c_str(), true);
+	}
 	void LuaState::pushSelf() {
 		lua_pushthread(getLS());
 	}

@@ -4,10 +4,10 @@
 
 namespace rs {
 	//! (LuaのClassT::New()から呼ばれる)オブジェクトのリソースハンドルを作成
-	template <class Mgr_t, class... Ts>
+	template <class Mgr_t, class TF, class... Ts>
 	int MakeHandle(lua_State* ls) {
 		auto fn = [](auto&&... ts) {
-			return Mgr_t::_ref().makeHandle(std::forward<typename std::decay<decltype(ts)>::type>(ts)...);
+			return Mgr_t::_ref().template makeHandle<TF>(std::forward<typename std::decay<decltype(ts)>::type>(ts)...);
 		};
 		auto hlObj = FuncCall<Ts...>::callCB(fn, ls, static_cast<int>(-sizeof...(Ts)));
 		LuaState lsc(ls);

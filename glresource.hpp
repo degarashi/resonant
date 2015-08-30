@@ -14,6 +14,7 @@
 #include <array>
 #include "apppath.hpp"
 #include "tokenmemory.hpp"
+#include "luaimport.hpp"
 
 namespace rs {
 	//! Tech:Pass の組み合わせを表す
@@ -536,6 +537,7 @@ namespace rs {
 			void setFilter(bool bLinearMag, bool bLinearMin);
 			void setAnisotropicCoeff(float coeff);
 			void setUVWrap(GLuint s, GLuint t);
+			const std::string& getResourceName() const override;
 
 			RUser<IGLTexture> use() const;
 
@@ -856,3 +858,4 @@ namespace rs {
 			const Res& getAttachment(Att::Id att) const;
 	};
 }
+DEF_LUAIMPORT(IGLTexture)
