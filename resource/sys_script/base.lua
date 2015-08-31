@@ -109,7 +109,10 @@ function DerivedHandle(base, name, object)
 	object._base = base
 
 	-- ポインターインスタンス用のMT = オブジェクトMT + __gc(DecrementHandle)
-	local instanceP_mt = _mt
+	local instanceP_mt = {
+		__index = object,
+		__newindex = object
+	}
 	-- ハンドル用インスタンスにセットするMT
 	local instanceH_mt = {
 		__index = object,
