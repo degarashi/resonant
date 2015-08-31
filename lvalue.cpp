@@ -484,7 +484,8 @@ namespace rs {
 	}
 
 	int LV_Stack::_prepareValue() const {
-		return _pos;
+		lua_pushvalue(_ls, _pos);
+		return lua_gettop(_ls);
 	}
 	int LV_Stack::_prepareValue(lua_State* ls) const {
 		lua_pushvalue(_ls, _pos);
@@ -492,7 +493,9 @@ namespace rs {
 			lua_xmove(_ls, ls, 1);
 		return lua_gettop(ls);
 	}
-	void LV_Stack::_cleanValue() const {}
+	void LV_Stack::_cleanValue() const {
+		_cleanValue(_ls);
+	}
 	void LV_Stack::_cleanValue(lua_State* ls) const {
 		lua_pop(ls, 1);
 	}

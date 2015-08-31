@@ -386,6 +386,10 @@ namespace rs {
 			void loadModule(const std::string& name);
 			//! 任意の値をスタックに積む
 			void push(const LCValue& v);
+			template <class T>
+			void push(const LValue<T>& v) {
+				v.prepareValue(getLS());
+			}
 			//! C関数をスタックに積む
 			/*! \param[in] nvalue 関連付けるUpValueの数 */
 			void pushCClosure(lua_CFunction func, int nvalue);
@@ -404,7 +408,7 @@ namespace rs {
 			template <class... Ret>
 			void popValues(std::tuple<Ret...>& dst) {
 				using CT = spn::CType<Ret...>;
-				popValues2<CT, sizeof...(Ret)-1>(dst, -1, typename spn::NType<0, sizeof...(Ret)>::less());
+				popValues2<CT, int(sizeof...(Ret)-1)>(dst, -1, typename spn::NType<0, sizeof...(Ret)>::less());
 			}
 			template <class CT, int N, class TUP>
 			void popValues2(TUP& /*dst*/, int /*pos*/, std::false_type) {}
@@ -695,16 +699,24 @@ namespace rs {
 			void operator()(std::tuple<Ret...>& dst, Args&&... args) {
 				LuaState lsc(T::getLS());
 				T::_prepareValue();
-				// 引数をスタックに積む
-				lsc.pushArgs(std::forward<Args>(args)...);
-				lsc.call(sizeof...(Args), sizeof...(Ret));
-				// 戻り値をtupleにセットする
-				lsc.popValues(dst);
+				{
+					// 引数をスタックに積む
+					lsc.pushArgs(std::forward<Args>(args)...);
+					lsc.call(sizeof...(Args), sizeof...(Ret));
+					// 戻り値をtupleにセットする
+					lsc.popValues(dst);
+				}
 			}
 			template <class... Ret, class... Args>
 			std::tuple<Ret...> call(Args&&... args) {
 				std::tuple<Ret...> ret;
 				this->operator()(ret, std::forward<Args>(args)...);
+				return ret;
+			}
+			template <class... Ret, class... Args>
+			std::tuple<Ret...> callMethod(const std::string& method, Args&&... a) {
+				LValue lv = (*this)[method];
+				auto ret = lv.call<Ret...>(*this, std::forward<Args>(a)...);
 				return ret;
 			}
 
