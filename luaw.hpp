@@ -219,6 +219,15 @@ namespace rs {
 #undef DEF_LCV
 #undef DEF_LCV0
 #undef DERIVED_LCV
+	template <class T>
+	lua_Integer DetectLCVType(std::true_type);
+	template <class T>
+	T DetectLCVType(std::false_type);
+	template <class T>
+	using GetLCVTypeRaw = decltype(DetectLCVType<T>(typename std::is_enum<T>::type()));
+	template <class T>
+	using GetLCVType = LCV<GetLCVTypeRaw<T>>;
+
 	template <class T, bool D>
 	struct LCV<spn::HdlLock<T,D>> {
 		using Handle_t = spn::HdlLock<T,D>;
@@ -483,8 +492,8 @@ namespace rs {
 			LCValue toLCValue(int idx, LPointerSP* spm=nullptr) const;
 
 			template <class R>
-			R toValue(int idx) const {
-				return LCV<R>()(idx, getLS());
+			decltype(auto) toValue(int idx) const {
+				return GetLCVType<R>()(idx, getLS());
 			}
 
 			LuaType type(int idx) const;
@@ -726,8 +735,8 @@ namespace rs {
 				lua_State* ls = T::getLS();
 				int n = T::_prepareValue();
 				n = lua_absindex(ls, n);
-				LCV<typename LValue_LCVT<IDX>::type>()(ls, idx);
-				LCV<typename LValue_LCVT<VAL>::type>()(ls, val);
+				GetLCVType<typename LValue_LCVT<IDX>::type>()(ls, idx);
+				GetLCVType<typename LValue_LCVT<VAL>::type>()(ls, val);
 				lua_settable(ls, n);
 				T::_cleanValue();
 			}
@@ -736,8 +745,8 @@ namespace rs {
 				return lua_topointer(T::getLS(), VPop(*this));
 			}
 			template <class R>
-			R toValue() const {
-				return LCV<T>()(VPop(*this), T::getLS());
+			decltype(auto) toValue() const {
+				return GetLCVType<T>()(VPop(*this), T::getLS());
 			}
 			LuaType type() const {
 				return LuaState::SType(T::getLS(), VPop(*this));
@@ -771,7 +780,7 @@ namespace rs {
 	struct FuncCall<Ts0A, Ts0...> {
 		template <class CB, class... Ts1>
 		static decltype(auto) callCB(CB&& cb, lua_State* ls, int idx, Ts1&&... ts1) {
-			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
+			decltype(auto) value = GetLCVType<DecayT<Ts0A>>()(idx, ls);
 			return FuncCall<Ts0...>::callCB(std::forward<CB>(cb),
 					ls,
 					idx+1,
@@ -781,7 +790,7 @@ namespace rs {
 		}
 		template <class T, class RT, class FT, class... Args, class... Ts1>
 		static RT procMethod(lua_State* ls, T* ptr, int idx, RT (FT::*func)(Args...), Ts1&&... ts1) {
-			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
+			decltype(auto) value = GetLCVType<DecayT<Ts0A>>()(idx, ls);
 			return FuncCall<Ts0...>::procMethod(ls,
 					ptr,
 					idx+1,
@@ -792,7 +801,7 @@ namespace rs {
 		}
 		template <class RT, class... Args, class... Ts1>
 		static RT proc(lua_State* ls, int idx, RT (*func)(Args...), Ts1&&... ts1) {
-			DecayT<Ts0A> value = LCV<DecayT<Ts0A>>()(idx, ls);
+			decltype(auto) value = GetLCVType<DecayT<Ts0A>>()(idx, ls);
 			return FuncCall<Ts0...>::proc(ls,
 					idx+1,
 					func,
@@ -808,7 +817,7 @@ namespace rs {
 		constexpr static int size = 1;
 		template <class CB>
 		static int proc(lua_State* ls, CB cb) {
-			LCV<T>()(ls, cb());
+			GetLCVType<T>()(ls, static_cast<GetLCVTypeRaw<T>>(cb()));
 			return size;
 		}
 	};
@@ -817,7 +826,7 @@ namespace rs {
 		constexpr static int size = sizeof...(Ts);
 		template <class CB>
 		static int proc(lua_State* ls, CB cb) {
-			LCV<std::tuple<Ts...>>()(ls, cb());
+			GetLCVType<std::tuple<Ts...>>()(ls, cb());
 			return size;
 		}
 	};
@@ -993,7 +1002,7 @@ namespace rs {
 				// [1]		クラスポインタ(userdata)
 				const T* src = reinterpret_cast<const T*>(GET()(ls, 1));
 				auto vp = GetMember<V,VT>(ls, lua_upvalueindex(1));
-				LCV<V>()(ls, src->*vp);
+				GetLCVType<V>()(ls, src->*vp);
 				return 1;
 			}
 			//! luaスタックから変数ポインタとクラスと値を取り出しメンバ変数に書き込む
@@ -1004,7 +1013,7 @@ namespace rs {
 				// [2]		セットする値
 				T* dst = reinterpret_cast<T*>(GET()(ls, 1));
 				auto ptr = GetMember<V,VT>(ls, lua_upvalueindex(1));
-				(dst->*ptr) = LCV<V>()(2, ls);
+				(dst->*ptr) = GetLCVType<V>()(2, ls);
 				return 0;
 			}
 			//! luaスタックから関数ポインタとクラス、引数を取り出しクラスのメンバ関数を呼ぶ

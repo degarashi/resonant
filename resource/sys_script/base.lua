@@ -30,6 +30,20 @@ do
 		})
 	end
 end
+-- クラスのEnum値などを（あれば）読み込み
+function LoadAdditionalValue(modname)
+	-- モジュールが見つからなかった場合は空のテーブルを返すようにする
+	local ps = package.searchers
+	ps[#ps+1] = function(...)
+		return	function()
+					return {}
+				end
+	end
+	local ret = require(modname)
+	-- 元に戻しておく
+	ps[#ps] = nil
+	return ret
+end
 
 -- オブジェクト型定義
 --[[ \param[in] base 事前にC++で定義しておいたObjectBase
@@ -78,12 +92,11 @@ function DerivedHandle(base, name, object)
 		end
 	}
 	if object == nil then
-		object = {
-			_valueR = _r,
-			_valueW = _w,
-			_func = _f,
-			_New = false -- 後で(C++にて)定義する用のエントリー確保ダミー
-		}
+		object = LoadAdditionalValue(name)
+		object._valueR = _r
+		object._valueW = _w
+		object._func = _f
+		object._New = false		-- 後で(C++にて)定義する用のエントリー確保ダミー
 	end
 	if object.Ctor==nil then
 		-- [Protected] 空のコンストラクタを用意

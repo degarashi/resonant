@@ -55,12 +55,12 @@ namespace rs {
 	namespace {
 		// Userdata(Handle)をスタックの一番上に積んだ上で呼ぶ
 		int IncrementHandle(lua_State* ls) {
-			SHandle sh = LCV<SHandle>()(1, ls);
+			SHandle sh = GetLCVType<SHandle>()(1, ls);
 			spn::ResMgrBase::Increment(sh);
 			return 0;
 		}
 		int DecrementHandle(lua_State* ls) {
-			SHandle sh = LCV<SHandle>()(1, ls);
+			SHandle sh = GetLCVType<SHandle>()(1, ls);
 			sh.release();
 			return 0;
 		}
