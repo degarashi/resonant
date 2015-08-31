@@ -95,22 +95,11 @@ FSMachine = DerivedHandle(upd_obj, "FSMachine", {
 			self:SwitchState()
 			return true, table.unpack(ret)
 		end
-		-- C++のメッセージとして処理
-		local args = {...}
-		-- 引数は1つに統合
-		local nArg = #args
-		if nArg == 0 then
-			-- 引数なしならC++側のRecvMsg(LCValue = nil)
-			args = nil
-		elseif nArg == 1 then
-			-- 引数が1つならC++側のRecvMsg(LCValue = value)
-			args = args[1]
+		-- C++のメソッド呼び出しとして処理
+		local cppfunc = self[msg]
+		if type(cppfunc) == "function" then
+			return true, cppfunc(self, ...)
 		end
-		-- C++で受信した場合は戻り値がnil以外になる
-		local ret = ObjectBase.RecvMsg(self, msg, args)
-		if ret == nil then
-			return false
-		end
-		return true,ret
+		return false
 	end
 })
