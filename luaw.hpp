@@ -1151,6 +1151,7 @@ namespace rs {
 				lsc.setGlobal(name);
 				lsc.pop(1);
 			}
+			static void RegisterRSClass(LuaState& lsc);
 			//! GObjectメッセージを受信
 			/*! Obj(UData), MessageStr, {Args} */
 			static int RecvMsg(lua_State* ls);
