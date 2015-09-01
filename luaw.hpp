@@ -256,6 +256,41 @@ namespace rs {
 			return LCV<spn::SHandle>()(); }
 	};
 
+	template <class T, class A>
+	struct LCV<std::vector<T, A>> {
+		using Vec_t = std::vector<T,A>;
+		void operator()(lua_State* ls, const Vec_t& v) const {
+			LCV<T> lcv;
+			auto sz = v.size();
+			lua_createtable(ls, sz, 0);
+			for(std::size_t i=0 ; i<sz ; i++) {
+				lua_pushinteger(ls, i+1);
+				lcv(ls, v[i]);
+				lua_settable(ls, -3);
+			}
+		}
+		Vec_t operator()(int idx, lua_State* ls) const {
+			LCV<T> lcv;
+			int stk = lua_gettop(ls);
+			lua_len(ls, idx);
+			int sz = lua_tointeger(ls, -1);
+			lua_pop(ls, 1);
+			Vec_t ret(sz);
+			for(int i=0 ; i<sz ; i++) {
+				lua_pushinteger(ls, i+1);
+				lua_gettable(ls, -2);
+				ret[i] = lcv(-1, ls);
+				lua_pop(ls, 1);
+			}
+			lua_settop(ls, stk);
+			return ret;
+		}
+		std::ostream& operator()(std::ostream& os, const Vec_t& v) const {
+			return os << "(vector size=" << v.size() << ")"; }
+		LuaType operator()() const {
+			return LuaType::Table; }
+	};
+
 	//! lua_Stateの単純なラッパークラス
 	class LuaState : public std::enable_shared_from_this<LuaState> {
 		template <class T>
