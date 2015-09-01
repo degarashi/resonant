@@ -563,7 +563,7 @@ namespace rs {
 		public:
 			LV_Inter(LValue<LV>& src, const IDX& index): _src(src), _index(index) {}
 			LV_Inter(const LV_Inter&) = delete;
-			LV_Inter(LV_Inter&& lv): _src(lv._src), _index(lv._index) {}
+			LV_Inter(LV_Inter&&) = default;
 
 			void prepareValue(lua_State* ls) const {
 				_src.prepareAt(ls, _index);
@@ -794,6 +794,15 @@ namespace rs {
 			template <class R>
 			decltype(auto) toValue() const {
 				return GetLCVType<T>()(VPop(*this), T::getLS());
+			}
+			int length() const {
+				int n = T::_prepareValue();
+				auto* ls = T::getLS();
+				lua_len(ls, n);
+				int ret = lua_tointeger(ls, -1);
+				lua_pop(ls, 1);
+				T::_cleanValue();
+				return ret;
 			}
 			LuaType type() const {
 				return LuaState::SType(T::getLS(), VPop(*this));
