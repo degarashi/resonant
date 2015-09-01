@@ -178,7 +178,7 @@ namespace rs {
 		lsc.call(0,0);
 		// [NewClassTable]
 		lsc.getGlobal(luaNS::MakeFSMachine);
-		lsc.pushValue(1);
+		lsc.pushValue(-2);
 		lsc.push(name);
 		// [NewClassTable][Func(MakeFSMachine)][ObjName][NewClassTable]
 		lsc.call(2,1);
