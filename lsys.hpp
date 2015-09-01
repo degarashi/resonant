@@ -3,7 +3,7 @@
 #include "luaw.hpp"
 
 namespace rs {
-	#define mgr_lsys (rs::LSysFunc::_ref())
+	#define mgr_lsys (::rs::LSysFunc::_ref())
 	class LSysFunc : public spn::Singleton<LSysFunc> {
 		class LoadThread : public Thread<void (LSysFunc&)> {
 			protected:
@@ -56,6 +56,8 @@ namespace rs {
 			int getNTask();
 			//! (主にデバッグ用途)
 			void sleep(lua_Integer ms) const;
+			//! クラス定義ファイルを読み込む
+			void loadClass(const std::string& name, const SPLua& ls);
 	};
 	DEF_LUAIMPORT(LSysFunc)
 }

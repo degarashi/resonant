@@ -121,4 +121,14 @@ namespace rs {
 		SDL_Delay(ms);
 	}
 }
-
+#include "apppath.hpp"
+namespace rs {
+	void LSysFunc::loadClass(const std::string& name, const SPLua& ls) {
+		std::string fileName(name);
+		fileName.append(".");
+		fileName.append(luaNS::ScriptExtension);
+		HLRW hlRW = mgr_path.getRW(luaNS::ScriptResourceEntry, fileName, nullptr);
+		Assert(Trap, hlRW, "script file \"%1%\" not found.", fileName)
+		LuaImport::LoadClass(*ls, name, hlRW);
+	}
+}
