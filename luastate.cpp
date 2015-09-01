@@ -26,7 +26,8 @@ namespace rs {
 						LuaState::cs_mainThread("MainThread");
 	const int LuaState::ENT_ID = 1,
 			  LuaState::ENT_THREAD = 2,
-			  LuaState::ENT_NREF = 3;
+			  LuaState::ENT_NREF = 3,
+			  LuaState::ENT_SPILUA = 4;
 	spn::FreeList<int> LuaState::s_index(std::numeric_limits<int>::max(), 1);
 	void LuaState::Nothing(lua_State* /*ls*/) {}
 	void LuaState::Delete(lua_State* ls) {
@@ -55,7 +56,7 @@ namespace rs {
 			lsc.setGlobal(cs_fromThread);
 		}
 	}
-	void LuaState::_Increment(LuaState& lsc, std::function<void (LuaState&)> cb) {
+	SPILua LuaState::_Increment(LuaState& lsc, std::function<void (LuaState&)> cb) {
 		int top = lsc.getTop();
 
 		_LoadThreadTable(lsc);
@@ -64,30 +65,28 @@ namespace rs {
 		lsc.getField(-1, ENT_NREF);
 		int nRef = lsc.toInteger(-1);
 		lsc.setField(-2, ENT_NREF, ++nRef);
-
+		lsc.getField(-2, ENT_SPILUA);
+		SPILua ret = *reinterpret_cast<SPILua*>(lsc.toUserData(-1));
 		lsc.setTop(top);
+		return ret;
 	}
-	void LuaState::_Increment_ID(LuaState& lsc, int id) {
-		_Increment(lsc, [id](LuaState& lsc){ lsc.getField(-2, id); });
+	SPILua LuaState::_Increment_ID(LuaState& lsc, int id) {
+		return _Increment(lsc, [id](LuaState& lsc){ lsc.getField(-2, id); });
 	}
-	void LuaState::_Increment_Th(LuaState& lsc) {
-		int pos = lsc.getTop();
-		_Increment(lsc, [pos](LuaState& lsc){
+	SPILua LuaState::_Increment_Th(LuaState& lsc) {
+		return _Increment(lsc, [pos=lsc.getTop()](LuaState& lsc){
 			lsc.pushValue(pos);
 			lsc.getTable(-2);
 		});
-		lsc.pop(1);
 	}
 	void LuaState::_Decrement_ID(LuaState& lsc, int id) {
 		_Decrement(lsc, [id](LuaState& lsc){ lsc.getField(-2, id); });
 	}
 	void LuaState::_Decrement_Th(LuaState& lsc) {
-		int pos = lsc.getTop();
-		_Decrement(lsc, [pos](LuaState& lsc){
+		_Decrement(lsc, [pos=lsc.getTop()](LuaState& lsc){
 			lsc.pushValue(pos);
 			lsc.getTable(-2);
 		});
-		lsc.pop(1);
 	}
 	void LuaState::_Decrement(LuaState& lsc, std::function<void (LuaState&)> cb) {
 		int top = lsc.getTop();
@@ -146,20 +145,32 @@ namespace rs {
 		}
 		return sp;
 	}
-	SPILua LuaState::_RegisterNewThread(LuaState& lsc, int id) {
+	void LuaState::_registerNewThread(LuaState& lsc, int id, bool bBase) {
 		int top = lsc.getTop();
 
 		_LoadThreadTable(lsc);
-		// G[id] = {1=Id, 2=Thread, 3=NRef}
+		// G[id] = {1=Id, 2=Thread, 3=NRef, 4=SPILua-Ptr}
 		lsc.newTable();
 		lsc.setField(-1, ENT_ID, id);
-		lua_State* nls = lua_newthread(lsc.getLS());
+		SPILua* ptr = &_lua;
+		if(!bBase) {
+			AssertP(Trap, !_lua)
+			_lua = SPILua(lua_newthread(lsc.getLS()), _MakeDeleter(id));
+		} else {
+			AssertP(Trap, _lua)
+			lsc.pushSelf();
+		}
 		lsc.push(ENT_THREAD);
 		lsc.pushValue(-2);
 		// [fromId][fromThread][123][Thread][ENT_THREAD][Thread]
 		lsc.setTable(-4);
 		// [fromId][fromThread][123][Thread]
 		lsc.setField(-2, ENT_NREF, 1);
+
+		lsc.push(ENT_SPILUA);
+		lsc.push(ptr);
+		// [fromId][fromThread][123][Thread][ENT_SPILUA][ptr]
+		lsc.setTable(-4);
 
 		// FromId
 		lsc.push(id);
@@ -174,15 +185,13 @@ namespace rs {
 		lsc.setTable(-5);
 
 		lsc.setTop(top);
-		return SPILua(nls, _MakeDeleter(id));
 	}
 
 	LuaState::LuaState(const SPLua& spLua) {
-		int id = s_index.get();
-		_id = id;
+		_id = s_index.get();
 
 		_base = spLua->getMainLS_SP();
-		_RegisterNewThread(*spLua, _id);
+		_registerNewThread(*spLua, _id, false);
 	}
 	LuaState::LuaState(lua_State* ls, _TagThread) {
 		LuaState lsc(ls);
@@ -190,8 +199,8 @@ namespace rs {
 
 		// 参照カウンタのインクリメント
 		lsc.pushSelf();
-		_Increment_Th(lsc);
-		// メインスレッドのポインタを取得、参照カウンタをインクリメント
+		_lua = _Increment_Th(lsc);
+		// メインスレッドのポインタを取得し、コピー
 		lsc.getGlobal(cs_mainThread);
 		void* pMain = lsc.toUserData(-1);
 		_base = reinterpret_cast<LuaState*>(pMain)->shared_from_this();
@@ -205,12 +214,12 @@ namespace rs {
 		_lua(ls, Nothing) {}
 	LuaState::LuaState(lua_Alloc f, void* ud) {
 		_lua = SPILua(f ? lua_newstate(f, ud) : luaL_newstate(), Delete);
-		// メインスレッドの登録
+		// メインスレッドの登録 -> global[cs_mainThread]
 		push(static_cast<void*>(this));
 		setGlobal(cs_mainThread);
 		// スレッドリストにも加える
 		_id = s_index.get();
-		_RegisterNewThread(*this, _id);
+		_registerNewThread(*this, _id, true);
 	}
 	LuaState::Reader::Reader(HRW hRW): ops(hRW.ref()), size(ops.size()) {}
 	void LuaState::Reader::Read(lua_State* ls, HRW hRW, const char* chunkName, const char* mode) {

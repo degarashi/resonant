@@ -331,14 +331,16 @@ namespace rs {
 									cs_mainThread;
 			const static int ENT_ID,
 							ENT_THREAD,
-							ENT_NREF;
-			SPLua		_base;
-			SPILua		_lua;
+							ENT_NREF,
+							ENT_SPILUA;
+			SPLua		_base;		//!< メインスレッド (自身がそれな場合はnull)
+			SPILua		_lua;		//!< 自身が保有するスレッド
 			int			_id;
 			static spn::FreeList<int> s_index;
 			static void Nothing(lua_State* ls);
 			static void Delete(lua_State* ls);
 
+			// -------------- Exceptions --------------
 			struct EBase : std::runtime_error {
 				EBase(const std::string& typ_msg, const std::string& msg);
 			};
@@ -378,17 +380,26 @@ namespace rs {
 			static Deleter _MakeDeleter(int id);
 
 			static struct _TagThread {} TagThread;
-			static SPILua _RegisterNewThread(LuaState& lsc, int id);
+			void _registerNewThread(LuaState& lsc, int id, bool bBase);
+			/* Thread変数の参照カウント機構の為の関数群
+				(Luaのthread変数には__gcフィールドを設定できないため、このような面倒くさい事になっている) */
+			//! global[cs_fromId], global[cs_fromThread]を無ければ作成しスタックに積む
+			/*! FromIdはLuaStateのシリアルIdから詳細情報を
+				FromThreadはLuaのスレッド変数から参照する物 */
 			static void _LoadThreadTable(LuaState& lsc);
-			static void _Increment(LuaState& lsc, std::function<void (LuaState&)> cb);
-			static void _Increment_ID(LuaState& lsc, int id);
-			static void _Increment_Th(LuaState& lsc);
+			static SPILua _Increment(LuaState& lsc, std::function<void (LuaState&)> cb);
+			//! Idをキーとして参照カウンタをインクリメント
+			static SPILua _Increment_ID(LuaState& lsc, int id);
+			//! スレッド変数をキーとして参照カウンタをインクリメント
+			/*! スタックトップにThread変数を積んでから呼ぶ */
+			static SPILua _Increment_Th(LuaState& lsc);
 			static void _Decrement(LuaState& lsc, std::function<void (LuaState&)> cb);
 			static void _Decrement_ID(LuaState& lsc, int id);
 			static void _Decrement_Th(LuaState& lsc);
 			//! NewThread初期化
 			LuaState(const SPLua& spLua);
 			//! スレッド共有初期化
+			/*! lua_Stateから元のLuaStateクラスを辿り、そのshared_ptrをコピーして使う */
 			LuaState(lua_State* ls, _TagThread);
 
 			//! RWopsに対するLua用のリーダークラス
@@ -403,9 +414,11 @@ namespace rs {
 			};
 
 		public:
+			// Luaステートの新規作成
 			LuaState(lua_Alloc f=nullptr, void* ud=nullptr);
 			LuaState(const LuaState&) = delete;
 			LuaState(LuaState&& ls);
+			// 借り物初期化 (破棄の処理はしない)
 			LuaState(const SPILua& ls);
 			LuaState(lua_State* ls);
 
