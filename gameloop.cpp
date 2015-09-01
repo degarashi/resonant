@@ -14,6 +14,7 @@
 #include "serialization/chars.hpp"
 #include "spinner/random.hpp"
 #include "input_sdlvalue.hpp"
+#include "lsys.hpp"
 #include "spinner/structure/profiler.hpp"
 
 namespace rs {
@@ -196,7 +197,7 @@ namespace rs {
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			// デフォルトでルートディレクトリからの探索パスを追加
-			rs::SPUriHandler sph = std::make_shared<rs::UriH_File>(u8"/");
+			SPUriHandler sph = std::make_shared<UriH_File>(u8"/");
 			mgr_rw.getHandler().addHandler(0x00, sph);
 			UPtr<AppPath>		appPath(new AppPath(spn::Dir::GetProgramDir().c_str()));
 			// pathfile文字列が有効ならここでロードする
@@ -216,6 +217,7 @@ PrintLog;
 			UPtr<SoundMgr>		sndP(new SoundMgr(44100));
 			UPtr<UpdRep>		urep(new UpdRep());
 			UPtr<ObjRep>		orep(new ObjRep());
+			UPtr<LSysFunc>		lsys(new LSysFunc());
 			sndP->makeCurrent();
 			using UPHandler = UPtr<Handler>;
 			UPHandler drawHandler(new Handler(opDth->getLooper()));
@@ -487,7 +489,7 @@ PrintLog;
 		#endif
 		param.gparam.setStdAttributes();
 		SPWindow _spWindow = Window::Create(param.wparam);
-		rs::SDLMouse::SetWindow(_spWindow->getWindow());
+		SDLMouse::SetWindow(_spWindow->getWindow());
 
 		// メインスレッドのメッセージキューを初期化
 		Looper::Prepare();
