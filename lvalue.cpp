@@ -116,6 +116,24 @@ namespace rs {
 	LuaType LCV<lua_Number>::operator()() const {
 		return LuaType::Number; }
 
+	// --- LCV<lua_State*> = LUA_TTHREAD
+	void LCV<lua_State*>::operator()(lua_State* ls, lua_State* lsp) const {
+		if(ls == lsp)
+			lua_pushthread(ls);
+		else {
+			lua_pushthread(lsp);
+			lua_xmove(lsp, ls, 1);
+		}
+	}
+	lua_State* LCV<lua_State*>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
+		return lua_tothread(ls, idx);
+	}
+	std::ostream& LCV<lua_State*>::operator()(std::ostream& os, lua_State* ls) const {
+		return os << "(thread) " << (uintptr_t)ls;
+	}
+	LuaType LCV<lua_State*>::operator()() const {
+		return LuaType::Thread; }
+
 	// --- LCV<SPLua> = LUA_TTHREAD
 	void LCV<SPLua>::operator()(lua_State* ls, const SPLua& sp) const {
 		sp->pushSelf();

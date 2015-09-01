@@ -200,6 +200,7 @@ namespace rs {
 	DEF_LCV(const char*, const char*)
 	DEF_LCV(std::string, const std::string&)
 	DERIVED_LCV(const std::string&, std::string)
+	DEF_LCV(lua_State*, lua_State*)
 	DEF_LCV(SPLua, const SPLua&)
 	DEF_LCV(void*, const void*)
 	DEF_LCV(lua_CFunction, lua_CFunction)
