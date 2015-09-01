@@ -140,8 +140,15 @@ namespace rs {
 		lua_xmove(sp->getLS(), ls, 1);
 	}
 	SPLua LCV<SPLua>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
+		auto typ = lua_type(ls, idx);
+		if(typ == LUA_TTHREAD)
+			return SPLua(new LuaState(lua_tothread(ls, idx), LuaState::TagThread));
+		if(typ == LUA_TNIL || typ == LUA_TNONE) {
+			// 自身を返す
+			return SPLua(new LuaState(ls, LuaState::TagThread));
+		}
 		LuaState::_CheckType(ls, idx, LuaType::Thread);
-		return SPLua(new LuaState(lua_tothread(ls, idx), LuaState::TagThread));
+		return SPLua();
 	}
 	std::ostream& LCV<SPLua>::operator()(std::ostream& os, const SPLua& /*sp*/) const {
 		return os;
