@@ -1144,17 +1144,27 @@ namespace rs {
 			/*! ポインタ指定でLuaにクラスを取り込む
 				リソースマネージャやシステムクラス用 */
 			template <class T>
-			static void ImportClass(LuaState& lsc, const std::string& name, T* ptr) {
+			static void ImportClass(LuaState& lsc, const std::string& tableName, const std::string& name, T* ptr) {
 				RegisterObjectBase(lsc);
 
+				int stk = lsc.getTop();
 				auto* dummy = static_cast<T*>(nullptr);
 				lua::LuaExport(lsc, dummy);
 				lsc.getGlobal(lua::LuaName(dummy));
 				lsc.getField(-1, luaNS::ConstructPtr);
 				lsc.push(static_cast<void*>(ptr));
 				lsc.call(1,1);
-				lsc.setGlobal(name);
-				lsc.pop(1);
+				// [ObjDefine][Instance]
+				if(!tableName.empty())
+					lsc.prepareTableGlobal(tableName);
+				else
+					lsc.pushGlobal();
+				lsc.push(name);
+				// [ObjDefine][Instance][Target][name]
+				lsc.pushValue(-3);
+				// [ObjDefine][Instance][Target][name][Instance]
+				lsc.setTable(-3);
+				lsc.setTop(stk);
 			}
 			static void RegisterRSClass(LuaState& lsc);
 			//! GObjectメッセージを受信
