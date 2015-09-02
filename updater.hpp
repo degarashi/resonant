@@ -207,7 +207,7 @@ namespace rs {
 
 			Priority	_priority;
 			ObjVP		_objV;		//!< 優先度は実行中に変わることはないのでキャッシュしておく
-			ObjV		_addObj;	//!< (onUpdateが終った後に)追加予定のオブジェクト
+			ObjVP		_addObj;	//!< (onUpdateが終った後に)追加予定のオブジェクト
 			ObjVH		_remObj;	//!< (onUpdateが終った後に)削除予定のオブジェクト
 			GroupVH		_groupV;	//!< Idでグループ検索する時用
 			int			_nParent;
@@ -225,6 +225,7 @@ namespace rs {
 
 			//! オブジェクト又はグループを追加
 			void addObj(HObj hObj);
+			void addObjPriority(HObj hObj, Priority p);
 			//! オブジェクト又はグループを削除
 			void remObj(HObj hObj);
 

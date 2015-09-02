@@ -107,12 +107,15 @@ namespace rs {
 	const std::string& UpdGroup::getName() const {
 		return cs_updgroupname;
 	}
-	void UpdGroup::addObj(HObj hObj) {
+	void UpdGroup::addObjPriority(HObj hObj, Priority p) {
 		_registerUGVec();
 		AssertP(Trap, std::count_if(_addObj.begin(), _addObj.end(),
-					[hObj](const HLObj& hl){ return hl.get() == hObj; }) == 0, "オブジェクトの重複登録")
+					[hObj](const auto& ao){ return ao.second.get() == hObj; }) == 0, "オブジェクトの重複登録")
 		// すぐ追加するとリスト巡回が不具合起こすので後で一括処理
-		_addObj.emplace_back(hObj);
+		_addObj.emplace_back(p, hObj);
+	}
+	void UpdGroup::addObj(HObj hObj) {
+		addObjPriority(hObj, hObj->get()->getPriority());
 	}
 	void UpdGroup::_registerUGVec() {
 		if(_addObj.empty() && _remObj.empty())
@@ -227,13 +230,13 @@ namespace rs {
 			// オブジェクト追加中に更に追加オブジェクトが出るかも知れないので一旦退避
 			auto addTmp = std::move(_addObj);
 			for(auto& h : addTmp) {
-				auto* p = h->get();
+				auto* p = h.second->get();
 				if(p->isNode()) {
 					// Groupリスト自体はソートしない
-					_groupV.emplace_back(rs_mgr_obj.CastToGroup(h));
+					_groupV.emplace_back(rs_mgr_obj.CastToGroup(h.second));
 				}
 				// 末尾に追加
-				_objV.emplace_back(h->get()->getPriority(), h);
+				_objV.emplace_back(h);
 				p->onConnected(hThis);
 			}
 			// -- remove --
