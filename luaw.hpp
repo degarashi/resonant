@@ -558,6 +558,11 @@ namespace rs {
 			int yield(int nresults);
 			int yieldk(int nresults, lua_KContext ctx, lua_KFunction k);
 
+			/*! スタックトップのテーブルに"name"というテーブルが無ければ作成
+				既にあれば単にそれを積む */
+			void prepareTable(const std::string& name);
+			void prepareTableGlobal(const std::string& name);
+
 			lua_State* getLS() const;
 			SPLua getLS_SP();
 			SPLua getMainLS_SP();

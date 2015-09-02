@@ -578,6 +578,23 @@ namespace rs {
 	int LuaState::yieldk(int nresults, lua_KContext ctx, lua_KFunction k) {
 		return lua_yieldk(getLS(), nresults, ctx, k);
 	}
+	void LuaState::prepareTable(const std::string& name) {
+		getField(-1, name);
+		if(type(-1) != LuaType::Table) {
+			// テーブルを作成
+			pop(1);
+			newTable();
+			push(name);
+			pushValue(-2);
+			// [Target][NewTable][name][NewTable]
+			setTable(-4);
+		}
+	}
+	void LuaState::prepareTableGlobal(const std::string& name) {
+		pushGlobal();
+		prepareTable(name);
+		remove(-2);
+	}
 	lua_State* LuaState::getLS() const {
 		return _lua.get();
 	}
