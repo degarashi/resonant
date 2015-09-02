@@ -30,6 +30,13 @@ do
 		})
 	end
 end
+
+-- インスタンスリスト(弱参照)
+-- HandleUD -> ObjInstance
+local instance = {}
+setmetatable(instance, {
+	__mode = "v"
+})
 -- クラスのEnum値などを（あれば）読み込み
 function LoadAdditionalValue(modname)
 	-- モジュールが見つからなかった場合は空のテーブルを返すようにする
@@ -143,12 +150,6 @@ function DerivedHandle(base, name, object)
 		end,
 		__gc = DecrementHandle
 	}
-	-- インスタンスリスト(弱参照)
-	-- HandleUD -> ObjInstance
-	local instance = {}
-	setmetatable(instance, {
-		__mode = "v"
-	})
 	-- [Public] (from LCV<SHandle> [C++])
 	-- ハンドルIDからLua内のクラスインスタンスを取得
 	-- 同一ハンドルなら同じインスタンスを返す
