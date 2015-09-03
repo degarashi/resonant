@@ -418,21 +418,36 @@ namespace rs {
 							cs_dsort_texture,
 							cs_dsort_buffer;
 
+	enum class SortAlg {
+		Z_Asc,
+		Z_Desc,
+		Priority_Asc,
+		Priority_Desc,
+		TechPass,
+		Texture,
+		Buffer,
+		_Num
+	};
+	using SortAlgList = std::vector<SortAlg>;
 	class DrawGroup : public DrawableObj {
 		private:
+			static const DSortSP cs_dsort[];
 			DSortV		_dsort;			//!< ソートアルゴリズム優先度リスト
 			bool		_bDynamic;		//!< 毎フレームソートするか
 			DLObjV		_dobj;
 
 			void _doDrawSort();
+			static DSortV _MakeDSort(const SortAlgList& al);
 		public:
 			// 描画ソート方式を指定
-			DrawGroup(const DSortV& ds=DSortV{}, bool bDynamic=false);
+			DrawGroup(const DSortV& al=DSortV{}, bool bDynamic=false);
+			DrawGroup(const SortAlgList& al=SortAlgList{}, bool bDynamic=false);
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
-			void onUpdate() override;
+			void onUpdate(const SPLua& ls) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
+			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 

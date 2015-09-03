@@ -324,10 +324,36 @@ namespace rs {
 		return _dtag;
 	}
 	// -------------------- DrawGroup --------------------
+	const DSortSP DrawGroup::cs_dsort[static_cast<int>(SortAlg::_Num)] = {
+		cs_dsort_z_asc,
+		cs_dsort_z_desc,
+		cs_dsort_priority_asc,
+		cs_dsort_priority_desc,
+		cs_dsort_techpass,
+		cs_dsort_texture,
+		cs_dsort_buffer
+	};
+	DSortV DrawGroup::_MakeDSort(const SortAlgList& al) {
+		auto sz = al.size();
+		DSortV ret(sz);
+		for(decltype(sz) i=0 ; i<sz ; i++) {
+			ret[i] = cs_dsort[static_cast<int>(al[i])];
+		}
+		return ret;
+	}
 	DrawGroup::DrawGroup(const DSortV& ds, bool bDynamic):
-		_dsort(ds), _bDynamic(bDynamic) {}
+		_dsort(ds),
+		_bDynamic(bDynamic)
+	{}
+	DrawGroup::DrawGroup(const SortAlgList& al, bool bDynamic):
+		_dsort(_MakeDSort(al)),
+		_bDynamic(bDynamic)
+	{}
 	bool DrawGroup::isNode() const {
 		return true;
+	}
+	void DrawGroup::setSortAlgorithmId(const SortAlgList& al, bool bDynamic) {
+		setSortAlgorithm(_MakeDSort(al), bDynamic);
 	}
 	void DrawGroup::setSortAlgorithm(const DSortV& ds, bool bDynamic) {
 		_dsort = ds;
