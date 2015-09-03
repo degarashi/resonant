@@ -27,7 +27,7 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup /*hGroup*/) {
 
 	// ---- FBClear(Z) ----
 	rs::draw::ClearParam clp{spn::none, 1.f, {}};
-	self.getDrawGroup().addObj(rs_mgr_obj.makeDrawable<rs::util::FBClear>(0x0000, clp).first);
+	self.getDrawGroupRef().addObj(rs_mgr_obj.makeDrawable<rs::util::FBClear>(0x0000, clp).first);
 
 	auto hDg = self.getBase().getDraw();
 	// ---- make InfoShow ----
@@ -45,7 +45,7 @@ void Sc_Base::St_Default::onConnected(Sc_Base& self, rs::HGroup /*hGroup*/) {
 	auto hlFP = rs_mgr_obj.makeObj<FPSCamera>().first;
 	self.getBase().getUpdate()->get()->addObj(hlFP);
 
-	mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(self).first, false);
+	mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_Cube>(self).first, false);
 }
 void Sc_Base::St_Default::onDisconnected(Sc_Base& self, rs::HGroup /*hGroup*/) {
 	self._random = spn::none;
@@ -68,13 +68,13 @@ spn::MTRandom& Sc_Base::getRand() {
 void Sc_Base::checkSwitchScene() {
 	auto lk = sharedv.lock();
 	if(mgr_input.isKeyPressed(lk->actCube))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Cube>(*this).first, true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_Cube>(*this).first, true);
 	else if(mgr_input.isKeyPressed(lk->actSound))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_Sound>(*this).first, true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_Sound>(*this).first, true);
 	else if(mgr_input.isKeyPressed(lk->actSprite))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSort>(*this).first, true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_DSort>(*this).first, true);
 	else if(mgr_input.isKeyPressed(lk->actSpriteD))
-		mgr_scene.setPushScene(rs_mgr_obj.makeObj<Sc_DSortD>(*this).first, true);
+		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_DSortD>(*this).first, true);
 	else
 		checkQuit();
 }

@@ -36,7 +36,7 @@ namespace rs {
 			bool	_beginProc();
 			void	_endProc();
 		protected:
-			void	_pushFirstScene(HObj hObj);
+			void	_pushFirstScene(HScene hSc);
 			virtual bool userRunU() = 0;
 		public:
 			MainProc(const SPWindow& sp, bool bInitInput);

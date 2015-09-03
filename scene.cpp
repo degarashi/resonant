@@ -27,39 +27,37 @@ namespace rs {
 
 	// -------------- SceneMgr --------------
 	bool SceneMgr::isEmpty() const { return _scene.empty(); }
-	SceneBase& SceneMgr::getSceneBase(int n) const {
-		HObj hObj = getScene(n);
-		auto* ptr = hObj.ref()->getInterface(SCENE_INTERFACE_ID);
-		Assert(Trap, ptr)
-		return *static_cast<SceneBase*>(ptr);
+	IScene& SceneMgr::getSceneInterface(int n) const {
+		HScene hSc = getScene(n);
+		return *hSc->get();
 	}
-	HObj SceneMgr::getTop() const {
+	HScene SceneMgr::getTop() const {
 		return getScene(0);
 	}
-	HObj SceneMgr::getScene(int n) const {
+	HScene SceneMgr::getScene(int n) const {
 		if(static_cast<int>(_scene.size()) > n)
 			return _scene.at(_scene.size()-1-n);
-		return HObj();
+		return HScene();
 	}
-	UpdGroup& SceneMgr::getUpdGroup(int n) const {
-		return *getSceneBase(n).getUpdate()->get();
+	UpdGroup& SceneMgr::getUpdGroupRef(int n) const {
+		return *getSceneInterface(n).getUpdGroup()->get();
 	}
-	DrawGroup& SceneMgr::getDrawGroup(int n) const {
-		return *getSceneBase(n).getDraw()->get();
+	DrawGroup& SceneMgr::getDrawGroupRef(int n) const {
+		return *getSceneInterface(n).getDrawGroup()->get();
 	}
-	void SceneMgr::setPushScene(HObj hSc, bool bPop) {
+	void SceneMgr::setPushScene(HScene hSc, bool bPop) {
 		if(_scene.empty()) {
-			_scene.push_back(HLObj(hSc));
+			_scene.push_back(HLScene(hSc));
 			_scene.back()->get()->onConnected(HGroup());
 		} else {
-			_scNext = HLObj(hSc);
+			_scNext = HLScene(hSc);
 			_scNPop = bPop ? 1 : 0;
 			_scArg = LCValue();
 			_scOp = true;
 		}
 	}
 	void SceneMgr::setPopScene(int nPop, const LCValue& arg) {
-		_scNext = HLObj();
+		_scNext = HLScene();
 		_scNPop = nPop;
 		_scArg = arg;
 		_scOp = true;

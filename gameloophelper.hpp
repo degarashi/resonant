@@ -18,7 +18,7 @@ namespace rs {
 		using CBMakeSV = std::function<SharedBase_UP ()>;
 		using CBEngine = std::function<IEffect* (rs::AdaptSDL&)>;
 		using CBInit = std::function<void ()>;
-		using CBScene = std::function<HLObj ()>;
+		using CBScene = std::function<HLScene ()>;
 		//! ゲームループヘルパークラスの実装
 		class GameloopHelper {
 			public:
@@ -83,7 +83,7 @@ namespace rs {
 							);
 				};
 				auto cbScene = [](){
-					return rs_mgr_obj.makeObj<InitialSceneT>().first;
+					return rs_mgr_obj.makeScene<InitialSceneT>().first;
 				};
 				return detail::GameloopHelper::Run(cbEngine, cbMakeSV, cbInit, cbScene, rx, ry, appname, pathfile);
 			}

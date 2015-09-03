@@ -27,9 +27,9 @@ namespace rs {
 		if(bInitInput)
 			_initInput();
 	}
-	void MainProc::_pushFirstScene(rs::HObj hObj) {
+	void MainProc::_pushFirstScene(rs::HScene hSc) {
 		Assert(Trap, !_bFirstScene, "pushed first scene twice")
-		mgr_scene.setPushScene(hObj);
+		mgr_scene.setPushScene(hSc);
 		_bFirstScene = true;
 	}
 	void MainProc::_initInput() {

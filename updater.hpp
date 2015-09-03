@@ -129,6 +129,11 @@ namespace rs {
 			virtual void onResume();
 			virtual void onReStart();
 	};
+	class IScene : public Object {
+		public:
+			virtual HGroup getUpdGroup() const;
+			virtual HDGroup getDrawGroup() const;
+	};
 
 	//! アクティブゲームオブジェクトの管理
 	class ObjMgr : public spn::ResMgrA<ObjectUP, ObjMgr> {
@@ -169,6 +174,11 @@ namespace rs {
 			std::pair<HLGroup,T*> makeGroup(Ts&&... ar) {
 				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
 				return std::make_pair(CastToGroup(lhp.first.get()), lhp.second);
+			}
+			template <class T, class... Ts>
+			std::pair<HLScene,T*> makeScene(Ts&&... ar) {
+				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
+				return std::make_pair(Cast<SceneUP>(lhp.first.get()), lhp.second);
 			}
 			template <class T, class... Ts>
 			std::pair<HLDObj,T*> makeDrawable(Ts&&... ar) {

@@ -20,7 +20,7 @@ namespace rs {
 				HDGroup _getDGroup() const {
 					if(auto dg = _wDGroup.lock())
 						return dg;
-					return mgr_scene.getSceneBase().getDraw();
+					return mgr_scene.getSceneInterface().getDrawGroup();
 				}
 			protected:
 				struct St_Default : base_dt::template StateT<St_Default> {

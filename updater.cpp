@@ -76,7 +76,15 @@ namespace rs {
 	void Object::onStop() {}
 	void Object::onResume() {}
 	void Object::onReStart() {}
-
+	// -------------------- IScene --------------------
+	HGroup IScene::getUpdGroup() const {
+		AssertP(Warn, false, "invalid function call")
+		return HGroup();
+	}
+	HDGroup IScene::getDrawGroup() const {
+		AssertP(Warn, false, "invalid function call")
+		return HDGroup();
+	}
 	// -------------------- UpdGroup --------------------
 	UpdGroup::UpdGroup(Priority p):
 		_priority(p),

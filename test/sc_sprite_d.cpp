@@ -88,12 +88,12 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 			ht = mgr_gl.createTexture(s, GL_RGBA8, false, false);
 	}
 	void onConnected(Sc_DSortD& self, rs::HGroup /*hGroup*/) override {
-		auto	&sb0 = mgr_scene.getSceneBase(0),
-				&sb1 = mgr_scene.getSceneBase(1);
-		auto &dg0 = sb0.getDraw()->operator *();
+		auto	&sb0 = mgr_scene.getSceneInterface(0),
+				&sb1 = mgr_scene.getSceneInterface(1);
+		auto &dg0 = sb0.getDrawGroup()->operator *();
 		// 前シーンのアップデートグループを流用
-		{	auto hG = sb1.getUpdate();
-			sb0.getUpdate()->get()->addObj(hG); }
+		{	auto hG = sb1.getUpdGroup();
+			sb0.getUpdGroup()->get()->addObj(hG); }
 
 		// メイン描画グループ (ユーザー定義の優先度でソート)
 		dg0.setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
@@ -126,7 +126,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 			_pBlur1 = hlp.second;
 		}
 		// [前シーンのDG]
-		dg0.addObj(rs_mgr_obj.makeDrawGroup<PrevDGroup>(sb1.getDraw()).first.get());
+		dg0.addObj(rs_mgr_obj.makeDrawGroup<PrevDGroup>(sb1.getDrawGroup()).first.get());
 
 		// スプライト読み込み
 		// ランダムで位置とスピードを設定
@@ -140,7 +140,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 					rnd.template getUniform<float>({-0.005f, 0.005f})};
 		};
 		// 引数に追加する描画グループハンドルを渡す？
-		auto upd = sb0.getUpdate();
+		auto upd = sb0.getUpdGroup();
 		std::vector<rs::HLTex> tex(N_Sprite);
 		for(int i=0 ; i<N_Sprite ; i++)
 			tex[i] = Sc_DSort::LoadTexture(i);

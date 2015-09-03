@@ -7,12 +7,12 @@ namespace rs {
 	#define mgr_scene (::rs::SceneMgr::_ref())
 	//! シーンスタックを管理
 	class SceneMgr : public spn::Singleton<SceneMgr> {
-		using StStack = std::vector<HLObj>;
+		using StStack = std::vector<HLScene>;
 		StStack		_scene;
 		//! シーンを切り替えや差し替えオペレーションがあるかのフラグ
 		bool		_scOp = false;
 		int			_scNPop;
-		HLObj		_scNext;
+		HLScene		_scNext;
 		LCValue		_scArg;
 
 		void _doSceneOp();
@@ -20,17 +20,17 @@ namespace rs {
 		public:
 			bool isEmpty() const;
 			//! シーンスタック中のSceneBaseを取得
-			SceneBase& getSceneBase(int n=0) const;
+			IScene& getSceneInterface(int n=0) const;
 			//! ヘルパー関数: シーンスタック中のUpdGroupを取得
 			/*! *getSceneBase(n).update->get() と同等 */
-			UpdGroup& getUpdGroup(int n=0) const;
+			UpdGroup& getUpdGroupRef(int n=0) const;
 			//! ヘルパー関数: シーンスタック中のDrawGroupを取得
 			/*! *getSceneBase(n).draw->get() と同等 */
-			DrawGroup& getDrawGroup(int n=0) const;
+			DrawGroup& getDrawGroupRef(int n=0) const;
 			//! getScene(0)と同義
-			HObj getTop() const;
-			HObj getScene(int n=0) const;
-			void setPushScene(HObj hSc, bool bPop=false);
+			HScene getTop() const;
+			HScene getScene(int n=0) const;
+			void setPushScene(HScene hSc, bool bPop=false);
 			void setPopScene(int nPop, const LCValue& arg=LCValue());
 			//! フレーム更新のタイミングで呼ぶ
 			bool onUpdate();
@@ -42,7 +42,6 @@ namespace rs {
 			void onReStart();
 	};
 
-	constexpr static uint32_t SCENE_INTERFACE_ID = 0xf0000000;
 	class SceneBase {
 		private:
 			DefineUpdGroup(Update)
@@ -60,9 +59,9 @@ namespace rs {
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
-	class Scene : public ObjectT<T> {
+	class Scene : public ObjectT<T, IScene> {
 		private:
-			using base = ObjectT<T>;
+			using base = ObjectT<T, IScene>;
 			SceneBase	_sbase;
 		public:
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
@@ -89,24 +88,25 @@ namespace rs {
 			}
 			//! ヘルパー関数: シーンスタック中のUpdGroupを取得
 			/*! *getBase().update->get() と同等 */
-			UpdGroup& getUpdGroup() const {
+			UpdGroup& getUpdGroupRef() const {
 				return *getBase().getUpdate()->get();
+			}
+			HGroup getUpdGroup() const override {
+				return getBase().getUpdate();
 			}
 			//! ヘルパー関数: シーンスタック中のDrawGroupを取得
 			/*! *getBase().draw->get() と同等 */
-			DrawGroup& getDrawGroup() const {
+			DrawGroup& getDrawGroupRef() const {
 				return *getBase().getDraw()->get();
+			}
+			HDGroup getDrawGroup() const override {
+				return getBase().getDraw();
 			}
 			const SceneBase& getBase() const {
 				return _sbase;
 			}
 			SceneBase& getBase() {
 				return _sbase;
-			}
-			void* getInterface(uint32_t id) override {
-				if(id == SCENE_INTERFACE_ID)
-					return &_sbase;
-				return base::getInterface(id);
 			}
 			#define DEF_ADAPTOR(name) void name() override final { \
 				base::getState()->name(base::getRef()); \

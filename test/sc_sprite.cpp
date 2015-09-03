@@ -91,17 +91,17 @@ ImplDrawGroup(MyP, 0x2000)
 ImplDrawGroup(MyDG, 0x1000)
 struct Sc_DSort::St_Init : StateT<St_Init> {
 	void onConnected(Sc_DSort& self, rs::HGroup /*hGroup*/) override {
-		self.getDrawGroup().setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
+		self.getDrawGroupRef().setSortAlgorithm({rs::cs_dsort_priority_asc}, false);
 		// 前シーンのアップデートグループを流用
-		{	auto hG = mgr_scene.getSceneBase(1).getUpdate();
-			mgr_scene.getSceneBase(0).getUpdate()->get()->addObj(hG); }
+		{	auto hG = mgr_scene.getSceneInterface(1).getUpdGroup();
+			mgr_scene.getSceneInterface(0).getUpdGroup()->get()->addObj(hG); }
 		// ---- make FBClear ----
-		self.getDrawGroup().addObj(MakeFBClear(0x0000));
+		self.getDrawGroupRef().addObj(MakeFBClear(0x0000));
 		// 前シーンの描画グループを流用
-		{	auto hDGroup = mgr_scene.getSceneBase(1).getDraw();
-			self.getDrawGroup().addObj(rs_mgr_obj.makeDrawGroup<MyP>(hDGroup).first.get()); }
+		{	auto hDGroup = mgr_scene.getSceneInterface(1).getDrawGroup();
+			self.getDrawGroupRef().addObj(rs_mgr_obj.makeDrawGroup<MyP>(hDGroup).first.get()); }
 		self._myDg = rs_mgr_obj.makeDrawGroup<MyDG>().first;
-		self.getDrawGroup().addObj(self._myDg.get());
+		self.getDrawGroupRef().addObj(self._myDg.get());
 		// スプライト画像の読み込み
 		using SpriteObj = rs::util::DWrapper<Sprite>;
 		for(int i=0 ; i<static_cast<int>(self._hlSpriteV.size()) ; i++) {

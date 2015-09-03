@@ -15,12 +15,12 @@ rs::LCValue Sc_Sound::St_Default::recvMsg(Sc_Sound& /*self*/, rs::GMessageId id,
 }
 void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup /*hGroup*/) {
 	// ---- make FBClear ----
-	self.getDrawGroup().addObj(MakeFBClear(0x0000));
+	self.getDrawGroupRef().addObj(MakeFBClear(0x0000));
 	// 前シーンの描画 & アップデートグループを流用
-	{	 auto hDGroup = mgr_scene.getSceneBase(1).getDraw();
-		mgr_scene.getSceneBase(0).getDraw()->get()->addObj(hDGroup); }
-	{	auto hG = mgr_scene.getSceneBase(1).getUpdate();
-		mgr_scene.getSceneBase(0).getUpdate()->get()->addObj(hG); }
+	{	 auto hDGroup = mgr_scene.getSceneInterface(1).getDrawGroup();
+		mgr_scene.getSceneInterface(0).getDrawGroup()->get()->addObj(hDGroup); }
+	{	auto hG = mgr_scene.getSceneInterface(1).getUpdGroup();
+		mgr_scene.getSceneInterface(0).getUpdGroup()->get()->addObj(hG); }
 
 	// サウンド読み込み
 	self._hlAb = mgr_sound.loadOggStream("test_music.ogg");
