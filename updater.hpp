@@ -440,8 +440,9 @@ namespace rs {
 			static DSortV _MakeDSort(const SortAlgList& al);
 		public:
 			// 描画ソート方式を指定
-			DrawGroup(const DSortV& al=DSortV{}, bool bDynamic=false);
-			DrawGroup(const SortAlgList& al=SortAlgList{}, bool bDynamic=false);
+			DrawGroup(const DSortV& al, bool bDynamic=false);
+			DrawGroup(const SortAlgList& al, bool bDynamic=false);
+			DrawGroup();
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);

@@ -341,6 +341,7 @@ namespace rs {
 		}
 		return ret;
 	}
+	DrawGroup::DrawGroup(): DrawGroup(DSortV{}) {}
 	DrawGroup::DrawGroup(const DSortV& ds, bool bDynamic):
 		_dsort(ds),
 		_bDynamic(bDynamic)
