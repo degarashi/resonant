@@ -8,7 +8,7 @@ namespace rs {
 	namespace detail {
 		// ----------------- GameloopHelper -----------------
 		int GameloopHelper::Run(const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBScene& cbScene, int rx, int ry, const std::string& appname, const std::string& pathfile) {
-			GameLoop gloop([&](const rs::SPWindow& sp){
+			GameLoop gloop([&](const SPWindow& sp){
 					return new GHelper_Main(sp, cbEngine, cbMakeSV, cbInit, cbScene);
 					}, [](){ return new GHelper_Draw; });
 
@@ -42,8 +42,21 @@ namespace rs {
 			// GLEffectは名前固定: default.glx
 			lkb->hlFx = mgr_gl.loadEffect("default.glx", cbEngine);
 			_upsv = cbMakeSV();
+			// Luaスクリプトの初期化
+			// スクリプトファイルの名前は固定: main.lua
+			SPLua ls = lkb->spLua = LuaState::FromResource("main");
+			LuaImport::RegisterRSClass(*ls);
 			cbInit();
-			_pushFirstScene(cbScene());
+			// Lua初期化関数を呼ぶ
+			ls->getGlobal("Initialize");
+			ls->call(0,1);
+
+			HLScene hlScene;
+			if(ls->type(-1) != LuaType::Nil)
+				hlScene = LCV<HScene>()(-1, ls->getLS());
+			else
+				hlScene = cbScene();
+			_pushFirstScene(hlScene);
 		}
 		bool GHelper_Main::userRunU() {
 			return true;

@@ -16,7 +16,7 @@ struct InfoShow::MySt : StateT<MySt> {
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDraw(const InfoShow& self, rs::IEffect& e) const override;
-	void onUpdate(InfoShow& self) override;
+	void onUpdate(InfoShow& self, const rs::SPLua& ls) override;
 };
 void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 	int fps;
@@ -43,7 +43,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 }
 #include "spinner/structure/profiler.hpp"
 #include <thread>
-void InfoShow::MySt::onUpdate(InfoShow& self) {
+void InfoShow::MySt::onUpdate(InfoShow& self, const rs::SPLua& /*ls*/) {
 	{
 		auto lk = sharedbase.lockR();
 		self._count = lk->diffCount;

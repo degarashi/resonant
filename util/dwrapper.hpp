@@ -32,7 +32,7 @@ namespace rs {
 						auto hl = self.handleFromThis();
 						self._getDGroup()->get()->remObj(hl);
 					}
-					void onUpdate(DWrapper& self) override {
+					void onUpdate(DWrapper& self, const SPLua& /*ls*/) override {
 						self.refreshDrawTag();
 					}
 					void onDraw(const DWrapper& self, IEffect& e) const override {

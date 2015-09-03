@@ -359,7 +359,8 @@ PrintLog;
 			} while(bLoop && !isInterrupted());
 			while(mgr_scene.getTop().valid()) {
 				mgr_scene.setPopScene(1);
-				mgr_scene.onUpdate();
+				IMainProc::Query q(Clock::now(), 0xffff);
+				mp->runU(q);
 			}
 			// DrawThreadがIdleになるまで待つ
 			while(opDth->getInfo()->accum != getInfo()->accumDraw)

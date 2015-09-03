@@ -93,7 +93,7 @@ namespace rs {
 			virtual Priority getPriority() const;
 
 			bool isDead() const;
-			bool onUpdateUpd();
+			bool onUpdateUpd(const SPLua& ls);
 			virtual bool isNode() const = 0;
 			virtual void setTerminationState();
 			//! オブジェクトの識別IDを取得
@@ -107,7 +107,7 @@ namespace rs {
 			//! UpdGroupから削除される時に呼ばれる
 			virtual void onDisconnected(HGroup hGroup);
 			//! 各Objが実装するアップデート処理
-			virtual void onUpdate();
+			virtual void onUpdate(const SPLua& ls);
 
 			virtual void destroy();
 			virtual const std::string& getName() const;
@@ -193,6 +193,10 @@ namespace rs {
 			static HGroup CastToGroup(HObj hObj) {
 				return Cast<GroupUP>(hObj);
 			}
+			const std::string& getResourceName(spn::SHandle sh) const override {
+				Object* obj = HObj::FromHandle(sh)->get();
+				return obj->getName();
+			}
 	};
 	#define rs_mgr_obj (::rs::ObjMgr::_ref())
 	/*! スクリプト対応のために型とではなく文字列とIDを関連付け
@@ -242,7 +246,7 @@ namespace rs {
 			bool isNode() const override;
 			void onConnected(HGroup hGroup) override;
 			void onDisconnected(HGroup hGroup) override;
-			void onUpdate() override;
+			void onUpdate(const SPLua& ls) override;
 			void onDraw(IEffect& e) const override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			const std::string& getName() const override;
@@ -298,7 +302,7 @@ namespace rs {
 
 			const std::string& getName() const override;
 
-			void onUpdate() override;
+			void onUpdate(const SPLua& ls) override;
 			void setIdle(int nFrame);
 			int getAccum() const;
 			// コピー禁止
@@ -463,7 +467,7 @@ namespace rs {
 		public:
 			DrawGroupProxy(HDGroup hDg);
 
-			void onUpdate() override;
+			void onUpdate(const SPLua& ls) override;
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
@@ -485,7 +489,7 @@ namespace rs {
 				struct State {
 					virtual ~State() {}
 					virtual ObjTypeId getStateId() const = 0;
-					virtual void onUpdate(T& self) { self.Base::onUpdate(); }
+					virtual void onUpdate(T& self, const SPLua& ls) { self.Base::onUpdate(ls); }
 					virtual LCValue recvMsg(T& self, GMessageId msg, const LCValue& arg) { return self.Base::recvMsg(msg, arg); }
 					// onEnterとonExitは継承しない
 					virtual void onEnter(T& /*self*/, ObjTypeId /*prevId*/) {}
@@ -631,8 +635,8 @@ namespace rs {
 					_callWithSwitchState([&](){ _state->onDown(getRef(), prevId, arg); });
 				}
 				// ----------- 以下はStateのアダプタメソッド -----------
-				void onUpdate() override {
-					_callWithSwitchState([&](){ return _state->onUpdate(getRef()); });
+				void onUpdate(const SPLua& ls) override {
+					_callWithSwitchState([&](){ return _state->onUpdate(getRef(), ls); });
 				}
 				LCValue recvMsg(GMessageId msg, const LCValue& arg) override {
 					return _callWithSwitchState([&](){ return _state->recvMsg(getRef(), msg, arg); });
@@ -660,6 +664,25 @@ namespace rs {
 	// PriorityはUpdateObjと兼用の場合に使われる
 	template <class T>
 	using DrawableObjT = ObjectT<T, DrawableObj>;
+
+	template <class T, class Base=Object>
+	class ObjectT_Lua : public ObjectT<T,Base>, public spn::EnableFromThis<HObj> {
+		protected:
+			void _callLuaUpdate(const SPLua& ls) {
+				ls->push(handleFromThis());
+				LValueS lv(ls->getLS());
+				lv.callMethod(luaNS::RecvMsg, luaNS::OnUpdate);
+			}
+		public:
+			using base = ObjectT<T,Base>;
+			using base::base;
+			void onUpdate(const SPLua& ls) override {
+				base::onUpdate(ls);
+				if(!base::isDead())
+					_callLuaUpdate(ls);
+			}
+	};
 }
 #include "luaimport.hpp"
 DEF_LUAIMPORT(Object)
+DEF_LUAIMPORT(UpdGroup)

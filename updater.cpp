@@ -40,10 +40,10 @@ namespace rs {
 	bool Object::isDead() const {
 		return _bDestroy;
 	}
-	bool Object::onUpdateUpd() {
+	bool Object::onUpdateUpd(const SPLua& ls) {
 		if(isDead())
 			return true;
-		onUpdate();
+		onUpdate(ls);
 		return isDead();
 	}
 	void* Object::getInterface(InterfaceId /*id*/) {
@@ -54,7 +54,7 @@ namespace rs {
 	}
 	void Object::onConnected(HGroup /*hGroup*/) {}
 	void Object::onDisconnected(HGroup /*hGroup*/) {}
-	void Object::onUpdate() {}
+	void Object::onUpdate(const SPLua& /*ls*/) {}
 	void Object::destroy() {
 		_bDestroy = true;
 	}
@@ -158,7 +158,7 @@ namespace rs {
 		for(auto& obj : _objV)
 			obj.second->get()->onDraw(e);
 	}
-	void UpdGroup::onUpdate() {
+	void UpdGroup::onUpdate(const SPLua& ls) {
 		{
 			class FlagSet {
 				private:
@@ -172,7 +172,7 @@ namespace rs {
 
 			for(auto& obj : _objV) {
 				auto* ent = obj.second->get();
-				auto b = ent->onUpdateUpd();
+				auto b = ent->onUpdateUpd(ls);
 				if(b) {
 					// 次のフレーム直前で消す
 					remObj(obj.second.get());
@@ -304,12 +304,12 @@ namespace rs {
 	const std::string& UpdTask::getName() const {
 		return cs_updtaskname;
 	}
-	void UpdTask::onUpdate() {
+	void UpdTask::onUpdate(const SPLua& ls) {
 		// アイドル時間チェック
 		if(_idleCount > 0)
 			--_idleCount;
 		else
-			_hlGroup->get()->onUpdate();
+			_hlGroup->get()->onUpdate(ls);
 		++_accum;
 	}
 	void UpdTask::setIdle(int nFrame) {
@@ -396,7 +396,7 @@ namespace rs {
 	const std::string& DrawGroup::getName() const {
 		return cs_drawgroupname;
 	}
-	void DrawGroup::onUpdate() {
+	void DrawGroup::onUpdate(const SPLua& /*ls*/) {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
 	}
 	void DrawGroup::onDraw(IEffect& e) const {
@@ -412,8 +412,9 @@ namespace rs {
 
 	// -------------------- DrawGroupProxy --------------------
 	DrawGroupProxy::DrawGroupProxy(HDGroup hDg): _hlDGroup(hDg) {}
-	void DrawGroupProxy::onUpdate() {
-		_hlDGroup->get()->onUpdate();
+	void DrawGroupProxy::onUpdate(const SPLua& ls) {
+		// DrawGroupのonUpdateを呼ぶとエラーになるが、一応呼び出し
+		_hlDGroup->get()->onUpdate(ls);
 	}
 	const DSortV& DrawGroupProxy::getSortAlgorithm() const {
 		return _hlDGroup->get()->getSortAlgorithm();

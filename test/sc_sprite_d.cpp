@@ -13,7 +13,7 @@ class BoundingSprite : public rs::util::DWrapper<Sprite> {
 		using base_t = rs::util::DWrapper<Sprite>;
 		spn::Vec2	_svec;
 		struct St_Default : base_t::St_Default {
-			void onUpdate(base_t& self) override {
+			void onUpdate(base_t& self, const rs::SPLua& /*ls*/) override {
 				auto& ths = static_cast<BoundingSprite&>(self);
 				auto& sc = self.getScale();
 				auto& ofs = self.refOffset();
@@ -156,7 +156,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		_pBlur1->setParam(rs::unif::texture::Diffuse, _hlTex[swt]);
 		const_cast<St_Default&>(*this).swt ^= 1;
 	}
-	void onUpdate(Sc_DSortD& self) override {
+	void onUpdate(Sc_DSortD& self, const rs::SPLua& /*ls*/) override {
 		auto lk = sharedv.lock();
 		if(mgr_input.isKeyPressed(lk->actNumber[0])) {
 			bBlur = bBlur^1;

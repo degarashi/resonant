@@ -18,6 +18,7 @@ namespace rs {
 		FPSCounter		fps;
 		spn::Size		screenSize;
 		SPWindow		spWindow;
+		SPLua			spLua;
 		diff::Effect	diffCount;
 	};
 	constexpr int Id_SharedBaseValueC = 0xf0000000;

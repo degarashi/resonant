@@ -5,7 +5,7 @@
 
 struct Sc_Sound::St_Default : StateT<St_Default> {
 	void onConnected(Sc_Sound& self, rs::HGroup hGroup) override;
-	void onUpdate(Sc_Sound& self) override;
+	void onUpdate(Sc_Sound& self, const rs::SPLua& ls) override;
 	rs::LCValue recvMsg(Sc_Sound& self, rs::GMessageId id, const rs::LCValue& arg) override;
 };
 rs::LCValue Sc_Sound::St_Default::recvMsg(Sc_Sound& /*self*/, rs::GMessageId id, const rs::LCValue& /*arg*/) {
@@ -30,7 +30,7 @@ void Sc_Sound::St_Default::onConnected(Sc_Sound& self, rs::HGroup /*hGroup*/) {
 	s.clear();
 	s.play(self._hlAb, 0);
 }
-void Sc_Sound::St_Default::onUpdate(Sc_Sound& self) {
+void Sc_Sound::St_Default::onUpdate(Sc_Sound& self, const rs::SPLua& /*ls*/) {
 	self._base.checkSwitchScene();
 }
 Sc_Sound::Sc_Sound(Sc_Base& b): _base(b) {

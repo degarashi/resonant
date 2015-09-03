@@ -943,6 +943,7 @@ namespace rs {
 								MakePreENV,
 								Ctor,
 								RecvMsg,
+								OnUpdate,
 								System;
 		namespace objBase {
 			extern const std::string ValueR,

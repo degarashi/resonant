@@ -68,14 +68,16 @@ namespace rs {
 }
 		// 描画コマンド
 		rs::IEffect* fx;
+		SPLua ls;
 		{
 			auto lk = sharedbase.lockR();
 			fx = lk->hlFx->get();
+			ls = lk->spLua;
 		}
 		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
 		fx->beginTask();
 { auto p = spn::profiler.beginBlockObj("scene_update");
-		if(mgr_scene.onUpdate()) {
+		if(mgr_scene.onUpdate(ls)) {
 			_endProc();
 			return false;
 		}

@@ -15,7 +15,7 @@ namespace rs {
 		HLScene		_scNext;
 		LCValue		_scArg;
 
-		void _doSceneOp();
+		void _doSceneOp(const SPLua& ls);
 
 		public:
 			bool isEmpty() const;
@@ -33,7 +33,7 @@ namespace rs {
 			void setPushScene(HScene hSc, bool bPop=false);
 			void setPopScene(int nPop, const LCValue& arg=LCValue());
 			//! フレーム更新のタイミングで呼ぶ
-			bool onUpdate();
+			bool onUpdate(const SPLua& ls);
 			//! 描画のタイミングで呼ぶ
 			void onDraw(IEffect& e);
 			void onPause();
@@ -59,18 +59,19 @@ namespace rs {
 	};
 	//! 1シーンにつきUpdateTreeとDrawTreeを1つずつ用意
 	template <class T>
-	class Scene : public ObjectT<T, IScene> {
+	class Scene : public ObjectT_Lua<T, IScene> {
 		private:
-			using base = ObjectT<T, IScene>;
+			using base = ObjectT_Lua<T, IScene>;
 			SceneBase	_sbase;
 		public:
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
 				_sbase(hUpd, hDraw) {}
-			void onUpdate() override final {
-				UpdGroup::SetAsUpdateRoot();
-				base::onUpdate();
-				if(!base::isDead())
-					_sbase.getUpdate()->get()->onUpdate();
+			void onUpdate(const SPLua& ls) override final {
+				base::onUpdate(ls);
+				if(!base::isDead()) {
+					UpdGroup::SetAsUpdateRoot();
+					_sbase.getUpdate()->get()->onUpdate(ls);
+				}
 			}
 			void onDraw(IEffect& e) const override final {
 				base::onDraw(e);
@@ -117,7 +118,12 @@ namespace rs {
 			DEF_ADAPTOR(onReStart)
 			#undef DEF_ADAPTOR
 	};
-	class U_Scene : public Scene<U_Scene> {};
+	class U_Scene : public Scene<U_Scene> {
+		private:
+			struct St_None;
+		public:
+			U_Scene();
+	};
 }
 DEF_LUAIMPORT(SceneMgr)
 DEF_LUAIMPORT(U_Scene)

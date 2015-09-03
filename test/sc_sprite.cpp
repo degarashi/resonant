@@ -56,7 +56,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 		_index = index;
 		self._myDg->get()->setSortAlgorithm(c_makeds[index](), false);
 	}
-	void onUpdate(Sc_DSort& self) override {
+	void onUpdate(Sc_DSort& self, const rs::SPLua& /*ls*/) override {
 		// 一定時間ごとにランダムなスプライトを選んで一旦グループから外し、再登録
 		{
 			int index = self._base.getRand().getUniform<int>({std::size_t(0), self._hlSpriteV.size()-1});

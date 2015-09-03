@@ -32,6 +32,7 @@ namespace rs {
 						MakePreENV("MakePreENV"),
 						Ctor("Ctor"),
 						RecvMsg("RecvMsg"),
+						OnUpdate("OnUpdate"),
 						System("System");
 		namespace objBase {
 			const std::string ValueR("_valueR"),

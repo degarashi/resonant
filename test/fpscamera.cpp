@@ -5,9 +5,9 @@
 #include "../camera.hpp"
 
 struct FPSCamera::St_Default : StateT<St_Default> {
-	void onUpdate(FPSCamera& self) override;
+	void onUpdate(FPSCamera& self, const rs::SPLua& ls) override;
 };
-void FPSCamera::St_Default::onUpdate(FPSCamera& self) {
+void FPSCamera::St_Default::onUpdate(FPSCamera& self, const rs::SPLua& /*ls*/) {
 	auto lkb = sharedbase.lockR();
 	auto lk = sharedv.lock();
 	// カメラ操作
