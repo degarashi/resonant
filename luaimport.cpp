@@ -225,7 +225,7 @@ namespace rs {
 		LuaState lsc(ls);
 		if(lsc.type(idx) == LuaType::Nil)
 			return SHandle();
-		return LI_GetHandle<SHandle>().getHandle(ls, -1);
+		return LI_GetHandle<SHandle>().getHandle(ls, idx);
 	}
 	std::ostream& LCV<SHandle>::operator()(std::ostream& os, SHandle h) const {
 		return os << "(Handle)" << std::hex << "0x" << h.getValue();
