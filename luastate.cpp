@@ -10,7 +10,7 @@ namespace rs {
 	// ----------------- LuaState::Exceptions -----------------
 	LuaState::EBase::EBase(const std::string& typ_msg, const std::string& msg): std::runtime_error("") {
 		std::stringstream ss;
-		ss << "Error in LuaState:\n" << typ_msg << std::endl << msg;
+		ss << "Error in LuaState:\nCause: " << typ_msg << std::endl << msg;
 		reinterpret_cast<std::runtime_error&>(*this) = std::runtime_error(ss.str());
 	}
 	LuaState::ERun::ERun(const std::string& s): EBase("Runtime", s) {}
@@ -18,7 +18,7 @@ namespace rs {
 	LuaState::EMem::EMem(const std::string& s): EBase("Memory", s) {}
 	LuaState::EError::EError(const std::string& s): EBase("ErrorHandler", s) {}
 	LuaState::EGC::EGC(const std::string& s): EBase("GC", s) {}
-	LuaState::EType::EType(const char* typ0, const char* typ1): EBase("InvalidType", std::string(typ0) + " to " + typ1) {}
+	LuaState::EType::EType(const char* typ0, const char* typ1): EBase("InvalidType", std::string("[") + typ0 + "] to [" + typ1 + "]") {}
 
 	// ----------------- LuaState -----------------
 	const std::string LuaState::cs_fromId("FromId"),
