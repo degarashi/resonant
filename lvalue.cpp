@@ -482,13 +482,21 @@ namespace rs {
 		_init(ls);
 	}
 	LV_Stack::~LV_Stack() {
-		assert(lua_gettop(_ls) == _pos);
-		lua_pop(_ls, 1);
+		if(!std::uncaught_exception()) {
+			AssertP(Trap, lua_gettop(_ls) >= _pos)
+			#ifdef DEBUG
+				AssertP(Trap, LuaState::SType(_ls, _pos) == _type)
+			#endif
+			lua_remove(_ls, _pos);
+		}
 	}
 	void LV_Stack::_init(lua_State* ls) {
 		_ls = ls;
 		_pos = lua_gettop(_ls);
 		Assert(Trap, _pos > 0)
+		#ifdef DEBUG
+			_type = LuaState::SType(ls, _pos);
+		#endif
 	}
 	void LV_Stack::_setValue() {
 		lua_replace(_ls, _pos);

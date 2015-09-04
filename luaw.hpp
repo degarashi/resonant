@@ -648,6 +648,9 @@ namespace rs {
 	class LV_Stack {
 		lua_State*	_ls;
 		int			_pos;
+		#ifdef DEBUG
+			LuaType	_type;
+		#endif
 
 		protected:
 			void _setValue();
