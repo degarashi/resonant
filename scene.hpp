@@ -125,6 +125,6 @@ namespace rs {
 			U_Scene();
 	};
 }
-DEF_LUAIMPORT(SceneMgr)
-DEF_LUAIMPORT(U_Scene)
+DEF_LUAIMPORT(rs::SceneMgr)
+DEF_LUAIMPORT(rs::U_Scene)
 

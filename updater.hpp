@@ -682,12 +682,12 @@ namespace rs {
 					_callLuaUpdate(ls);
 			}
 	};
+	DefineUpdGroup(U_UpdGroup)
+	DefineDrawGroup(U_DrawGroup)
 }
-DefineUpdGroup(U_UpdGroup)
-DefineDrawGroup(U_DrawGroup)
 #include "luaimport.hpp"
-DEF_LUAIMPORT(Object)
-DEF_LUAIMPORT(UpdGroup)
-DEF_LUAIMPORT(DrawGroup)
-DEF_LUAIMPORT(U_UpdGroup)
-DEF_LUAIMPORT(U_DrawGroup)
+DEF_LUAIMPORT(rs::Object)
+DEF_LUAIMPORT(rs::UpdGroup)
+DEF_LUAIMPORT(rs::DrawGroup)
+DEF_LUAIMPORT(rs::U_UpdGroup)
+DEF_LUAIMPORT(rs::U_DrawGroup)

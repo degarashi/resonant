@@ -22,15 +22,15 @@
 		void LuaExport(LuaState& lsc, clazz*); \
 	}}
 
-#define DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, base, seq_member, seq_method, seq_ctor, makeobj) \
+#define DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, base, seq_member, seq_method, seq_ctor, makeobj) \
 		namespace rs{ namespace lua{ \
 			template <> \
-			const char* LuaName(clazz*) { return #clazz; } \
+			const char* LuaName(clazz*) { return #class_name; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(base); \
-				lsc.push(#clazz); \
+				lsc.push(#class_name); \
 				lsc.call(2,1); \
 				lsc.push(::rs::luaNS::objBase::_New); \
 				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((mgr)(clazz)seq_ctor)>); \
@@ -45,27 +45,27 @@
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (typename mgr::data_type)(clazz), seq_method) \
 				lsc.pop(1); \
 				\
-				lsc.setGlobal(#clazz); \
+				lsc.setGlobal(#class_name); \
 			} \
 		}}
-#define DEF_LUAIMPLEMENT_HDL(mgr, clazz, base, seq_member, seq_method, seq_ctor) \
-	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, base, seq_member, seq_method,  seq_ctor, ::rs::MakeHandle)
-#define DEF_LUAIMPLEMENT_HDL_NOBASE(mgr, clazz, seq_member, seq_method, seq_ctor) \
-	DEF_LUAIMPLEMENT_HDL(mgr, clazz, ::rs::luaNS::ObjectBase, seq_member, seq_method, seq_ctor)
-#define DEF_LUAIMPLEMENT_HDL_NOCTOR(mgr, clazz, base, seq_member, seq_method) \
-	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, base, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
-#define DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(mgr, clazz, seq_member, seq_method) \
-	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, ::rs::luaNS::ObjectBase, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
+#define DEF_LUAIMPLEMENT_HDL(mgr, clazz, class_name, base, seq_member, seq_method, seq_ctor) \
+	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, base, seq_member, seq_method,  seq_ctor, ::rs::MakeHandle)
+#define DEF_LUAIMPLEMENT_HDL_NOBASE(mgr, clazz, class_name, seq_member, seq_method, seq_ctor) \
+	DEF_LUAIMPLEMENT_HDL(mgr, clazz, class_name, ::rs::luaNS::ObjectBase, seq_member, seq_method, seq_ctor)
+#define DEF_LUAIMPLEMENT_HDL_NOCTOR(mgr, clazz, class_name, base, seq_member, seq_method) \
+	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, base, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
+#define DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(mgr, clazz, class_name, seq_member, seq_method) \
+	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, ::rs::luaNS::ObjectBase, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
 
-#define DEF_LUAIMPLEMENT_PTR(clazz, seq_member, seq_method) \
+#define DEF_LUAIMPLEMENT_PTR(clazz, class_name, seq_member, seq_method) \
 		namespace rs{ namespace lua{ \
 			template <> \
-			const char* LuaName(clazz*) { return #clazz; } \
+			const char* LuaName(clazz*) { return #class_name; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(::rs::luaNS::ObjectBase); \
-				lsc.push(#clazz); \
+				lsc.push(#class_name); \
 				lsc.call(2,1); \
 				\
 				lsc.getField(-1, ::rs::luaNS::objBase::ValueR); \
@@ -77,7 +77,7 @@
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_PTR, clazz, seq_method) \
 				lsc.pop(1); \
 				\
-				lsc.setGlobal(#clazz); \
+				lsc.setGlobal(#class_name); \
 			} \
 		}}
 

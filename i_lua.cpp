@@ -5,16 +5,16 @@
 #include "updater.hpp"
 #include "updater_lua.hpp"
 
-DEF_LUAIMPLEMENT_PTR(LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
+DEF_LUAIMPLEMENT_PTR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
 
-DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(ObjMgr, Object, NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_HDL(ObjMgr, U_Scene, "FSMachine", NOTHING, NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop)(getScene)(setPushScene)(setPopScene))
-DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(GLRes, IGLTexture, NOTHING, (getResourceName)(getTextureID))
-DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, UpdGroup, "Object", NOTHING, (addObj)(remObj)(getName))
-DEF_LUAIMPLEMENT_HDL(ObjMgr, U_UpdGroup, "UpdGroup", NOTHING, NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, DrawGroup, "Object", NOTHING, (addObj)(remObj))
-DEF_LUAIMPLEMENT_HDL(ObjMgr, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ObjMgr, Object, Object, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_Scene, U_Scene, "FSMachine", NOTHING, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_PTR(rs::SceneMgr, SceneMgr, NOTHING, (isEmpty)(getTop)(getScene)(setPushScene)(setPopScene))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::IGLTexture, IGLTexture, NOTHING, (getResourceName)(getTextureID))
+DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, rs::UpdGroup, UpdGroup, "Object", NOTHING, (addObj)(remObj)(getName))
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_UpdGroup, U_UpdGroup, "UpdGroup", NOTHING, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroup, DrawGroup, "Object", NOTHING, (addObj)(remObj))
+DEF_LUAIMPLEMENT_HDL(ObjMgr, rs::U_DrawGroup, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
 
 namespace rs {
 	void LuaImport::RegisterRSClass(LuaState& lsc) {

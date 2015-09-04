@@ -858,4 +858,4 @@ namespace rs {
 			const Res& getAttachment(Att::Id att) const;
 	};
 }
-DEF_LUAIMPORT(IGLTexture)
+DEF_LUAIMPORT(rs::IGLTexture)

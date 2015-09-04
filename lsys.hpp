@@ -59,6 +59,5 @@ namespace rs {
 			//! クラス定義ファイルを読み込む
 			void loadClass(const std::string& name, const SPLua& ls);
 	};
-	DEF_LUAIMPORT(LSysFunc)
 }
-
+DEF_LUAIMPORT(rs::LSysFunc)
