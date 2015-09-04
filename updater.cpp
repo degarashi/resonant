@@ -191,7 +191,9 @@ namespace rs {
 		}
 	}
 	UpdGroup::~UpdGroup() {
-		AssertP(Trap, _nParent==0)
+		if(!std::uncaught_exception()) {
+			AssertP(Trap, _nParent==0)
+		}
 	}
 	void UpdGroup::onConnected(HGroup /*hGroup*/) {
 		++_nParent;
