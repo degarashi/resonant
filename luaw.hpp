@@ -261,7 +261,7 @@ namespace rs {
 	struct LCV<std::vector<T, A>> {
 		using Vec_t = std::vector<T,A>;
 		void operator()(lua_State* ls, const Vec_t& v) const {
-			LCV<T> lcv;
+			GetLCVType<T> lcv;
 			auto sz = v.size();
 			lua_createtable(ls, sz, 0);
 			for(std::size_t i=0 ; i<sz ; i++) {
@@ -271,7 +271,7 @@ namespace rs {
 			}
 		}
 		Vec_t operator()(int idx, lua_State* ls) const {
-			LCV<T> lcv;
+			GetLCVType<T> lcv;
 			int stk = lua_gettop(ls);
 			lua_len(ls, idx);
 			int sz = lua_tointeger(ls, -1);
@@ -280,7 +280,7 @@ namespace rs {
 			for(int i=0 ; i<sz ; i++) {
 				lua_pushinteger(ls, i+1);
 				lua_gettable(ls, -2);
-				ret[i] = lcv(-1, ls);
+				ret[i] = static_cast<T>(lcv(-1, ls));
 				lua_pop(ls, 1);
 			}
 			lua_settop(ls, stk);
