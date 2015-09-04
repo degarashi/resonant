@@ -1,6 +1,7 @@
 #include "updater.hpp"
 #include "spinner/sort.hpp"
 
+ImplDrawGroup(U_DrawGroup, 0x0000)
 namespace rs {
 	const ObjTypeId InvalidObjId(~0);
 	namespace {

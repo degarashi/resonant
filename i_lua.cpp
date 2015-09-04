@@ -9,10 +9,12 @@ DEF_LUAIMPLEMENT_PTR(LSysFunc, NOTHING, (loadResource)(loadResources)(loadResour
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(ObjMgr, Object, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL(ObjMgr, U_Scene, "FSMachine", NOTHING, NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop)(getTop)(getScene)(setPushScene)(setPopScene))
+DEF_LUAIMPLEMENT_PTR(SceneMgr, NOTHING, (isEmpty)(getTop)(getScene)(setPushScene)(setPopScene))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(GLRes, IGLTexture, NOTHING, (getResourceName)(getTextureID))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, UpdGroup, "Object", NOTHING, (addObj)(remObj)(getName))
+DEF_LUAIMPLEMENT_HDL(ObjMgr, U_UpdGroup, "UpdGroup", NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, DrawGroup, "Object", NOTHING, (addObj)(remObj))
+DEF_LUAIMPLEMENT_HDL(ObjMgr, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
 
 namespace rs {
 	void LuaImport::RegisterRSClass(LuaState& lsc) {
@@ -21,7 +23,9 @@ namespace rs {
 		LuaImport::RegisterClass<IGLTexture>(lsc);
 		LuaImport::RegisterClass<U_Scene>(lsc);
 		LuaImport::RegisterClass<UpdGroup>(lsc);
+		LuaImport::RegisterClass<U_UpdGroup>(lsc);
 		LuaImport::RegisterClass<DrawGroup>(lsc);
+		LuaImport::RegisterClass<U_DrawGroup>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 	}

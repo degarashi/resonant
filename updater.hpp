@@ -683,6 +683,11 @@ namespace rs {
 			}
 	};
 }
+DefineUpdGroup(U_UpdGroup)
+DefineDrawGroup(U_DrawGroup)
 #include "luaimport.hpp"
 DEF_LUAIMPORT(Object)
 DEF_LUAIMPORT(UpdGroup)
+DEF_LUAIMPORT(DrawGroup)
+DEF_LUAIMPORT(U_UpdGroup)
+DEF_LUAIMPORT(U_DrawGroup)
