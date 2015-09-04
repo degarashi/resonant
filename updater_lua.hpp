@@ -3,12 +3,19 @@
 #include "luaw.hpp"
 
 namespace rs {
+	namespace detail {
+		template <class Mgr_t, class TF>
+		struct MakeHandle_Tmp {
+			template <class... Ts>
+			auto operator()(Ts&&... ts) {
+				return Mgr_t::_ref().template makeHandle<TF>(std::forward<Ts>(ts)...);
+			}
+		};
+	}
 	//! (LuaのClassT::New()から呼ばれる)オブジェクトのリソースハンドルを作成
 	template <class Mgr_t, class TF, class... Ts>
 	int MakeHandle(lua_State* ls) {
-		auto fn = [](auto&&... ts) {
-			return Mgr_t::_ref().template makeHandle<TF>(std::forward<typename std::decay<decltype(ts)>::type>(ts)...);
-		};
+		detail::MakeHandle_Tmp<Mgr_t, TF> fn;
 		auto hlObj = FuncCall<Ts...>::callCB(fn, ls, static_cast<int>(-sizeof...(Ts)));
 		LuaState lsc(ls);
 		// LightUserdataでハンドル値を保持
