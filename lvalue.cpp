@@ -2,6 +2,7 @@
 #include <sstream>
 #include <limits>
 #include "spinner/emplace.hpp"
+#include "spinner/size.hpp"
 
 namespace rs {
 	bool LuaNil::operator == (LuaNil) const {
@@ -133,6 +134,32 @@ namespace rs {
 	}
 	LuaType LCV<lua_State*>::operator()() const {
 		return LuaType::Thread; }
+
+	// --- LCV<spn::Size> = LUA_TTABLE
+	void LCV<spn::SizeF>::operator()(lua_State* ls, const spn::SizeF& s) const {
+		lua_createtable(ls, 2, 0);
+		lua_pushinteger(ls, 1);
+		lua_pushnumber(ls, s.width);
+		lua_settable(ls, -3);
+		lua_pushinteger(ls, 2);
+		lua_pushnumber(ls, s.height);
+		lua_settable(ls, -3);
+	}
+	spn::SizeF LCV<spn::SizeF>::operator()(int idx, lua_State* ls, LPointerSP*) const {
+		auto fnGet = [ls, idx](int n){
+			lua_pushinteger(ls, n);
+			lua_gettable(ls, idx);
+			auto ret = lua_tonumber(ls, -1);
+			lua_pop(ls, 1);
+			return ret;
+		};
+		return {fnGet(1), fnGet(2)};
+	}
+	std::ostream& LCV<spn::SizeF>::operator()(std::ostream& os, const spn::SizeF& s) const {
+		return os << s.width;
+	}
+	LuaType LCV<spn::SizeF>::operator()() const {
+		return LuaType::Table; }
 
 	// --- LCV<SPLua> = LUA_TTHREAD
 	void LCV<SPLua>::operator()(lua_State* ls, const SPLua& sp) const {

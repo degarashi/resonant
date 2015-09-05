@@ -31,6 +31,12 @@ namespace std {
 			return 0; }
 	};
 }
+namespace spn {
+	template <class T>
+	struct _Size;
+	using Size = _Size<uint32_t>;
+	using SizeF = _Size<float>;
+}
 
 namespace rs {
 	double LuaOtherNumber(std::integral_constant<int,4>);
@@ -185,6 +191,7 @@ namespace rs {
 	class LV_Global;
 	using LValueG = LValue<LV_Global>;
 
+	class GLFormat;
 	using LPointerSP = std::unordered_map<const void*, LCValue>;
 #define DEF_LCV0(typ, rtyp, argtyp) template <> struct LCV<typ> { \
 		void operator()(lua_State* ls, argtyp t) const; \
@@ -201,6 +208,8 @@ namespace rs {
 	DEF_LCV(std::string, const std::string&)
 	DERIVED_LCV(const std::string&, std::string)
 	DEF_LCV(lua_State*, lua_State*)
+	DEF_LCV(spn::SizeF, const spn::SizeF&)
+	DERIVED_LCV(spn::Size, spn::SizeF)
 	DEF_LCV(SPLua, const SPLua&)
 	DEF_LCV(void*, const void*)
 	DEF_LCV(lua_CFunction, lua_CFunction)
@@ -217,6 +226,7 @@ namespace rs {
 	DERIVED_LCV(lua_IntegerU, lua_Integer)
 	DERIVED_LCV(lua_OtherInteger, lua_Integer)
 	DERIVED_LCV(lua_OtherIntegerU, lua_OtherInteger)
+	DERIVED_LCV(GLFormat, lua_Integer)
 #undef DEF_LCV
 #undef DEF_LCV0
 #undef DERIVED_LCV
@@ -228,6 +238,29 @@ namespace rs {
 	using GetLCVTypeRaw = decltype(DetectLCVType<T>(typename std::is_enum<T>::type()));
 	template <class T>
 	using GetLCVType = LCV<GetLCVTypeRaw<T>>;
+
+	template <class T>
+	struct LCV<spn::Optional<T>> {
+		void operator()(lua_State* ls, const spn::Optional<T>& op) const {
+			if(!op)
+				GetLCVType<LuaNil>()(ls, LuaNil());
+			else
+				GetLCVType<T>()(ls, *op);
+		}
+		spn::Optional<T> operator()(int idx, lua_State* ls) const {
+			if(lua_type(ls, idx) == LUA_TNIL)
+				return spn::none;
+			return GetLCVType<T>()(idx, ls);
+		}
+		std::ostream& operator()(std::ostream& os, const spn::Optional<T>& t) const {
+			if(t)
+				return GetLCVType<T>()(os, *t);
+			else
+				return os << "(none)";
+		}
+		LuaType operator()() const {
+			return GetLCVType<T>()(); }
+	};
 
 	template <class T, bool D>
 	struct LCV<spn::HdlLock<T,D>> {
