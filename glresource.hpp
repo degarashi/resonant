@@ -859,4 +859,7 @@ namespace rs {
 			const std::string& getResourceName() const override;
 	};
 }
+DEF_LUAIMPORT(rs::GLRes)
+DEF_LUAIMPORT(rs::GLRBuffer)
+DEF_LUAIMPORT(rs::GLFBuffer)
 DEF_LUAIMPORT(rs::IGLTexture)

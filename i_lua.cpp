@@ -16,6 +16,9 @@ DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, rs::UpdGroup, UpdGroup, "Object", NOTHING, (
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_UpdGroup, U_UpdGroup, "UpdGroup", NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroup, DrawGroup, "Object", NOTHING, (addObj)(remObj))
 DEF_LUAIMPLEMENT_HDL(ObjMgr, rs::U_DrawGroup, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
+DEF_LUAIMPLEMENT_PTR(rs::GLRes, GLRes, NOTHING, (loadTexture)(loadCubeTexture)(createTexture)(makeFBuffer)(makeRBuffer))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLRBuffer, GLRBuffer, NOTHING, (getBufferID)(getWidth)(getHeight))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLFBuffer, GLFBuffer, NOTHING, (attachRBuffer)(attachTexture)(detach))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ABufMgr, rs::ABuffer, ABuffer, NOTHING, (isStreaming))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SGroupMgr, rs::AGroup, AGroup, NOTHING, (pause)(resume)(clear)(play)(fadeIn)(fadeInOut)(getChannels)(getIdleChannels)(getPlayingChannels))
@@ -32,11 +35,14 @@ namespace rs {
 		LuaImport::RegisterClass<U_UpdGroup>(lsc);
 		LuaImport::RegisterClass<DrawGroup>(lsc);
 		LuaImport::RegisterClass<U_DrawGroup>(lsc);
+		LuaImport::RegisterClass<GLRBuffer>(lsc);
+		LuaImport::RegisterClass<GLFBuffer>(lsc);
 		LuaImport::RegisterClass<ABuffer>(lsc);
 		LuaImport::RegisterClass<AGroup>(lsc);
 		LuaImport::RegisterClass<ASource>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
+		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
 		LuaImport::ImportClass(lsc, "System", "sound", &mgr_sound);
 	}
 }
