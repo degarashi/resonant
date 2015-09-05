@@ -125,7 +125,7 @@ namespace rs {
 			std::unique_ptr<GLFBufferTmp>	_tmpFb;
 			//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
 			/*! デバッグで色を変えたりしてチェックできる */
-			std::unique_ptr<AnotherLHandle<UPTexture, true>>	_hlEmptyTex;
+			std::unique_ptr<HLTex>			_hlEmptyTex;
 			//! DeviceLost/Resetの状態管理
 			bool	_bInit;
 			//! デストラクタ内の時はtrue
@@ -156,42 +156,39 @@ namespace rs {
 
 			const std::string& getResourceName(spn::SHandle sh) const override;
 			// ------------ Texture ------------
-			using HLTex = AnotherLHandle<UPTexture, true>;
 			//! ファイルからテクスチャを読み込む
 			/*! 圧縮テクスチャはファイルヘッダで判定
 				\param[in] fmt OpenGLの内部フォーマット(not ファイルのフォーマット)<br>
 								指定しなければファイルから推定 */
-			HLTex loadTexture(const spn::URI& uri, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
+			HLTex loadTextureUri(const spn::URI& uri, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
 			HLTex loadTexture(const std::string& name, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
 			//! 連番ファイルからキューブテクスチャを作成
-			HLTex loadCubeTexture(const spn::URI& uri, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
+			HLTex loadCubeTextureUri(const spn::URI& uri, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
 			HLTex loadCubeTexture(const std::string& name, MipState miplevel=NoMipmap, OPInCompressedFmt fmt=spn::none);
 			//! 個別のファイルからキューブテクスチャを作成
 			/*! 画像サイズとフォーマットは全て一致していなければならない */
 			HLTex _loadCubeTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::URI& uri0, const spn::URI& uri1, const spn::URI& uri2,
 								  const spn::URI& uri3, const spn::URI& uri4, const spn::URI& uri5);
 			template <class... Ts>
-			HLTex loadCubeTexture(MipState miplevel, OPInCompressedFmt fmt, Ts&&... ts) {
+			HLTex loadCubeTextureFromResource(MipState miplevel, OPInCompressedFmt fmt, Ts&&... ts) {
 				return loadCubeTexture(miplevel, fmt, _uriFromResourceName(std::forward<Ts>(ts))...);
 			}
 			//! 空のテクスチャを作成
 			/*! 領域だけ確保 */
 			HLTex createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore);
 			/*! 用意したデータで初期化 */
-			HLTex createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data);
+			HLTex createTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data);
 			//! 共通のデータで初期化
-			HLTex createCubeTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream, spn::AB_Byte data);
+			HLTex createCubeTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream, spn::AB_Byte data);
 			//! 個別のデータで初期化
-			HLTex createCubeTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream,
+			HLTex createCubeTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream,
 									spn::AB_Byte data0, spn::AB_Byte data1, spn::AB_Byte data2,
 									spn::AB_Byte data3, spn::AB_Byte data4, spn::AB_Byte data5);
 
 			// ------------ Shader ------------
 			//! 文字列からシェーダーを作成
-			AnotherLHandle<UPShader,true> makeShader(ShType type, const std::string& src);
+			HLSh makeShader(ShType type, const std::string& src);
 
-			using HSh = AnotherSHandle<UPShader>;
-			using HLProg = AnotherLHandle<UPProg,true>;
 			//! 複数のシェーダーからプログラムを作成 (vertex, geometry, fragment)
 			HLProg makeProgram(HSh vsh, HSh gsh, HSh fsh);
 			//! 複数のシェーダーからプログラムを作成 (vertex, fragment)
@@ -200,23 +197,23 @@ namespace rs {
 			// ------------ Buffer ------------
 			using CBCreateFx = std::function<IEffect* (AdaptSDL&)>;
 			//! ファイルからエフェクトの読み込み
-			AnotherLHandle<UPEffect,true> loadEffect(const std::string& name, const CBCreateFx& cb);
-			AnotherLHandle<UPEffect,true> loadEffect(const spn::URI& uri, const CBCreateFx& cb);
+			HLFx loadEffect(const std::string& name, const CBCreateFx& cb);
+			HLFx loadEffect(const spn::URI& uri, const CBCreateFx& cb);
 			//! 頂点バッファの確保
-			AnotherLHandle<UPVBuffer,true> makeVBuffer(GLuint dtype);
+			HLVb makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
-			AnotherLHandle<UPIBuffer,true> makeIBuffer(GLuint dtype);
+			HLIb makeIBuffer(GLuint dtype);
 
-			AnotherSHandle<UPTexture> getEmptyTexture() const;
+			HTex getEmptyTexture() const;
 			LHdl _common(const std::string& key, std::function<UPResource(const spn::URI&)> cb);
 			GLFBufferTmp& getTmpFramebuffer() const;
 			// --- from ResMgrBase ---
 			spn::LHandle loadResource(spn::AdaptStream& ast, const spn::URI& uri) override;
 
 			// ------------ FrameBuffer ------------
-			AnotherLHandle<UPFBuffer,true> makeFBuffer();
+			HLFb makeFBuffer();
 			// ------------ RenderBuffer ------------
-			AnotherLHandle<UPRBuffer,true> makeRBuffer(int w, int h, GLInRenderFmt fmt);
+			HLRb makeRBuffer(int w, int h, GLInRenderFmt fmt);
 	};
 
 	using Priority = uint32_t;

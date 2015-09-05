@@ -34,7 +34,7 @@ namespace rs {
 
 		// EmptyTexture = 1x1の単色テクスチャ
 		uint32_t buff1 = 0xffffffff;
-		_hlEmptyTex.reset(new HLTex(createTexture(spn::Size(1,1), GL_RGBA, false, true, GL_UNSIGNED_BYTE, spn::AB_Byte(&buff1, 1))));
+		_hlEmptyTex.reset(new HLTex(createTextureInit(spn::Size(1,1), GL_RGBA, false, true, GL_UNSIGNED_BYTE, spn::AB_Byte(&buff1, 1))));
 	}
 	GLRes::~GLRes() {
 		// 破棄フラグを立ててからOnDeviceLost関数を呼ぶ
@@ -58,9 +58,9 @@ namespace rs {
 	}
 	HLTex GLRes::loadTexture(const std::string& name, MipState miplevel, OPInCompressedFmt fmt) {
 		_setResourceTypeId(ResourceType::Texture);
-		return loadTexture(_uriFromResourceName(name), miplevel, fmt);
+		return loadTextureUri(_uriFromResourceName(name), miplevel, fmt);
 	}
-	HLTex GLRes::loadTexture(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt) {
+	HLTex GLRes::loadTextureUri(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt) {
 		_chPostfix = spn::none;
 		return Cast<UPTexture>(
 			loadResourceApp(uri,
@@ -77,9 +77,9 @@ namespace rs {
 		pb = _uriFromResourceName(pb.plain_utf8()).path();
 		// 末尾の0を除く
 		pb.setPathNum([](auto) ->spn::Int_OP{ return spn::none; });
-		return loadCubeTexture(spn::URI("file", pb), miplevel, fmt);
+		return loadCubeTextureUri(spn::URI("file", pb), miplevel, fmt);
 	}
-	HLTex GLRes::loadCubeTexture(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt) {
+	HLTex GLRes::loadCubeTextureUri(const spn::URI& uri, MipState miplevel, OPInCompressedFmt fmt) {
 		// 連番CubeTexutreの場合はキーとなるURIの末尾に"@"を付加する
 		_chPostfix = '@';
 		// Uriの連番展開
@@ -110,7 +110,7 @@ namespace rs {
 		_cbInit(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
-	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data) {
+	HLTex GLRes::createTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data) {
 		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore, srcFmt, data)));
 		_cbInit(lh);
 		return Cast<UPTexture>(std::move(lh));
@@ -190,7 +190,7 @@ namespace rs {
 		spn::LHandle ret;
 		// is it Texture?
 		if(ext=="png" || ext=="jpg" || ext=="bmp")
-			ret = loadTexture(uri);
+			ret = loadTextureUri(uri);
 		// is it Effect(Shader)?
 		else if(ext == "glx") {
 			HLRW hlRW = mgr_rw.fromURI(uri, RWops::Read);
