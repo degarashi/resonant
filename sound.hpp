@@ -51,6 +51,7 @@ namespace rs {
 			const static std::string cs_rtname[ResourceType::_Num];
 		public:
 			ABufMgr();
+			const std::string& getResourceName(spn::SHandle sh) const override;
 	};
 
 	//! 固有サンプルデータソース
@@ -381,7 +382,10 @@ namespace rs {
 			void sys_resume();
 			void invalidate();
 	};
-	class SSrcMgr : public spn::ResMgrA<ASource, SSrcMgr> {};
+	class SSrcMgr : public spn::ResMgrA<ASource, SSrcMgr> {
+		public:
+			const std::string& getResourceName(spn::SHandle sh) const override;
+	};
 
 	class SGroupMgr;
 	//! ASourceをひとまとめにして管理
@@ -417,7 +421,10 @@ namespace rs {
 			int getPlayingChannels() const;
 			void invalidate();
 	};
-	class SGroupMgr : public spn::ResMgrA<AGroup, SGroupMgr> {};
+	class SGroupMgr : public spn::ResMgrA<AGroup, SGroupMgr> {
+		public:
+			const std::string& getResourceName(spn::SHandle sh) const override;
+	};
 
 	#define mgr_sound reinterpret_cast<::rs::SoundMgr&>(::rs::SoundMgr::_ref())
 	class SoundMgr : public SoundMgrDep {
@@ -482,3 +489,8 @@ namespace boost {
 		}
 	}
 }
+#include "luaimport.hpp"
+DEF_LUAIMPORT(rs::SoundMgr)
+DEF_LUAIMPORT(rs::AGroup)
+DEF_LUAIMPORT(rs::ASource)
+DEF_LUAIMPORT(rs::ABuffer)

@@ -4,6 +4,7 @@
 #include "scene.hpp"
 #include "updater.hpp"
 #include "updater_lua.hpp"
+#include "sound.hpp"
 
 DEF_LUAIMPLEMENT_PTR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
 
@@ -16,6 +17,11 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_UpdGroup, U_UpdGroup, "UpdGroup", NOTHING
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroup, DrawGroup, "Object", NOTHING, (addObj)(remObj))
 DEF_LUAIMPLEMENT_HDL(ObjMgr, rs::U_DrawGroup, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
 
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ABufMgr, rs::ABuffer, ABuffer, NOTHING, (isStreaming))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SGroupMgr, rs::AGroup, AGroup, NOTHING, (pause)(resume)(clear)(play)(fadeIn)(fadeInOut)(getChannels)(getIdleChannels)(getPlayingChannels))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SSrcMgr, rs::ASource, ASource, NOTHING, (play)(pause)(stop)(setFadeTo)(setFadeOut)(setBuffer)(getLooping)(getNLoop)(setPitch)(setGain)(setRelativeMode))
+DEF_LUAIMPLEMENT_PTR(rs::SoundMgr, SoundMgr, NOTHING, (loadWaveBatch)(loadOggBatch)(loadOggStream)(createSourceGroup)(createSource))
+
 namespace rs {
 	void LuaImport::RegisterRSClass(LuaState& lsc) {
 		LuaImport::RegisterUpdaterObject(lsc);
@@ -26,7 +32,11 @@ namespace rs {
 		LuaImport::RegisterClass<U_UpdGroup>(lsc);
 		LuaImport::RegisterClass<DrawGroup>(lsc);
 		LuaImport::RegisterClass<U_DrawGroup>(lsc);
+		LuaImport::RegisterClass<ABuffer>(lsc);
+		LuaImport::RegisterClass<AGroup>(lsc);
+		LuaImport::RegisterClass<ASource>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
+		LuaImport::ImportClass(lsc, "System", "sound", &mgr_sound);
 	}
 }

@@ -27,6 +27,10 @@ namespace rs {
 		"sound"
 	};
 	ABufMgr::ABufMgr(): ResMgrApp(cs_rtname) {}
+	const std::string& ABufMgr::getResourceName(spn::SHandle /*sh*/) const {
+		static std::string str("ABuffer");
+		return str;
+	}
 	// --------------------- ABuffer ---------------------
 	ABuffer::ABuffer(): _format(AFormat::Format::Invalid, 0) {}
 	// --------------------- ABufSub ---------------------
@@ -700,6 +704,16 @@ namespace rs {
 			auto lh = mgr_rw.fromURI(uri, RWops::Read);
 			return UPABuff(new T(lh));
 		}
+	}
+	// --------------------- SSrcMgr ---------------------
+	const std::string& SSrcMgr::getResourceName(spn::SHandle /*sh*/) const {
+		static std::string str("ASource");
+		return str;
+	}
+	// --------------------- SGroupMgr ---------------------
+	const std::string& SGroupMgr::getResourceName(spn::SHandle /*sh*/) const {
+		static std::string str("AGroup");
+		return str;
 	}
 	// ------------------ SoundMgr ------------------
 	HLAb SoundMgr::loadWaveBatch(const std::string& name) {
