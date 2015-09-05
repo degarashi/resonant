@@ -69,20 +69,6 @@ namespace rs {
 		return LuaType::String; }
 
 	// TODO: 中身をちゃんと実装する
-	// --- LCV<spn::Vec4> = LUA_TABLE
-	void LCV<spn::Vec4>::operator()(lua_State* /*ls*/, const spn::Vec4& /*v*/) const {
-		Assert(Trap, false, "not implemented yet.")
-	}
-	spn::Vec4 LCV<spn::Vec4>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
-		LuaState::_CheckType(ls, idx, LuaType::Table);
-		Assert(Trap, false, "not implemented yet.") throw 0;
-	}
-	std::ostream& LCV<spn::Vec4>::operator()(std::ostream& os, const spn::Vec4& v) const {
-		return os << v; }
-	LuaType LCV<spn::Vec4>::operator()() const {
-		return LuaType::Table; }
-	
-	// TODO: 中身をちゃんと実装する
 	// --- LCV<spn::Quat> = LUA_TABLE
 	void LCV<spn::Quat>::operator()(lua_State* /*ls*/, const spn::Quat& /*q*/) const {
 		Assert(Trap, false, "not implemented yet.")

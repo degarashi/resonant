@@ -220,7 +220,6 @@ namespace rs {
 	DEF_LCV(spn::SHandle, spn::SHandle)
 	DEF_LCV(spn::WHandle, spn::WHandle)
 	DEF_LCV(LValueG, const LValueG&)
-	DEF_LCV(spn::Vec4, const spn::Vec4&)
 	DEF_LCV(spn::Quat, const spn::Quat&)
 	DEF_LCV(lua_Number, lua_Number)
 	DERIVED_LCV(lua_OtherNumber, lua_Number)
@@ -349,6 +348,30 @@ namespace rs {
 		}
 		std::ostream& operator()(std::ostream& os, const Vec_t& v) const {
 			return os << "(vector size=" << v.size() << ")"; }
+		LuaType operator()() const {
+			return LuaType::Table; }
+	};
+
+	template <int N, bool A>
+	struct LCV<spn::VecT<N,A>> {
+		using V_t = spn::VecT<N,A>;
+		using Vec_t = std::vector<lua_Number>;
+		void operator()(lua_State* ls, const V_t& v) const {
+			Vec_t tmp(v.m, v.m+N);
+			LCV<Vec_t>()(ls, tmp);
+		}
+		V_t operator()(int idx, lua_State* ls) const {
+			LCV<Vec_t> lcv;
+			auto v = lcv(idx, ls);
+			int sz = v.size();
+			V_t ret(sz);
+			for(int i=0 ; i<sz ; i++)
+				ret.m[i] = v[i];
+			AssertP(Warn, sz==N, "vector size mismatch (%1% -> %2%)", sz, N)
+			return ret;
+		}
+		std::ostream& operator()(std::ostream& os, const V_t& v) const {
+			return os << v; }
 		LuaType operator()() const {
 			return LuaType::Table; }
 	};
