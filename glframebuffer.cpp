@@ -129,6 +129,16 @@ namespace rs {
 		if(beh == CLEAR)
 			_restoreInfo = *color;
 	}
+	int GLRBuffer::getWidth() const {
+		return _width;
+	}
+	int GLRBuffer::getHeight() const {
+		return _height;
+	}
+	const std::string& GLRBuffer::getResourceName() const {
+		static std::string str("GLRBuffer");
+		return str;
+	}
 
 	// ------------------------- GLFBufferTmp -------------------------
 	GLFBufferTmp::GLFBufferTmp(GLuint idFb): GLFBufferCore(idFb) {}
@@ -281,19 +291,19 @@ namespace rs {
 			// Attachmentの解放は各ハンドルに任せる
 		}
 	}
-	void GLFBuffer::attach(Att::Id att, HRb hRb) {
+	void GLFBuffer::attachRBuffer(Att::Id att, HRb hRb) {
 		if(att == Att::DEPTH_STENCIL) {
 			// DepthとStencilそれぞれにhRbをセットする
-			attach(Att::DEPTH, hRb);
-			attach(Att::STENCIL, hRb);
+			attachRBuffer(Att::DEPTH, hRb);
+			attachRBuffer(Att::STENCIL, hRb);
 		} else
 			_attachment[att] = HLRb(hRb);
 	}
-	void GLFBuffer::attach(Att::Id att, HTex hTex) {
+	void GLFBuffer::attachTexture(Att::Id att, HTex hTex) {
 		if(att == Att::DEPTH_STENCIL) {
 			// DepthとStencilそれぞれにhTexをセットする
-			attach(Att::DEPTH, hTex);
-			attach(Att::STENCIL, hTex);
+			attachTexture(Att::DEPTH, hTex);
+			attachTexture(Att::STENCIL, hTex);
 		} else
 			_attachment[att] = HLTex(hTex);
 	}
@@ -306,5 +316,9 @@ namespace rs {
 	}
 	const GLFBuffer::Res& GLFBuffer::getAttachment(Att::Id att) const {
 		return _attachment[att];
+	}
+	const std::string& GLFBuffer::getResourceName() const {
+		static std::string str("GLFBuffer");
+		return str;
 	}
 }

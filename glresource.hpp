@@ -769,6 +769,7 @@ namespace rs {
 			int getWidth() const;
 			int getHeight() const;
 			const GLFormatV& getFormat() const;
+			const std::string& getResourceName() const override;
 	};
 
 	class GLFBufferCore {
@@ -845,14 +846,15 @@ namespace rs {
 		public:
 			GLFBuffer();
 			~GLFBuffer();
-			void attach(Att::Id att, HRb hRb);
-			void attach(Att::Id att, HTex hTex);
+			void attachRBuffer(Att::Id att, HRb hRb);
+			void attachTexture(Att::Id att, HTex hTex);
 			void detach(Att::Id att);
 
 			void onDeviceReset() override;
 			void onDeviceLost() override;
 			void getDrawToken(draw::TokenDst& dst) const;
 			const Res& getAttachment(Att::Id att) const;
+			const std::string& getResourceName() const override;
 	};
 }
 DEF_LUAIMPORT(rs::IGLTexture)

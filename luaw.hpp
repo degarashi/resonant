@@ -13,6 +13,7 @@
 #include "spinner/structure/freeobj.hpp"
 #include "luaimport.hpp"
 #include "handle.hpp"
+#include "glformat.hpp"
 
 namespace rs {
 	struct LuaNil {
@@ -191,7 +192,6 @@ namespace rs {
 	class LV_Global;
 	using LValueG = LValue<LV_Global>;
 
-	class GLFormat;
 	using LPointerSP = std::unordered_map<const void*, LCValue>;
 #define DEF_LCV0(typ, rtyp, argtyp) template <> struct LCV<typ> { \
 		void operator()(lua_State* ls, argtyp t) const; \
@@ -226,10 +226,22 @@ namespace rs {
 	DERIVED_LCV(lua_IntegerU, lua_Integer)
 	DERIVED_LCV(lua_OtherInteger, lua_Integer)
 	DERIVED_LCV(lua_OtherIntegerU, lua_OtherInteger)
+
 	DERIVED_LCV(GLFormat, lua_Integer)
+	DERIVED_LCV(GLDepthFmt, GLFormat)
+	DERIVED_LCV(GLStencilFmt, GLFormat)
+	DERIVED_LCV(GLDSFmt, GLFormat)
+	DERIVED_LCV(GLInFmt, GLFormat)
+	DERIVED_LCV(GLInSizedFmt, GLFormat)
+	DERIVED_LCV(GLInCompressedFmt, GLFormat)
+	DERIVED_LCV(GLInRenderFmt, GLFormat)
+	DERIVED_LCV(GLInReadFmt, GLFormat)
+	DERIVED_LCV(GLTypeFmt, GLFormat)
 #undef DEF_LCV
 #undef DEF_LCV0
 #undef DERIVED_LCV
+
+	// Enum型はlua_Integerに読み替え
 	template <class T>
 	lua_Integer DetectLCVType(std::true_type);
 	template <class T>

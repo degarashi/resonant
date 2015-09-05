@@ -83,7 +83,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		auto s = lk->screenSize;
 		_hlFb = mgr_gl.makeFBuffer();
 		auto hlDp = mgr_gl.createTexture(s, GL_RGBA8, false, false);
-		_hlFb->get()->attach(rs::GLFBuffer::Att::DEPTH, hlDp);
+		_hlFb->get()->attachTexture(rs::GLFBuffer::Att::DEPTH, hlDp);
 		for(auto& ht : _hlTex)
 			ht = mgr_gl.createTexture(s, GL_RGBA8, false, false);
 	}
@@ -151,7 +151,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 		}
 	}
 	void onDraw(const Sc_DSortD& /*self*/, rs::IEffect& /*e*/) const override {
-		_hlFb->get()->attach(rs::GLFBuffer::Att::COLOR0, _hlTex[swt]);
+		_hlFb->get()->attachTexture(rs::GLFBuffer::Att::COLOR0, _hlTex[swt]);
 		_pBlur0->setParam(rs::unif::texture::Diffuse, _hlTex[swt ^ 1]);
 		_pBlur1->setParam(rs::unif::texture::Diffuse, _hlTex[swt]);
 		const_cast<St_Default&>(*this).swt ^= 1;
