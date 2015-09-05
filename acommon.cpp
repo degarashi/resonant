@@ -1,6 +1,13 @@
 #include "sound_common.hpp"
 
 namespace rs {
+	std::ostream& operator << (std::ostream& os, const Duration& d) {
+		return os << "(duration)" << std::chrono::duration_cast<Microseconds>(d).count() << " microsec";
+	}
+	std::ostream& operator << (std::ostream& os, const Timepoint& t) {
+		return os << "(timepoint)" << std::chrono::duration_cast<Milliseconds>(t.time_since_epoch()).count() << " ms";
+	}
+
 	// --------------------- OVError ---------------------
 	const char* OVError::getAPIName() const {
 		return "OggVorbis";

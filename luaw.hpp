@@ -14,6 +14,7 @@
 #include "luaimport.hpp"
 #include "handle.hpp"
 #include "glformat.hpp"
+#include "clock.hpp"
 
 namespace rs {
 	struct LuaNil {
@@ -213,6 +214,7 @@ namespace rs {
 	DEF_LCV(SPLua, const SPLua&)
 	DEF_LCV(void*, const void*)
 	DEF_LCV(lua_CFunction, lua_CFunction)
+	DEF_LCV(Timepoint, const Timepoint&)
 	DEF_LCV0(LCTable, SPLCTable, const LCTable&)
 	DEF_LCV(LCValue, const LCValue&)
 	DEF_LCV(spn::SHandle, spn::SHandle)
@@ -272,6 +274,20 @@ namespace rs {
 		}
 		LuaType operator()() const {
 			return GetLCVType<T>()(); }
+	};
+
+	// --- LCV<Duration> = LUA_TNUMBER
+	template <class Rep, class Period>
+	struct LCV<std::chrono::duration<Rep,Period>> {
+		using Dur = std::chrono::duration<Rep,Period>;
+		void operator()(lua_State* ls, const Dur& d) const {
+			LCV<lua_Integer>()(ls, std::chrono::duration_cast<Microseconds>(d).count()); }
+		Dur operator()(int idx, lua_State* ls) const {
+			return Microseconds(LCV<lua_Integer>()(idx, ls)); }
+		std::ostream& operator()(std::ostream& os, const Dur& d) const {
+			return os << d; }
+		LuaType operator()() const {
+			return LuaType::Number; }
 	};
 
 	template <class T, bool D>

@@ -210,6 +210,20 @@ namespace rs {
 	LuaType LCV<lua_CFunction>::operator()() const {
 		return LuaType::Function; }
 
+	// --- LCV<Timepoint> = LUA_TNUMBER
+	void LCV<Timepoint>::operator()(lua_State* ls, const Timepoint& t) const {
+		LCV<Duration> dur;
+		dur(ls, Duration(t.time_since_epoch()));
+	}
+	Timepoint LCV<Timepoint>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
+		LCV<Duration> dur;
+		return Timepoint(dur(idx, ls));
+	}
+	std::ostream& LCV<Timepoint>::operator()(std::ostream& os, const Timepoint& t) const {
+		return os << t; }
+	LuaType LCV<Timepoint>::operator()() const {
+		return LuaType::Number; }
+
 	// --- LCV<LCTable> = LUA_TTABLE
 	void LCV<LCTable>::operator()(lua_State* ls, const LCTable& t) const {
 		LuaState lsc(ls);
