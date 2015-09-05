@@ -21,7 +21,17 @@
 		template <> \
 		void LuaExport(LuaState& lsc, clazz*); \
 	}}
-
+#include "spinner/check_macro.hpp"
+namespace rs {
+	DEF_HASMETHOD(LuaExport)
+	class LuaState;
+	template <class T>
+	void CallLuaExport(LuaState& lsc, std::true_type) {
+		T::LuaExport(lsc);
+	}
+	template <class T>
+	void CallLuaExport(LuaState&, std::false_type) {}
+}
 #define DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, base, seq_member, seq_method, seq_ctor, makeobj) \
 		namespace rs{ namespace lua{ \
 			template <> \
@@ -45,6 +55,7 @@
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (typename mgr::data_type)(clazz), seq_method) \
 				lsc.pop(1); \
 				\
+				CallLuaExport<clazz>(lsc, rs::HasMethod_LuaExport_t<clazz>()); \
 				lsc.setGlobal(#class_name); \
 			} \
 		}}
@@ -77,6 +88,7 @@
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_PTR, clazz, seq_method) \
 				lsc.pop(1); \
 				\
+				CallLuaExport<clazz>(lsc, rs::HasMethod_LuaExport_t<clazz>()); \
 				lsc.setGlobal(#class_name); \
 			} \
 		}}
