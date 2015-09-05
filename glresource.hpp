@@ -155,6 +155,7 @@ namespace rs {
 			void acquire();
 
 			const std::string& getResourceName(spn::SHandle sh) const override;
+			static void LuaExport(LuaState& lsc);
 			// ------------ Texture ------------
 			//! ファイルからテクスチャを読み込む
 			/*! 圧縮テクスチャはファイルヘッダで判定
@@ -844,6 +845,7 @@ namespace rs {
 		Res	_attachment[Att::NUM_ATTACHMENT];
 
 		public:
+			static void LuaExport(LuaState& lsc);
 			GLFBuffer();
 			~GLFBuffer();
 			void attachRBuffer(Att::Id att, HRb hRb);
