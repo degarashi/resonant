@@ -67,13 +67,13 @@ spn::MTRandom& Sc_Base::getRand() {
 #include "../input.hpp"
 void Sc_Base::checkSwitchScene() {
 	auto lk = sharedv.lock();
-	if(mgr_input.isKeyPressed(lk->actCube))
+	if(lk->actCube->isKeyPressed())
 		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_Cube>(*this).first, true);
-	else if(mgr_input.isKeyPressed(lk->actSound))
+	else if(lk->actSound->isKeyPressed())
 		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_Sound>(*this).first, true);
-	else if(mgr_input.isKeyPressed(lk->actSprite))
+	else if(lk->actSprite->isKeyPressed())
 		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_DSort>(*this).first, true);
-	else if(mgr_input.isKeyPressed(lk->actSpriteD))
+	else if(lk->actSpriteD->isKeyPressed())
 		mgr_scene.setPushScene(rs_mgr_obj.makeScene<Sc_DSortD>(*this).first, true);
 	else
 		checkQuit();
@@ -81,7 +81,7 @@ void Sc_Base::checkSwitchScene() {
 #include "../input.hpp"
 void Sc_Base::checkQuit() {
 	auto lk = sharedv.lock();
-	if(mgr_input.isKeyPressed(lk->actQuit)) {
+	if(lk->actQuit->isKeyPressed()) {
 		mgr_scene.setPopScene(100);
 	}
 }

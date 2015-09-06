@@ -260,18 +260,14 @@ namespace rs {
 	}
 
 	// ----------------- InputMgr -----------------
-	template <class CHK>
-	bool InputMgr::_checkKeyValue(CHK chk, HAct hAct) const {
-		return chk(hAct.ref().getState());
+	bool detail::Action::isKeyPressed() const {
+		return getState() == 1;
 	}
-	bool InputMgr::isKeyPressed(HAct hAct) const {
-		return _checkKeyValue([](int st){ return st==1; }, hAct);
+	bool detail::Action::isKeyReleased() const {
+		return getState() == 0;
 	}
-	bool InputMgr::isKeyReleased(HAct hAct) const {
-		return _checkKeyValue([](int st){ return st==0; }, hAct);
-	}
-	bool InputMgr::isKeyPressing(HAct hAct) const {
-		return _checkKeyValue([](int st){ return st>0; }, hAct);
+	bool detail::Action::isKeyPressing() const {
+		return getState() > 0;
 	}
 	HLAct InputMgr::makeAction(const std::string& name) {
 		HLAct ret = _act.acquire(name, [](const auto&){ return detail::Action(); }).first;

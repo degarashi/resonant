@@ -68,7 +68,7 @@ struct Sc_DSort::St_Test : StateT<St_Test> {
 		auto lk = sharedv.lock();
 		// 他のテストへ切り替え
 		for(int i=0 ; i<static_cast<int>(countof(c_makeds)) ; i++) {
-			if(mgr_input.isKeyPressed(lk->actNumber[i])) {
+			if(lk->actNumber[i]->isKeyPressed()) {
 				self.setStateNew<St_Test>(std::ref(static_cast<Sc_DSort&>(self)), i, false, false);
 				return;
 			}

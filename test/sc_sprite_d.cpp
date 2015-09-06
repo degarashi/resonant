@@ -158,7 +158,7 @@ struct Sc_DSortD::St_Default : StateT<St_Default> {
 	}
 	void onUpdate(Sc_DSortD& self, const rs::SPLua& /*ls*/) override {
 		auto lk = sharedv.lock();
-		if(mgr_input.isKeyPressed(lk->actNumber[0])) {
+		if(lk->actNumber[0]->isKeyPressed()) {
 			bBlur = bBlur^1;
 			_pBlur0->setParam(rs::unif::Alpha, (bBlur) ? 0.9f : 0.f);
 		}

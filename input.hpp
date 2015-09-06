@@ -177,6 +177,9 @@ namespace rs {
 				Action();
 				Action(Action&& a) noexcept;
 				void update();
+				bool isKeyPressed() const;
+				bool isKeyReleased() const;
+				bool isKeyPressing() const;
 				void addLink(const InF& inF);
 				void remLink(const InF& inF);
 				int getState() const;
@@ -207,9 +210,6 @@ namespace rs {
 		public:
 			InputMgr();
 			~InputMgr();
-			bool isKeyPressed(HAct hAct) const;
-			bool isKeyReleased(HAct hAct) const;
-			bool isKeyPressing(HAct hAct) const;
 
 			HLInput addInput(UPInput&& u);
 			HLAct makeAction(const std::string& name);

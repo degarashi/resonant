@@ -11,7 +11,7 @@ void FPSCamera::St_Default::onUpdate(FPSCamera& self, const rs::SPLua& /*ls*/) {
 	auto lkb = sharedbase.lockR();
 	auto lk = sharedv.lock();
 	// カメラ操作
-	auto btn = mgr_input.isKeyPressing(lk->actPress);
+	auto btn = lk->actPress->isKeyPressing();
 	if(btn ^ self._bPress) {
 		lkb->hlIm.cref()->setMouseMode((!self._bPress) ? rs::MouseMode::Relative : rs::MouseMode::Absolute);
 		self._bPress = btn;
