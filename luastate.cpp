@@ -417,6 +417,9 @@ namespace rs {
 		lua_rawget(getLS(), idx);
 	}
 	void LuaState::rawGet(int idx, const LCValue& v) {
+		if(idx < 0)
+			idx = lua_absindex(getLS(), idx);
+		AssertP(Trap, idx >= 0)
 		push(v);
 		rawGet(idx);
 	}
@@ -427,6 +430,9 @@ namespace rs {
 		lua_rawset(getLS(), idx);
 	}
 	void LuaState::rawSet(int idx, const LCValue& v) {
+		if(idx < 0)
+			idx = lua_absindex(getLS(), idx);
+		AssertP(Trap, idx >= 0)
 		push(v);
 		rawSet(idx);
 	}
