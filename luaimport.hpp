@@ -41,22 +41,23 @@ namespace rs {
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(base); \
 				lsc.push(#class_name); \
-				lsc.call(2,1); \
+				lsc.prepareTableGlobal(#class_name); \
+				lsc.call(3,1); \
 				lsc.push(::rs::luaNS::objBase::_New); \
 				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((mgr)(clazz)seq_ctor)>); \
-				lsc.setTable(-3); \
+				lsc.rawSet(-3); \
 				\
-				lsc.getField(-1, ::rs::luaNS::objBase::ValueR); \
-				lsc.getField(-2, ::rs::luaNS::objBase::ValueW); \
+				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
+				lsc.rawGet(-2, ::rs::luaNS::objBase::ValueW); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (typename mgr::data_type)(clazz), seq_member) \
 				lsc.pop(2); \
 				\
-				lsc.getField(-1, ::rs::luaNS::objBase::Func); \
+				lsc.rawGet(-1, ::rs::luaNS::objBase::Func); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (typename mgr::data_type)(clazz), seq_method) \
 				lsc.pop(1); \
 				\
 				CallLuaExport<clazz>(lsc, rs::HasMethod_LuaExport_t<clazz>()); \
-				lsc.setGlobal(#class_name); \
+				lsc.pop(1); \
 			} \
 		}}
 #define DEF_LUAIMPLEMENT_HDL(mgr, clazz, class_name, base, seq_member, seq_method, seq_ctor) \
@@ -77,19 +78,20 @@ namespace rs {
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(::rs::luaNS::ObjectBase); \
 				lsc.push(#class_name); \
-				lsc.call(2,1); \
+				lsc.prepareTableGlobal(#class_name); \
+				lsc.call(3,1); \
 				\
-				lsc.getField(-1, ::rs::luaNS::objBase::ValueR); \
-				lsc.getField(-2, ::rs::luaNS::objBase::ValueW); \
+				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
+				lsc.rawGet(-2, ::rs::luaNS::objBase::ValueW); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_PTR, clazz, seq_member) \
 				lsc.pop(2); \
 				\
-				lsc.getField(-1, ::rs::luaNS::objBase::Func); \
+				lsc.rawGet(-1, ::rs::luaNS::objBase::Func); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_PTR, clazz, seq_method) \
 				lsc.pop(1); \
 				\
 				CallLuaExport<clazz>(lsc, rs::HasMethod_LuaExport_t<clazz>()); \
-				lsc.setGlobal(#class_name); \
+				lsc.pop(1); \
 			} \
 		}}
 

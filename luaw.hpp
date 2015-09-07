@@ -1138,7 +1138,7 @@ namespace rs {
 				lsc.push(name);
 				SetMethod(lsc.getLS(), func);
 				lsc.pushCClosure(&CallMethod<GET,T,RT,FT,Ts...>, 1);
-				lsc.setTable(-3);
+				lsc.rawSet(-3);
 			}
 			template <class GET, class T, class RT, class FT, class... Ts>
 			static void RegisterMember(LuaState& lsc, const char* name, RT (FT::*func)(Ts...) const) {
@@ -1151,12 +1151,12 @@ namespace rs {
 				lsc.push(name);
 				SetMember(lsc.getLS(), member);
 				lsc.pushCClosure(&ReadValue<GET,T,V,VT>, 1);
-				lsc.setTable(-4);
+				lsc.rawSet(-4);
 				// WriteValue関数の登録
 				lsc.push(name);
 				SetMember(lsc.getLS(), member);
 				lsc.pushCClosure(&WriteValue<GET,T,V,VT>, 1);
-				lsc.setTable(-3);
+				lsc.rawSet(-3);
 			}
 			//! luaスタックから変数ポインタとクラスを取り出しメンバ変数を読み込む
 			template <class GET, class T, class V, class VT>
@@ -1251,7 +1251,7 @@ namespace rs {
 				// [ObjDefine][Instance][Target][name]
 				lsc.pushValue(-3);
 				// [ObjDefine][Instance][Target][name][Instance]
-				lsc.setTable(-3);
+				lsc.rawSet(-3);
 				lsc.setTop(stk);
 			}
 			static void RegisterRSClass(LuaState& lsc);

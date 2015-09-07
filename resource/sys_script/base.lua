@@ -63,10 +63,16 @@ end
 		Ctor(func)
 	}
 ]]
-function DerivedHandle(base, name, object)
+function IsObjectInitialized(obj, name)
+	return obj._name == name
+end
+function DerivedHandle(base, name, object, bNoLoadValue)
 	assert(base, "DerivedHandle: base-class is nil")
 	assert(type(name)=="string", "DerivedHandle: invalid ObjectName")
 	assert(object==nil or type(object)=="table", "DerivedHandle: invalid argument (object)")
+	if IsObjectInitialized(object, name) then
+		return object
+	end
 	if getmetatable(base) == nil then
 		MakePreENV(base)
 	end
@@ -98,12 +104,12 @@ function DerivedHandle(base, name, object)
 			rawset(tbl, key, val)
 		end
 	}
-	if object == nil then
-		object = LoadAdditionalValue(name)
+	if not bNoLoadValue then
+		RS.OverwriteRaw(object, LoadAdditionalValue(name))
 		object._valueR = _r
 		object._valueW = _w
 		object._func = _f
-		object._New = false		-- 後で(C++にて)定義する用のエントリー確保ダミー
+		object._New = false		-- 後で(C++にて)定義する用のエントリー確保ダミー(メタテーブルの関係)
 	end
 	if object.Ctor==nil then
 		-- [Protected] 空のコンストラクタを用意

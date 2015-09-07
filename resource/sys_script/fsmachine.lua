@@ -26,7 +26,7 @@ do
 end
 function MakeFSMachine(object, name)
 	assert(type(object.BaseClass)=="string", "MakeFSMachine(): BaseClass type has not defined")
-	return DerivedHandle(_ENV[object.BaseClass], name, object)
+	return DerivedHandle(_ENV[object.BaseClass], name, object, true)
 end
 -- FSMachine基底を定義(from C++)
 -- ステート遷移ベースクラス
