@@ -146,72 +146,61 @@ namespace rs {
 		return dep_getPointer();
 	}
 
-	// ----------------- InF -----------------
-	namespace {
-		int FM_Direct(int val) {
-			return val;
-		}
-		int FM_Flip(int val) {
-			return -val;
-		}
-		int FM_Positive(int val) {
-			return std::max(0, val);
-		}
-		int FM_Negative(int val) {
-			return std::max(0, -val);
-		}
-		template <class F>
-		int16_t HatAngToValue(int val, F f) {
-			if(val == -1)
-				return int16_t(0);
-			auto ang = static_cast<float>(val) / static_cast<float>(InputRange);
-			ang *= 2*spn::PI;
-			return static_cast<int16_t>(f(ang) * InputRange);
-		}
-		int FM_AngToX(int val) {
-			using SF = float (*)(float);
-			return HatAngToValue<SF>(val, std::sin);
-		}
-		int FM_AngToY(int val) {
-			using SF = float (*)(float);
-			return HatAngToValue<SF>(val, std::cos);
-		}
-	}
-	InF InF::AsButton(HInput hI, int num, bool bFlip) {
-		return InF(hI, num, &IInput::getButton, bFlip ? FM_Flip : FM_Direct);
-	}
-	InF InF::AsAxis(HInput hI, int num) {
-		return InF(hI, num, &IInput::getAxis, FM_Direct);
-	}
-	InF InF::AsAxisPositive(HInput hI, int num) {
-		return InF(hI, num, &IInput::getAxis, FM_Positive);
-	}
-	InF InF::AsAxisNegative(HInput hI, int num) {
-		return InF(hI, num, &IInput::getAxis, FM_Negative);
-	}
-	InF InF::AsHat(HInput hI, int num) {
-		return InF(hI, num, &IInput::getHat, FM_Direct);
-	}
-	InF InF::AsHatX(HInput hI, int num) {
-		return InF(hI, num, &IInput::getHat, FM_AngToX);
-	}
-	InF InF::AsHatY(HInput hI, int num) {
-		return InF(hI, num, &IInput::getHat, FM_AngToY);
-	}
-	InF::InF(HInput hI, int num, FGet fGet, FManip fManip): _hlInput(hI), _num(num), _fGet(fGet), _fManip(fManip) {}
-	int InF::getValue() const {
-		IInput* iip = (_hlInput.get().ref().get());
-		int val = (iip->*_fGet)(_num);
-		return _fManip(val);
-	}
-	bool InF::operator == (const InF& f) const {
-		return _hlInput == f._hlInput &&
-				_num == f._num &&
-				_fGet == f._fGet &&
-				_fManip == f._fManip;
-	}
-
+	// ----------------- Action::Funcs -----------------
 	namespace detail {
+		namespace {
+			int FM_Direct(int val) {
+				return val;
+			}
+			int FM_Flip(int val) {
+				return -val;
+			}
+			int FM_Positive(int val) {
+				return std::max(0, val);
+			}
+			int FM_Negative(int val) {
+				return std::max(0, -val);
+			}
+			template <class F>
+			int16_t HatAngToValue(int val, F f) {
+				if(val == -1)
+					return int16_t(0);
+				auto ang = static_cast<float>(val) / static_cast<float>(InputRange);
+				ang *= 2*spn::PI;
+				return static_cast<int16_t>(f(ang) * InputRange);
+			}
+			int FM_AngToX(int val) {
+				using SF = float (*)(float);
+				return HatAngToValue<SF>(val, std::sin);
+			}
+			int FM_AngToY(int val) {
+				using SF = float (*)(float);
+				return HatAngToValue<SF>(val, std::cos);
+			}
+		}
+		const Action::Funcs Action::cs_funcs[InputFlag::_Num] = {
+			{&IInput::getButton, FM_Direct},
+			{&IInput::getButton, FM_Flip},
+			{&IInput::getAxis, FM_Direct},
+			{&IInput::getAxis, FM_Positive},
+			{&IInput::getAxis, FM_Negative},
+			{&IInput::getHat, FM_Direct},
+			{&IInput::getHat, FM_AngToX},
+			{&IInput::getHat, FM_AngToY}
+		};
+
+		// ----------------- Action::Link -----------------
+		int Action::Link::getValue() const {
+			auto f = cs_funcs[inF];
+			IInput* iip = (hlInput.get().ref().get());
+			int val = (iip->*f.getter)(num);
+			return f.manipulator(val);
+		}
+		bool Action::Link::operator == (const Link& l) const {
+			return hlInput == l.hlInput &&
+					num == l.num &&
+					inF == l.inF;
+		}
 		// ----------------- Action -----------------
 		Action::Action(): _state(0), _value(0) {}
 		Action::Action(Action&& a) noexcept: _link(std::move(a._link)), _state(a._state), _value(a._value) {}
@@ -241,13 +230,15 @@ namespace rs {
 			}
 			_value = val;
 		}
-		void Action::addLink(const InF& inF) {
-			auto itr = std::find(_link.begin(), _link.end(), inF);
+		void Action::addLink(HInput hI, InputFlag::E inF, int num) {
+			Link link{hI, inF, num};
+			auto itr = std::find(_link.begin(), _link.end(), link);
 			if(itr == _link.end())
-				_link.push_back(inF);
+				_link.emplace_back(link);
 		}
-		void Action::remLink(const InF& inF) {
-			auto itr = std::find(_link.begin(), _link.end(), inF);
+		void Action::remLink(HInput hI, InputFlag::E inF, int num) {
+			Link link{hI, inF, num};
+			auto itr = std::find(_link.begin(), _link.end(), link);
 			if(itr != _link.end())
 				_link.erase(itr);
 		}
@@ -275,8 +266,8 @@ namespace rs {
 		return ret;
 	}
 	void InputMgr::linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive) {
-		hAct->addLink(InF::AsButton(hI, num_negative, true));
-		hAct->addLink(InF::AsButton(hI, num_positive, false));
+		hAct->addLink(hI, InputFlag::ButtonFlip, num_negative);
+		hAct->addLink(hI, InputFlag::Button, num_positive);
 	}
 	int InputMgr::getKeyValueSimplified(HAct hAct) {
 		auto v = hAct->getValue();

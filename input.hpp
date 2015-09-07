@@ -136,43 +136,50 @@ namespace rs {
 			const std::string& name() const override;
 	};
 
-	//! 入力機器からの値取得方法を定義
-	class InF {
-		// 値の取得
-		using FGet = int (IInput::*)(int) const;
-		// 値の改変
-		using FManip = int (*)(int);
-
-		HLInput	_hlInput;
-		int		_num;
-		FGet	_fGet;
-		FManip	_fManip;
-
-		InF(HInput hI, int num, FGet fGet, FManip fManip);
-
-		public:
-			InF(const InF& f) = default;
-			int getValue() const;
-			bool operator == (const InF& f) const;
-
-			static InF AsButton(HInput hI, int num, bool bFlip=false);
-			static InF AsAxis(HInput hI, int num);
-			static InF AsAxisNegative(HInput hI, int num);
-			static InF AsAxisPositive(HInput hI, int num);
-			static InF AsHat(HInput hI, int num);
-			static InF AsHatX(HInput hI, int num);
-			static InF AsHatY(HInput hI, int num);
+	struct InputFlag {
+		enum E {
+			Button,
+			ButtonFlip,
+			Axis,
+			AxisNegative,
+			AxisPositive,
+			Hat,
+			HatX,
+			HatY,
+			_Num
+		};
 	};
-
 	namespace detail {
 		class Action {
-			using Link = std::vector<InF>;
-			Link		_link;
-			// ボタンを押している間は
-			// Pressed=1, Neutral=0, Released=-1, Pressing= n>=1
-			int			_state,
-						_value;
-			void _advanceState(int val);
+			public:
+				// 値の取得
+				using FGet = int (IInput::*)(int) const;
+				// 値の改変
+				using FManip = int (*)(int);
+				struct Funcs {
+					FGet	getter;
+					FManip	manipulator;
+				};
+			private:
+				const static Funcs cs_funcs[InputFlag::_Num];
+
+				//! 入力機器からの値取得方法を定義
+				struct Link {
+					HLInput	hlInput;
+					InputFlag::E	inF;
+					int		num;
+
+					bool operator == (const Link& l) const;
+					int getValue() const;
+				};
+				using LinkV = std::vector<Link>;
+				LinkV		_link;
+
+				// ボタンを押している間は
+				// Pressed=1, Neutral=0, Released=-1, Pressing= n>=1
+				int			_state,
+							_value;
+				void _advanceState(int val);
 			public:
 				Action();
 				Action(Action&& a) noexcept;
@@ -180,8 +187,8 @@ namespace rs {
 				bool isKeyPressed() const;
 				bool isKeyReleased() const;
 				bool isKeyPressing() const;
-				void addLink(const InF& inF);
-				void remLink(const InF& inF);
+				void addLink(HInput hI, InputFlag::E inF, int num);
+				void remLink(HInput hI, InputFlag::E inF, int num);
 				int getState() const;
 				int getValue() const;
 		};

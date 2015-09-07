@@ -46,26 +46,26 @@ int main(int argc, char **argv) {
 		{
 			// quit[Esc]							アプリケーション終了
 			lk->actQuit = mgr_input.makeAction("quit");
-			lk->actQuit->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_ESCAPE));
+			lk->actQuit->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_ESCAPE);
 			// reset-scene[R]						シーンリセット
 			lk->actReset = mgr_input.makeAction("reset");
-			lk->actReset->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_LSHIFT));
+			lk->actReset->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_LSHIFT);
 			// mode: cube[Z]
 			lk->actCube = mgr_input.makeAction("mode_cube");
-			lk->actCube->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_Z));
+			lk->actCube->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_Z);
 			// mode: sound[X]
 			lk->actSound = mgr_input.makeAction("mode_sound");
-			lk->actSound->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_X));
+			lk->actSound->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_X);
 			// mode: sprite[C]
 			lk->actSprite = mgr_input.makeAction("mode_sprite");
-			lk->actSprite->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_C));
+			lk->actSprite->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_C);
 			// mode: spriteD[V]
 			lk->actSpriteD = mgr_input.makeAction("mode_spriteD");
-			lk->actSpriteD->addLink(rs::InF::AsButton(lkb->hlIk, SDL_SCANCODE_V));
+			lk->actSpriteD->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_V);
 			const int c_scancode[] = { SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6};
 			for(int i=0 ; i<static_cast<int>(countof(lk->actNumber)) ; i++) {
 				lk->actNumber[i] = mgr_input.makeAction((boost::format("number_%1%")%i).str());
-				lk->actNumber[i]->addLink(rs::InF::AsButton(lkb->hlIk, c_scancode[i]));
+				lk->actNumber[i]->addLink(lkb->hlIk, rs::InputFlag::Button, c_scancode[i]);
 			}
 			// left, right, up, down [A,D,W,S]		カメラ移動
 			lk->actAx = mgr_input.makeAction("axisX");
@@ -81,9 +81,9 @@ int main(int argc, char **argv) {
 			// rotate-switch[MouseLeft]				カメラ回転切り替え
 			lk->actPress = mgr_input.makeAction("press");
 
-			lk->actMoveX->addLink(rs::InF::AsAxis(lkb->hlIm, 0));
-			lk->actMoveY->addLink(rs::InF::AsAxis(lkb->hlIm, 1));
-			lk->actPress->addLink(rs::InF::AsButton(lkb->hlIm, 0));
+			lk->actMoveX->addLink(lkb->hlIm, rs::InputFlag::Axis, 0);
+			lk->actMoveY->addLink(lkb->hlIm, rs::InputFlag::Axis, 1);
+			lk->actPress->addLink(lkb->hlIm, rs::InputFlag::Button, 0);
 		}
 	};
 	return rs::GameloopHelper<Engine, SharedValue, Sc_Base>::Run(cbInit, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
