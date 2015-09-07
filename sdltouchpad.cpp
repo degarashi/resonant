@@ -36,12 +36,6 @@ namespace rs {
 	int SDLTouchpad::NumTouchpad() {
 		return 1;
 	}
-	namespace {
-		std::string c_name("(default touchpad)");
-	}
-	std::string SDLTouchpad::GetTouchpadName(int /*num*/) {
-		return c_name;
-	}
 	int SDLTouchpad::ProcessEvent(void*, SDL_Event* e) {
 		// タッチパネル関係のイベントだけコピー
 		if(e->type >= SDL_FINGERDOWN &&
@@ -66,7 +60,8 @@ namespace rs {
 		}
 	}
 	const std::string& SDLTouchpad::name() const {
-		return c_name;
+		static std::string str("(default touchpad)");
+		return str;
 	}
 	WPtr SDLTouchpad::dep_getPointer() const {
 		// 何かFingerIDがあれば適当に1つ返す

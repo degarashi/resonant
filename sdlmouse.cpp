@@ -13,8 +13,9 @@ namespace rs {
 	int SDLMouse::NumMouse() {
 		return 1;
 	}
-	std::string SDLMouse::GetMouseName(int /*num*/) {
-		return "(default mouse)";
+	const std::string& SDLMouse::name() const {
+		static std::string str("(default mouse)");
+		return str;
 	}
 	int SDLMouse::dep_numButtons() const {
 		return 3;

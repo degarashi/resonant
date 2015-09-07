@@ -192,7 +192,10 @@ namespace rs {
 				int getState() const;
 				int getValue() const;
 		};
-		class ActMgr : public spn::ResMgrN<Action, ActMgr> {};
+		class ActMgr : public spn::ResMgrN<Action, ActMgr> {
+			public:
+				const std::string& getResourceName(spn::SHandle sh) const override;
+		};
 	}
 	//! Actionとキーの割付とステート管理用
 	/*! ボタンステートはAction毎に用意 */
@@ -248,3 +251,6 @@ namespace rs {
 			void update();
 	};
 }
+#include "luaimport.hpp"
+DEF_LUAIMPORT(InputMgr)
+DEF_LUAIMPORT(detail::Action)

@@ -25,7 +25,6 @@ namespace rs {
 		}
 	}
 	// ----------------- Keyboard -----------------
-	const std::string Keyboard::s_name("(default keyboard)");
 	InputType Keyboard::getType() const {
 		return InputType::Keyboard;
 	}
@@ -42,11 +41,10 @@ namespace rs {
 		return dep_scan();
 	}
 	const std::string& Keyboard::name() const {
-		return s_name;
+		return KeyboardDep::name();
 	}
 
 	// ----------------- Mouse -----------------
-	const std::string Mouse::s_name("(default mouse)");
 	InputType Mouse::getType() const {
 		return InputType::Mouse;
 	}
@@ -73,7 +71,7 @@ namespace rs {
 		return MouseDep::OpenMouse<Mouse>(num);
 	}
 	const std::string& Mouse::name() const {
-		return s_name;
+		return MouseDep::name();
 	}
 	void Mouse::setMouseMode(MouseMode mode) {
 		dep_setMode(mode, _hlPtr.ref());
@@ -230,6 +228,15 @@ namespace rs {
 			}
 			_value = val;
 		}
+	bool detail::Action::isKeyPressed() const {
+		return getState() == 1;
+	}
+	bool detail::Action::isKeyReleased() const {
+		return getState() == 0;
+	}
+	bool detail::Action::isKeyPressing() const {
+		return getState() > 0;
+	}
 		void Action::addLink(HInput hI, InputFlag::E inF, int num) {
 			Link link{hI, inF, num};
 			auto itr = std::find(_link.begin(), _link.end(), link);
@@ -249,16 +256,15 @@ namespace rs {
 			return _value;
 		}
 	}
-
+	// ----------------- ActMgr -----------------
+	const std::string& detail::ActMgr::getResourceName(spn::SHandle /*sh*/) const {
+		static std::string name("Action");
+		return name;
+	}
 	// ----------------- InputMgr -----------------
-	bool detail::Action::isKeyPressed() const {
-		return getState() == 1;
-	}
-	bool detail::Action::isKeyReleased() const {
-		return getState() == 0;
-	}
-	bool detail::Action::isKeyPressing() const {
-		return getState() > 0;
+	const std::string& InputMgrBase::getResourceName(spn::SHandle sh) const {
+		static const std::string str("IInput");
+		return str;
 	}
 	HLAct InputMgr::makeAction(const std::string& name) {
 		HLAct ret = _act.acquire(name, [](const auto&){ return detail::Action(); }).first;

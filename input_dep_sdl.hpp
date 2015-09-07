@@ -28,6 +28,7 @@ namespace rs {
 					s_hlInput = mgr_inputb.acquire(std::unique_ptr<T>(new T()));
 				return s_hlInput;
 			}
+			const std::string& name() const;
 		public:
 			static void Update();
 			static void Terminate();
@@ -55,13 +56,12 @@ namespace rs {
 			bool dep_scan(TPos2D& t);
 			void dep_setMode(MouseMode mode, TPos2D& t);
 			MouseMode dep_getMode() const;
+			const std::string& name() const;
 			SDLMouse();
 		public:
 			static void Terminate();
 			static int NumMouse();
 			static void SetWindow(SDL_Window* w);
-			static std::string GetMouseName(int num);
-			const std::string& name() const;
 	};
 	using MouseDep = SDLMouse;
 
@@ -83,6 +83,7 @@ namespace rs {
 			static HLInput OpenJoypad(int num) {
 				return mgr_inputb.acquire(std::unique_ptr<T>(new T(SDL_JoystickOpen(num))));
 			}
+			const std::string& name() const;
 		public:
 			SDLJoypad(SDL_Joystick* jp);
 			~SDLJoypad();
@@ -91,8 +92,6 @@ namespace rs {
 			static void Update();
 			static void Terminate();
 			static int NumJoypad();
-			static std::string GetJoypadName(int num);
-			const std::string& name() const;
 	};
 	using JoypadDep = SDLJoypad;
 
@@ -125,7 +124,6 @@ namespace rs {
 			static void Update();
 			static void Terminate();
 			static int NumTouchpad();
-			static std::string GetTouchpadName(int num);
 			static int ProcessEvent(void*, SDL_Event* e);
 	};
 	using TouchDep = SDLTouchpad;

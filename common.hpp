@@ -90,5 +90,8 @@ namespace rs {
 
 	#define mgr_inputb (::rs::InputMgrBase::_ref())
 	#define mgr_input reinterpret_cast<::rs::InputMgr&>(::rs::InputMgrBase::_ref())
-	class InputMgrBase : public spn::ResMgrA<UPInput, InputMgrBase> {};
+	class InputMgrBase : public spn::ResMgrA<UPInput, InputMgrBase> {
+		public:
+			const std::string& getResourceName(spn::SHandle sh) const override;
+	};
 }

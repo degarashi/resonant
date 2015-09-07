@@ -4,6 +4,7 @@
 #include "scene.hpp"
 #include "updater.hpp"
 #include "updater_lua.hpp"
+#include "input.hpp"
 #include "sound.hpp"
 
 DEF_LUAIMPLEMENT_PTR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
@@ -25,6 +26,13 @@ DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SGroupMgr, rs::AGroup, AGroup, NOTHING, (
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SSrcMgr, rs::ASource, ASource, NOTHING, (play)(pause)(stop)(setFadeTo)(setFadeOut)(setBuffer)(getLooping)(getNLoop)(setPitch)(setGain)(setRelativeMode))
 DEF_LUAIMPLEMENT_PTR(rs::SoundMgr, SoundMgr, NOTHING, (loadWaveBatch)(loadOggBatch)(loadOggStream)(createSourceGroup)(createSource))
 
+DEF_LUAIMPLEMENT_PTR(rs::InputMgr, InputMgr, NOTHING, (makeAction)(addAction)(remAction))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::detail::ActMgr, rs::detail::Action, Action, NOTHING, (isKeyPressed)(isKeyReleased)(isKeyPressing)(addLink)(remLink)(getState)(getValue))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::InputMgrBase, rs::IInput, IInput, NOTHING, (name)(getButton)(getAxis)(getHat)(numButtons)(numAxes)(numHats)(setDeadZone)(setMouseMode)(getMouseMode))
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Keyboard, Keyboard, "IInput", NOTHING, (OpenKeyboard))
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Mouse, Mouse, "IInput", NOTHING, (OpenMouse)(NumMouse))
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Joypad, Joypad, "IInput", NOTHING, (OpenJoypad)(NumJoypad))
+
 namespace rs {
 	void LuaImport::RegisterRSClass(LuaState& lsc) {
 		LuaImport::RegisterUpdaterObject(lsc);
@@ -35,14 +43,20 @@ namespace rs {
 		LuaImport::RegisterClass<U_UpdGroup>(lsc);
 		LuaImport::RegisterClass<DrawGroup>(lsc);
 		LuaImport::RegisterClass<U_DrawGroup>(lsc);
+		LuaImport::RegisterClass<detail::Action>(lsc);
 		LuaImport::RegisterClass<GLRBuffer>(lsc);
 		LuaImport::RegisterClass<GLFBuffer>(lsc);
 		LuaImport::RegisterClass<ABuffer>(lsc);
 		LuaImport::RegisterClass<AGroup>(lsc);
 		LuaImport::RegisterClass<ASource>(lsc);
+		LuaImport::RegisterClass<IInput>(lsc);
+		LuaImport::RegisterClass<Keyboard>(lsc);
+		LuaImport::RegisterClass<Mouse>(lsc);
+		LuaImport::RegisterClass<Joypad>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
 		LuaImport::ImportClass(lsc, "System", "sound", &mgr_sound);
+		LuaImport::ImportClass(lsc, "System", "input", &mgr_input);
 	}
 }

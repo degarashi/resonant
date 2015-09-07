@@ -14,4 +14,8 @@ namespace rs {
 	void SDLKeyboard::Terminate() {
 		s_hlInput.release();
 	}
+	const std::string& SDLKeyboard::name() const {
+		static std::string str("(default keyboard)");
+		return str;
+	}
 }
