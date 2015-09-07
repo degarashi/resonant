@@ -1158,6 +1158,15 @@ namespace rs {
 				lsc.pushCClosure(&WriteValue<GET,T,V,VT>, 1);
 				lsc.rawSet(-3);
 			}
+			//! static なメンバ関数はCFunctionとして登録
+			template <class GET, class T, class RT, class... Ts>
+			static void RegisterMember(LuaState& lsc, const char* name, RT (*func)(Ts...)) {
+				lsc.prepareTableGlobal(lua::LuaName((T*)nullptr));
+				lsc.push(name);
+				PushFunction(lsc, func);
+				lsc.rawSet(-3);
+				lsc.pop(1);
+			}
 			//! luaスタックから変数ポインタとクラスを取り出しメンバ変数を読み込む
 			template <class GET, class T, class V, class VT>
 			static int ReadValue(lua_State* ls) {
