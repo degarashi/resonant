@@ -187,6 +187,14 @@ namespace rs {
 		lsc.pop(1);
 		return;
 	}
+	void LuaImport::MakePointerInstance(LuaState& lsc, const std::string& luaName, void* ptr) {
+		lsc.getGlobal(luaName);
+		lsc.getField(-1, luaNS::ConstructPtr);
+		lsc.push(ptr);
+		lsc.call(1,1);
+		// [ObjDefine][Instance]
+		lsc.remove(-2);
+	}
 	int LuaImport::RecvMsg(lua_State* ls) {
 		Object* obj = LI_GetHandle<typename ObjMgr::data_type>()(ls, 1);
 		auto msgId = GMessage::GetMsgId(LCV<std::string>()(2, ls));

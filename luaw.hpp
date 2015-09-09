@@ -185,15 +185,19 @@ namespace rs {
 	};
 	std::ostream& operator << (std::ostream& os, const LCTable& lct);
 
-	// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
+	using LPointerSP = std::unordered_map<const void*, LCValue>;
+	// 値型の場合はUserdataにデータを格納
 	template <class T>
 	struct LCV;
+	template <class T>
+	struct LCV<T*>;
+	template <class T>
+	struct LCV<T&>;
 	template <class T>
 	class LValue;
 	class LV_Global;
 	using LValueG = LValue<LV_Global>;
 
-	using LPointerSP = std::unordered_map<const void*, LCValue>;
 #define DEF_LCV0(typ, rtyp, argtyp) template <> struct LCV<typ> { \
 		void operator()(lua_State* ls, argtyp t) const; \
 		rtyp operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const; \
@@ -1198,7 +1202,7 @@ namespace rs {
 				void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
 				F f = *reinterpret_cast<F*>(tmp);
 				auto* ptr = dynamic_cast<T*>(GET()(ls, 1));
-				return RetSize<RT>::proc(ls, [ls,ptr,f]() { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
+				return RetSize<RT>::proc(ls, [ls,ptr,f]() -> decltype(auto) { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
 			}
 			//! luaスタックから関数ポインタと引数を取り出しcall
 			template <class RT, class... Args>
@@ -1208,7 +1212,7 @@ namespace rs {
 				using F = RT (*)(Args...);
 				F f = reinterpret_cast<F>(lua_touserdata(ls, lua_upvalueindex(1)));
 				// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
-				return RetSize<RT>::proc(ls, [ls,f](){ return FuncCall<Args...>::proc(ls, 1, f); });
+				return RetSize<RT>::proc(ls, [ls,f]() -> decltype(auto) { return FuncCall<Args...>::proc(ls, 1, f); });
 			}
 			//! staticな関数をスタックへpush
 			template <class RT, class... Ts>
@@ -1247,26 +1251,71 @@ namespace rs {
 				int stk = lsc.getTop();
 				auto* dummy = static_cast<T*>(nullptr);
 				lua::LuaExport(lsc, dummy);
-				lsc.getGlobal(lua::LuaName(dummy));
-				lsc.getField(-1, luaNS::ConstructPtr);
-				lsc.push(static_cast<void*>(ptr));
-				lsc.call(1,1);
-				// [ObjDefine][Instance]
-				if(!tableName.empty())
-					lsc.prepareTableGlobal(tableName);
-				else
-					lsc.pushGlobal();
-				lsc.push(name);
-				// [ObjDefine][Instance][Target][name]
-				lsc.pushValue(-3);
-				// [ObjDefine][Instance][Target][name][Instance]
-				lsc.rawSet(-3);
+				if(ptr) {
+					MakePointerInstance(lsc, lua::LuaName(dummy), ptr);
+					// [Instance]
+					if(!tableName.empty())
+						lsc.prepareTableGlobal(tableName);
+					else
+						lsc.pushGlobal();
+					lsc.push(name);
+					// [Instance][Target][name]
+					lsc.pushValue(-3);
+					// [Instance][Target][name][Instance]
+					lsc.rawSet(-3);
+				}
 				lsc.setTop(stk);
+			}
+			static void MakePointerInstance(LuaState& lsc, const std::string& luaName, void* ptr);
+			template <class T>
+			static void MakePointerInstance(LuaState& lsc, const T* ptr) {
+				MakePointerInstance(lsc, lua::LuaName((T*)nullptr), (void*)ptr);
 			}
 			static void RegisterRSClass(LuaState& lsc);
 			//! GObjectメッセージを受信
 			/*! Obj(UData), MessageStr, {Args} */
 			static int RecvMsg(lua_State* ls);
 	};
+	template <class T>
+	struct LCV {
+		void operator()(lua_State* ls, const T& t) const {
+			LuaState lsc(ls);
+			lsc.getGlobal(lua::LuaName((T*)nullptr));
+			lsc.getField(-1, luaNS::ConstructPtr);
+			lsc.newUserData(sizeof(T));
+			*reinterpret_cast<T*>(lsc.toUserData(-1)) = t;
+			lsc.call(1, 1);
+		}
+		// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
+		T operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
+			return *LI_GetPtr<T>()(ls, idx); }
+		std::ostream& operator()(std::ostream& os, const T* t) const {
+			return os << "(userdata) 0x" << std::hex << t; }
+		LuaType operator()() const {
+			return LuaType::Userdata; }
+	};
+	// 参照またはポインターの場合はLightUserdataに格納
+	template <class T>
+	struct LCV<T*> {
+		void operator()(lua_State* ls, const T* t) const {
+			LuaState lsc(ls);
+			LuaImport::MakePointerInstance(lsc, t); }
+		T* operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
+			return LI_GetPtr<T>()(ls, idx); }
+		std::ostream& operator()(std::ostream& os, const T* t) const {
+			return LCV<T>()(os, *t); }
+		LuaType operator()() const {
+			return LuaType::LightUserdata; }
+	};
+	template <class T>
+	struct LCV<T&> {
+		void operator()(lua_State* ls, const T& t) const {
+			LCV<T*>()(ls, &t); }
+		T& operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
+			return *LI_GetPtr<T>()(ls, idx); }
+		std::ostream& operator()(std::ostream& os, const T* t) const {
+			return LCV<T*>()(os, *t); }
+		LuaType operator()() const {
+			return LCV<T*>()(); }
+	};
 }
-
