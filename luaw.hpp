@@ -15,6 +15,17 @@
 #include "handle.hpp"
 #include "glformat.hpp"
 #include "clock.hpp"
+#include "spinner/structure/angle.hpp"
+
+DEF_LUAIMPORT(spn::Vec2)
+DEF_LUAIMPORT(spn::Vec3)
+DEF_LUAIMPORT(spn::Vec4)
+DEF_LUAIMPORT(spn::Mat22)
+DEF_LUAIMPORT(spn::Mat33)
+DEF_LUAIMPORT(spn::Mat44)
+DEF_LUAIMPORT(spn::Quat)
+DEF_LUAIMPORT(spn::DegF)
+DEF_LUAIMPORT(spn::RadF)
 
 namespace rs {
 	struct LuaNil {
@@ -1290,6 +1301,12 @@ namespace rs {
 			return base_t()(os, *t); }
 	};
 
+	template struct LCV<spn::DegF>;
+	template struct LCV<spn::RadF>;
+	// Angleは内部数値をすべてfloatに変換
+	template <class Ang, class Rep>
+	struct LCV<spn::Angle<Ang, Rep>> : LCV<spn::Angle<Ang,float>> {};
+
 	// 非const参照またはポインターの場合はLightUserdataに格納
 	template <class T>
 	struct LCV<T*> {
@@ -1315,10 +1332,3 @@ namespace rs {
 			return base_t()(os, &t); }
 	};
 }
-DEF_LUAIMPORT(spn::Vec2)
-DEF_LUAIMPORT(spn::Vec3)
-DEF_LUAIMPORT(spn::Vec4)
-DEF_LUAIMPORT(spn::Mat22)
-DEF_LUAIMPORT(spn::Mat33)
-DEF_LUAIMPORT(spn::Mat44)
-DEF_LUAIMPORT(spn::Quat)

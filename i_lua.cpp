@@ -7,6 +7,10 @@
 #include "input.hpp"
 #include "sound.hpp"
 
+DEF_LUAIMPLEMENT_PTR(spn::DegF, Degree, NOTHING,
+		(set)(get)(single)(rangeValue)(range)(luaAddD)(luaAddR)(luaSubD)(luaSubR)(luaMulF)(luaDivF)(luaInvert)(luaToDegree)(luaToRadian)(luaLessthan)(luaLessequal)(luaEqual)(luaToString), (float))
+DEF_LUAIMPLEMENT_PTR(spn::RadF, Radian, NOTHING,
+		(set)(get)(single)(rangeValue)(range)(luaAddD)(luaAddR)(luaSubD)(luaSubR)(luaMulF)(luaDivF)(luaInvert)(luaToDegree)(luaToRadian)(luaLessthan)(luaLessequal)(luaEqual)(luaToString), (float))
 DEF_LUAIMPLEMENT_PTR(spn::Vec2, Vec2, (x)(y),
 		(addV)(subV)(mulF)(mulM)(divF)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
@@ -85,6 +89,8 @@ namespace rs {
 		LuaImport::RegisterClass<spn::Mat22>(lsc);
 		LuaImport::RegisterClass<spn::Mat33>(lsc);
 		LuaImport::RegisterClass<spn::Mat44>(lsc);
+		LuaImport::RegisterClass<spn::DegF>(lsc);
+		LuaImport::RegisterClass<spn::RadF>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
