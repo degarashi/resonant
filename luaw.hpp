@@ -256,6 +256,11 @@ namespace rs {
 	template <class T>
 	using GetLCVType = LCV<GetLCVTypeRaw<T>>;
 
+	// ベクトルと行列(Aligned)タイプはUnAlignedと同じ扱いにする
+	template <int N>
+	struct LCV<spn::VecT<N,true>> : LCV<spn::VecT<N,false>> {};
+	template <int M, int N>
+	struct LCV<spn::MatT<M,N,true>> : LCV<spn::MatT<M,N,false>> {};
 	template <class T>
 	struct LCV<spn::Optional<T>> {
 		void operator()(lua_State* ls, const spn::Optional<T>& op) const {
