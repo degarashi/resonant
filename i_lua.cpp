@@ -28,6 +28,11 @@ DEF_LUAIMPLEMENT_PTR(spn::Mat33, Mat33, NOTHING,
 DEF_LUAIMPLEMENT_PTR(spn::Mat44, Mat44, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF), NOTHING)
+DEF_LUAIMPLEMENT_PTR(spn::Quat, Quat, (x)(y)(z)(w),
+		(rotationX)(rotationY)(rotationZ)(identity)(normalization)(conjugation)(inverse)(angle)(length)
+		(addQ)(subQ)(mulQ)(mulF)(divF)(equal)(toString)
+		(getVector)(getAxis)(getXAxis)(getXAxisInv)(getYAxis)(getYAxisInv)(getZAxis)(getZAxisInv)(getRight)(getUp)(getDir)
+		(dot)(slerp)(distance)(asMat33)(asMat44), NOTHING)
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ObjMgr, Object, Object, NOTHING, NOTHING)

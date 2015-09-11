@@ -231,6 +231,7 @@ namespace rs {
 	DERIVED_LCV(lua_IntegerU, lua_Integer)
 	DERIVED_LCV(lua_OtherInteger, lua_Integer)
 	DERIVED_LCV(lua_OtherIntegerU, lua_OtherInteger)
+	DERIVED_LCV(spn::AQuat, spn::Quat)
 
 	DERIVED_LCV(GLFormat, lua_Integer)
 	DERIVED_LCV(GLDepthFmt, GLFormat)
@@ -1307,3 +1308,4 @@ DEF_LUAIMPORT(spn::Vec4)
 DEF_LUAIMPORT(spn::Mat22)
 DEF_LUAIMPORT(spn::Mat33)
 DEF_LUAIMPORT(spn::Mat44)
+DEF_LUAIMPORT(spn::Quat)
