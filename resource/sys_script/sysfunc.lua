@@ -84,4 +84,13 @@ function RS.OverwriteRaw(dst, src)
 		rawset(dst, k, v)
 	end
 end
-
+function RS.CallOperator(a, b, op)
+	local t,postfix = type(b)
+	if t == "table" then
+		postfix = b._postfix
+	else
+		assert(t == "number")
+		postfix = "F"
+	end
+	return a[op .. postfix](a,b)
+end

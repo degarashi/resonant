@@ -66,6 +66,41 @@ end
 function IsObjectInitialized(obj, name)
 	return obj._name == name
 end
+function __Index(base, tbl, key)
+	local r = rawget(base, key)
+	if r ~= nil then
+		return r
+	end
+	-- メンバ変数(C++)読み込み
+	r = base._valueR[key]
+	if r~=nil then
+		return r(tbl)
+	end
+	-- メンバ関数(C++)呼び出し
+	r = base._func[key]
+	if r~=nil then
+		return r
+	end
+	-- ベースクラス読み込み
+	base = base._base
+	if base then
+		return __Index(base, tbl, key)
+	end
+end
+function __NewIndex(base, tbl, key, val)
+	local w = rawget(base, key)
+	if w~=nil then
+		rawset(base, key, val)
+		return
+	end
+	-- メンバ変数(C++)書き込み
+	w = base._valueW[key]
+	if w~=nil then
+		w(tbl, val)
+		return
+	end
+	rawset(tbl, key, val)
+end
 function DerivedHandle(base, name, object, bNoLoadValue)
 	assert(base, "DerivedHandle: base-class is nil")
 	assert(type(name)=="string", "DerivedHandle: invalid ObjectName")
@@ -77,38 +112,26 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 		MakePreENV(base)
 	end
 
+	object = object or {}
 	local _r, _w, _f = {},{},{}
 	local _mt = {
 		__index = function(tbl, key)
-			-- メンバ変数(C++)読み込み
-			local r = _r[key]
-			if r~=nil then return r(tbl) end
-			-- メンバ関数(C++)呼び出し
-			r = _f[key]
-			if r~=nil then return r end
-			-- ベースクラス読み込み
-			return base[key]
+			return __Index(object, tbl, key)
 		end,
-		-- tblにはobjectが渡される
 		__newindex = function(tbl, key, val)
-			-- ベースクラスへ書き込み
-			local w = base[key]
-			if w~=nil then
-				if type(w) == "function" then
-					w(tbl, val)
-				else
-					base[key] = val
-				end
-				return
-			end
-			rawset(tbl, key, val)
+			__NewIndex(object, tbl, key, val)
 		end
 	}
 	if not bNoLoadValue then
-		RS.OverwriteRaw(object, LoadAdditionalValue(name))
+		RS.Overwrite(object, LoadAdditionalValue(name))
+		local mt = object._metatable
+		if mt then
+			RS.Overwrite(_mt, mt)
+		end
 		object._valueR = _r
 		object._valueW = _w
 		object._func = _f
+		object._pointer = false
 		object._New = false		-- 後で(C++にて)定義する用のエントリー確保ダミー(メタテーブルの関係)
 	end
 	if object.Ctor==nil then
@@ -122,38 +145,12 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 	object._base = base
 
 	-- ポインターインスタンス用のMT = オブジェクトMT + __gc(DecrementHandle)
-	local instanceP_mt = {
-		__index = object,
-		__newindex = object
-	}
+	local instanceP_mt = _mt
 	-- ハンドル用インスタンスにセットするMT
 	local instanceH_mt = {
-		__index = object,
+		__index = _mt.__index,
 		-- tblにはインスタンスが渡される
-		__newindex = function(tbl, key, val)
-			local w = object[key]
-			if w~=nil then
-				if type(e) == "function" then
-					-- メンバ変数(C++)書き込み
-					w(tbl, val)
-				else
-					object[key] = val
-				end
-				return
-			end
-			-- ベースクラスへ書き込み
-			w = base[key]
-			if w~=nil then
-				if type(w) == "function" then
-					w(tbl, val)
-				else
-					base[key] = val
-				end
-				return
-			end
-			-- メンバ変数(Lua)書き込み
-			rawset(tbl, key, val)
-		end,
+		__newindex = _mt.__newindex,
 		__gc = DecrementHandle
 	}
 	-- [Public] (from LCV<SHandle> [C++])
@@ -191,13 +188,32 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 	end
 	-- [Public] インスタンス作成(from Lua & C++)
 	function object.New(...)
-		print("----------- New ---------" .. name)
+		if object._pointer then
+			local ret = object._New(...)
+			setmetatable(ret, instanceP_mt)
+			return ret
+		end
 		local obj = object.ConstructNew(...)
 		-- コンストラクタを呼ぶ
 		obj:Ctor(...)
 		return obj
 	end
-	setmetatable(object, _mt)
+	setmetatable(object, {
+		__index = function(tbl, key)
+			local base = tbl._base
+			if base then
+				return base[key]
+			end
+		end,
+		__newindex = function(tbl, key, val)
+			local r = base[key]
+			if r ~= nil then
+				base[key] = val
+				return
+			end
+			rawset(tbl, key, val)
+		end
+	})
 	return object
 end
 

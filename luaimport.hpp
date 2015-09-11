@@ -46,6 +46,7 @@ namespace rs {
 				lsc.push(::rs::luaNS::objBase::_New); \
 				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((mgr)(clazz)seq_ctor)>); \
 				lsc.rawSet(-3); \
+				lsc.setField(-1, luaNS::objBase::_Pointer, false); \
 				\
 				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
 				lsc.rawGet(-2, ::rs::luaNS::objBase::ValueW); \
@@ -69,7 +70,11 @@ namespace rs {
 #define DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(mgr, clazz, class_name, seq_member, seq_method) \
 	DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, ::rs::luaNS::ObjectBase, seq_member, seq_method, NOTHING, ::rs::MakeHandle_Fake)
 
-#define DEF_LUAIMPLEMENT_PTR(clazz, class_name, seq_member, seq_method) \
+#define DEF_LUAIMPLEMENT_PTR_NOCTOR(clazz, class_name, seq_member, seq_method) \
+	DEF_LUAIMPLEMENT_PTR_BASE(clazz, class_name, seq_member, seq_method, MakeHandle_Fake, NOTHING)
+#define DEF_LUAIMPLEMENT_PTR(clazz, class_name, seq_member, seq_method, seq_ctor) \
+	DEF_LUAIMPLEMENT_PTR_BASE(clazz, class_name, seq_member, seq_method, MakeObject, seq_ctor)
+#define DEF_LUAIMPLEMENT_PTR_BASE(clazz, class_name, seq_member, seq_method, makeobj, seq_ctor) \
 		namespace rs{ namespace lua{ \
 			template <> \
 			const char* LuaName(clazz*) { return #class_name; } \
@@ -80,6 +85,11 @@ namespace rs {
 				lsc.push(#class_name); \
 				lsc.prepareTableGlobal(#class_name); \
 				lsc.call(3,1); \
+				\
+				lsc.push(::rs::luaNS::objBase::_New); \
+				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((clazz)seq_ctor)>); \
+				lsc.rawSet(-3); \
+				lsc.setField(-1, luaNS::objBase::_Pointer, true); \
 				\
 				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
 				lsc.rawGet(-2, ::rs::luaNS::objBase::ValueW); \

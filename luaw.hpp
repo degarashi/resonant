@@ -356,30 +356,6 @@ namespace rs {
 			return LuaType::Table; }
 	};
 
-	template <int N, bool A>
-	struct LCV<spn::VecT<N,A>> {
-		using V_t = spn::VecT<N,A>;
-		using Vec_t = std::vector<lua_Number>;
-		void operator()(lua_State* ls, const V_t& v) const {
-			Vec_t tmp(v.m, v.m+N);
-			LCV<Vec_t>()(ls, tmp);
-		}
-		V_t operator()(int idx, lua_State* ls) const {
-			LCV<Vec_t> lcv;
-			auto v = lcv(idx, ls);
-			int sz = v.size();
-			V_t ret(sz);
-			for(int i=0 ; i<sz ; i++)
-				ret.m[i] = v[i];
-			AssertP(Warn, sz==N, "vector size mismatch (%1% -> %2%)", sz, N)
-			return ret;
-		}
-		std::ostream& operator()(std::ostream& os, const V_t& v) const {
-			return os << v; }
-		LuaType operator()() const {
-			return LuaType::Table; }
-	};
-
 	//! lua_Stateの単純なラッパークラス
 	class LuaState : public std::enable_shared_from_this<LuaState> {
 		template <class T>
@@ -1042,6 +1018,7 @@ namespace rs {
 									Func,
 									UdataMT,
 									MT,
+									_Pointer,
 									_New;
 			namespace valueR {
 				extern const std::string HandleId,
@@ -1289,8 +1266,8 @@ namespace rs {
 		// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
 		T operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
 			return *LI_GetPtr<T>()(ls, idx); }
-		std::ostream& operator()(std::ostream& os, const T* t) const {
-			return os << "(userdata) 0x" << std::hex << t; }
+		std::ostream& operator()(std::ostream& os, const T& t) const {
+			return os << "(userdata) 0x" << std::hex << &t; }
 		LuaType operator()() const {
 			return LuaType::Userdata; }
 	};
@@ -1319,3 +1296,9 @@ namespace rs {
 			return LCV<T*>()(); }
 	};
 }
+DEF_LUAIMPORT(spn::Vec2)
+DEF_LUAIMPORT(spn::Vec3)
+DEF_LUAIMPORT(spn::Vec4)
+DEF_LUAIMPORT(spn::Mat22)
+DEF_LUAIMPORT(spn::Mat33)
+DEF_LUAIMPORT(spn::Mat44)

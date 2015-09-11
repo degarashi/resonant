@@ -40,6 +40,7 @@ namespace rs {
 								Func("_func"),
 								UdataMT("_udata_mt"),
 								MT("_mt"),
+								_Pointer("_pointer"),
 								_New("_New");
 			namespace valueR {
 				const std::string HandleId("handleId"),
