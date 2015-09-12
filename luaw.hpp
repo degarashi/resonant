@@ -372,6 +372,56 @@ namespace rs {
 		LuaType operator()() const {
 			return LuaType::Table; }
 	};
+	template <class... Ts>
+	struct LCV<std::tuple<Ts...>> {
+		using Tuple = std::tuple<Ts...>;
+		template <std::size_t N>
+		using IConst = std::integral_constant<std::size_t, N>;
+
+		// std::tuple<> -> Args...
+		void _pushElem(lua_State* /*ls*/, const Tuple& /*t*/, IConst<sizeof...(Ts)>) const {}
+		template <std::size_t N>
+		void _pushElem(lua_State* ls, const Tuple& t, IConst<N>) const {
+			using T = typename std::decay<typename std::tuple_element<N, Tuple>::type>::type;
+			GetLCVType<T>()(ls, std::get<N>(t));
+			_pushElem(ls, t, IConst<N+1>());
+		}
+		void operator()(lua_State* ls, const Tuple& t) const {
+			_pushElem(ls, t, IConst<0>());
+		}
+
+		// Table -> std::tuple<>
+		void _getElem(Tuple& /*dst*/, int /*idx*/, lua_State* /*ls*/, IConst<sizeof...(Ts)>) const {}
+		template <std::size_t N>
+		void _getElem(Tuple& dst, int idx, lua_State* ls, IConst<N>) const {
+			lua_pushinteger(ls, N+1);
+			lua_gettable(ls, idx);
+			std::get<N>(dst) = GetLCVType<typename std::tuple_element<N, Tuple>::type>()(-1, ls);
+			lua_pop(ls, 1);
+			_getElem(dst, idx, ls, IConst<N+1>());
+		}
+		Tuple operator()(int idx, lua_State* ls) const {
+			Tuple ret;
+			_getElem(ret, idx, ls, IConst<0>());
+			return ret;
+		}
+
+		std::ostream& operator()(std::ostream& os, const Tuple& /*v*/) const {
+			return os << "(tuple size=" << sizeof...(Ts) << ")"; }
+		LuaType operator()() const {
+			return LuaType::Table; }
+	};
+	template <class T0, class T1>
+	struct LCV<std::pair<T0,T1>> : LCV<std::tuple<T0,T1>> {
+		using base_t = LCV<std::tuple<T0,T1>>;
+		using Pair = std::pair<T0,T1>;
+		using Tuple = std::tuple<T0,T1>;
+		Pair operator()(int idx, lua_State* ls) const {
+			auto ret = base_t::operator()(idx, ls);
+			return {std::get<0>(ret), std::get<1>(ret)};
+		}
+		using base_t::operator();
+	};
 
 	//! lua_Stateの単純なラッパークラス
 	class LuaState : public std::enable_shared_from_this<LuaState> {
@@ -977,6 +1027,15 @@ namespace rs {
 		template <class CB>
 		static int proc(lua_State* ls, CB cb) {
 			GetLCVType<T>()(ls, static_cast<GetLCVTypeRaw<T>>(cb()));
+			return size;
+		}
+	};
+	template <class T0, class T1>
+	struct RetSize<std::pair<T0,T1>> {
+		constexpr static int size = 2;
+		template <class CB>
+		static int proc(lua_State* ls, CB cb) {
+			GetLCVType<std::pair<T0,T1>>()(ls, cb());
 			return size;
 		}
 	};
