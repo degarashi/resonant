@@ -1277,7 +1277,20 @@ namespace rs {
 		LuaType operator()() const {
 			return LuaType::Userdata; }
 	};
-	// 参照またはポインターの場合はLightUserdataに格納
+	// 参照またはポインターの場合はUserdataに格納
+	template <class T>
+	struct LCV<const T&> : LCV<T> {};
+	template <class T>
+	struct LCV<const T*> : LCV<T> {
+		using base_t = LCV<T>;
+		using base_t::operator();
+		void operator()(lua_State* ls, const T* t) const {
+			base_t()(ls, *t); }
+		std::ostream& operator()(std::ostream& os, const T* t) const {
+			return base_t()(os, *t); }
+	};
+
+	// 非const参照またはポインターの場合はLightUserdataに格納
 	template <class T>
 	struct LCV<T*> {
 		void operator()(lua_State* ls, const T* t) const {
@@ -1291,15 +1304,15 @@ namespace rs {
 			return LuaType::LightUserdata; }
 	};
 	template <class T>
-	struct LCV<T&> {
+	struct LCV<T&> : LCV<T*> {
+		using base_t = LCV<T*>;
+		using base_t::operator();
 		void operator()(lua_State* ls, const T& t) const {
-			LCV<T*>()(ls, &t); }
-		T& operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
-			return *LI_GetPtr<T>()(ls, idx); }
-		std::ostream& operator()(std::ostream& os, const T* t) const {
-			return LCV<T*>()(os, *t); }
-		LuaType operator()() const {
-			return LCV<T*>()(); }
+			base_t()(ls, &t); }
+		T& operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const {
+			return *base_t()(idx, ls, spm); }
+		std::ostream& operator()(std::ostream& os, const T& t) const {
+			return base_t()(os, &t); }
 	};
 }
 DEF_LUAIMPORT(spn::Vec2)
