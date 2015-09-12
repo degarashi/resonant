@@ -6,6 +6,7 @@
 #include "updater_lua.hpp"
 #include "input.hpp"
 #include "sound.hpp"
+#include "spinner/pose.hpp"
 
 DEF_LUAIMPLEMENT_PTR(spn::DegF, Degree, NOTHING,
 		(set)(get)(single)(rangeValue)(range)(luaAddD)(luaAddR)(luaSubD)(luaSubR)(luaMulF)(luaDivF)(luaInvert)(luaToDegree)(luaToRadian)(luaLessthan)(luaLessequal)(luaEqual)(luaToString), (float))
@@ -37,6 +38,14 @@ DEF_LUAIMPLEMENT_PTR(spn::Quat, Quat, (x)(y)(z)(w),
 		(addQ)(subQ)(mulQ)(mulF)(divF)(equal)(toString)
 		(getVector)(getAxis)(getXAxis)(getXAxisInv)(getYAxis)(getYAxisInv)(getZAxis)(getZAxisInv)(getRight)(getUp)(getDir)
 		(dot)(slerp)(distance)(asMat33)(asMat44), NOTHING)
+DEF_LUAIMPLEMENT_PTR(spn::Pose2D, Pose2D, NOTHING,
+		(getOffset)(getScale)(getAngle)(getUp)(getRight)(lua_getToWorld)(lua_getToLocal)
+		(setScale)(setAngle)(setOffset)(setUp)
+		(identity)(moveUp)(moveDown)(moveLeft)(moveRight)(lerp)(equal)(toString), NOTHING)
+DEF_LUAIMPLEMENT_PTR(spn::Pose3D, Pose3D, NOTHING,
+		(getOffset)(getRot)(getScale)(lua_getToWorld)(lua_getToLocal)(getUp)(getRight)(getDir)
+		(setAll)(setScale)(setRot)(addAxisRot)(setOffset)(addOffset)
+		(identity)(moveFwd2D)(moveSide2D)(moveFwd3D)(moveSide3D)(turnAxis)(turnYPR)(addRot)(lerpTurn)(adjustNoRoll)(lerp)(equal)(toString), NOTHING)
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ObjMgr, Object, Object, NOTHING, NOTHING)
@@ -89,6 +98,8 @@ namespace rs {
 		LuaImport::RegisterClass<spn::Mat22>(lsc);
 		LuaImport::RegisterClass<spn::Mat33>(lsc);
 		LuaImport::RegisterClass<spn::Mat44>(lsc);
+		LuaImport::RegisterClass<spn::Pose2D>(lsc);
+		LuaImport::RegisterClass<spn::Pose3D>(lsc);
 		LuaImport::RegisterClass<spn::DegF>(lsc);
 		LuaImport::RegisterClass<spn::RadF>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
