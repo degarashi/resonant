@@ -68,19 +68,6 @@ namespace rs {
 	LuaType LCV<std::string>::operator()() const {
 		return LuaType::String; }
 
-	// TODO: 中身をちゃんと実装する
-	// --- LCV<spn::Quat> = LUA_TABLE
-	void LCV<spn::Quat>::operator()(lua_State* /*ls*/, const spn::Quat& /*q*/) const {
-		Assert(Trap, false, "not implemented yet.")
-	}
-	spn::Quat LCV<spn::Quat>::operator()(int /*idx*/, lua_State* /*ls*/, LPointerSP* /*spm*/) const {
-		Assert(Trap, false, "not implemented yet.") throw 0;
-	}
-	std::ostream& LCV<spn::Quat>::operator()(std::ostream& os, const spn::Quat& q) const {
-		return os << q; }
-	LuaType LCV<spn::Quat>::operator()() const {
-		return LuaType::Table; }
-
 	// --- LCV<lua_Integer> = LUA_TNUMBER
 	void LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {
 		lua_pushinteger(ls, i); }

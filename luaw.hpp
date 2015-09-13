@@ -235,14 +235,12 @@ namespace rs {
 	DEF_LCV(spn::SHandle, spn::SHandle)
 	DEF_LCV(spn::WHandle, spn::WHandle)
 	DEF_LCV(LValueG, const LValueG&)
-	DEF_LCV(spn::Quat, const spn::Quat&)
 	DEF_LCV(lua_Number, lua_Number)
 	DERIVED_LCV(lua_OtherNumber, lua_Number)
 	DEF_LCV(lua_Integer, lua_Integer)
 	DERIVED_LCV(lua_IntegerU, lua_Integer)
 	DERIVED_LCV(lua_OtherInteger, lua_Integer)
 	DERIVED_LCV(lua_OtherIntegerU, lua_OtherInteger)
-	DERIVED_LCV(spn::AQuat, spn::Quat)
 
 	DERIVED_LCV(GLFormat, lua_Integer)
 	DERIVED_LCV(GLDepthFmt, GLFormat)
@@ -268,7 +266,7 @@ namespace rs {
 	template <class T>
 	using GetLCVType = LCV<GetLCVTypeRaw<T>>;
 
-	// ベクトルと行列(Aligned)タイプはUnAlignedと同じ扱いにする
+	// ベクトル, 行列, クォータニオン(Aligned)タイプはUnAlignedと同じ扱いにする
 	template <int N>
 	struct LCV<spn::VecT<N,true>> : LCV<spn::VecT<N,false>> {};
 	template <int M, int N>
@@ -1359,6 +1357,9 @@ namespace rs {
 		std::ostream& operator()(std::ostream& os, const T* t) const {
 			return base_t()(os, *t); }
 	};
+	template struct LCV<spn::QuatT<false>>;
+	template <>
+	struct LCV<spn::QuatT<true>> : LCV<spn::QuatT<false>> {};
 
 	template struct LCV<spn::DegF>;
 	template struct LCV<spn::RadF>;
