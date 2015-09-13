@@ -7,6 +7,7 @@
 #include "input.hpp"
 #include "sound.hpp"
 #include "spinner/pose.hpp"
+#include "spinner/plane.hpp"
 
 DEF_LUAIMPLEMENT_PTR(spn::DegF, Degree, NOTHING,
 		(set)(get)(single)(rangeValue)(range)(luaAddD)(luaAddR)(luaSubD)(luaSubR)(luaMulF)(luaDivF)(luaInvert)(luaToDegree)(luaToRadian)(luaLessthan)(luaLessequal)(luaEqual)(luaToString), (float))
@@ -43,6 +44,10 @@ DEF_LUAIMPLEMENT_PTR(spn::Quat, Quat, (x)(y)(z)(w),
 		(getVector)(getAxis)(getXAxis)(getXAxisInv)(getYAxis)(getYAxisInv)(getZAxis)(getZAxisInv)(getRight)(getUp)(getDir)
 		(dot)(slerp)(distance)(asMat33)(asMat44)
 		(FromAxisF)(FromAxis)(FromMatAxis)(RotationYPR)(RotationX)(RotationY)(RotationZ)(LookAt)(SetLookAt)(Lua_FromMat33)(Lua_FromMat44)(Lua_Rotation)(Lua_RotationFromTo), NOTHING)
+DEF_LUAIMPLEMENT_PTR(spn::Plane, Plane, (a)(b)(c)(d),
+		(dot)(move)(getNormal)(placeOnPlane)(placeOnPlaneDirDist)(getOrigin)
+		(mulM)(equal)(toString)
+		(FromPtDir)(FromPts)(ChokePoint)(CrossLine), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Pose2D, Pose2D, NOTHING,
 		(getOffset)(getScale)(getAngle)(getUp)(getRight)(lua_getToWorld)(lua_getToLocal)
 		(setScale)(setAngle)(setOffset)(setUp)
@@ -106,6 +111,7 @@ namespace rs {
 		LuaImport::RegisterClass<spn::Pose2D>(lsc);
 		LuaImport::RegisterClass<spn::Pose3D>(lsc);
 		LuaImport::RegisterClass<spn::Quat>(lsc);
+		LuaImport::RegisterClass<spn::Plane>(lsc);
 		LuaImport::RegisterClass<spn::DegF>(lsc);
 		LuaImport::RegisterClass<spn::RadF>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
