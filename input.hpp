@@ -191,6 +191,12 @@ namespace rs {
 				void remLink(HInput hI, InputFlag::E inF, int num);
 				int getState() const;
 				int getValue() const;
+				//! getValueの結果を使いやすいように加工(-1〜1)して返す
+				/*! \retval 1	getValueの値がInputRangeHalf以上
+							-1	getValueの値が-InputRangeHalf以下
+							0	どちらでもない時 */
+				int getKeyValueSimplified() const;
+				void linkButtonAsAxis(HInput hI, int num_negative, int num_positive);
 		};
 		class ActMgr : public spn::ResMgrN<Action, ActMgr> {
 			public:
@@ -207,15 +213,15 @@ namespace rs {
 			template <class CHK>
 			bool _checkKeyValue(CHK chk, HAct hAct) const;
 			template <std::size_t... N, class Tuple>
-			static auto _getKeyValueSimplifiedMulti(std::index_sequence<N...>, const Tuple& t) {
-				return std::make_tuple(getKeyValueSimplified(std::get<N>(t))...);
+			static auto _GetKeyValueSimplifiedMulti(std::index_sequence<N...>, const Tuple& t) {
+				return std::make_tuple((std::get<N>(t)->getKeyValueSimplified())...);
 			}
 			template <std::size_t... N>
-			static void _linkButtonAsAxisMulti(std::index_sequence<N...>, HInput) {}
+			static void _LinkButtonAsAxisMulti(std::index_sequence<N...>, HInput) {}
 			template <std::size_t... N, class T, class... Tuple>
-			static void _linkButtonAsAxisMulti(std::index_sequence<N...> seq, HInput hI, const T& t, const Tuple&... ts) {
-				linkButtonAsAxis(hI, std::get<N>(t)...);
-				_linkButtonAsAxisMulti(seq, hI, ts...);
+			static void _LinkButtonAsAxisMulti(std::index_sequence<N...> seq, HInput hI, const T& t, const Tuple&... ts) {
+				LinkButtonAsAxis(hI, std::get<N>(t)...);
+				_LinkButtonAsAxisMulti(seq, hI, ts...);
 			}
 		public:
 			InputMgr();
@@ -226,22 +232,17 @@ namespace rs {
 			void addAction(HAct hAct);
 			// 更新リストから除くだけで削除はしない
 			void remAction(HAct hAct);
-			static void linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive);
+			static void LinkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive);
 			template <class T, class... Tuple>
-			static void linkButtonAsAxisMulti(HInput hI, const T& t, const Tuple&... ts) {
+			static void LinkButtonAsAxisMulti(HInput hI, const T& t, const Tuple&... ts) {
 				using IntS = std::make_index_sequence<std::tuple_size<T>::value>;
-				_linkButtonAsAxisMulti(IntS(), hI, t, ts...);
+				_LinkButtonAsAxisMulti(IntS(), hI, t, ts...);
 			}
-			//! getValueの結果を使いやすいように加工(-1〜1)して返す
-			/*! \retval 1	getValueの値がInputRangeHalf以上
-						-1	getValueの値が-InputRangeHalf以下
-						0	どちらでもない時 */
-			static int getKeyValueSimplified(HAct hAct);
 			//! 複数のハンドルを受け取りsimplifiedの結果をstd::tupleで返す
 			template <class... H>
-			static auto getKeyValueSimplifiedMulti(H... h) {
+			static auto GetKeyValueSimplifiedMulti(H... h) {
 				using IntS = std::make_index_sequence<sizeof...(H)>;
-				return _getKeyValueSimplifiedMulti(IntS(), std::forward_as_tuple(h...));
+				return _GetKeyValueSimplifiedMulti(IntS(), std::forward_as_tuple(h...));
 			}
 			// キーマッピングのファイル入出力
 			// 入力キャプチャコールバック

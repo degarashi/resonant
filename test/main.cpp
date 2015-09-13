@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 			// left, right, up, down [A,D,W,S]		カメラ移動
 			lk->actAx = mgr_input.makeAction("axisX");
 			lk->actAy = mgr_input.makeAction("axisY");
-			mgr_input.linkButtonAsAxisMulti(
+			rs::InputMgr::LinkButtonAsAxisMulti(
 				lkb->hlIk,
 				std::make_tuple(lk->actAx, SDL_SCANCODE_A, SDL_SCANCODE_D),
 				std::make_tuple(lk->actAy, SDL_SCANCODE_S, SDL_SCANCODE_W)

@@ -17,7 +17,7 @@ void FPSCamera::St_Default::onUpdate(FPSCamera& self, const rs::SPLua& /*ls*/) {
 		self._bPress = btn;
 	}
 	constexpr float speed = 0.25f;
-	auto mv = mgr_input.getKeyValueSimplifiedMulti(lk->actAx, lk->actAy);
+	auto mv = rs::InputMgr::GetKeyValueSimplifiedMulti(lk->actAx, lk->actAy);
 	float mvF = speed * std::get<1>(mv),
 		  mvS = speed * std::get<0>(mv);
 	auto& cd = lk->hlCam.ref();

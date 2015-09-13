@@ -228,15 +228,15 @@ namespace rs {
 			}
 			_value = val;
 		}
-	bool detail::Action::isKeyPressed() const {
-		return getState() == 1;
-	}
-	bool detail::Action::isKeyReleased() const {
-		return getState() == 0;
-	}
-	bool detail::Action::isKeyPressing() const {
-		return getState() > 0;
-	}
+		bool Action::isKeyPressed() const {
+			return getState() == 1;
+		}
+		bool Action::isKeyReleased() const {
+			return getState() == 0;
+		}
+		bool Action::isKeyPressing() const {
+			return getState() > 0;
+		}
 		void Action::addLink(HInput hI, InputFlag::E inF, int num) {
 			Link link{hI, inF, num};
 			auto itr = std::find(_link.begin(), _link.end(), link);
@@ -255,6 +255,14 @@ namespace rs {
 		int Action::getValue() const {
 			return _value;
 		}
+		int Action::getKeyValueSimplified() const {
+			auto v = getValue();
+			if(v >= InputRangeHalf)
+				return 1;
+			if(v <= -InputRangeHalf)
+				return -1;
+			return 0;
+		}
 	}
 	// ----------------- ActMgr -----------------
 	const std::string& detail::ActMgr::getResourceName(spn::SHandle /*sh*/) const {
@@ -271,17 +279,9 @@ namespace rs {
 		_aset.insert(ret);
 		return ret;
 	}
-	void InputMgr::linkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive) {
+	void InputMgr::LinkButtonAsAxis(HInput hI, HAct hAct, int num_negative, int num_positive) {
 		hAct->addLink(hI, InputFlag::ButtonFlip, num_negative);
 		hAct->addLink(hI, InputFlag::Button, num_positive);
-	}
-	int InputMgr::getKeyValueSimplified(HAct hAct) {
-		auto v = hAct->getValue();
-		if(v >= InputRangeHalf)
-			return 1;
-		if(v <= -InputRangeHalf)
-			return -1;
-		return 0;
 	}
 	HLInput InputMgr::addInput(UPInput&& u) {
 		return acquire(std::move(u));
