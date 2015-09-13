@@ -27,13 +27,16 @@ DEF_LUAIMPLEMENT_PTR(spn::Vec4, Vec4, (x)(y)(z)(w),
 		(normalization)(length)(saturation)(l_intp<false>)(asVec3)(asVec3Coord), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Mat22, Mat22, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
-		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF), NOTHING)
+		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
+		(Scaling)(Rotation), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Mat33, Mat33, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
-		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF), NOTHING)
+		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
+		(Scaling)(Translation)(RotationX)(RotationY)(RotationZ)(RotationAxis), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Mat44, Mat44, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
-		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF), NOTHING)
+		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
+		(Scaling)(Translation)(LookAtLH)(LookDirLH)(LookAtRH)(LookDirRH)(RotationX)(RotationY)(RotationZ)(RotationAxis)(PerspectiveFovLH)(PerspectiveFovRH), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Quat, Quat, (x)(y)(z)(w),
 		(rotationX)(rotationY)(rotationZ)(identity)(normalization)(conjugation)(inverse)(angle)(length)
 		(addQ)(subQ)(mulQ)(mulF)(divF)(equal)(toString)

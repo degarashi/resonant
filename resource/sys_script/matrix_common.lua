@@ -1,14 +1,19 @@
 require("sysfunc")
+require("vector_common")
 local CallOperator = RS.CallOperator
+local isMat = function(a)
+	return a._postfix == "M"
+end
 MatC = {}
 MatC.Postfix = "M"
 MatC.Metatable = {
+	IsMat = isMat,
 	__add = function(a,b)
-		assert(type(b) == "table")
+		assert(VecC.IsVec(b))
 		return a:addV(b)
 	end,
 	__sub = function(a,b)
-		assert(type(b) == "table")
+		assert(VecC.IsVec(b))
 		return a:subV(b)
 	end,
 	__mul = function(a,b)
@@ -18,7 +23,7 @@ MatC.Metatable = {
 		return CallOperator(a,b, "div")
 	end,
 	__mod = function(a,b)
-		assert(type(b) == "table")
+		assert(VecC.IsVec(b))
 		return a:modV(b)
 	end,
 	__unm = function(a)
