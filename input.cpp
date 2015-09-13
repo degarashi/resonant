@@ -262,7 +262,7 @@ namespace rs {
 		return name;
 	}
 	// ----------------- InputMgr -----------------
-	const std::string& InputMgrBase::getResourceName(spn::SHandle sh) const {
+	const std::string& InputMgrBase::getResourceName(spn::SHandle /*sh*/) const {
 		static const std::string str("IInput");
 		return str;
 	}
