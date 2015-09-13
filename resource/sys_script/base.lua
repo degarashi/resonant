@@ -128,6 +128,10 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 		if mt then
 			RS.Overwrite(_mt, mt)
 		end
+		local rf = object._renamefunc
+		if rf then
+			RS.Overwrite(_f, rf)
+		end
 		object._valueR = _r
 		object._valueW = _w
 		object._func = _f

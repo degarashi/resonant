@@ -94,3 +94,20 @@ function RS.CallOperator(a, b, op)
 	end
 	return a[op .. postfix](a,b)
 end
+function RS.RenameFuncJoin(tbl, entry, ...)
+	if not entry then
+		return
+	end
+	tbl[entry[1]] = function(self, ...)
+		return self[entry[2]](self, ...)
+	end
+	RS.RenameFuncJoin(tbl, ...)
+end
+function RS.RenameFunc(entry, ...)
+	if not entry then
+		return
+	end
+	local tbl = {}
+	RS.RenameFuncJoin(tbl, entry, ...)
+	return tbl
+end
