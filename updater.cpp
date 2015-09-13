@@ -353,6 +353,9 @@ namespace rs {
 		_dsort(_MakeDSort(al)),
 		_bDynamic(bDynamic)
 	{}
+	void DrawGroup::setPriority(Priority p) {
+		_dtag.priority = p;
+	}
 	bool DrawGroup::isNode() const {
 		return true;
 	}

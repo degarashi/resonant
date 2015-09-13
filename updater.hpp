@@ -453,6 +453,7 @@ namespace rs {
 			void onUpdate(const SPLua& ls) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
 			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
+			void setPriority(Priority p);
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
