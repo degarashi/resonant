@@ -15,15 +15,16 @@ DEF_LUAIMPLEMENT_PTR(spn::RadF, Radian, NOTHING,
 DEF_LUAIMPLEMENT_PTR(spn::Vec2, Vec2, (x)(y),
 		(addV)(subV)(mulF)(mulM)(divF)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
-		(normalization)(length)(saturation)(l_intp<false>), NOTHING)
+		(normalization)(length)(saturation)(l_intp<false>)(ccw)(cw)(asVec3)
+		(Ccw)(Cw), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Vec3, Vec3, (x)(y)(z),
-		(addV)(subV)(mulF)(mulM)(divF)(modV)(invert)(equal)(toString)
+		(addV)(subV)(mulF)(mulM)(divF)(modV)(mulQ)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
-		(normalization)(length)(saturation)(l_intp<false>), NOTHING)
+		(normalization)(length)(saturation)(l_intp<false>)(verticalVector)(asVec4)(asVec2)(lua_planeDivide), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Vec4, Vec4, (x)(y)(z)(w),
 		(addV)(subV)(mulF)(mulM)(divF)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
-		(normalization)(length)(saturation)(l_intp<false>), NOTHING)
+		(normalization)(length)(saturation)(l_intp<false>)(asVec3)(asVec3Coord), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Mat22, Mat22, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF), NOTHING)

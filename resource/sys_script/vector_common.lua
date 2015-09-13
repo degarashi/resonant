@@ -1,14 +1,18 @@
 require("sysfunc")
 local CallOperator = RS.CallOperator
+local isVec = function(a)
+	return a._postfix == "V"
+end
 VecC = {}
 VecC.Postfix = "V"
+VecC.IsVec = isVec
 VecC.Metatable = {
 	__add = function(a,b)
-		assert(type(b) == "table")
+		assert(a.IsVec(b))
 		return a:addV(b)
 	end,
 	__sub = function(a,b)
-		assert(type(b) == "table")
+		assert(a.IsVec(b))
 		return a:subV(b)
 	end,
 	__mul = function(a,b)
@@ -18,7 +22,7 @@ VecC.Metatable = {
 		return CallOperator(a,b, "div")
 	end,
 	__mod = function(a,b)
-		assert(type(b) == "table")
+		assert(a.IsVec(b))
 		return a:modV(b)
 	end,
 	__unm = function(a)
