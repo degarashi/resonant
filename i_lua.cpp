@@ -8,6 +8,8 @@
 #include "sound.hpp"
 #include "spinner/pose.hpp"
 #include "spinner/plane.hpp"
+#include "camera.hpp"
+#include "camera2d.hpp"
 
 DEF_LUAIMPLEMENT_PTR(spn::DegF, Degree, NOTHING,
 		(set)(get)(single)(rangeValue)(range)(luaAddD)(luaAddR)(luaSubD)(luaSubR)(luaMulF)(luaDivF)(luaInvert)(luaToDegree)(luaToRadian)(luaLessthan)(luaLessequal)(luaEqual)(luaToString), (float))
@@ -81,6 +83,15 @@ DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::InputMgrBase, rs::IInput, IInput, NOTHING
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Keyboard, Keyboard, "IInput", NOTHING, (OpenKeyboard))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Mouse, Mouse, "IInput", NOTHING, (OpenMouse)(NumMouse))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Joypad, Joypad, "IInput", NOTHING, (OpenJoypad)(NumJoypad))
+
+DEF_LUAIMPLEMENT_HDL_NOBASE(rs::Camera3DMgr, rs::Camera3D, Camera3D, NOTHING,
+		(setPose<spn::Pose3D>)(setFov<spn::RadF>)(setAspect<float>)(setNearZ<float>)(setFarZ<float>)(setZPlane)
+		(getPose)(getFov)(getAspect)(getNearZ)(getFarZ)
+		(unproject)(unprojectVec)(vp2wp), NOTHING)
+DEF_LUAIMPLEMENT_HDL_NOBASE(rs::Camera2DMgr, rs::Camera2D, Camera2D, NOTHING,
+		(setPose<spn::Pose2D>)(setAspectRatio<float>)
+		(getPose)(getAspectRatio)
+		(vp2w)(v2w), NOTHING)
 
 namespace rs {
 	void LuaImport::RegisterRSClass(LuaState& lsc) {

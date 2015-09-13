@@ -97,4 +97,8 @@ namespace rs {
 		fr.setOffset(ps.getOffset());
 		return fr;
 	}
+	const std::string& Camera3DMgr::getResourceName(spn::SHandle /*sh*/) const {
+		static std::string name("Camera3D");
+		return name;
+	}
 }

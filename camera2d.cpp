@@ -41,5 +41,9 @@ namespace rs {
 	spn::Vec2 Camera2D::v2w(const spn::Vec2& pos) const {
 		return (pos.asVec3(1) * getViewInv()).asVec2();
 	}
+	const std::string& Camera2DMgr::getResourceName(spn::SHandle /*sh*/) const {
+		static std::string name("Camera2D");
+		return name;
+	}
 }
 

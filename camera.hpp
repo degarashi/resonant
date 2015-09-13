@@ -46,5 +46,10 @@ namespace rs {
 			spn::Vec3 vp2wp(const spn::Vec3& vp) const;
 	};
 	#define mgr_cam (::rs::Camera3DMgr::_ref())
-	class Camera3DMgr : public spn::ResMgrA<Camera3D, Camera3DMgr, spn::Alloc16> {};
+	class Camera3DMgr : public spn::ResMgrA<Camera3D, Camera3DMgr, spn::Alloc16> {
+		public:
+			const std::string& getResourceName(spn::SHandle sh) const override;
+	};
 }
+#include "luaimport.hpp"
+DEF_LUAIMPORT(rs::Camera3D)

@@ -34,6 +34,10 @@ namespace rs {
 			spn::Vec2 v2w(const spn::Vec2& pos) const;
 	};
 	#define mgr_cam2d (::rs::Camera2DMgr::_ref())
-	class Camera2DMgr : public spn::ResMgrA<Camera2D, Camera2DMgr, spn::Alloc16> {};
+	class Camera2DMgr : public spn::ResMgrA<Camera2D, Camera2DMgr, spn::Alloc16> {
+		public:
+			const std::string& getResourceName(spn::SHandle sh) const override;
+	};
 }
-
+#include "luaimport.hpp"
+DEF_LUAIMPORT(rs::Camera2D)
