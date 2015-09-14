@@ -211,7 +211,7 @@ namespace rs {
 	}
 
 	// ------------------- LCV<SHandle> -------------------
-	void LCV<SHandle>::operator()(lua_State* ls, SHandle h) const {
+	int LCV<SHandle>::operator()(lua_State* ls, SHandle h) const {
 		// nullハンドルチェック
 		if(!h.valid()) {
 			// nilをpushする
@@ -228,6 +228,7 @@ namespace rs {
 			lsc.remove(-2);
 			AssertP(Trap, lsc.type(-1) == LuaType::Table)
 		}
+		return 1;
 	}
 	SHandle LCV<SHandle>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
 		// userdata or nil
@@ -243,13 +244,14 @@ namespace rs {
 		return LuaType::Userdata;
 	}
 	// ------------------- LCV<WHandle> -------------------
-	void LCV<WHandle>::operator()(lua_State* ls, WHandle w) const {
+	int LCV<WHandle>::operator()(lua_State* ls, WHandle w) const {
 		if(!w.valid())
 			LCV<LuaNil>()(ls, LuaNil());
 		else {
 			LuaState lsc(ls);
 			lsc.push(reinterpret_cast<void*>(w.getValue()));
 		}
+		return 1;
 	}
 	WHandle LCV<WHandle>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
 		void* data = LCV<void*>()(idx, ls, spm);

@@ -210,7 +210,7 @@ namespace rs {
 	using LValueG = LValue<LV_Global>;
 
 #define DEF_LCV0(typ, rtyp, argtyp) template <> struct LCV<typ> { \
-		void operator()(lua_State* ls, argtyp t) const; \
+		int operator()(lua_State* ls, argtyp t) const; \
 		rtyp operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const; \
 		std::ostream& operator()(std::ostream& os, argtyp t) const; \
 		LuaType operator()() const; };
@@ -273,11 +273,11 @@ namespace rs {
 	struct LCV<spn::MatT<M,N,true>> : LCV<spn::MatT<M,N,false>> {};
 	template <class T>
 	struct LCV<spn::Optional<T>> {
-		void operator()(lua_State* ls, const spn::Optional<T>& op) const {
+		int operator()(lua_State* ls, const spn::Optional<T>& op) const {
 			if(!op)
-				GetLCVType<LuaNil>()(ls, LuaNil());
+				return GetLCVType<LuaNil>()(ls, LuaNil());
 			else
-				GetLCVType<T>()(ls, *op);
+				return GetLCVType<T>()(ls, *op);
 		}
 		spn::Optional<T> operator()(int idx, lua_State* ls) const {
 			if(lua_type(ls, idx) == LUA_TNIL)
@@ -298,8 +298,8 @@ namespace rs {
 	template <class Rep, class Period>
 	struct LCV<std::chrono::duration<Rep,Period>> {
 		using Dur = std::chrono::duration<Rep,Period>;
-		void operator()(lua_State* ls, const Dur& d) const {
-			LCV<lua_Integer>()(ls, std::chrono::duration_cast<Microseconds>(d).count()); }
+		int operator()(lua_State* ls, const Dur& d) const {
+			return LCV<lua_Integer>()(ls, std::chrono::duration_cast<Microseconds>(d).count()); }
 		Dur operator()(int idx, lua_State* ls) const {
 			return Microseconds(LCV<lua_Integer>()(idx, ls)); }
 		std::ostream& operator()(std::ostream& os, const Dur& d) const {
@@ -312,8 +312,8 @@ namespace rs {
 	struct LCV<spn::HdlLock<T,D>> {
 		using Handle_t = spn::HdlLock<T,D>;
 		using SH = decltype(std::declval<Handle_t>().get());
-		void operator()(lua_State* ls, const Handle_t& t) const {
-			LCV<SH>()(ls, t.get()); }
+		int operator()(lua_State* ls, const Handle_t& t) const {
+			return LCV<SH>()(ls, t.get()); }
 		Handle_t operator()(int idx, lua_State* ls) const {
 			return LCV<SH>()(idx, ls); }
 		std::ostream& operator()(std::ostream& os, const Handle_t& t) const {
@@ -325,8 +325,8 @@ namespace rs {
 	template <class... Ts>
 	struct LCV<spn::SHandleT<Ts...>> {
 		using Handle_t = spn::SHandleT<Ts...>;
-		void operator()(lua_State* ls, const Handle_t& t) const {
-			LCV<spn::SHandle>()(ls, static_cast<spn::SHandle>(t));
+		int operator()(lua_State* ls, const Handle_t& t) const {
+			return LCV<spn::SHandle>()(ls, static_cast<spn::SHandle>(t));
 		}
 		Handle_t operator()(int idx, lua_State* ls) const {
 			return  Handle_t::FromHandle(LCV<spn::SHandle>()(idx, ls)); }
@@ -339,7 +339,7 @@ namespace rs {
 	template <class T, class A>
 	struct LCV<std::vector<T, A>> {
 		using Vec_t = std::vector<T,A>;
-		void operator()(lua_State* ls, const Vec_t& v) const {
+		int operator()(lua_State* ls, const Vec_t& v) const {
 			GetLCVType<T> lcv;
 			auto sz = v.size();
 			lua_createtable(ls, sz, 0);
@@ -348,6 +348,7 @@ namespace rs {
 				lcv(ls, v[i]);
 				lua_settable(ls, -3);
 			}
+			return 1;
 		}
 		Vec_t operator()(int idx, lua_State* ls) const {
 			GetLCVType<T> lcv;
@@ -377,15 +378,16 @@ namespace rs {
 		using IConst = std::integral_constant<std::size_t, N>;
 
 		// std::tuple<> -> Args...
-		void _pushElem(lua_State* /*ls*/, const Tuple& /*t*/, IConst<sizeof...(Ts)>) const {}
+		int _pushElem(lua_State* /*ls*/, const Tuple& /*t*/, IConst<sizeof...(Ts)>) const {
+			return 0; }
 		template <std::size_t N>
-		void _pushElem(lua_State* ls, const Tuple& t, IConst<N>) const {
+		int _pushElem(lua_State* ls, const Tuple& t, IConst<N>) const {
 			using T = typename std::decay<typename std::tuple_element<N, Tuple>::type>::type;
-			GetLCVType<T>()(ls, std::get<N>(t));
-			_pushElem(ls, t, IConst<N+1>());
+			int count = GetLCVType<T>()(ls, std::get<N>(t));
+			return count + _pushElem(ls, t, IConst<N+1>());
 		}
-		void operator()(lua_State* ls, const Tuple& t) const {
-			_pushElem(ls, t, IConst<0>());
+		int operator()(lua_State* ls, const Tuple& t) const {
+			return _pushElem(ls, t, IConst<0>());
 		}
 
 		// Table -> std::tuple<>
@@ -1021,29 +1023,9 @@ namespace rs {
 	//! Luaに返す値の数を型から特定する
 	template <class T>
 	struct RetSize {
-		constexpr static int size = 1;
 		template <class CB>
 		static int proc(lua_State* ls, CB cb) {
-			GetLCVType<T>()(ls, static_cast<GetLCVTypeRaw<T>>(cb()));
-			return size;
-		}
-	};
-	template <class T0, class T1>
-	struct RetSize<std::pair<T0,T1>> {
-		constexpr static int size = 2;
-		template <class CB>
-		static int proc(lua_State* ls, CB cb) {
-			GetLCVType<std::pair<T0,T1>>()(ls, cb());
-			return size;
-		}
-	};
-	template <class... Ts>
-	struct RetSize<std::tuple<Ts...>> {
-		constexpr static int size = sizeof...(Ts);
-		template <class CB>
-		static int proc(lua_State* ls, CB cb) {
-			GetLCVType<std::tuple<Ts...>>()(ls, cb());
-			return size;
+			return GetLCVType<T>()(ls, static_cast<GetLCVTypeRaw<T>>(cb()));
 		}
 	};
 	template <>
@@ -1329,13 +1311,14 @@ namespace rs {
 	};
 	template <class T>
 	struct LCV {
-		void operator()(lua_State* ls, const T& t) const {
+		int operator()(lua_State* ls, const T& t) const {
 			LuaState lsc(ls);
 			lsc.getGlobal(lua::LuaName((T*)nullptr));
 			lsc.getField(-1, luaNS::ConstructPtr);
 			lsc.newUserData(sizeof(T));
 			*reinterpret_cast<T*>(lsc.toUserData(-1)) = t;
 			lsc.call(1, 1);
+			return 1;
 		}
 		// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
 		T operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
@@ -1352,8 +1335,8 @@ namespace rs {
 	struct LCV<const T*> : LCV<T> {
 		using base_t = LCV<T>;
 		using base_t::operator();
-		void operator()(lua_State* ls, const T* t) const {
-			base_t()(ls, *t); }
+		int operator()(lua_State* ls, const T* t) const {
+			return base_t()(ls, *t); }
 		std::ostream& operator()(std::ostream& os, const T* t) const {
 			return base_t()(os, *t); }
 	};
@@ -1370,9 +1353,10 @@ namespace rs {
 	// 非const参照またはポインターの場合はLightUserdataに格納
 	template <class T>
 	struct LCV<T*> {
-		void operator()(lua_State* ls, const T* t) const {
+		int operator()(lua_State* ls, const T* t) const {
 			LuaState lsc(ls);
-			LuaImport::MakePointerInstance(lsc, t); }
+			LuaImport::MakePointerInstance(lsc, t);
+			return 1; }
 		T* operator()(int idx, lua_State* ls, LPointerSP* /*spm*/=nullptr) const {
 			return LI_GetPtr<T>()(ls, idx); }
 		std::ostream& operator()(std::ostream& os, const T* t) const {
@@ -1384,8 +1368,8 @@ namespace rs {
 	struct LCV<T&> : LCV<T*> {
 		using base_t = LCV<T*>;
 		using base_t::operator();
-		void operator()(lua_State* ls, const T& t) const {
-			base_t()(ls, &t); }
+		int operator()(lua_State* ls, const T& t) const {
+			return base_t()(ls, &t); }
 		T& operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const {
 			return *base_t()(idx, ls, spm); }
 		std::ostream& operator()(std::ostream& os, const T& t) const {
