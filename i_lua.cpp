@@ -19,37 +19,37 @@ DEF_LUAIMPLEMENT_PTR(spn::Vec2, Vec2, (x)(y),
 		(addV)(subV)(mulF)(mulM)(divF)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
 		(normalization)(length)(saturation)(l_intp<false>)(ccw)(cw)(asVec3)
-		(Ccw)(Cw), NOTHING)
+		(Ccw)(Cw), (float)(float))
 DEF_LUAIMPLEMENT_PTR(spn::Vec3, Vec3, (x)(y)(z),
 		(addV)(subV)(mulF)(mulM)(divF)(modV)(mulQ)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
-		(normalization)(length)(saturation)(l_intp<false>)(verticalVector)(asVec4)(asVec2)(lua_planeDivide), NOTHING)
+		(normalization)(length)(saturation)(l_intp<false>)(verticalVector)(asVec4)(asVec2)(lua_planeDivide), (float)(float)(float))
 DEF_LUAIMPLEMENT_PTR(spn::Vec4, Vec4, (x)(y)(z)(w),
 		(addV)(subV)(mulF)(mulM)(divF)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
-		(normalization)(length)(saturation)(l_intp<false>)(asVec3)(asVec3Coord), NOTHING)
-DEF_LUAIMPLEMENT_PTR(spn::Mat22, Mat22, NOTHING,
+		(normalization)(length)(saturation)(l_intp<false>)(asVec3)(asVec3Coord), (float)(float)(float)(float))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat22, Mat22, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
-		(Scaling)(Rotation), NOTHING)
-DEF_LUAIMPLEMENT_PTR(spn::Mat33, Mat33, NOTHING,
+		(Scaling)(Rotation))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat33, Mat33, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
-		(Scaling)(Translation)(RotationX)(RotationY)(RotationZ)(RotationAxis), NOTHING)
-DEF_LUAIMPLEMENT_PTR(spn::Mat44, Mat44, NOTHING,
+		(Scaling)(Translation)(RotationX)(RotationY)(RotationZ)(RotationAxis))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat44, Mat44, NOTHING,
 		(identity)(transposition)(lua_invert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
-		(Scaling)(Translation)(LookAtLH)(LookDirLH)(LookAtRH)(LookDirRH)(RotationX)(RotationY)(RotationZ)(RotationAxis)(PerspectiveFovLH)(PerspectiveFovRH), NOTHING)
-DEF_LUAIMPLEMENT_PTR(spn::Quat, Quat, (x)(y)(z)(w),
+		(Scaling)(Translation)(LookAtLH)(LookDirLH)(LookAtRH)(LookDirRH)(RotationX)(RotationY)(RotationZ)(RotationAxis)(PerspectiveFovLH)(PerspectiveFovRH))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Quat, Quat, (x)(y)(z)(w),
 		(rotationX)(rotationY)(rotationZ)(identity)(normalization)(conjugation)(inverse)(angle)(length)
 		(addQ)(subQ)(mulQ)(mulF)(divF)(equal)(toString)
 		(getVector)(getAxis)(getXAxis)(getXAxisInv)(getYAxis)(getYAxisInv)(getZAxis)(getZAxisInv)(getRight)(getUp)(getDir)
 		(dot)(slerp)(distance)(asMat33)(asMat44)
-		(FromAxisF)(FromAxis)(FromMatAxis)(RotationYPR)(RotationX)(RotationY)(RotationZ)(LookAt)(SetLookAt)(Lua_FromMat33)(Lua_FromMat44)(Lua_Rotation)(Lua_RotationFromTo), NOTHING)
-DEF_LUAIMPLEMENT_PTR(spn::Plane, Plane, (a)(b)(c)(d),
+		(FromAxisF)(FromAxis)(FromMatAxis)(RotationYPR)(RotationX)(RotationY)(RotationZ)(LookAt)(SetLookAt)(Lua_FromMat33)(Lua_FromMat44)(Lua_Rotation)(Lua_RotationFromTo))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Plane, Plane, (a)(b)(c)(d),
 		(dot)(move)(getNormal)(placeOnPlane)(placeOnPlaneDirDist)(getOrigin)
 		(mulM)(equal)(toString)
-		(FromPtDir)(FromPts)(ChokePoint)(CrossLine), NOTHING)
+		(FromPtDir)(FromPts)(ChokePoint)(CrossLine))
 DEF_LUAIMPLEMENT_PTR(spn::Pose2D, Pose2D, NOTHING,
 		(getOffset)(getScale)(getAngle)(getUp)(getRight)(lua_getToWorld)(lua_getToLocal)
 		(setScale)(setAngle)(setOffset)(setUp)
