@@ -1,4 +1,3 @@
-require("vector_common")
 require("sysfunc")
 return {
 	_renamefunc =

@@ -127,6 +127,8 @@ namespace rs {
 		LuaImport::RegisterClass<spn::Plane>(lsc);
 		LuaImport::RegisterClass<spn::DegF>(lsc);
 		LuaImport::RegisterClass<spn::RadF>(lsc);
+		LuaImport::RegisterClass<Camera2D>(lsc);
+		LuaImport::RegisterClass<Camera3D>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
