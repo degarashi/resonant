@@ -23,21 +23,21 @@ DEF_LUAIMPLEMENT_PTR(spn::Vec2, Vec2, (x)(y),
 DEF_LUAIMPLEMENT_PTR(spn::Vec3, Vec3, (x)(y)(z),
 		(addV)(subV)(mulF)(mulM)(divF)(modV)(mulQ)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
-		(normalization)(length)(saturation)(l_intp<false>)(verticalVector)(asVec4)(asVec2)(lua_planeDivide), (float)(float)(float))
+		(normalization)(length)(saturation)(l_intp<false>)(verticalVector)(asVec4)(asVec2)(luaPlaneDivide), (float)(float)(float))
 DEF_LUAIMPLEMENT_PTR(spn::Vec4, Vec4, (x)(y)(z)(w),
 		(addV)(subV)(mulF)(mulM)(divF)(invert)(equal)(toString)
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
 		(normalization)(length)(saturation)(l_intp<false>)(asVec3)(asVec3Coord), (float)(float)(float)(float))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat22, Mat22, NOTHING,
-		(identity)(transposition)(lua_invert)(calcDeterminant)
+		(identity)(transposition)(luaInvert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
 		(Scaling)(Rotation))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat33, Mat33, NOTHING,
-		(identity)(transposition)(lua_invert)(calcDeterminant)
+		(identity)(transposition)(luaInvert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
 		(Scaling)(Translation)(RotationX)(RotationY)(RotationZ)(RotationAxis))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat44, Mat44, NOTHING,
-		(identity)(transposition)(lua_invert)(calcDeterminant)
+		(identity)(transposition)(luaInvert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
 		(Scaling)(Translation)(LookAtLH)(LookDirLH)(LookAtRH)(LookDirRH)(RotationX)(RotationY)(RotationZ)(RotationAxis)(PerspectiveFovLH)(PerspectiveFovRH))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Quat, Quat, (x)(y)(z)(w),
@@ -51,11 +51,11 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Plane, Plane, (a)(b)(c)(d),
 		(mulM)(equal)(toString)
 		(FromPtDir)(FromPts)(ChokePoint)(CrossLine))
 DEF_LUAIMPLEMENT_PTR(spn::Pose2D, Pose2D, NOTHING,
-		(getOffset)(getScale)(getAngle)(getUp)(getRight)(lua_getToWorld)(lua_getToLocal)
+		(getOffset)(getScale)(getAngle)(getUp)(getRight)(luaGetToWorld)(luaGetToLocal)
 		(setScale)(setAngle)(setOffset)(setUp)
 		(identity)(moveUp)(moveDown)(moveLeft)(moveRight)(lerp)(equal)(toString), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Pose3D, Pose3D, NOTHING,
-		(getOffset)(getRot)(getScale)(lua_getToWorld)(lua_getToLocal)(getUp)(getRight)(getDir)
+		(getOffset)(getRot)(getScale)(luaGetToWorld)(luaGetToLocal)(getUp)(getRight)(getDir)
 		(setAll)(setScale)(setRot)(addAxisRot)(setOffset)(addOffset)
 		(identity)(moveFwd2D)(moveSide2D)(moveFwd3D)(moveSide3D)(turnAxis)(turnYPR)(addRot)(lerpTurn)(adjustNoRoll)(lerp)(equal)(toString), NOTHING)
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
