@@ -10,7 +10,10 @@
 #include "spinner/plane.hpp"
 #include "camera.hpp"
 #include "camera2d.hpp"
+#include "spinner/random.hpp"
 
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::MTRandom, Random, NOTHING, (luaGetUniform<float>)(luaGetUniform<int>))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::MTRandomMgr, RandomMgr, NOTHING, (initEngine)(removeEngine)(get))
 DEF_LUAIMPLEMENT_PTR(spn::DegF, Degree, NOTHING,
 		(set)(get)(single)(rangeValue)(range)(luaAddD)(luaAddR)(luaSubD)(luaSubR)(luaMulF)(luaDivF)(luaInvert)(luaToDegree)(luaToRadian)(luaLessthan)(luaLessequal)(luaEqual)(luaToString), (float))
 DEF_LUAIMPLEMENT_PTR(spn::RadF, Radian, NOTHING,
@@ -129,10 +132,13 @@ namespace rs {
 		LuaImport::RegisterClass<spn::RadF>(lsc);
 		LuaImport::RegisterClass<Camera2D>(lsc);
 		LuaImport::RegisterClass<Camera3D>(lsc);
+		LuaImport::RegisterClass<spn::MTRandom>(lsc);
+		LuaImport::RegisterClass<spn::MTRandomMgr>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
 		LuaImport::ImportClass(lsc, "System", "sound", &mgr_sound);
 		LuaImport::ImportClass(lsc, "System", "input", &mgr_input);
+		LuaImport::ImportClass(lsc, "System", "random", &mgr_random);
 	}
 }
