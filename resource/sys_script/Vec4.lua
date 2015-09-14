@@ -14,6 +14,9 @@ return {
 			{"selectMin", "selectMin<false>"},
 			{"getMax", "getMax<false>"},
 			{"selectMax", "selectMax<false>"},
-			{"lerp", "l_intp<false>"}
+			{"lerp", "l_intp<false>"},
+			{"random", "luaRandom"},
+			{"randomWithLength", "luaRandomWithLength"},
+			{"randomWithAbs", "luaRandomWithAbs"}
 		)
 }
