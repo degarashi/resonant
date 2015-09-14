@@ -1331,7 +1331,7 @@ namespace rs {
 			lsc.getGlobal(lua::LuaName((T*)nullptr));
 			lsc.getField(-1, luaNS::ConstructPtr);
 			lsc.newUserData(sizeof(T));
-			*reinterpret_cast<T*>(lsc.toUserData(-1)) = t;
+			new(lsc.toUserData(-1)) T(t);
 			lsc.call(1, 1);
 			return 1;
 		}
