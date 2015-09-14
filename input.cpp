@@ -263,6 +263,10 @@ namespace rs {
 				return -1;
 			return 0;
 		}
+		void Action::linkButtonAsAxis(HInput hI, int num_negative, int num_positive) {
+			addLink(hI, InputFlag::ButtonFlip, num_negative);
+			addLink(hI, InputFlag::Button, num_positive);
+		}
 	}
 	// ----------------- ActMgr -----------------
 	const std::string& detail::ActMgr::getResourceName(spn::SHandle /*sh*/) const {
