@@ -293,7 +293,22 @@ namespace rs {
 		LuaType operator()() const {
 			return GetLCVType<T>()(); }
 	};
-
+	// --- LCV<spn::Range<T>> = LCV<std::vector<T>>
+	template <class T>
+	struct LCV<spn::Range<T>> {
+		using Vec_t = std::vector<T>;
+		using LCV_t = GetLCVType<Vec_t>;
+		int operator()(lua_State* ls, const spn::Range<T>& r) const {
+			return LCV_t()(ls, {r.from, r.to}); }
+		spn::Range<T> operator()(int idx, lua_State* ls) const {
+			auto p = LCV_t()(idx, ls);
+			return {p[0], p[1]};
+		}
+		std::ostream& operator()(std::ostream& os, const spn::Range<T>& r) const {
+			return LCV_t()(os, {r.from, r.to}); }
+		LuaType operator()() const {
+			return LCV_t()(); }
+	};
 	// --- LCV<Duration> = LUA_TNUMBER
 	template <class Rep, class Period>
 	struct LCV<std::chrono::duration<Rep,Period>> {
