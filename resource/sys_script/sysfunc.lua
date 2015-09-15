@@ -111,3 +111,13 @@ function RS.RenameFunc(entry, ...)
 	RS.RenameFuncJoin(tbl, entry, ...)
 	return tbl
 end
+local G = _G
+function RS.RenameFuncStatic(tbl, tblname, entry, ...)
+	if not entry then
+		return
+	end
+	tbl[entry[1]] = function(...)
+		return G[tblname][entry[2]](...)
+	end
+	RS.RenameFuncStatic(tbl, tblname, ...)
+end

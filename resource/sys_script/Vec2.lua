@@ -1,6 +1,6 @@
 require("vector_common")
 require("sysfunc")
-return {
+local tmp = {
 	_size = 2,
 	IsVec = function(a)
 		return VecC.IsVec(a) and a._size == 2
@@ -15,9 +15,12 @@ return {
 			{"selectMin", "selectMin<false>"},
 			{"getMax", "getMax<false>"},
 			{"selectMax", "selectMax<false>"},
-			{"lerp", "l_intp<false>"},
-			{"random", "luaRandom"},
-			{"randomWithLength", "luaRandomWithLength"},
-			{"randomWithAbs", "luaRandomWithAbs"}
+			{"lerp", "l_intp<false>"}
 		)
 }
+RS.RenameFuncStatic(tmp, "Vec2",
+	{"Random", "luaRandom"},
+	{"RandomWithLength", "luaRandomWithLength"},
+	{"RandomWithAbs", "luaRandomWithAbs"}
+)
+return tmp

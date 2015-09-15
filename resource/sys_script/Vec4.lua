@@ -1,5 +1,5 @@
 require("vector_common")
-return {
+local tmp = {
 	_size = 4,
 	IsVec = function(a)
 		return VecC.IsVec(a) and a._size == 4
@@ -20,3 +20,9 @@ return {
 			{"randomWithAbs", "luaRandomWithAbs"}
 		)
 }
+RS.RenameFuncStatic(tmp, "Vec4",
+	{"Random", "luaRandom"},
+	{"RandomWithLength", "luaRandomWithLength"},
+	{"RandomWithAbs", "luaRandomWithAbs"}
+)
+return tmp
