@@ -1326,12 +1326,13 @@ namespace rs {
 	};
 	template <class T>
 	struct LCV {
-		int operator()(lua_State* ls, const T& t) const {
+		template <class T2>
+		int operator()(lua_State* ls, T2&& t) const {
 			LuaState lsc(ls);
 			lsc.getGlobal(lua::LuaName((T*)nullptr));
 			lsc.getField(-1, luaNS::ConstructPtr);
 			lsc.newUserData(sizeof(T));
-			new(lsc.toUserData(-1)) T(t);
+			new(lsc.toUserData(-1)) T(std::forward<T2>(t));
 			lsc.call(1, 1);
 			return 1;
 		}
