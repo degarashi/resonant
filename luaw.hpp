@@ -374,7 +374,7 @@ namespace rs {
 			Vec_t ret(sz);
 			for(int i=0 ; i<sz ; i++) {
 				lua_pushinteger(ls, i+1);
-				lua_gettable(ls, -2);
+				lua_gettable(ls, idx);
 				ret[i] = static_cast<T>(lcv(-1, ls));
 				lua_pop(ls, 1);
 			}
