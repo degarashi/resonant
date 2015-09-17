@@ -32,6 +32,13 @@ namespace rs {
 	template <class T>
 	void CallLuaExport(LuaState&, std::false_type) {}
 }
+#define DEF_LUAIMPLEMENT_DERIVED(clazz, der) \
+	namespace rs{ namespace lua{ \
+		template <> \
+		const char* LuaName(clazz*) { return LuaName((der*)nullptr); } \
+		template <> \
+		void LuaExport(LuaState& lsc, clazz*) { LuaExport(lsc, (der*)nullptr); } \
+	}}
 #define DEF_LUAIMPLEMENT_HDL_IMPL(mgr, clazz, class_name, base, seq_member, seq_method, seq_ctor, makeobj) \
 		namespace rs{ namespace lua{ \
 			template <> \
