@@ -669,10 +669,11 @@ namespace rs {
 	template <class T, class Base=Object>
 	class ObjectT_Lua : public ObjectT<T,Base>, public spn::EnableFromThis<HObj> {
 		protected:
-			void _callLuaUpdate(const SPLua& ls) {
+			template <class... Ts>
+			void _callLuaMethod(const SPLua& ls, const std::string& method, Ts&&... ts) {
 				ls->push(handleFromThis());
 				LValueS lv(ls->getLS());
-				lv.callMethod(luaNS::RecvMsg, luaNS::OnUpdate);
+				lv.callMethod(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
 			}
 		public:
 			using base = ObjectT<T,Base>;
@@ -680,7 +681,9 @@ namespace rs {
 			void onUpdate(const SPLua& ls) override {
 				base::onUpdate(ls);
 				if(!base::isDead())
-					_callLuaUpdate(ls);
+					_callLuaMethod(ls, luaNS::OnUpdate);
+				if(base::isDead())
+					_callLuaMethod(ls, luaNS::OnExit, "null");
 			}
 	};
 	DefineUpdGroup(U_UpdGroup)

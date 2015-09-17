@@ -1091,6 +1091,7 @@ namespace rs {
 								Ctor,
 								RecvMsg,
 								OnUpdate,
+								OnExit,
 								System;
 		namespace objBase {
 			extern const std::string ValueR,

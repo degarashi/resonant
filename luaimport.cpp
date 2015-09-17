@@ -33,6 +33,7 @@ namespace rs {
 						Ctor("Ctor"),
 						RecvMsg("RecvMsg"),
 						OnUpdate("OnUpdate"),
+						OnExit("OnExit"),
 						System("System");
 		namespace objBase {
 			const std::string ValueR("_valueR"),
