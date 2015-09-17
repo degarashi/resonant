@@ -45,3 +45,6 @@ namespace rs {
 		};
 	}
 }
+#include "luaimport.hpp"
+DEF_LUAIMPORT(rs::util::FBSwitch)
+DEF_LUAIMPORT(rs::util::FBClear)
