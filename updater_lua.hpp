@@ -15,7 +15,7 @@ namespace rs {
 		struct MakeObject_Tmp {
 			template <class... Ts>
 			auto operator()(Ts&&... ts) {
-				return T(std::forward<Ts>(ts)...);
+				return T{std::forward<Ts>(ts)...};
 			}
 		};
 	}
@@ -41,7 +41,7 @@ namespace rs {
 	int MakeObject(lua_State* ls) {
 		detail::MakeObject_Tmp<T> fn;
 		T ret = FuncCall<Ts...>::callCB(fn, ls, static_cast<int>(-sizeof...(Ts)));
-		LCV<T>()(ls, ret);
+		LCV<T>()(ls, std::move(ret));
 		return 1;
 	}
 }
