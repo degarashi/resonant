@@ -34,6 +34,10 @@ DEF_LUAIMPLEMENT_PTR(spn::Vec4, Vec4, (x)(y)(z)(w),
 		(dot<false>)(sum)(distance<false>)(getMin<false>)(selectMin<false>)(getMax<false>)(selectMax<false>)
 		(normalization)(length)(saturation)(l_intp<false>)(asVec3)(asVec3Coord)
 		(luaRandom)(luaRandomWithLength)(luaRandomWithAbs), (float)(float)(float)(float))
+DEF_LUAIMPLEMENT_DERIVED(spn::AVec2, spn::Vec2)
+DEF_LUAIMPLEMENT_DERIVED(spn::AVec3, spn::Vec3)
+DEF_LUAIMPLEMENT_DERIVED(spn::AVec4, spn::Vec4)
+
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat22, Mat22, NOTHING,
 		(identity)(transposition)(luaInvert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
@@ -46,16 +50,24 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Mat44, Mat44, NOTHING,
 		(identity)(transposition)(luaInvert)(calcDeterminant)
 		(addF)(addM)(subF)(subM)(mulF)(mulM)(mulV)(divF)
 		(Scaling)(Translation)(LookAtLH)(LookDirLH)(LookAtRH)(LookDirRH)(RotationX)(RotationY)(RotationZ)(RotationAxis)(PerspectiveFovLH)(PerspectiveFovRH))
+DEF_LUAIMPLEMENT_DERIVED(spn::AMat22, spn::Mat22)
+DEF_LUAIMPLEMENT_DERIVED(spn::AMat33, spn::Mat33)
+DEF_LUAIMPLEMENT_DERIVED(spn::AMat44, spn::Mat44)
+
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Quat, Quat, (x)(y)(z)(w),
 		(rotationX)(rotationY)(rotationZ)(identity)(normalization)(conjugation)(inverse)(angle)(length)
 		(addQ)(subQ)(mulQ)(mulF)(divF)(equal)(toString)
 		(getVector)(getAxis)(getXAxis)(getXAxisInv)(getYAxis)(getYAxisInv)(getZAxis)(getZAxisInv)(getRight)(getUp)(getDir)
 		(dot)(slerp)(distance)(asMat33)(asMat44)
 		(FromAxisF)(FromAxis)(FromMatAxis)(RotationYPR)(RotationX)(RotationY)(RotationZ)(LookAt)(SetLookAt)(Lua_FromMat33)(Lua_FromMat44)(Lua_Rotation)(Lua_RotationFromTo))
+DEF_LUAIMPLEMENT_DERIVED(spn::AQuat, spn::Quat)
+
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::Plane, Plane, (a)(b)(c)(d),
 		(dot)(move)(getNormal)(placeOnPlane)(placeOnPlaneDirDist)(getOrigin)
 		(mulM)(equal)(toString)
 		(FromPtDir)(FromPts)(ChokePoint)(CrossLine))
+DEF_LUAIMPLEMENT_DERIVED(spn::APlane, spn::Plane)
+
 DEF_LUAIMPLEMENT_PTR(spn::Pose2D, Pose2D, NOTHING,
 		(getOffset)(getScale)(getAngle)(getUp)(getRight)(luaGetToWorld)(luaGetToLocal)
 		(setScale)(setAngle)(setOffset)(setUp)
