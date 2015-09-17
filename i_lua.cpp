@@ -76,16 +76,20 @@ DEF_LUAIMPLEMENT_DERIVED(spn::APlane, spn::Plane)
 
 DEF_LUAIMPLEMENT_PTR(spn::Pose2D, Pose2D, NOTHING,
 		(getOffset)(getScale)(getAngle)(getUp)(getRight)(luaGetToWorld)(luaGetToLocal)
+		(refScale)(refAngle)(refOffset)
 		(setScale)(setAngle)(setOffset)(setUp)
 		(identity)(moveUp)(moveDown)(moveLeft)(moveRight)(lerp)(equal)(toString), NOTHING)
 DEF_LUAIMPLEMENT_PTR(spn::Pose3D, Pose3D, NOTHING,
 		(getOffset)(getRot)(getScale)(luaGetToWorld)(luaGetToLocal)(getUp)(getRight)(getDir)
+		(refOffset)(refRot)(refScale)
 		(setAll)(setScale)(setRot)(addAxisRot)(setOffset)(addOffset)
 		(identity)(moveFwd2D)(moveSide2D)(moveFwd3D)(moveSide3D)(turnAxis)(turnYPR)(addRot)(lerpTurn)(adjustNoRoll)(lerp)(equal)(toString), NOTHING)
+
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ObjMgr, Object, Object, NOTHING, NOTHING)
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_Scene, U_Scene, "FSMachine", NOTHING, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_Scene, U_Scene, "FSMachine", NOTHING,
+		(getUpdGroup)(getDrawGroup), NOTHING)
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::SceneMgr, SceneMgr, NOTHING, (isEmpty)(getTop)(getScene)(setPushScene)(setPopScene))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::IGLTexture, IGLTexture, NOTHING, (getResourceName)(getTextureID))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, rs::UpdGroup, UpdGroup, "Object", NOTHING, (addObj)(addObjPriority)(remObj)(getName)(getPriority)(clear))
@@ -112,10 +116,12 @@ DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Joypad, Joypad, "IInput", NOTH
 
 DEF_LUAIMPLEMENT_HDL_NOBASE(rs::Camera3DMgr, rs::Camera3D, Camera3D, NOTHING,
 		(setPose<spn::Pose3D>)(setFov<spn::RadF>)(setAspect<float>)(setNearZ<float>)(setFarZ<float>)(setZPlane)
+		(refPose)
 		(getPose)(getFov)(getAspect)(getNearZ)(getFarZ)
 		(unproject)(unprojectVec)(vp2wp), NOTHING)
 DEF_LUAIMPLEMENT_HDL_NOBASE(rs::Camera2DMgr, rs::Camera2D, Camera2D, NOTHING,
 		(setPose<spn::Pose2D>)(setAspectRatio<float>)
+		(refPose)
 		(getPose)(getAspectRatio)
 		(vp2w)(v2w), NOTHING)
 
