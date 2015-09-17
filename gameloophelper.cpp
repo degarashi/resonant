@@ -7,9 +7,9 @@
 namespace rs {
 	namespace detail {
 		// ----------------- GameloopHelper -----------------
-		int GameloopHelper::Run(const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBScene& cbScene, int rx, int ry, const std::string& appname, const std::string& pathfile) {
+		int GameloopHelper::Run(const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBScene& cbScene, const CBInit& cbTerm, int rx, int ry, const std::string& appname, const std::string& pathfile) {
 			GameLoop gloop([&](const SPWindow& sp){
-					return new GHelper_Main(sp, cbEngine, cbMakeSV, cbInit, cbScene);
+					return new GHelper_Main(sp, cbEngine, cbMakeSV, cbInit, cbTerm, cbScene);
 					}, [](){ return new GHelper_Draw; });
 
 			GLoopInitParam param;
@@ -34,8 +34,9 @@ namespace rs {
 		}
 
 		// ----------------- GHelper_Main -----------------
-		GHelper_Main::GHelper_Main(const SPWindow& sp, const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBScene& cbScene):
-			MainProc(sp, true)
+		GHelper_Main::GHelper_Main(const SPWindow& sp, const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBInit& cbTerm, const CBScene& cbScene):
+			MainProc(sp, true),
+			_cbTerm(cbTerm)
 		{
 			auto lkb = sharedbase.lock();
 
@@ -57,6 +58,9 @@ namespace rs {
 			else
 				hlScene = cbScene();
 			_pushFirstScene(hlScene);
+		}
+		GHelper_Main::~GHelper_Main() {
+			_cbTerm();
 		}
 		bool GHelper_Main::userRunU() {
 			return true;

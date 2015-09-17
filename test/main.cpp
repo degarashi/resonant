@@ -86,5 +86,7 @@ int main(int argc, char **argv) {
 			lk->actPress->addLink(lkb->hlIm, rs::InputFlag::Button, 0);
 		}
 	};
-	return rs::GameloopHelper<Engine, SharedValue, Sc_Base>::Run(cbInit, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
+	auto cbTerm = [](){
+	};
+	return rs::GameloopHelper<Engine, SharedValue, Sc_Base>::Run(cbInit, cbTerm, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
 }
