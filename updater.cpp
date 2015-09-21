@@ -2,6 +2,7 @@
 #include "spinner/sort.hpp"
 
 ImplDrawGroup(rs::U_DrawGroup, 0x0000)
+ImplDrawGroup(rs::U_DrawGroupProxy, 0x0000)
 namespace rs {
 	const ObjTypeId InvalidObjId(~0);
 	namespace {

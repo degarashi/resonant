@@ -688,10 +688,13 @@ namespace rs {
 	};
 	DefineUpdGroup(U_UpdGroup)
 	DefineDrawGroup(U_DrawGroup)
+	DefineDrawGroupProxy(U_DrawGroupProxy)
 }
 #include "luaimport.hpp"
 DEF_LUAIMPORT(rs::Object)
 DEF_LUAIMPORT(rs::UpdGroup)
 DEF_LUAIMPORT(rs::DrawGroup)
+DEF_LUAIMPORT(rs::DrawGroupProxy)
 DEF_LUAIMPORT(rs::U_UpdGroup)
 DEF_LUAIMPORT(rs::U_DrawGroup)
+DEF_LUAIMPORT(rs::U_DrawGroupProxy)
