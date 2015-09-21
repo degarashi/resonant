@@ -68,3 +68,59 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::sprite>::GetVDecl() {
 	});
 	return vd;
 }
+
+// ----------------------- SpriteObj -----------------------
+SpriteObj::SpriteObj(rs::HDGroup hDg, rs::HTex hTex, float depth):
+	DWrapper(::MakeCallDraw<Engine>(), Sprite::T_Sprite, hDg, hTex, depth) {}
+#include "../luaimport.hpp"
+#include "../updater_lua.hpp"
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, SpriteObj, SpriteObj, "Object", NOTHING, (setOffset)(setScale)(setAngle)(setZOffset)(setZRange)(setAlpha)(setPriority), (rs::HDGroup)(rs::HTex)(float))
+
+// ----------------------- U_BoundingSprite -----------------------
+U_BoundingSprite::U_BoundingSprite(rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
+	BoundingSprite(Sprite::T_Sprite, hDg, hTex, pos, svec) {}
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, U_BoundingSprite, U_BoundingSprite, "Object", NOTHING,
+		(setScale), (rs::HDGroup)(rs::HTex)(const spn::Vec2&)(const spn::Vec2&))
+// ----------------------- BoundingSprite -----------------------
+BoundingSprite::BoundingSprite(rs::IdValue tpId, rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
+	base_t(::MakeCallDraw<Engine>(), tpId, hDg, hTex, 0.f),
+	_svec(svec)
+{
+	setOffset(pos);
+	setZRange({-1.f, 1.f});
+	setStateNew<St_Default>();
+}
+struct BoundingSprite::St_Default : base_t::St_Default {
+	void onUpdate(base_t& self, const rs::SPLua& /*ls*/) override {
+		auto& ths = static_cast<BoundingSprite&>(self);
+		auto& sc = self.getScale();
+		auto& ofs = self.refOffset();
+		auto& svec = ths._svec;
+		ofs += svec;
+		// 境界チェック
+		// Left
+		if(ofs.x < -1.f) {
+			svec.x *= -1.f;
+			ofs.x = -1.f;
+		}
+		// Right
+		if(ofs.x + sc.x > 1.f) {
+			svec.x *= -1.f;
+			ofs.x = 1.f - sc.x;
+		}
+		// Top
+		if(ofs.y + sc.y > 1.f) {
+			svec.y *= -1.f;
+			ofs.y = 1.f - sc.y;
+		}
+		// Bottom
+		if(ofs.y < -1.f) {
+			svec.y *= -1.f;
+			ofs.y = -1.f;
+		}
+
+		// ZOffset = y
+		self.setZOffset(ofs.y);
+		self.refreshDrawTag();
+	}
+};

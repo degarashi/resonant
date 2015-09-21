@@ -27,8 +27,9 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 	}
 	std::stringstream ss;
 	ss << "FPS: " << fps << std::endl;
-	rs::Object& obj = *mgr_scene.getScene(0).ref();
-	ss << "State: " << obj.recvMsg(MSG_StateName).toString() << std::endl;
+	// TODO: Luaへのメッセージ送信機構を後で実装して対応
+	// rs::Object& obj = *mgr_scene.getScene(0).ref();
+	// ss << "State: " << obj.recvMsg(MSG_StateName).toString() << std::endl;
 	// バッファ切り替えカウント数の表示
 	auto& buffd = self._count.buffer;
 	ss << "VertexBuffer: " << buffd.vertex << std::endl;
@@ -62,6 +63,8 @@ void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 		auto hlp = rs_mgr_obj.makeDrawable<rs::util::DWrapper<rs::util::WindowRect>>(::MakeCallDraw<Engine>(), T_Rect, rs::HDGroup());
 		hlp.second->setAlpha(0.5f);
 		hlp.second->setColor({0,1,0});
+		hlp.second->setDepth(1.f);
+		hlp.second->setPriority(self._dtag.priority-1);
 		d->addObj(hlp.first);
 		pRect = hlp.second;
 	}
@@ -77,7 +80,7 @@ rs::LCValue InfoShow::MySt::recvMsg(InfoShow& /*self*/, rs::GMessageId /*msg*/, 
 	return rs::LCValue();
 }
 // ---------------------- InfoShow ----------------------
-InfoShow::InfoShow(rs::HDGroup hDg):
+InfoShow::InfoShow(rs::HDGroup hDg, rs::Priority dprio):
 	_hDg(hDg),
 	_offset(0)
 {
@@ -85,6 +88,7 @@ InfoShow::InfoShow(rs::HDGroup hDg):
 	rs::CCoreID cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 20, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel));
 	_textHud.setCCoreId(cid);
 	_textHud.setDepth(0.f);
+	_dtag.priority = dprio;
 
 	rs::GPUInfo info;
 	info.onDeviceReset();
@@ -102,3 +106,6 @@ void InfoShow::setOffset(const spn::Vec2& ofs) {
 	_textHud.setWindowOffset(ofs);
 }
 rs::Priority InfoShow::getPriority() const { return 0x1000; }
+
+#include "../updater_lua.hpp"
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, InfoShow, InfoShow, "Object", NOTHING, (setOffset)(getPriority), (rs::HDGroup)(rs::Priority))

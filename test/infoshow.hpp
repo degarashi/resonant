@@ -21,7 +21,8 @@ class InfoShow : public rs::DrawableObjT<InfoShow>,
 		struct MySt;
 	public:
 		static const rs::IdValue	T_Info;
-		InfoShow(rs::HDGroup hDg);
+		InfoShow(rs::HDGroup hDg, rs::Priority dprio);
 		void setOffset(const spn::Vec2& ofs);
 		rs::Priority getPriority() const override;
 };
+DEF_LUAIMPORT(InfoShow)

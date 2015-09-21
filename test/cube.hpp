@@ -6,6 +6,7 @@
 namespace rs {
 	struct DrawTag;
 }
+class Engine;
 class Cube : public spn::Pose3D {
 	private:
 		static rs::WVb s_wVb;
@@ -19,3 +20,9 @@ class Cube : public spn::Pose3D {
 		void draw(Engine& e) const;
 		void exportDrawTag(rs::DrawTag& d) const;
 };
+#include "../util/dwrapper.hpp"
+class CubeObj : public rs::util::DWrapper<Cube> {
+	public:
+		CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex);
+};
+DEF_LUAIMPORT(CubeObj)

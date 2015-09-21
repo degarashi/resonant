@@ -2,8 +2,8 @@
 #include "engine.hpp"
 #include "cube.hpp"
 
-rs::WVb Cube::s_wVb;
 // ---------------------- Cube ----------------------
+rs::WVb Cube::s_wVb;
 const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
 				Cube::U_litpos = GlxId::GenUnifId("vLitPos");
 void Cube::_initVb() {
@@ -97,3 +97,10 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::cube>::GetVDecl() {
 	});
 	return vd;
 }
+
+// ---------------------- CubeObj ----------------------
+CubeObj::CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex):
+	DWrapper(::MakeCallDraw<Engine>(), Cube::T_Cube, hDg, size, hTex) {}
+#include "../luaimport.hpp"
+#include "../updater_lua.hpp"
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "Object", NOTHING, (setOffset)(setPriority), (rs::HDGroup)(float)(rs::HTex))

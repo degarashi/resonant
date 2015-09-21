@@ -9,7 +9,39 @@
 #include "../input.hpp"
 #include "scene.hpp"
 #include "engine.hpp"
+#include "fpscamera.hpp"
 
+#include "../updater.hpp"
+#include "../updater_lua.hpp"
+#include "infoshow.hpp"
+#include "../util/profileshow.hpp"
+#include "cube.hpp"
+#include "sprite.hpp"
+#include "blureffect.hpp"
+
+rs::CCoreID GetCID() {
+	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
+}
+class U_ProfileShow : public rs::util::ProfileShow {
+	public:
+		U_ProfileShow(rs::HDGroup hDg, rs::Priority uprio, rs::Priority dprio):
+			rs::util::ProfileShow(InfoShow::T_Info, T_Rect,
+				GetCID(), hDg, uprio, dprio) {}
+};
+DEF_LUAIMPORT(U_ProfileShow)
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, U_ProfileShow, U_ProfileShow, "Object", NOTHING, (setOffset), (rs::HDGroup)(rs::Priority)(rs::Priority))
+
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, FPSCamera, FPSCamera, "FSMachine", NOTHING, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_PTR_NOCTOR(GlobalValue, GlobalValue,
+			(hlCam)(random)(hlIk)(hlIm)
+			(actQuit)(actAx)(actAy)(actMoveX)(actMoveY)
+			(actPress)(actReset)(actCube)(actSound)(actSprite)(actSpriteD)
+			(actNumber0)(actNumber1)(actNumber2)(actNumber3)(actNumber4), NOTHING)
+
+thread_local GlobalValueOP tls_gvalue;
+namespace {
+	constexpr int RandomId = 0x20000000;
+}
 Engine& CnvToEngine(rs::IEffect& e) {
 	return static_cast<Engine&>(e);
 }
@@ -18,7 +50,6 @@ namespace {
 				RESOLUTION_Y = 768;
 	constexpr char APP_NAME[] = "rse_test";
 }
-
 int main(int argc, char **argv) {
 	// 第一引数にpathlistファイルの指定が必須
 	if(argc <= 1) {
@@ -27,11 +58,22 @@ int main(int argc, char **argv) {
 	}
 	auto cbInit = [](){
 		auto lkb = sharedbase.lockR();
-		auto lk = sharedv.lock();
+		tls_gvalue = GlobalValue();
+		auto& gv = *tls_gvalue;
+
+		rs::LuaImport::RegisterClass<BlurEffect>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<U_BoundingSprite>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<CubeObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<InfoShow>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<U_ProfileShow>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<GlobalValue>(*lkb->spLua);
+		rs::LuaImport::ImportClass(*lkb->spLua, "Global", "cpp", &gv);
+		rs::LuaImport::RegisterClass<FPSCamera>(*lkb->spLua);
 		// init Camera
 		{
-			lk->hlCam = mgr_cam.emplace();
-			auto& cd = lk->hlCam.ref();
+			gv.hlCam = mgr_cam.emplace();
+			auto& cd = gv.hlCam.ref();
 			auto& ps = cd.refPose();
 			ps.setOffset({0,0,-3});
 			cd.setFov(spn::DegF(60));
@@ -39,54 +81,17 @@ int main(int argc, char **argv) {
 		}
 		// init Effect
 		{
-			lk->pEngine = static_cast<Engine*>(lkb->hlFx->get());
-			lk->pEngine->ref<rs::SystemUniform3D>().setCamera(lk->hlCam);
+			gv.pEngine = static_cast<Engine*>(lkb->hlFx->get());
+			gv.pEngine->ref<rs::SystemUniform3D>().setCamera(gv.hlCam);
 		}
-		// init Input
+		// init Random
 		{
-			// quit[Esc]							アプリケーション終了
-			lk->actQuit = mgr_input.makeAction("quit");
-			lk->actQuit->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_ESCAPE);
-			// reset-scene[R]						シーンリセット
-			lk->actReset = mgr_input.makeAction("reset");
-			lk->actReset->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_LSHIFT);
-			// mode: cube[Z]
-			lk->actCube = mgr_input.makeAction("mode_cube");
-			lk->actCube->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_Z);
-			// mode: sound[X]
-			lk->actSound = mgr_input.makeAction("mode_sound");
-			lk->actSound->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_X);
-			// mode: sprite[C]
-			lk->actSprite = mgr_input.makeAction("mode_sprite");
-			lk->actSprite->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_C);
-			// mode: spriteD[V]
-			lk->actSpriteD = mgr_input.makeAction("mode_spriteD");
-			lk->actSpriteD->addLink(lkb->hlIk, rs::InputFlag::Button, SDL_SCANCODE_V);
-			const int c_scancode[] = { SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6};
-			for(int i=0 ; i<static_cast<int>(countof(lk->actNumber)) ; i++) {
-				lk->actNumber[i] = mgr_input.makeAction((boost::format("number_%1%")%i).str());
-				lk->actNumber[i]->addLink(lkb->hlIk, rs::InputFlag::Button, c_scancode[i]);
-			}
-			// left, right, up, down [A,D,W,S]		カメラ移動
-			lk->actAx = mgr_input.makeAction("axisX");
-			lk->actAy = mgr_input.makeAction("axisY");
-			rs::InputMgr::LinkButtonAsAxisMulti(
-				lkb->hlIk,
-				std::make_tuple(lk->actAx, SDL_SCANCODE_A, SDL_SCANCODE_D),
-				std::make_tuple(lk->actAy, SDL_SCANCODE_S, SDL_SCANCODE_W)
-			);
-			// rotate-camera[MouseX,Y]				カメラ向き変更
-			lk->actMoveX = mgr_input.makeAction("moveX");
-			lk->actMoveY = mgr_input.makeAction("moveY");
-			// rotate-switch[MouseLeft]				カメラ回転切り替え
-			lk->actPress = mgr_input.makeAction("press");
-
-			lk->actMoveX->addLink(lkb->hlIm, rs::InputFlag::Axis, 0);
-			lk->actMoveY->addLink(lkb->hlIm, rs::InputFlag::Axis, 1);
-			lk->actPress->addLink(lkb->hlIm, rs::InputFlag::Button, 0);
+			mgr_random.initEngine(RandomId);
+			gv.random = mgr_random.get(RandomId);
 		}
 	};
 	auto cbTerm = [](){
+		tls_gvalue = spn::none;
 	};
-	return rs::GameloopHelper<Engine, SharedValue, Sc_Base>::Run(cbInit, cbTerm, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
+	return rs::GameloopHelper<Engine, SharedValue, Sc_Dummy>::Run(cbInit, cbTerm, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
 }

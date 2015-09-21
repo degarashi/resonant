@@ -13,7 +13,6 @@
 #include "../differential.hpp"
 #include "../glx_if.hpp"
 #include "../util/dwrapper_calldraw.hpp"
-
 namespace vertex {
 	//! キューブ描画用頂点
 	struct cube {
@@ -34,12 +33,23 @@ namespace vdecl {
 DefineVDecl(::vdecl::cube)
 DefineVDecl(::vdecl::sprite)
 
+#include "spinner/random.hpp"
 class Engine;
-class Sc_Base;
+class Sc_Dummy : public rs::Scene<Sc_Dummy> {};
+using RandomOP = spn::Optional<spn::MTRandom>;
 // ゲーム通しての(MainThread, DrawThread含めた)グローバル変数
 // リソースハンドルはメインスレッドで参照する -> メインスレッドハンドラに投げる
-struct SharedValue {
+struct SharedValue {};
+#define sharedv (::rs::GameloopHelper<Engine, SharedValue, Sc_Base>::SharedValueC::_ref())
+using GlxId = rs::IEffect::GlxId;
+extern const rs::GMessageId MSG_StateName;
+rs::HLDObj MakeFBClear(rs::Priority priority);
+extern const rs::IdValue T_Rect;
+
+struct GlobalValue {
 	Engine*		pEngine;
+	rs::HLInput	hlIk,
+				hlIm;
 	rs::HLAct	actQuit,
 				actAx,
 				actAy,
@@ -51,14 +61,17 @@ struct SharedValue {
 				actSound,
 				actSprite,
 				actSpriteD,
-				actNumber[5];
+				actNumber0,
+				actNumber1,
+				actNumber2,
+				actNumber3,
+				actNumber4;
 	rs::HLCam	hlCam;
+	RandomOP	random;
 };
-#define sharedv (::rs::GameloopHelper<Engine, SharedValue, Sc_Base>::SharedValueC::_ref())
-using GlxId = rs::IEffect::GlxId;
-extern const rs::GMessageId MSG_StateName;
-rs::HLDObj MakeFBClear(rs::Priority priority);
-extern const rs::IdValue T_Rect;
+DEF_LUAIMPORT(GlobalValue)
+using GlobalValueOP = spn::Optional<GlobalValue>;
+extern thread_local GlobalValueOP tls_gvalue;
 
 class Engine;
 Engine& CnvToEngine(rs::IEffect& e);
