@@ -375,6 +375,7 @@ namespace rs {
 			return 1;
 		}
 		Vec_t operator()(int idx, lua_State* ls) const {
+			idx = lua_absindex(ls, idx);
 			GetLCVType<T> lcv;
 			int stk = lua_gettop(ls);
 			lua_len(ls, idx);
