@@ -41,6 +41,7 @@ FSMachine = DerivedHandle(upd_obj, "FSMachine", {
 		state(table)		: 現在のステート
 		stateS(string)		: 現在のステート名
 		nextStateS(string)	: 移行先のステート名
+		nextParam(table)	: 次のステートに渡すパラメータ {...}
 		stateLocal(table)	: ステートローカル領域
 	]]
 	Ctor = function(self, firstState, ...)
@@ -53,10 +54,11 @@ FSMachine = DerivedHandle(upd_obj, "FSMachine", {
 		self:RecvMsg("OnEnter", nil)
 	end,
 	-- \param[in] state(string)	次のステート名
-	SetState = function(self, state)
+	SetState = function(self, state, ...)
 		-- 既に次のステートがセットされていたらエラー
 		assert(not self.nextStateS)
 		self.nextStateS = state
+		self.nextParam = {...}
 	end,
 	SwitchState = function(self)
 		-- ステート変更が全て終わるまでループ
@@ -70,10 +72,12 @@ FSMachine = DerivedHandle(upd_obj, "FSMachine", {
 			-- stateLocalを一旦破棄
 			self.stateLocal = {}
 
+			local tmpParam = self.nextParam
+			self.nextParam = nil
 			local prevS = self.stateS
 			self.state = self[nextS]
 			self.stateS = nextS
-			self:RecvMsg("OnEnter", prevS)
+			self:RecvMsg("OnEnter", prevS, table.unpack(tmpParam))
 		end
 	end,
 	-- 全てのメッセージは先頭引数がself, lc(ステートローカル領域)
