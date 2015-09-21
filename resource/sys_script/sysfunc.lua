@@ -58,6 +58,13 @@ function RS.PrintValue(name, val, depth, mem)
 		print(keyS .. tostring(val))
 	end
 end
+function RS.Concat(src0, src1)
+	local n = #src0
+	for i=1,#src1 do
+		n = n+1
+		src0[n] = src1[i]
+	end
+end
 function RS.Join(dst, src)
 	for k,v in pairs(src) do
 		local v = dst[k]
