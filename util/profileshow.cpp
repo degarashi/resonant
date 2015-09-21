@@ -16,6 +16,8 @@ namespace rs {
 					auto hlp = rs_mgr_obj.makeDrawable<DWrapper<WindowRect>>(fn, self._idRect, HDGroup());
 					hlp.second->setColor({0,0,1});
 					hlp.second->setAlpha(0.5f);
+					hlp.second->setDepth(1.f);
+					hlp.second->setPriority(self._dtag.priority-1);
 					dg->addObj(hlp.first);
 					pRect = hlp.second;
 				}
