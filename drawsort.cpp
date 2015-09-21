@@ -22,6 +22,7 @@ namespace rs {
 				}
 				++itr;
 			}
+			DoSort(alg, cursor, itr0, itr);
 		}
 	}
 
