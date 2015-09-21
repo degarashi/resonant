@@ -4,6 +4,7 @@
 #include "spinner/unituple/operator.hpp"
 #include "spinner/structure/profiler.hpp"
 #include "glx_if.hpp"
+#include "systeminfo.hpp"
 
 namespace rs {
 	// ------------------------------ DrawProc ------------------------------
@@ -101,6 +102,8 @@ namespace rs {
 		IEffect& fx = *lk->hlFx.cref();
 		fx.endTask();
 		lk->diffCount = fx.getDifference();
+
+		mgr_info.setInfo(lk->screenSize, lk->fps.getFPS());
 	}
 	void MainProc::onPause() {
 		mgr_scene.onPause(); }

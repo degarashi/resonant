@@ -16,6 +16,7 @@
 #include "input_sdlvalue.hpp"
 #include "lsys.hpp"
 #include "spinner/structure/profiler.hpp"
+#include "systeminfo.hpp"
 
 namespace rs {
 	// --------------------- FPSCounter ---------------------
@@ -193,6 +194,7 @@ namespace rs {
 			};
 			fnMakeCurrent();
 
+			UPtr<SystemInfo>	infoP(new SystemInfo());
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));

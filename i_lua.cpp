@@ -12,12 +12,14 @@
 #include "camera2d.hpp"
 #include "spinner/random.hpp"
 #include "util/screen.hpp"
+#include "systeminfo.hpp"
 
 DEF_LUAIMPLEMENT_PTR(rs::draw::ClearParam, ClearParam, (color)(depth)(stencil), NOTHING, (spn::Optional<spn::Vec4>)(spn::Optional<float>)(spn::Optional<uint32_t>))
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::util::FBClear, FBClear, "Object", NOTHING, NOTHING, (rs::Priority)(const rs::draw::ClearParam&))
 using ClearParam_OP = spn::Optional<rs::draw::ClearParam>;
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::util::FBSwitch, FBSwitch, "Object", NOTHING, (setClearParam), (rs::Priority)(HFb)(const ClearParam_OP&))
 
+DEF_LUAIMPLEMENT_PTR_NOCTOR(SystemInfo, SystemInfo, NOTHING, (getScreenSize)(getFPS))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::MTRandom, Random, NOTHING, (luaGetUniform<float>)(luaGetUniform<int>))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::MTRandomMgr, RandomMgr, NOTHING, (initEngine)(removeEngine)(get))
 DEF_LUAIMPLEMENT_PTR(spn::DegF, Degree, NOTHING,
@@ -164,11 +166,13 @@ namespace rs {
 		LuaImport::RegisterClass<draw::ClearParam>(lsc);
 		LuaImport::RegisterClass<util::FBSwitch>(lsc);
 		LuaImport::RegisterClass<util::FBClear>(lsc);
+		LuaImport::RegisterClass<SystemInfo>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
 		LuaImport::ImportClass(lsc, "System", "sound", &mgr_sound);
 		LuaImport::ImportClass(lsc, "System", "input", &mgr_input);
 		LuaImport::ImportClass(lsc, "System", "random", &mgr_random);
+		LuaImport::ImportClass(lsc, "System", "info", &mgr_info);
 	}
 }
