@@ -9,6 +9,11 @@ return {
 		HatX = 6,
 		HatY = 7
 	},
+	MouseMode = {
+		Absolute = 0,
+		Clipping = 1,
+		Relative = 2
+	},
 	MouseKey = {
 		Left = 0,
 		Right = 1,
