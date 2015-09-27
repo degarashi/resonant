@@ -246,17 +246,20 @@ namespace rs {
 	}
 	// ------------------- LCV<WHandle> -------------------
 	int LCV<WHandle>::operator()(lua_State* ls, WHandle w) const {
-		if(!w.valid())
+		if(!w.valid()) {
 			LCV<LuaNil>()(ls, LuaNil());
-		else {
+			return 1;
+		} else {
 			LuaState lsc(ls);
 			lsc.push(reinterpret_cast<void*>(w.getValue()));
+			return LCV<SHandle>()(ls, spn::ResMgrBase::GetManager(w.getResID())->lock(w));
 		}
-		return 1;
 	}
 	WHandle LCV<WHandle>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
-		void* data = LCV<void*>()(idx, ls, spm);
-		return WHandle(reinterpret_cast<WHandle::VWord>(data));
+		SHandle sh = LCV<SHandle>()(idx, ls, spm);
+		if(sh)
+			return sh.weak();
+		return WHandle();
 	}
 	std::ostream& LCV<WHandle>::operator()(std::ostream& os, WHandle w) const {
 		return os << "(WHandle)" << std::hex << "0x" << w.getValue();

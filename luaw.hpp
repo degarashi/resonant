@@ -347,17 +347,20 @@ namespace rs {
 	};
 
 	template <class... Ts>
-	struct LCV<spn::SHandleT<Ts...>> {
+	struct LCV<spn::SHandleT<Ts...>> : LCV<spn::SHandle> {
 		using Handle_t = spn::SHandleT<Ts...>;
 		int operator()(lua_State* ls, const Handle_t& t) const {
-			return LCV<spn::SHandle>()(ls, static_cast<spn::SHandle>(t));
-		}
+			return LCV<spn::SHandle>()(ls, t); }
 		Handle_t operator()(int idx, lua_State* ls) const {
 			return  Handle_t::FromHandle(LCV<spn::SHandle>()(idx, ls)); }
-		std::ostream& operator()(std::ostream& os, const Handle_t& t) const {
-			return LCV<spn::SHandle>()(os, static_cast<spn::SHandle>(t)); }
-		LuaType operator()() const {
-			return LCV<spn::SHandle>()(); }
+	};
+	template <class... Ts>
+	struct LCV<spn::WHandleT<Ts...>> : LCV<spn::WHandle> {
+		using Handle_t = spn::WHandleT<Ts...>;
+		int operator()(lua_State* ls, const Handle_t& t) const {
+			return LCV<spn::WHandle>()(ls, t); }
+		Handle_t operator()(int idx, lua_State* ls) const {
+			return Handle_t::FromHandle(LCV<spn::WHandle>()(idx, ls)); }
 	};
 
 	template <class T, class A>
