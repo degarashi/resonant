@@ -109,7 +109,7 @@ DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SGroupMgr, rs::AGroup, AGroup, NOTHING, (
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SSrcMgr, rs::ASource, ASource, NOTHING, (play)(pause)(stop)(setFadeTo)(setFadeOut)(setBuffer)(getLooping)(getNLoop)(setPitch)(setGain)(setRelativeMode))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::SoundMgr, SoundMgr, NOTHING, (loadWaveBatch)(loadOggBatch)(loadOggStream)(createSourceGroup)(createSource))
 
-DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::InputMgr, InputMgr, NOTHING, (makeAction)(addAction)(remAction))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::InputMgr, InputMgr, NOTHING, (makeAction)(addAction)(remAction)(LinkButtonAsAxis))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::detail::ActMgr, rs::detail::Action, Action, NOTHING, (isKeyPressed)(isKeyReleased)(isKeyPressing)(addLink)(remLink)(getState)(getValue)
 	(getKeyValueSimplified)(linkButtonAsAxis))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::InputMgrBase, rs::IInput, IInput, NOTHING,
