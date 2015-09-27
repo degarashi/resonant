@@ -75,15 +75,6 @@ namespace rs {
 			fx = lk->hlFx->get();
 			ls = lk->spLua;
 		}
-		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
-		fx->beginTask();
-{ auto p = spn::profiler.beginBlockObj("scene_update");
-		if(mgr_scene.onUpdate(ls)) {
-			_endProc();
-			return false;
-		}
-}
-
 		// 画面のサイズとアスペクト比合わせ
 		{
 			auto lk = sharedbase.lockR();
@@ -95,6 +86,14 @@ namespace rs {
 				GL.glViewport(0,0, sz.width, sz.height);
 			}
 		}
+		// 描画スレッドの処理が遅過ぎたらここでウェイトがかかる
+		fx->beginTask();
+{ auto p = spn::profiler.beginBlockObj("scene_update");
+		if(mgr_scene.onUpdate(ls)) {
+			_endProc();
+			return false;
+		}
+}
 		return true;
 	}
 	void MainProc::_endProc() {

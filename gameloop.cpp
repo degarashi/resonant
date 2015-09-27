@@ -195,6 +195,8 @@ namespace rs {
 			fnMakeCurrent();
 
 			UPtr<SystemInfo>	infoP(new SystemInfo());
+			// 初回はここで情報をセットする (以降はIMainProc::runUにて)
+			infoP->setInfo({param.wparam.width, param.wparam.height}, 0);
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
