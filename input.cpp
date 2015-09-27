@@ -24,6 +24,23 @@ namespace rs {
 				dst[n] = func(i);
 		}
 	}
+	const int InputRange = 1024,
+				InputRangeHalf = InputRange/2;
+	const std::string& PointerMgr::getResourceName(spn::SHandle /*sh*/) const {
+		const static std::string str("TPos2D");
+		return str;
+	}
+	// ----------------- TPos2D -----------------
+	TPos2D::TPos2D(tagClean): bTouch(false), absPos{0}, relPos{0}, pressure(0) {}
+	void TPos2D::setNewAbs(const spn::Vec2& p) {
+		relPos.x = p.x - absPos.x;
+		relPos.y = p.y - absPos.y;
+		absPos = p;
+	}
+	void TPos2D::setNewRel(const spn::Vec2& p) {
+		absPos += p;
+		relPos = p;
+	}
 	// ----------------- Keyboard -----------------
 	InputType Keyboard::getType() const {
 		return InputType::Keyboard;

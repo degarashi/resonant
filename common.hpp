@@ -5,8 +5,8 @@
 #include "handle.hpp"
 
 namespace rs {
-	constexpr int 	InputRange = 1024,
-					InputRangeHalf = InputRange/2;
+	extern const int InputRange,
+					InputRangeHalf;
 
 	struct TPos2D {
 		bool		bTouch;
@@ -17,20 +17,16 @@ namespace rs {
 
 		static struct tagClean {} Clean;
 		TPos2D() = default;
-		TPos2D(tagClean): bTouch(false), absPos{0}, relPos{0}, pressure(0) {}
-		void setNewAbs(const spn::Vec2& p) {
-			relPos.x = p.x - absPos.x;
-			relPos.y = p.y - absPos.y;
-			absPos = p;
-		}
-		void setNewRel(const spn::Vec2& p) {
-			absPos += p;
-			relPos = p;
-		}
+		TPos2D(tagClean);
+		void setNewAbs(const spn::Vec2& p);
+		void setNewRel(const spn::Vec2& p);
 	};
 
-	#define mgr_pointer ::rs::PointerMgr::_ref()
-	class PointerMgr : public spn::ResMgrA<TPos2D, PointerMgr> {};
+	#define mgr_pointer (::rs::PointerMgr::_ref())
+	class PointerMgr : public spn::ResMgrA<TPos2D, PointerMgr> {
+		public:
+			const std::string& getResourceName(spn::SHandle sh) const override;
+	};
 	using PtrNS = spn::noseq_list<HLPtr>;
 
 	struct IRecvPointer {
@@ -95,3 +91,5 @@ namespace rs {
 			const std::string& getResourceName(spn::SHandle sh) const override;
 	};
 }
+#include "luaimport.hpp"
+DEF_LUAIMPORT(TPos2D)

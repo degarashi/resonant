@@ -267,14 +267,4 @@ namespace rs {
 	LuaType LCV<WHandle>::operator()() const {
 		return LuaType::LightUserdata;
 	}
-
-	//	アップデータの登録
-	//		シーンツリーの管理はスクリプトがメイン
-	//		HGroup = createGroup("")
-	//		HGroup = loadGroup("")
-	//		HGroup.add(0x123, hGroup)
-	//		HGroup.rem(hGroup)
-	//		Luaから
-	//		C++から
 }
-

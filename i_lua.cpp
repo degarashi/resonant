@@ -113,7 +113,7 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::InputMgr, InputMgr, NOTHING, (makeAction)(addAct
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::detail::ActMgr, rs::detail::Action, Action, NOTHING, (isKeyPressed)(isKeyReleased)(isKeyPressing)(addLink)(remLink)(getState)(getValue)
 	(getKeyValueSimplified)(linkButtonAsAxis))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::InputMgrBase, rs::IInput, IInput, NOTHING,
-	(name)(getButton)(getAxis)(getHat)(numButtons)(numAxes)(numHats)(setDeadZone)(setMouseMode)(getMouseMode))
+	(name)(getButton)(getAxis)(getHat)(numButtons)(numAxes)(numHats)(setDeadZone)(setMouseMode)(getMouseMode)(getPointer))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Keyboard, Keyboard, "IInput", NOTHING, (OpenKeyboard))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Mouse, Mouse, "IInput", NOTHING, (OpenMouse)(NumMouse))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::InputMgrBase, rs::Joypad, Joypad, "IInput", NOTHING, (OpenJoypad)(NumJoypad))
@@ -128,6 +128,9 @@ DEF_LUAIMPLEMENT_HDL_NOBASE(rs::Camera2DMgr, rs::Camera2D, Camera2D, NOTHING,
 		(refPose)
 		(getPose)(getAspectRatio)
 		(vp2w)(v2w), NOTHING)
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::PointerMgr, TPos2D, TPos2D,
+		(bTouch)(absPos)(relPos)(pressure),
+		(setNewAbs)(setNewRel))
 
 namespace rs {
 	void LuaImport::RegisterRSClass(LuaState& lsc) {
@@ -171,6 +174,7 @@ namespace rs {
 		LuaImport::RegisterClass<util::FBSwitch>(lsc);
 		LuaImport::RegisterClass<util::FBClear>(lsc);
 		LuaImport::RegisterClass<SystemInfo>(lsc);
+		LuaImport::RegisterClass<TPos2D>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);
 		LuaImport::ImportClass(lsc, "System", "lsys", &mgr_lsys);
 		LuaImport::ImportClass(lsc, "System", "glres", &mgr_gl);
