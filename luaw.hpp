@@ -1233,48 +1233,65 @@ namespace rs {
 				lsc.rawSet(-3);
 				lsc.pop(1);
 			}
+			static int ReturnException(lua_State* ls, const char* func, const std::exception& e, int nNeed);
 			//! luaスタックから変数ポインタとクラスを取り出しメンバ変数を読み込む
 			template <class GET, class T, class V, class VT>
 			static int ReadValue(lua_State* ls) {
-				// up[1]	変数ポインタ
-				// [1]		クラスポインタ(userdata)
-				const T* src = reinterpret_cast<const T*>(GET()(ls, 1));
-				auto vp = GetMember<V,VT>(ls, lua_upvalueindex(1));
-				GetLCVType<V>()(ls, src->*vp);
-				return 1;
+				try {
+					// up[1]	変数ポインタ
+					// [1]		クラスポインタ(userdata)
+					const T* src = reinterpret_cast<const T*>(GET()(ls, 1));
+					auto vp = GetMember<V,VT>(ls, lua_upvalueindex(1));
+					GetLCVType<V>()(ls, src->*vp);
+					return 1;
+				} catch(const std::exception& e) {
+					return ReturnException(ls, __PRETTY_FUNCTION__, e, 1);
+				}
 			}
 			//! luaスタックから変数ポインタとクラスと値を取り出しメンバ変数に書き込む
 			template <class GET, class T, class V, class VT>
 			static int WriteValue(lua_State* ls) {
-				// up[1]	変数ポインタ
-				// [1]		クラスポインタ(userdata)
-				// [2]		セットする値
-				T* dst = reinterpret_cast<T*>(GET()(ls, 1));
-				auto ptr = GetMember<V,VT>(ls, lua_upvalueindex(1));
-				(dst->*ptr) = GetLCVType<V>()(2, ls);
-				return 0;
+				try {
+					// up[1]	変数ポインタ
+					// [1]		クラスポインタ(userdata)
+					// [2]		セットする値
+					T* dst = reinterpret_cast<T*>(GET()(ls, 1));
+					auto ptr = GetMember<V,VT>(ls, lua_upvalueindex(1));
+					(dst->*ptr) = GetLCVType<V>()(2, ls);
+					return 0;
+				} catch(const std::exception& e) {
+					return ReturnException(ls, __PRETTY_FUNCTION__, e, 2);
+				}
 			}
 			//! luaスタックから関数ポインタとクラス、引数を取り出しクラスのメンバ関数を呼ぶ
 			template <class GET, class T, class RT, class FT, class... Args>
 			static int CallMethod(lua_State* ls) {
-				// up[1]	関数ポインタ
-				// [1]		クラスポインタ(userdata)
-				// [2以降]	引数
-				using F = RT (FT::*)(Args...);
-				void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
-				F f = *reinterpret_cast<F*>(tmp);
-				auto* ptr = dynamic_cast<T*>(GET()(ls, 1));
-				return RetSize<RT>::proc(ls, [ls,ptr,f]() -> decltype(auto) { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
+				try {
+					// up[1]	関数ポインタ
+					// [1]		クラスポインタ(userdata)
+					// [2以降]	引数
+					using F = RT (FT::*)(Args...);
+					void* tmp = lua_touserdata(ls, lua_upvalueindex(1));
+					F f = *reinterpret_cast<F*>(tmp);
+					auto* ptr = dynamic_cast<T*>(GET()(ls, 1));
+					return RetSize<RT>::proc(ls, [ls,ptr,f]() -> decltype(auto) { return FuncCall<Args...>::procMethod(ls, ptr, 2, f); });
+				} catch(const std::exception& e) {
+					return ReturnException(ls, __PRETTY_FUNCTION__, e, sizeof...(Args)+1);
+				}
 			}
 			//! luaスタックから関数ポインタと引数を取り出しcall
 			template <class RT, class... Args>
 			static int CallFunction(lua_State* ls) {
-				// up[1]	関数ポインタ
-				// [1以降]	引数
-				using F = RT (*)(Args...);
-				F f = reinterpret_cast<F>(lua_touserdata(ls, lua_upvalueindex(1)));
-				// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
-				return RetSize<RT>::proc(ls, [ls,f]() -> decltype(auto) { return FuncCall<Args...>::proc(ls, 1, f); });
+				try {
+					// up[1]	関数ポインタ
+					// [1以降]	引数
+					using F = RT (*)(Args...);
+					F f = reinterpret_cast<F>(lua_touserdata(ls, lua_upvalueindex(1)));
+					// 引数を変換しつつ関数を呼んで、戻り値を変換しつつ個数を返す
+					return RetSize<RT>::proc(ls, [ls,f]() -> decltype(auto) { return FuncCall<Args...>::proc(ls, 1, f); });
+				} catch(const std::exception& e) {
+					return ReturnException(ls, __PRETTY_FUNCTION__, e, sizeof...(Args));
+				}
 			}
 			//! staticな関数をスタックへpush
 			template <class RT, class... Ts>

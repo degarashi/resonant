@@ -97,6 +97,12 @@ namespace rs {
 		lsc.pop();
 		return res;
 	}
+	int LuaImport::ReturnException(lua_State* ls, const char* func, const std::exception& e, int nNeed) {
+		return luaL_error(ls, "Error occured at\nfunction: %s\ninput argument(s): %d\nneeded argument(s): %d\n"
+								"---------------- error message ----------------\n%s\n"
+								"-----------------------------------------------",
+								func, lua_gettop(ls), nNeed, e.what());
+	}
 	namespace {
 		int EmptyFunction(lua_State*) { return 0; }
 	}
