@@ -492,6 +492,8 @@ namespace rs {
 	class LuaState : public std::enable_shared_from_this<LuaState> {
 		template <class T>
 		friend struct LCV;
+		template <int N>
+		using IConst = std::integral_constant<int,N>;
 		public:
 			enum class CMP {
 				Equal = LUA_OPEQ,
@@ -608,6 +610,13 @@ namespace rs {
 				static const char* Proc(lua_State* ls, void* data, size_t* size);
 				static void Read(lua_State* ls, HRW hRW, const char* chunkName, const char* mode);
 			};
+			template <class TUP, int N, typename std::enable_if<N==std::tuple_size<TUP>::value>::type*& = spn::Enabler>
+			void _popValues(TUP&, int, IConst<N>) {}
+			template <class TUP, int N, typename std::enable_if<N!=std::tuple_size<TUP>::value>::type*& = spn::Enabler>
+			void _popValues(TUP& dst, int ofs, IConst<N>) {
+				std::get<N>(dst) = toValue<typename std::tuple_element<N, TUP>::type>(ofs + N);
+				_popValues(dst, ofs, IConst<N+1>());
+			}
 
 		public:
 			// Luaステートの新規作成
@@ -646,21 +655,11 @@ namespace rs {
 			}
 			void pushArgs() {}
 			template <class... Ret>
-			std::tuple<Ret...> popValues() {
-				std::tuple<Ret...> ret;
-				return std::move(ret);
-			}
-			template <class... Ret>
 			void popValues(std::tuple<Ret...>& dst) {
-				using CT = spn::CType<Ret...>;
-				popValues2<CT, int(sizeof...(Ret)-1)>(dst, -1, typename spn::NType<0, sizeof...(Ret)>::less());
-			}
-			template <class CT, int N, class TUP>
-			void popValues2(TUP& /*dst*/, int /*pos*/, std::false_type) {}
-			template <class CT, int N, class TUP>
-			void popValues2(TUP& dst, int pos, std::true_type) {
-				std::get<N>(dst) = toValue<typename CT::template At<N>::type>(pos);
-				popValues2<CT, N-1>(dst, pos-1, typename spn::NType<0, N-1>::less_eq());
+				int ofs = getTop() - sizeof...(Ret);
+				AssertP(Trap, ofs>=0, "not enough values on stack (needed: %1%, actual: %2%)", sizeof...(Ret), getTop())
+				_popValues(dst, ofs+1, IConst<0>());
+				pop(sizeof...(Ret));
 			}
 			void pushValue(int idx);
 			void pop(int n=1);
@@ -673,8 +672,8 @@ namespace rs {
 			void arith(OP op);
 			lua_CFunction atPanic(lua_CFunction panicf);
 			// 内部ではpcallに置き換え、エラーを検出したら例外を投げる
-			void call(int nargs, int nresults);
-			void callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k);
+			int call(int nargs, int nresults=LUA_MULTRET);
+			int callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k);
 			bool checkStack(int extra);
 			bool compare(int idx1, int idx2, CMP cmp) const;
 			void concat(int n);

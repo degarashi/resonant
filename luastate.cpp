@@ -303,13 +303,17 @@ namespace rs {
 	lua_CFunction LuaState::atPanic(lua_CFunction panicf) {
 		return lua_atpanic(getLS(), panicf);
 	}
-	void LuaState::call(int nargs, int nresults) {
+	int LuaState::call(int nargs, int nresults) {
+		int top = getTop();
 		int err = lua_pcall(getLS(), nargs, nresults, 0);
 		_checkError(err);
+		return getTop() - top;
 	}
-	void LuaState::callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k) {
+	int LuaState::callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k) {
+		int top = getTop();
 		int err = lua_pcallk(getLS(), nargs, nresults, 0, ctx, k);
 		_checkError(err);
+		return getTop() - top;
 	}
 	bool LuaState::checkStack(int extra) {
 		return lua_checkstack(getLS(), extra) != 0;
