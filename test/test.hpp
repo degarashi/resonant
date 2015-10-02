@@ -42,7 +42,6 @@ using RandomOP = spn::Optional<spn::MTRandom>;
 struct SharedValue {};
 #define sharedv (::rs::GameloopHelper<Engine, SharedValue, Sc_Base>::SharedValueC::_ref())
 using GlxId = rs::IEffect::GlxId;
-extern const rs::GMessageId MSG_StateName;
 rs::HLDObj MakeFBClear(rs::Priority priority);
 extern const rs::IdValue T_Rect;
 

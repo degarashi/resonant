@@ -17,40 +17,24 @@ namespace rs {
 	using ObjTypeId = uint32_t;			//!< Object種別Id
 
 	using GMessageStr = std::string;
-	using GMessageId = uint32_t;
 	using InterfaceId = uint32_t;
 
-	// スクリプトからメッセージ文字列を受け取ったらGMessage::GetMsgId()
 	class GMessage {
-		private:
-			using MsgMap = std::unordered_map<GMessageStr, GMessageId>;
-			MsgMap		_msgMap;
-			GMessageId	_msgIdCur;
-
 		public:
 			//! 遅延メッセージエントリ
 			struct Packet {
 				Timepoint	tmSend;
-				GMessageId	msgId;
+				GMessageStr	msgStr;
 				LCValue		arg;
 
 				Packet(const Packet& pk) = default;
 				Packet(Packet&& p) = default;
-				Packet(GMessageId id, const LCValue& args);
-				Packet(GMessageId id, LCValue&& args);
-				Packet(Duration delay, GMessageId id, const LCValue& args);
-				Packet(Timepoint when, GMessageId id, const LCValue& args);
+				Packet(const GMessageStr& msg, const LCValue& args);
+				Packet(const GMessageStr& msg, LCValue&& args);
+				Packet(Duration delay, const GMessageStr& msg, const LCValue& args);
+				Packet(Timepoint when, const GMessageStr& msg, const LCValue& args);
 				void swap(Packet& p) noexcept;
 			};
-			using Queue = std::list<Packet>;
-
-			static GMessage& Ref();
-			//! メッセージIdの登録。同じメッセージを登録するとエラー
-			static GMessageId RegMsgId(const GMessageStr& msg);
-			//! メッセージIdの取得。存在しないメッセージの時はnoneを返す
-			static spn::Optional<GMessageId> GetMsgId(const GMessageStr& msg);
-
-			GMessage();
 	};
 
 	// ---- Objectの固有Idを生成 ----
@@ -114,7 +98,8 @@ namespace rs {
 
 			virtual void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const;
 			// ---- Message ----
-			virtual LCValue recvMsg(GMessageId id, const LCValue& arg=LCValue());
+			virtual LCValue recvMsg(const GMessageStr& msg, const LCValue& arg=LCValue());
+			virtual LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg=LCValue());
 			//! 特定の優先度範囲のオブジェクトを処理
 			virtual void proc(UpdProc p, bool bRecursive,
 								Priority prioBegin=std::numeric_limits<Priority>::lowest(),
@@ -251,7 +236,8 @@ namespace rs {
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			const std::string& getName() const override;
 			//! グループ内のオブジェクト全てに配信
-			LCValue recvMsg(GMessageId msg, const LCValue& arg) override;
+			LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override;
+			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override;
 			void proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) override;
 
 			const ObjVP& getList() const;
@@ -297,7 +283,8 @@ namespace rs {
 			void onConnected(HGroup hGroup) override;
 			void onDisconnected(HGroup hGroup) override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
-			LCValue recvMsg(GMessageId msg, const LCValue& arg) override;
+			LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override;
+			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override;
 			void proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) override;
 
 			const std::string& getName() const override;
@@ -491,7 +478,7 @@ namespace rs {
 					virtual ~State() {}
 					virtual ObjTypeId getStateId() const = 0;
 					virtual void onUpdate(T& self, const SPLua& ls) { self.Base::onUpdate(ls); }
-					virtual LCValue recvMsg(T& self, GMessageId msg, const LCValue& arg) { return self.Base::recvMsg(msg, arg); }
+					virtual LCValue recvMsg(T& self, const GMessageStr& msg, const LCValue& arg) { return self.Base::recvMsg(msg, arg); }
 					// onEnterとonExitは継承しない
 					virtual void onEnter(T& /*self*/, ObjTypeId /*prevId*/) {}
 					virtual void onExit(T& /*self*/, ObjTypeId /*nextId*/) {}
@@ -639,7 +626,7 @@ namespace rs {
 				void onUpdate(const SPLua& ls) override {
 					_callWithSwitchState([&](){ return _state->onUpdate(getRef(), ls); });
 				}
-				LCValue recvMsg(GMessageId msg, const LCValue& arg) override {
+				LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override {
 					return _callWithSwitchState([&](){ return _state->recvMsg(getRef(), msg, arg); });
 				}
 				//! Updaterノードツリーに追加された時に呼ばれる
@@ -669,11 +656,11 @@ namespace rs {
 	template <class T, class Base=Object>
 	class ObjectT_Lua : public ObjectT<T,Base>, public spn::EnableFromThis<HObj> {
 		protected:
-			template <class... Ts>
-			void _callLuaMethod(const SPLua& ls, const std::string& method, Ts&&... ts) {
+			template <class... Ret, class... Ts>
+			auto _callLuaMethod(const SPLua& ls, const std::string& method, Ts&&... ts) {
 				ls->push(handleFromThis());
 				LValueS lv(ls->getLS());
-				lv.callMethod(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
+				return lv.callMethod<Ret...>(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
 			}
 		public:
 			using base = ObjectT<T,Base>;
@@ -684,6 +671,11 @@ namespace rs {
 					_callLuaMethod(ls, luaNS::OnUpdate);
 				if(base::isDead())
 					_callLuaMethod(ls, luaNS::OnExit, "null");
+			}
+			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override {
+				ls->push(handleFromThis());
+				LValueS lv(ls->getLS());
+				return lv.callMethodNRet(luaNS::RecvMsg, msg, arg);
 			}
 	};
 	DefineUpdGroup(U_UpdGroup)

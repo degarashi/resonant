@@ -104,6 +104,7 @@ FSMachine = DerivedHandle(upd_obj, "FSMachine", {
 		if type(cppfunc) == "function" then
 			return true, cppfunc(self, ...)
 		end
-		return false
+		-- C++の汎用メッセージとして処理
+		return upd_obj.RecvMsg(self, msg, ...)
 	end
 })

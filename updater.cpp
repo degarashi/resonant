@@ -66,7 +66,10 @@ namespace rs {
 	void Object::enumGroup(CBFindGroup /*cb*/, GroupTypeId /*id*/, int /*depth*/) const {
 		Assert(Warn, "not supported operation")
 	}
-	LCValue Object::recvMsg(GMessageId /*id*/, const LCValue& /*arg*/) {
+	LCValue Object::recvMsg(const GMessageStr& /*id*/, const LCValue& /*arg*/) {
+		return LCValue();
+	}
+	LCValue Object::recvMsgLua(const SPLua& /*ls*/, const GMessageStr& /*id*/, const LCValue& /*arg*/) {
 		return LCValue();
 	}
 	void Object::proc(UpdProc /*p*/, bool /*bRecursive*/, Priority /*prioBegin*/, Priority /*prioEnd*/) {
@@ -229,9 +232,14 @@ namespace rs {
 			++itr;
 		} while(itr != itrE);
 	}
-	LCValue UpdGroup::recvMsg(GMessageId msg, const LCValue& arg) {
+	LCValue UpdGroup::recvMsg(const GMessageStr& msg, const LCValue& arg) {
 		for(auto& obj : _objV)
 			obj.second->get()->recvMsg(msg, arg);
+		return LCValue();
+	}
+	LCValue UpdGroup::recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) {
+		for(auto& obj : _objV)
+			obj.second->get()->recvMsgLua(ls, msg, arg);
 		return LCValue();
 	}
 	UpdGroup::UGVec UpdGroup::s_ug;
@@ -301,8 +309,11 @@ namespace rs {
 	void UpdTask::proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) {
 		_hlGroup->get()->proc(p, bRecursive, prioBegin, prioEnd);
 	}
-	LCValue UpdTask::recvMsg(GMessageId msg, const LCValue& arg) {
+	LCValue UpdTask::recvMsg(const GMessageStr& msg, const LCValue& arg) {
 		return _hlGroup->get()->recvMsg(msg, arg);
+	}
+	LCValue UpdTask::recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) {
+		return _hlGroup->get()->recvMsgLua(ls, msg, arg);
 	}
 
 	const std::string& UpdTask::getName() const {

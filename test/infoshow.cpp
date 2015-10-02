@@ -12,7 +12,7 @@ const std::string g_fontName("IPAGothic");
 // ---------------------- InfoShow::MySt ----------------------
 struct InfoShow::MySt : StateT<MySt> {
 	rs::util::WindowRect* pRect;
-	rs::LCValue recvMsg(InfoShow& self, rs::GMessageId msg, const rs::LCValue& arg) override;
+	rs::LCValue recvMsg(InfoShow& self, const rs::GMessageStr& msg, const rs::LCValue& arg) override;
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDraw(const InfoShow& self, rs::IEffect& e) const override;
@@ -76,7 +76,7 @@ void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
 	auto lh = self.handleFromThis();
 	d->remObj(lh);
 }
-rs::LCValue InfoShow::MySt::recvMsg(InfoShow& /*self*/, rs::GMessageId /*msg*/, const rs::LCValue& /*arg*/) {
+rs::LCValue InfoShow::MySt::recvMsg(InfoShow& /*self*/, const rs::GMessageStr& /*msg*/, const rs::LCValue& /*arg*/) {
 	return rs::LCValue();
 }
 // ---------------------- InfoShow ----------------------

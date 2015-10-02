@@ -32,6 +32,7 @@ namespace rs {
 						MakePreENV("MakePreENV"),
 						Ctor("Ctor"),
 						RecvMsg("RecvMsg"),
+						RecvMsgCpp("RecvMsgCpp"),
 						OnUpdate("OnUpdate"),
 						OnExit("OnExit"),
 						System("System");
@@ -131,9 +132,13 @@ namespace rs {
 		lsc.push(luaNS::objBase::Func);
 		lsc.newTable();
 		lsc.setTable(-3);
-		// RecvMsg = func(RecvMsg)
+		// RecvMsgCpp = func(RecvMsgCpp)
+		lsc.push(luaNS::RecvMsgCpp);
+		lsc.pushCClosure(LuaImport::RecvMsgCpp, 0);
+		lsc.setTable(-3);
+		// RecvMsg = func(RecvMsgCpp)
 		lsc.push(luaNS::RecvMsg);
-		lsc.pushCClosure(LuaImport::RecvMsg, 0);
+		lsc.pushCClosure(LuaImport::RecvMsgCpp, 0);
 		lsc.setTable(-3);
 		// Ctor = func(Ctor)
 		lsc.push(luaNS::Ctor);
@@ -203,18 +208,18 @@ namespace rs {
 		// [ObjDefine][Instance]
 		lsc.remove(-2);
 	}
-	int LuaImport::RecvMsg(lua_State* ls) {
+	int LuaImport::RecvMsgCpp(lua_State* ls) {
 		Object* obj = LI_GetHandle<typename ObjMgr::data_type>()(ls, 1);
-		auto msgId = GMessage::GetMsgId(LCV<std::string>()(2, ls));
-		if(msgId) {
-			// Noneで無ければ有効な戻り値とする
-			LCValue lcv = obj->recvMsg(*msgId, LCV<LCValue>()(3, ls));
-			if(lcv.type() != LuaType::LNone) {
-				lcv.push(ls);
-				return 1;
-			}
+		auto msg = LCV<std::string>()(2, ls);
+		// Noneで無ければ有効な戻り値とする
+		LCValue lcv = obj->recvMsg(msg, LCV<LCValue>()(3, ls));
+		if(lcv.type() != LuaType::LNone) {
+			lua_pushboolean(ls, true);
+			lcv.push(ls);
+			return 2;
 		}
-		return 0;
+		lua_pushboolean(ls, false);
+		return 1;
 	}
 
 	// ------------------- LCV<SHandle> -------------------

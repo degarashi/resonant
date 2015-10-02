@@ -59,7 +59,8 @@ end
 		_valueR = {HandleId(func), NumRef(func)}
 		_valueW = {}
 		_func = {}
-		RecvMsg(func)
+		RecvMsg(func) = RecvMsgCpp
+		RecvMsgCpp(func)
 		Ctor(func)
 	}
 ]]

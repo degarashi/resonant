@@ -1151,6 +1151,7 @@ namespace rs {
 								MakePreENV,
 								Ctor,
 								RecvMsg,
+								RecvMsgCpp,
 								OnUpdate,
 								OnExit,
 								System;
@@ -1410,7 +1411,7 @@ namespace rs {
 			static void RegisterRSClass(LuaState& lsc);
 			//! GObjectメッセージを受信
 			/*! Obj(UData), MessageStr, {Args} */
-			static int RecvMsg(lua_State* ls);
+			static int RecvMsgCpp(lua_State* ls);
 	};
 	template <class T>
 	struct LCV {
