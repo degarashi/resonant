@@ -437,7 +437,7 @@ namespace rs {
 		_init(sp);
 	}
 	LV_Global::LV_Global(const LV_Global& lv) {
-		lv._prepareValue();
+		VPop vp(lv, true);
 		_init(lv._lua);
 	}
 	LV_Global::LV_Global(LV_Global&& lv): _lua(std::move(lv._lua)), _id(lv._id) {}
@@ -471,39 +471,31 @@ namespace rs {
 		_lua->pop(2);
 	}
 
-	int LV_Global::_prepareValue() const {
+	int LV_Global::_prepareValue(bool /*bTop*/) const {
 		_lua->getGlobal(cs_entry);
 		_lua->getField(-1, _id);
 		// [Entry][Value]
 		_lua->remove(-2);
 		return _lua->getTop();
 	}
-	int LV_Global::_prepareValue(lua_State* ls) const {
-		_prepareValue();
+	void LV_Global::_prepareValue(lua_State* ls) const {
+		VPop vp(*this, true);
 		lua_State* mls = _lua->getLS();
-		if(mls != ls)
-			lua_xmove(mls, ls, 1);
-		return lua_gettop(ls);
+		lua_xmove(mls, ls, 1);
 	}
-	void LV_Global::_cleanValue() const {
-		_lua->pop(1);
-	}
-	void LV_Global::_cleanValue(lua_State* ls) const {
-		lua_pop(ls, 1);
+	void LV_Global::_cleanValue(int pos) const {
+		_lua->remove(pos);
 	}
 	lua_State* LV_Global::getLS() const {
 		return _lua->getLS();
 	}
 	std::ostream& operator << (std::ostream& os, const LV_Global& v) {
-		v._prepareValue();
-		os << *v._lua;
-		v._cleanValue();
-		return os;
+		typename LV_Global::VPop vp(v, true);
+		return os << *v._lua;
 	}
 	std::ostream& operator << (std::ostream& os, const LV_Stack& v) {
-		v._prepareValue();
-		LCValue lcv(v._ls);
-		return os << lcv;
+		typename LV_Stack::VPop vp(v, true);
+		return os << LCValue(v._ls);
 	}
 
 	// ------------------- LV_Stack -------------------
@@ -525,7 +517,7 @@ namespace rs {
 	}
 	void LV_Stack::_init(lua_State* ls) {
 		_ls = ls;
-		_pos = lua_gettop(_ls);
+		_pos = lua_gettop(ls);
 		Assert(Trap, _pos > 0)
 		#ifdef DEBUG
 			_type = LuaState::SType(ls, _pos);
@@ -549,24 +541,22 @@ namespace rs {
 		return *this;
 	}
 
-	int LV_Stack::_prepareValue() const {
-		lua_pushvalue(_ls, _pos);
-		return lua_gettop(_ls);
+	int LV_Stack::_prepareValue(bool bTop) const {
+		if(bTop) {
+			lua_pushvalue(_ls, _pos);
+			return lua_gettop(_ls);
+		}
+		return _pos;
 	}
-	int LV_Stack::_prepareValue(lua_State* ls) const {
-		lua_pushvalue(_ls, _pos);
-		if(_ls != ls)
-			lua_xmove(_ls, ls, 1);
-		return lua_gettop(ls);
+	void LV_Stack::_prepareValue(lua_State* ls) const {
+		_prepareValue(true);
+		lua_xmove(_ls, ls, 1);
 	}
-	void LV_Stack::_cleanValue() const {
-		_cleanValue(_ls);
-	}
-	void LV_Stack::_cleanValue(lua_State* ls) const {
-		lua_pop(ls, 1);
+	void LV_Stack::_cleanValue(int pos) const {
+		if(_pos < pos)
+			lua_remove(_ls, pos);
 	}
 	lua_State* LV_Stack::getLS() const {
 		return _ls;
 	}
 }
-

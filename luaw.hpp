@@ -769,28 +769,43 @@ namespace rs {
 
 	template <class T>
 	class LValue;
-	// LValue[], *LValueの時だけ生成される中間クラス
-	template <class LV, class IDX>
-	class LV_Inter {
-		LValue<LV>&		_src;
-		const IDX&		_index;
-		public:
-			LV_Inter(LValue<LV>& src, const IDX& index): _src(src), _index(index) {}
-			LV_Inter(const LV_Inter&) = delete;
-			LV_Inter(LV_Inter&&) = default;
+	namespace detail {
+		// LValue[], *LValueの時だけ生成される中間クラス
+		template <class LV, class IDX>
+		class LV_Inter {
+			LValue<LV>&		_src;
+			const IDX&		_index;
+			public:
+				LV_Inter(LValue<LV>& src, const IDX& index): _src(src), _index(index) {}
+				LV_Inter(const LV_Inter&) = delete;
+				LV_Inter(LV_Inter&&) = default;
 
-			void prepareValue(lua_State* ls) const {
-				_src.prepareAt(ls, _index);
+				void prepareValue(lua_State* ls) const {
+					_src.prepareAt(ls, _index);
+				}
+				template <class VAL>
+				LV_Inter& operator = (VAL&& v) {
+					_src.setField(_index, std::forward<VAL>(v));
+					return *this;
+				}
+				lua_State* getLS() {
+					return _src.getLS();
+				}
+		};
+		template <class T>
+		struct VPop {
+			const T& self;
+			int			index;
+			VPop(const T& s, bool bTop): self(s) {
+				index = s._prepareValue(bTop);
 			}
-			template <class VAL>
-			LV_Inter& operator = (VAL&& v) {
-				_src.setField(_index, std::forward<VAL>(v));
-				return *this;
+			operator int() const { return index; }
+			int getIndex() const { return index; }
+			~VPop() {
+				self._cleanValue(index);
 			}
-			lua_State* getLS() {
-				return _src.getLS();
-			}
-	};
+		};
+	}
 	class LV_Global {
 		const static std::string	cs_entry;
 		static spn::FreeList<int>	s_index;
@@ -798,14 +813,16 @@ namespace rs {
 		int			_id;
 
 		void _init(const SPLua& sp);
+		public:
+			using VPop = detail::VPop<LV_Global>;
+			friend VPop;
 		protected:
 			// 代入する値をスタックの先頭に置いた状態で呼ぶ
 			void _setValue();
 			// 当該値をスタックに置く
-			int _prepareValue() const;
-			int _prepareValue(lua_State* ls) const;
-			void _cleanValue() const;
-			void _cleanValue(lua_State* ls) const;
+			int _prepareValue(bool bTop) const;
+			void _prepareValue(lua_State* ls) const;
+			void _cleanValue(int pos) const;
 		public:
 			LV_Global(lua_State* ls);
 			// スタックトップの値を管理対象とする
@@ -847,18 +864,20 @@ namespace rs {
 			LuaType	_type;
 		#endif
 
+		public:
+			using VPop = detail::VPop<LV_Stack>;
+			friend VPop;
 		protected:
 			void _setValue();
 			void _init(lua_State* ls);
-			int _prepareValue() const;
-			int _prepareValue(lua_State* ls) const;
-			void _cleanValue() const;
-			void _cleanValue(lua_State* ls) const;
+			int _prepareValue(bool bTop) const;
+			void _prepareValue(lua_State* ls) const;
+			void _cleanValue(int pos) const;
 		public:
 			LV_Stack(lua_State* ls);
 			LV_Stack(lua_State* ls, const LCValue& lcv);
 			template <class LV, class IDX>
-			LV_Stack(LV_Inter<LV,IDX>&& lv) {
+			LV_Stack(detail::LV_Inter<LV,IDX>&& lv) {
 				lua_State* ls = lv.getLS();
 				lv.prepareValue(ls);
 				_init(ls);
@@ -895,30 +914,16 @@ namespace rs {
 	//! LuaState内部に値を保持する
 	template <class T>
 	class LValue : public T {
-		struct VPop {
-			const LValue& self;
-			int			index;
-			VPop(const LValue& s): self(s) {
-				index = s._prepareValue();
-			}
-			operator int () const {
-				return index;
-			}
-			~VPop() {
-				self._cleanValue();
-			}
-		};
 		public:
 			using Callback = std::function<void (LuaState&)>;
 			void iterateTable(Callback cb) {
 				LuaState lsc(T::getLS());
-				int idx = T::_prepareValue();
+				typename T::VPop vp(*this, true);
 				lsc.push(LuaNil());
-				while(lsc.next(idx) != 0) {
+				while(lsc.next(vp.getIndex()) != 0) {
 					cb(lsc);
 					lsc.pop(1);
 				}
-				T::_cleanValue();
 			}
 			using T::T;
 			LValue(const LValue& lv): T(lv) {}
@@ -941,23 +946,21 @@ namespace rs {
 				return *this;
 			}
 			template <class LV>
-			LV_Inter<T, LValue<LV>> operator [](const LValue<LV>& lv) {
-				return LV_Inter<T, LValue<LV>>(*this, lv);
+			auto operator [](const LValue<LV>& lv) {
+				return detail::LV_Inter<T, LValue<LV>>(*this, lv);
 			}
-			LV_Inter<T, LCValue> operator [](const LCValue& lcv) {
-				return LV_Inter<T, LCValue>(*this, lcv);
+			auto operator [](const LCValue& lcv) {
+				return detail::LV_Inter<T, LCValue>(*this, lcv);
 			}
 			template <class... Ret, class... Args>
 			void operator()(std::tuple<Ret...>& dst, Args&&... args) {
 				LuaState lsc(T::getLS());
-				T::_prepareValue();
-				{
-					// 引数をスタックに積む
-					lsc.pushArgs(std::forward<Args>(args)...);
-					lsc.call(sizeof...(Args), sizeof...(Ret));
-					// 戻り値をtupleにセットする
-					lsc.popValues(dst);
-				}
+				T::_prepareValue(true);
+				// 引数をスタックに積む
+				lsc.pushArgs(std::forward<Args>(args)...);
+				lsc.call(sizeof...(Args), sizeof...(Ret));
+				// 戻り値をtupleにセットする
+				lsc.popValues(dst);
 			}
 			template <class... Ret, class... Args>
 			std::tuple<Ret...> call(Args&&... args) {
@@ -965,16 +968,37 @@ namespace rs {
 				this->operator()(ret, std::forward<Args>(args)...);
 				return ret;
 			}
+			template <class... Args>
+			SPLCTable callNRet(Args&&... args) {
+				LuaState lsc(T::getLS());
+				int top = lsc.getTop();
+				T::_prepareValue(true);
+				// 引数をスタックに積んで関数コール
+				lsc.pushArgs(std::forward<Args>(args)...);
+				lsc.call(sizeof...(Args), LUA_MULTRET);
+				int nRet = lsc.getTop() - top;
+				if(nRet == 0)
+					return nullptr;
+				// 戻り値はテーブルで返す
+				auto spTbl = std::make_shared<LCTable>();
+				for(int i=0 ; i<nRet ; i++)
+					(*spTbl)[i+1] = lsc.toLCValue(top + i + 1);
+				return spTbl;
+			}
 			template <class... Ret, class... Args>
-			std::tuple<Ret...> callMethod(const std::string& method, Args&&... a) {
+			std::tuple<Ret...> callMethod(const std::string& method, Args&&... args) {
 				LValue lv = (*this)[method];
-				auto ret = lv.call<Ret...>(*this, std::forward<Args>(a)...);
-				return ret;
+				return lv.call<Ret...>(*this, std::forward<Args>(args)...);
+			}
+			template <class... Args>
+			LCValue callMethodNRet(const std::string& method, Args&&... args) {
+				LValue lv = (*this)[method];
+				return lv.callNRet(*this, std::forward<Args>(args)...);
 			}
 
 			// --- convert function ---
 			#define DEF_FUNC(typ, name) typ name() const { \
-				return LCV<typ>()(VPop(*this), T::getLS()); }
+				return LCV<typ>()(typename T::VPop(*this, true), T::getLS()); }
 			DEF_FUNC(bool, toBoolean)
 			DEF_FUNC(lua_Integer, toInteger)
 			DEF_FUNC(lua_Number, toNumber)
@@ -997,12 +1021,10 @@ namespace rs {
 			template <class IDX, class VAL>
 			void setField(const IDX& idx, const VAL& val) {
 				lua_State* ls = T::getLS();
-				int n = T::_prepareValue();
-				n = lua_absindex(ls, n);
+				typename T::VPop vp(*this, true);
 				GetLCVType<typename LValue_LCVT<IDX>::type>()(ls, idx);
 				GetLCVType<typename LValue_LCVT<VAL>::type>()(ls, val);
-				lua_settable(ls, n);
-				T::_cleanValue();
+				lua_settable(ls, vp.getIndex());
 			}
 
 			const void* toPointer() const {
@@ -1013,12 +1035,11 @@ namespace rs {
 				return GetLCVType<T>()(VPop(*this), T::getLS());
 			}
 			int length() const {
-				int n = T::_prepareValue();
+				typename T::VPop vp(*this);
 				auto* ls = T::getLS();
-				lua_len(ls, n);
+				lua_len(ls, vp.getIndex());
 				int ret = lua_tointeger(ls, -1);
 				lua_pop(ls, 1);
-				T::_cleanValue();
 				return ret;
 			}
 			LuaType type() const {

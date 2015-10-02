@@ -304,13 +304,13 @@ namespace rs {
 		return lua_atpanic(getLS(), panicf);
 	}
 	int LuaState::call(int nargs, int nresults) {
-		int top = getTop();
+		int top = getTop() - 1;		// 1は関数の分
 		int err = lua_pcall(getLS(), nargs, nresults, 0);
 		_checkError(err);
 		return getTop() - top;
 	}
 	int LuaState::callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k) {
-		int top = getTop();
+		int top = getTop() - 1;		// 1は関数の分
 		int err = lua_pcallk(getLS(), nargs, nresults, 0, ctx, k);
 		_checkError(err);
 		return getTop() - top;
