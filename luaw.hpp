@@ -102,6 +102,14 @@ namespace rs {
 		private:
 			spn::SHandle _toHandle(spn::SHandle*) const;
 			spn::WHandle _toHandle(spn::WHandle*) const;
+			template <int N>
+			using IConst = std::integral_constant<int, N>;
+			template <class... Args, int N, typename std::enable_if<N==sizeof...(Args)>::type*& = spn::Enabler>
+			static void _TupleAsTable(SPLCTable&, const std::tuple<Args...>&, IConst<N>) {}
+			template <class... Args, int N, typename std::enable_if<N!=sizeof...(Args)>::type*& = spn::Enabler>
+			static void _TupleAsTable(SPLCTable& tbl, const std::tuple<Args...>& t, IConst<N>);
+			template <class... Args>
+			static SPLCTable _TupleAsTable(const std::tuple<Args...>& t);
 		public:
 			struct HashVisitor : boost::static_visitor<size_t> {
 				template <class T>
@@ -118,6 +126,17 @@ namespace rs {
 			LCValue(lua_OtherIntegerU num);
 			LCValue(lua_OtherInteger num);
 			LCValue& operator =(const spn::Vec4& v);
+
+			// Tupleは配列に変換
+			LCValue(std::tuple<>& t);
+			LCValue(std::tuple<>&& t);
+			LCValue(const std::tuple<>& t);
+			template <class... Args>
+			LCValue(std::tuple<Args...>& t);
+			template <class... Args>
+			LCValue(std::tuple<Args...>&& t);
+			template <class... Args>
+			LCValue(const std::tuple<Args...>& t);
 			//! 任意のベクトルからVec4型への変換
 			template <int N, bool B>
 			LCValue(const spn::VecT<N,B>& v) {
@@ -204,6 +223,24 @@ namespace rs {
 			using base::base;
 	};
 	std::ostream& operator << (std::ostream& os, const LCTable& lct);
+
+	template <class... Args, int N, typename std::enable_if<N!=sizeof...(Args)>::type*&>
+	void LCValue::_TupleAsTable(SPLCTable& tbl, const std::tuple<Args...>& t, IConst<N>) {
+		tbl->emplace(N+1, std::get<N>(t));
+		_TupleAsTable(tbl, t, IConst<N+1>());
+	}
+	template <class... Args>
+	SPLCTable LCValue::_TupleAsTable(const std::tuple<Args...>& t) {
+		auto ret = std::make_shared<LCTable>();
+		LCValue::_TupleAsTable(ret, t, IConst<0>());
+		return ret;
+	}
+	template <class... Args>
+	LCValue::LCValue(std::tuple<Args...>& t): LCValue(static_cast<const std::tuple<Args...>&>(t)) {}
+	template <class... Args>
+	LCValue::LCValue(std::tuple<Args...>&& t): LCValue(static_cast<const std::tuple<Args...>&>(t)) {}
+	template <class... Args>
+	LCValue::LCValue(const std::tuple<Args...>& t): LCVar(_TupleAsTable(t)) {}
 
 	using LPointerSP = std::unordered_map<const void*, LCValue>;
 	// 値型の場合はUserdataにデータを格納

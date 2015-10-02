@@ -377,6 +377,9 @@ namespace rs {
 	bool LCValue::operator != (const LCValue& lcv) const {
 		return !(this->operator == (lcv));
 	}
+	LCValue::LCValue(std::tuple<>&): LCValue() {}
+	LCValue::LCValue(std::tuple<>&&): LCValue() {}
+	LCValue::LCValue(const std::tuple<>&): LCValue() {}
 
 	LCValue& LCValue::operator = (const LCValue& lcv) {
 		this->~LCValue();
