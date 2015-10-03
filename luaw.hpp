@@ -1425,6 +1425,7 @@ namespace rs {
 			lsc.newUserData(sizeof(T));
 			new(lsc.toUserData(-1)) T(std::forward<T2>(t));
 			lsc.call(1, 1);
+			lsc.remove(-2);
 			return 1;
 		}
 		// (int, lua_State*)の順なのは、pushの時と引数が被ってしまう為
