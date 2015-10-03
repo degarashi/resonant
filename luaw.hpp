@@ -198,6 +198,8 @@ namespace rs {
 			}
 			bool operator == (const LCValue& lcv) const;
 			bool operator != (const LCValue& lcv) const;
+			//! blank, Nilかfalseの場合にのみfalse, それ以外はtrueを返す
+			explicit operator bool () const;
 			void push(lua_State* ls) const;
 			const char* toCStr() const;
 			std::string toString() const;

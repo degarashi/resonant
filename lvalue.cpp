@@ -377,6 +377,18 @@ namespace rs {
 	bool LCValue::operator != (const LCValue& lcv) const {
 		return !(this->operator == (lcv));
 	}
+	namespace {
+		struct ConvertBool : boost::static_visitor<bool> {
+			bool operator()(boost::blank) const { return false; }
+			bool operator()(LuaNil) const { return false; }
+			bool operator()(bool b) const { return b; }
+			template <class T>
+			bool operator()(const T&) const { return true; }
+		};
+	}
+	LCValue::operator bool () const {
+		return boost::apply_visitor(ConvertBool(), *this);
+	}
 	LCValue::LCValue(std::tuple<>&): LCValue() {}
 	LCValue::LCValue(std::tuple<>&&): LCValue() {}
 	LCValue::LCValue(const std::tuple<>&): LCValue() {}
