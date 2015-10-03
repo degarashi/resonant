@@ -107,5 +107,8 @@ st_idle = {
 		if not nextSc then
 			scbase.Terminate(slc.objlist)
 		end
+	end,
+	GetState = function()
+		return "Sprite(Dynamic)"
 	end
 }

@@ -16,6 +16,7 @@ class InfoShow : public rs::DrawableObjT<InfoShow>,
 		std::u32string		_infotext;
 		rs::diff::Effect	_count;
 		spn::Vec2			_offset;
+		std::string			_stateName;
 
 		struct MySt;
 	public:

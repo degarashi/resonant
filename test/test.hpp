@@ -71,6 +71,7 @@ struct GlobalValue {
 DEF_LUAIMPORT(GlobalValue)
 using GlobalValueOP = spn::Optional<GlobalValue>;
 extern thread_local GlobalValueOP tls_gvalue;
+extern const std::string MSG_GetState;
 
 class Engine;
 Engine& CnvToEngine(rs::IEffect& e);

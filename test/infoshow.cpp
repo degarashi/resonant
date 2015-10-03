@@ -9,6 +9,7 @@
 
 const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("Text", "Default");
 const std::string g_fontName("IPAGothic");
+const std::string MSG_GetState("GetState");
 // ---------------------- InfoShow::MySt ----------------------
 struct InfoShow::MySt : StateT<MySt> {
 	rs::util::WindowRect* pRect;
@@ -27,9 +28,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 	}
 	std::stringstream ss;
 	ss << "FPS: " << fps << std::endl;
-	// TODO: Luaへのメッセージ送信機構を後で実装して対応
-	// rs::Object& obj = *mgr_scene.getScene(0).ref();
-	// ss << "State: " << obj.recvMsg(MSG_StateName).toString() << std::endl;
+	ss << "State: " << self._stateName << std::endl;
 	// バッファ切り替えカウント数の表示
 	auto& buffd = self._count.buffer;
 	ss << "VertexBuffer: " << buffd.vertex << std::endl;
@@ -44,7 +43,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 }
 #include "spinner/structure/profiler.hpp"
 #include <thread>
-void InfoShow::MySt::onUpdate(InfoShow& self, const rs::SPLua& /*ls*/) {
+void InfoShow::MySt::onUpdate(InfoShow& self, const rs::SPLua& ls) {
 	{
 		auto lk = sharedbase.lockR();
 		self._count = lk->diffCount;
@@ -54,6 +53,13 @@ void InfoShow::MySt::onUpdate(InfoShow& self, const rs::SPLua& /*ls*/) {
 	auto sz = self._textHud.getText()->getSize();
 	pRect->setScale({sz.width, -sz.height});
 	pRect->setOffset(self._offset);
+
+	// ステート名を取得, 保存しておく -> onDrawで使用
+	rs::Object& obj = *mgr_scene.getScene(0).ref();
+	if(auto ret = obj.recvMsgLua(ls, MSG_GetState)) {
+		auto& tbl = *boost::get<rs::SPLCTable>(ret);
+		self._stateName = tbl[1].toString();
+	}
 }
 
 const rs::IdValue T_Rect = GlxId::GenTechId("Sprite", "Rect");

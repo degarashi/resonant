@@ -29,5 +29,8 @@ st_idle = {
 	OnExit = function(self, slc, ...)
 		G.print("sc_cube:OnExit")
 		scbase.Terminate(slc.objlist)
+	end,
+	GetState = function()
+		return "Cube"
 	end
 }

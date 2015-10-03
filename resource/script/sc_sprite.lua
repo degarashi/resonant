@@ -84,4 +84,7 @@ st_test = G.DerivedState(st_init, {
 		end
 		scbase.CheckSwitch()
 	end,
+	GetState = function()
+		return "Sprite"
+	end
 })
