@@ -99,7 +99,7 @@ namespace rs {
 			virtual void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const;
 			// ---- Message ----
 			virtual LCValue recvMsg(const GMessageStr& msg, const LCValue& arg=LCValue());
-			virtual LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg=LCValue());
+			virtual LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg=LuaNil());
 			//! 特定の優先度範囲のオブジェクトを処理
 			virtual void proc(UpdProc p, bool bRecursive,
 								Priority prioBegin=std::numeric_limits<Priority>::lowest(),
@@ -653,6 +653,11 @@ namespace rs {
 	template <class T>
 	using DrawableObjT = ObjectT<T, DrawableObj>;
 
+	namespace detail {
+		struct ObjectT_LuaBase {
+			static LCValue CallRecvMsg(const SPLua& ls, HObj hObj, const GMessageStr& msg, const LCValue& arg);
+		};
+	}
 	template <class T, class Base=Object>
 	class ObjectT_Lua : public ObjectT<T,Base>, public spn::EnableFromThis<HObj> {
 		protected:
@@ -673,9 +678,7 @@ namespace rs {
 					_callLuaMethod(ls, luaNS::OnExit, "null");
 			}
 			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override {
-				ls->push(handleFromThis());
-				LValueS lv(ls->getLS());
-				return lv.callMethodNRet(luaNS::RecvMsg, msg, arg);
+				return detail::ObjectT_LuaBase::CallRecvMsg(ls, handleFromThis(), msg, arg);
 			}
 	};
 	DefineUpdGroup(U_UpdGroup)

@@ -452,4 +452,19 @@ namespace rs {
 	DrawTag& DrawGroupProxy::refDTag() {
 		return _dtag;
 	}
+	// -------------------- ObjectT_LuaBase --------------------
+	LCValue detail::ObjectT_LuaBase::CallRecvMsg(const SPLua& ls, HObj hObj, const GMessageStr& msg, const LCValue& arg) {
+		ls->push(hObj);
+		LValueS lv(ls->getLS());
+		LCValue ret = lv.callMethodNRet(luaNS::RecvMsg, msg, arg);
+		auto& tbl = *boost::get<SPLCTable>(ret);
+		if(tbl[1]) {
+			int sz = tbl.size();
+			for(int i=1 ; i<=sz ; i++)
+				tbl[i] = std::move(tbl[i+1]);
+			tbl.erase(tbl.find(sz));
+			return ret;
+		}
+		return LCValue();
+	}
 }
