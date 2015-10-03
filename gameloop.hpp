@@ -132,10 +132,17 @@ namespace rs {
 		bool update();
 		int getFPS() const;
 	};
+	struct GLoopInitializer {
+		using CB = std::function<void ()>;
+		CB	cbInit,			//!< 各種マネージャが初期化された後に呼ばれる
+			cbPreTerm,		//!< 各種マネージャが破棄される前に呼ばれる
+			cbPostTerm;		//!< 各種マネージャが破棄された後に呼ばれる
+	};
 	struct GLoopInitParam {
 		std::string		pathfile,		//!< パス記述ファイル名
 						organization,	//!< 組織名(一時ファイル用)
 						app_name;		//!< アプリケション名(一時ファイル用)
+		GLoopInitializer initializer;
 		Window::Param	wparam;
 		Window::GLParam	gparam;
 	};

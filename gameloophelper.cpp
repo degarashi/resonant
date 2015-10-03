@@ -7,12 +7,13 @@
 namespace rs {
 	namespace detail {
 		// ----------------- GameloopHelper -----------------
-		int GameloopHelper::Run(const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBScene& cbScene, const CBInit& cbTerm, int rx, int ry, const std::string& appname, const std::string& pathfile) {
+		int GameloopHelper::Run(const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const GLoopInitializer& init, const CBScene& cbScene, int rx, int ry, const std::string& appname, const std::string& pathfile) {
 			GameLoop gloop([&](const SPWindow& sp){
-					return new GHelper_Main(sp, cbEngine, cbMakeSV, cbInit, cbTerm, cbScene);
+					return new GHelper_Main(sp, cbEngine, cbMakeSV, init, cbScene);
 					}, [](){ return new GHelper_Draw; });
 
 			GLoopInitParam param;
+			param.initializer = init;
 			auto& wp = param.wparam;
 			wp.title = appname + " by RSE";
 			wp.width = rx;
@@ -34,9 +35,9 @@ namespace rs {
 		}
 
 		// ----------------- GHelper_Main -----------------
-		GHelper_Main::GHelper_Main(const SPWindow& sp, const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const CBInit& cbInit, const CBInit& cbTerm, const CBScene& cbScene):
+		GHelper_Main::GHelper_Main(const SPWindow& sp, const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const GLoopInitializer& init, const CBScene& cbScene):
 			MainProc(sp, true),
-			_cbTerm(cbTerm)
+			_init(init)
 		{
 			auto lkb = sharedbase.lock();
 
@@ -47,7 +48,7 @@ namespace rs {
 			// スクリプトファイルの名前は固定: main.lua
 			SPLua ls = lkb->spLua = LuaState::FromResource("main");
 			LuaImport::RegisterRSClass(*ls);
-			cbInit();
+			init.cbInit();
 			// Lua初期化関数を呼ぶ
 			ls->getGlobal("Initialize");
 			ls->call(0,1);
@@ -60,7 +61,8 @@ namespace rs {
 			_pushFirstScene(hlScene);
 		}
 		GHelper_Main::~GHelper_Main() {
-			_cbTerm();
+			if(_init.cbPreTerm)
+				_init.cbPreTerm();
 		}
 		bool GHelper_Main::userRunU() {
 			return true;

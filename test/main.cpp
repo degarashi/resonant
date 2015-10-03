@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
 		LogOutput("usage: rse_demo pathlist_file");
 		return 0;
 	}
-	auto cbInit = [](){
+	rs::GLoopInitializer init;
+	init.cbInit = [](){
 		auto lkb = sharedbase.lockR();
 		tls_gvalue = GlobalValue();
 		auto& gv = *tls_gvalue;
@@ -90,8 +91,8 @@ int main(int argc, char **argv) {
 			gv.random = mgr_random.get(RandomId);
 		}
 	};
-	auto cbTerm = [](){
+	init.cbPreTerm = [](){
 		tls_gvalue = spn::none;
 	};
-	return rs::GameloopHelper<Engine, SharedValue, Sc_Dummy>::Run(cbInit, cbTerm, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
+	return rs::GameloopHelper<Engine, SharedValue, Sc_Dummy>::Run(init, RESOLUTION_X, RESOLUTION_Y, APP_NAME, argv[1]);
 }

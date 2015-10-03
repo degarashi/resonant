@@ -17,21 +17,18 @@ namespace rs {
 
 		using CBMakeSV = std::function<SharedBase_UP ()>;
 		using CBEngine = std::function<IEffect* (rs::AdaptSDL&)>;
-		using CBInit = std::function<void ()>;
 		using CBScene = std::function<HLScene ()>;
 		//! ゲームループヘルパークラスの実装
 		class GameloopHelper {
 			public:
 				/*! \param[in] cbEngine		Engineクラスの初期化関数
 					\param[in] cbMakeSV		ゲーム内グローバル変数の初期化関数
-					\param[in] cbInit		ゲームループ初期化後に呼ばれる関数
-					\param[in] cbScene		最初のシーンクラスを生成して返す関数
-					\param[in] cbTerm		ゲームループ終了後に呼ばれる関数 */
+					\param[in] init			ゲームループ初期化関数群
+					\param[in] cbScene		最初のシーンクラスを生成して返す関数 */
 				static int Run(const CBEngine& cbEngine,
 								const CBMakeSV& cbMakeSV,
-								const CBInit& cbInit,
+								const GLoopInitializer& init,
 								const CBScene& cbScene,
-								const CBInit& cbTerm,
 								int rx, int ry, const std::string& appname, const std::string& pathfile);
 		};
 		//! 描画スレッド内の処理代行
@@ -44,13 +41,12 @@ namespace rs {
 			private:
 				//! ゲーム内グローバル変数
 				detail::SharedBase_UP	_upsv;
-				CBInit					_cbTerm;
+				GLoopInitializer		_init;
 			public:
 				GHelper_Main(const SPWindow& sp,
 							const CBEngine& cbEngine,
 							const CBMakeSV& cbMakeSV,
-							const CBInit& cbInit,
-							const CBInit& cbTerm,
+							const GLoopInitializer& init,
 							const CBScene& cbScene);
 				~GHelper_Main();
 				bool userRunU() override;
@@ -78,7 +74,7 @@ namespace rs {
 				\retval 0		正常終了
 				\retval 0以外	異常終了
 			*/
-			static int Run(const detail::CBInit& cbInit, const detail::CBInit& cbTerm, int rx, int ry, const std::string& appname, const std::string& pathfile="") {
+			static int Run(const GLoopInitializer& init, int rx, int ry, const std::string& appname, const std::string& pathfile="") {
 				auto cbEngine = [](rs::AdaptSDL& as){
 					return new EngineT(as);
 				};
@@ -90,7 +86,7 @@ namespace rs {
 				auto cbScene = [](){
 					return rs_mgr_obj.makeScene<InitialSceneT>().first;
 				};
-				return detail::GameloopHelper::Run(cbEngine, cbMakeSV, cbInit, cbScene, cbTerm, rx, ry, appname, pathfile);
+				return detail::GameloopHelper::Run(cbEngine, cbMakeSV, init, cbScene, rx, ry, appname, pathfile);
 			}
 	};
 }

@@ -164,6 +164,15 @@ namespace rs {
 		UPtr<GLWrap>	glw;
 		// Looper::atPanic
 		try {
+			struct CallPostTerm {
+				const GLoopInitializer::CB& cbTerm;
+				CallPostTerm(const GLoopInitializer& init): cbTerm(init.cbPostTerm) {}
+				~CallPostTerm() {
+					if(cbTerm)
+						cbTerm();
+				}
+			} callPostTerm(param.initializer);
+
 			glw.reset(new GLWrap(MULTICONTEXT));
 			// 描画スレッドを先に初期化
 			opDth = spn::construct();
@@ -335,31 +344,39 @@ PrintLog;
 				// プロファイラのフレーム切り替え
 				spn::profiler.resetTree();
 
-				// ゲーム進行
-				++getInfo()->accumUpd;
-				{
-					auto p = spn::profiler.beginBlockObj("input_update");
-					mgr_input.update();
-				}
-				g_sdlInputShared.lock()->reset();
-				IMainProc::Query q(tp, skip);
-				{
-					auto p = spn::profiler.beginBlockObj("main_loop");
-					if(!mp->runU(q)) {
-						PrintLogMsg("MainLoop END");
-						break;
+				try {
+					// ゲーム進行
+					++getInfo()->accumUpd;
+					{
+						auto p = spn::profiler.beginBlockObj("input_update");
+						mgr_input.update();
 					}
-				}
-				// 時間が残っていれば描画
-				// 最大スキップフレームを超過してたら必ず描画
-				bool bSkip = !q.getDraw();
-				if(!bSkip)
-					skip = 0;
-				else
-					++skip;
+					g_sdlInputShared.lock()->reset();
+					IMainProc::Query q(tp, skip);
+					{
+						auto p = spn::profiler.beginBlockObj("main_loop");
+						if(!mp->runU(q)) {
+							PrintLogMsg("MainLoop END");
+							break;
+						}
+					}
+					// 時間が残っていれば描画
+					// 最大スキップフレームを超過してたら必ず描画
+					bool bSkip = !q.getDraw();
+					if(!bSkip)
+						skip = 0;
+					else
+						++skip;
 
-				GL.glFlush();
-				drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw, bSkip));
+					GL.glFlush();
+					drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw, bSkip));
+				} catch(const std::exception& e) {
+					LogOutput("MainThread::runU() exception\n%s", e.what());
+					throw;
+				} catch(...) {
+					LogOutput("MainThread::runU() unknown exception");
+					throw;
+				}
 			} while(bLoop && !isInterrupted());
 			while(mgr_scene.getTop().valid()) {
 				mgr_scene.setPopScene(1);
