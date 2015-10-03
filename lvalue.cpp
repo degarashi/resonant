@@ -366,11 +366,6 @@ namespace rs {
 	LCValue::LCValue(lua_IntegerU num): LCValue(static_cast<lua_Integer>(num)) {}
 	LCValue::LCValue(lua_OtherInteger num): LCValue(static_cast<lua_Integer>(num)) {}
 	LCValue::LCValue(lua_OtherIntegerU num): LCValue(static_cast<lua_Integer>(num)) {}
-	LCValue::LCValue(const spn::Vec4& v): LCVar(v) {}
-	LCValue& LCValue::operator = (const spn::Vec4& v) {
-		static_cast<LCVar&>(*this) = v;
-		return *this;
-	}
 	bool LCValue::operator == (const LCValue& lcv) const {
 		return static_cast<const LCVar&>(*this) == static_cast<const LCVar&>(lcv);
 	}

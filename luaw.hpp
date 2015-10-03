@@ -96,7 +96,7 @@ namespace rs {
 	using SPLCTable = std::shared_ptr<LCTable>;
 	using LCVar = boost::variant<boost::blank, LuaNil,
 					bool, const char*, lua_Integer, lua_Number,
-					spn::Vec4, spn::Quat,
+					spn::Vec2, spn::Vec3, spn::Vec4, spn::Quat,
 					spn::LHandle, spn::SHandle, spn::WHandle, SPLua, void*, lua_CFunction, std::string, SPLCTable>;
 	class LCValue : public LCVar {
 		private:
@@ -120,12 +120,10 @@ namespace rs {
 			LCValue();
 			LCValue(const LCValue& lc);
 			LCValue(LCValue&& lcv);
-			LCValue(const spn::Vec4& v);
 			LCValue(lua_OtherNumber num);
 			LCValue(lua_IntegerU num);
 			LCValue(lua_OtherIntegerU num);
 			LCValue(lua_OtherInteger num);
-			LCValue& operator =(const spn::Vec4& v);
 
 			// Tupleは配列に変換
 			LCValue(std::tuple<>& t);
@@ -137,20 +135,12 @@ namespace rs {
 			LCValue(std::tuple<Args...>&& t);
 			template <class... Args>
 			LCValue(const std::tuple<Args...>& t);
-			//! 任意のベクトルからVec4型への変換
 			template <int N, bool B>
-			LCValue(const spn::VecT<N,B>& v) {
-				spn::Vec4 tmp;
-				for(int i=0 ; i<N ; i++)
-					tmp.m[i] = v.m[i];
-				for(int i=N ; i<4 ; i++)
-					tmp.m[i] = 0;
-				*this = tmp;
-			}
+			LCValue(const spn::VecT<N,B>& v): LCVar(static_cast<const spn::VecT<N,false>&>(v)) { }
 			//! 任意のベクトルからVec4型への代入
 			template <int N, bool B>
 			LCValue& operator = (const spn::VecT<N,B>& v) {
-				return *this = LCValue(v);
+				return *this = LCValue(static_cast<const spn::VecT<N,false>&>(v));
 			}
 			LCValue& operator = (const LCValue& lcv);
 			LCValue& operator = (LCValue&& lcv);
@@ -190,11 +180,6 @@ namespace rs {
 				using handle_t = decltype(std::declval<H>().getBase());
 				auto h = _toHandle(static_cast<handle_t*>(nullptr));
 				return H::FromHandle(h);
-			}
-			template <int N, bool B=false>
-			auto toVector() const {
-				auto& v4 = boost::get<spn::Vec4>(*this);
-				return spn::VecT<N,B>(static_cast<const float*>(v4.m));
 			}
 			bool operator == (const LCValue& lcv) const;
 			bool operator != (const LCValue& lcv) const;
