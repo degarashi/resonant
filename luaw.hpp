@@ -1015,14 +1015,14 @@ namespace rs {
 			}
 
 			const void* toPointer() const {
-				return lua_topointer(T::getLS(), VPop(*this));
+				return lua_topointer(T::getLS(), typename T::VPop(*this, false));
 			}
 			template <class R>
 			decltype(auto) toValue() const {
-				return GetLCVType<T>()(VPop(*this), T::getLS());
+				return GetLCVType<T>()(typename T::VPop(*this, false), T::getLS());
 			}
 			int length() const {
-				typename T::VPop vp(*this);
+				typename T::VPop vp(*this, true);
 				auto* ls = T::getLS();
 				lua_len(ls, vp.getIndex());
 				int ret = lua_tointeger(ls, -1);
@@ -1030,7 +1030,7 @@ namespace rs {
 				return ret;
 			}
 			LuaType type() const {
-				return LuaState::SType(T::getLS(), VPop(*this));
+				return LuaState::SType(T::getLS(), typename T::VPop(*this, false));
 			}
 	};
 	using LValueS = LValue<LV_Stack>;

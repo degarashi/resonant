@@ -271,7 +271,28 @@ namespace rs {
 		lcv.push(ls);
 		return 1; }
 	LCValue LCV<LCValue>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
-		int typ = lua_type(ls, idx);
+		auto typ = lua_type(ls, idx);
+		// Tableにおいて、_prefixフィールド値がVならば_sizeフィールドを読み込みVecTに変換
+		if(typ == LUA_TTABLE) {
+			lua_pushvalue(ls, idx);
+			LValueS lvs(ls);
+			LValueS postfix = lvs["_postfix"];
+			if(postfix.type() == LuaType::String &&
+				std::string(postfix.toString()) == "V")
+			{
+				int size = LValueS(lvs["_size"]).toInteger();
+				const void* ptr = LValueS(lvs["pointer"]).toUserData();
+				switch(size) {
+					case 2:
+						return *static_cast<const spn::Vec2*>(ptr);
+					case 3:
+						return *static_cast<const spn::Vec3*>(ptr);
+					case 4:
+						return *static_cast<const spn::Vec4*>(ptr);
+				}
+				Assert(Trap, false, "invalid vector size (%1%)", size)
+			}
+		}
 		return c_toLCValue[typ+1](ls, idx, spm);
 	}
 	std::ostream& LCV<LCValue>::operator()(std::ostream& os, const LCValue& lcv) const {
