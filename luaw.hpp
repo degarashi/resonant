@@ -1253,7 +1253,7 @@ namespace rs {
 			}
 			template <class GET, class T, class RT, class FT, class... Ts>
 			static void RegisterMember(LuaState& lsc, const char* name, RT (FT::*func)(Ts...) const) {
-				RegisterMember<GET,T>(lsc, name, (RT (T::*)(Ts...))func);
+				RegisterMember<GET,T>(lsc, name, (RT (FT::*)(Ts...))func);
 			}
 			//! lscにReadTable, WriteTableを積んだ状態で呼ぶ
 			template <class GET, class T, class V, class VT>
