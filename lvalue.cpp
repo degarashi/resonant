@@ -401,9 +401,29 @@ namespace rs {
 			template <class T>
 			bool operator()(const T&) const { return true; }
 		};
+		const LCValue c_dummyLCValue;
+		struct ReferenceIndex : boost::static_visitor<const LCValue&> {
+			const int index;
+			ReferenceIndex(int idx): index(idx) {}
+			const LCValue& operator()(const SPLCTable& sp) const {
+				auto itr = sp->find(index);
+				if(itr != sp->end())
+					return itr->second;
+				return c_dummyLCValue;
+			}
+			template <class T>
+			const LCValue& operator()(const T&) const {
+				Assert(Trap, false, "invalid LCValue type")
+				return c_dummyLCValue;
+			}
+		};
 	}
 	LCValue::operator bool () const {
 		return boost::apply_visitor(ConvertBool(), *this);
+	}
+	const LCValue& LCValue::operator [](int s) const {
+		// Luaの配列インデックスは1オリジンのため、1を加える
+		return boost::apply_visitor(ReferenceIndex(s+1), *this);
 	}
 	LCValue::LCValue(std::tuple<>&): LCValue() {}
 	LCValue::LCValue(std::tuple<>&&): LCValue() {}

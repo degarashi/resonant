@@ -173,6 +173,9 @@ namespace rs {
 				static_cast<LCVar&>(*this) = std::forward<T>(t);
 				return *this;
 			}
+			//! 中身を配列とみなしてアクセス
+			/*! \param[in] n 0オリジンのインデックス */
+			const LCValue& operator[] (int n) const;
 
 			//! SHandleやLHandleを任意のハンドルへ変換して取り出す
 			template <class H>
