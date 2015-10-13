@@ -4,7 +4,7 @@
 namespace rs {
 	// ------------------------- GLRBuffer -------------------------
 	GLRBuffer::GLRBuffer(int w, int h, GLInRenderFmt fmt):
-		_idRbo(0), _behLost(NONE), _restoreInfo(boost::none), _buffFmt(GLFormat::QueryInfo(fmt)->elementType), _fmt(fmt), _width(w), _height(h)
+		_idRbo(0), _behLost(NONE), _restoreInfo(boost::none), _buffFmt(GLFormat::QueryInfo(fmt)->elementType), _fmt(fmt), _size(w,h)
 	{}
 	GLRBuffer::~GLRBuffer() {
 		onDeviceLost();
@@ -34,7 +34,7 @@ namespace rs {
 		}
 	}
 	void GLRBuffer::allocate() {
-		GL.glRenderbufferStorage(GL_RENDERBUFFER, _fmt.get(), _width, _height);
+		GL.glRenderbufferStorage(GL_RENDERBUFFER, _fmt.get(), _size.width, _size.height);
 	}
 
 	namespace {
@@ -76,8 +76,8 @@ namespace rs {
 						break;
 				}
 			}
-			spn::ByteBuff buff(texSize * rb._width * rb._height);
-			GL.glReadPixels(0, 0, rb._width, rb._height, rb._fmt.get(), rb._buffFmt.get(), &buff[0]);
+			spn::ByteBuff buff(texSize * rb._size.width * rb._size.height);
+			GL.glReadPixels(0, 0, rb._size.width, rb._size.height, rb._fmt.get(), rb._buffFmt.get(), &buff[0]);
 			rb._restoreInfo = std::move(buff);
 		}
 #else
@@ -129,11 +129,8 @@ namespace rs {
 		if(beh == CLEAR)
 			_restoreInfo = *color;
 	}
-	int GLRBuffer::getWidth() const {
-		return _width;
-	}
-	int GLRBuffer::getHeight() const {
-		return _height;
+	const spn::Size& GLRBuffer::getSize() const {
+		return _size;
 	}
 	const std::string& GLRBuffer::getResourceName() const {
 		static std::string str("GLRBuffer");
@@ -224,6 +221,14 @@ namespace rs {
 			// この時点で有効なフレームバッファになって無ければエラー
 			GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			Assert(Trap, e==GL_FRAMEBUFFER_COMPLETE, GLFormat::QueryEnumString(e).c_str())
+
+			// 後で参照するためにFramebuffのハンドルを記録
+			GLFBufferCore::_SetCurrentHandle(HFb::FromHandle(this->_hlRes));
+		}
+
+		Viewport::Viewport(const spn::Rect& r): _rect(r) {}
+		void Viewport::exec() {
+			GL.glViewport(_rect.x0, _rect.y0, _rect.width(), _rect.height());
 		}
 	}
 	// ------------------------- GLFBuffer -------------------------
@@ -317,9 +322,35 @@ namespace rs {
 	const GLFBuffer::Res& GLFBuffer::getAttachment(Att::Id att) const {
 		return _attachment[att];
 	}
+	namespace {
+		struct GetSize_Visitor : boost::static_visitor<spn::Size> {
+			spn::Size operator()(boost::none_t) const {
+				Assert(Trap, false, "invalid Attachment type (=none)")
+				return {};
+			}
+			template <class T>
+			spn::Size operator()(const T& t) const {
+				return t->get()->getSize();
+			}
+		};
+	}
+	spn::Size GLFBuffer::getAttachmentSize(Att::Id att) const {
+		return boost::apply_visitor(GetSize_Visitor(), _attachment[att]);
+	}
 	const std::string& GLFBuffer::getResourceName() const {
 		static std::string str("GLFBuffer");
 		return str;
+	}
+
+	HFb GLFBufferCore::s_currentFb;
+	void GLFBufferCore::ResetCurrentHandle() {
+		s_currentFb.setNull();
+	}
+	void GLFBufferCore::_SetCurrentHandle(HFb hFb) {
+		s_currentFb = hFb;
+	}
+	HFb GLFBufferCore::GetCurrentHandle() {
+		return s_currentFb;
 	}
 }
 

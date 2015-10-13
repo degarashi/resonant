@@ -242,6 +242,13 @@ namespace rs {
 				Clear(const ClearParam& p);
 				void exec() override;
 		};
+		class Viewport : public TokenT<Viewport> {
+			private:
+				spn::Rect	_rect;
+			public:
+				Viewport(const spn::Rect& r);
+				void exec() override;
+		};
 
 		void Unif_Vec_Exec(int idx, GLint id, const void* ptr, int n);
 		void Unif_Mat_Exec(int idx, GLint id, const void* ptr, int n, bool bT);
@@ -752,8 +759,7 @@ namespace rs {
 			Res				_restoreInfo;
 			GLTypeFmt		_buffFmt;
 			GLFormatV		_fmt;
-			int				_width,
-							_height;
+			spn::Size		_size;
 			//! 現在指定されているサイズとフォーマットでRenderbuffer領域を確保 (内部用)
 			void allocate();
 
@@ -767,8 +773,7 @@ namespace rs {
 
 			void setOnLost(OnLost beh, const spn::Vec4* color=nullptr);
 			GLuint getBufferID() const;
-			int getWidth() const;
-			int getHeight() const;
+			const spn::Size& getSize() const;
 			const GLFormatV& getFormat() const;
 			const std::string& getResourceName() const override;
 	};
@@ -778,6 +783,7 @@ namespace rs {
 			friend class RUser<GLFBufferCore>;
 			void use_begin() const;
 			void use_end() const;
+			static HFb	s_currentFb;
 
 			struct Att {
 				enum Id {
@@ -801,8 +807,11 @@ namespace rs {
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
 			using Res = boost::variant<boost::none_t, HLTex, HLRb>;
 			GLuint	_idFbo;
+			static void _SetCurrentHandle(HFb hFb);
 
 		public:
+			static HFb GetCurrentHandle();
+			static void ResetCurrentHandle();
 			GLFBufferCore(GLuint id);
 			GLuint getBufferID() const;
 
@@ -856,6 +865,7 @@ namespace rs {
 			void onDeviceLost() override;
 			void getDrawToken(draw::TokenDst& dst) const;
 			const Res& getAttachment(Att::Id att) const;
+			spn::Size getAttachmentSize(Att::Id att) const;
 			const std::string& getResourceName() const override;
 	};
 }

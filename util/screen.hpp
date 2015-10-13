@@ -25,6 +25,22 @@ namespace rs {
 				void clearParam();
 				void onDraw(IEffect& e) const override;
 		};
+
+		class Viewport : public DrawableObjT<Viewport> {
+			private:
+				//! 矩形サイズ指定
+				/*! true:	ピクセル
+					false:	画面比率 */
+				bool		_bPixel;
+				spn::RectF	_rect;
+			public:
+				static spn::Rect ByRatio(const spn::RectF& r);
+
+				Viewport(Priority dprio);
+				void onDraw(IEffect& e) const override;
+				void setByRatio(const spn::RectF& r);
+				void setByPixel(const spn::RectF& r);
+		};
 		class FBSwitch : public DrawableObjT<FBSwitch> {
 			private:
 				HLFb			_hlFb;

@@ -18,6 +18,7 @@ DEF_LUAIMPLEMENT_PTR(rs::draw::ClearParam, ClearParam, (color)(depth)(stencil), 
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::util::FBClear, FBClear, "Object", NOTHING, NOTHING, (rs::Priority)(const rs::draw::ClearParam&))
 using ClearParam_OP = spn::Optional<rs::draw::ClearParam>;
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::util::FBSwitch, FBSwitch, "Object", NOTHING, (setClearParam), (rs::Priority)(HFb)(const ClearParam_OP&))
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::util::Viewport, Viewport, "Object", NOTHING, (setByRatio)(setByPixel), (rs::Priority))
 
 DEF_LUAIMPLEMENT_PTR_NOCTOR(SystemInfo, SystemInfo, NOTHING, (getScreenSize)(getFPS))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(spn::MTRandom, Random, NOTHING, (luaGetUniform<float>)(luaGetUniform<int>))
@@ -101,7 +102,7 @@ DEF_LUAIMPLEMENT_HDL(ObjMgr, rs::U_DrawGroup, U_DrawGroup, "DrawGroup", NOTHING,
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroupProxy, DrawGroupProxy, "Object", NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_DrawGroupProxy, U_DrawGroupProxy, "DrawGroupProxy", NOTHING, NOTHING, (rs::HDGroup))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::GLRes, GLRes, NOTHING, (loadTexture)(loadCubeTexture)(createTexture)(makeFBuffer)(makeRBuffer))
-DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLRBuffer, GLRBuffer, NOTHING, (getBufferID)(getWidth)(getHeight))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLRBuffer, GLRBuffer, NOTHING, (getBufferID)(getSize))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLFBuffer, GLFBuffer, NOTHING, (attachRBuffer)(attachTexture)(detach))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ABufMgr, rs::ABuffer, ABuffer, NOTHING, (isStreaming))
@@ -173,6 +174,7 @@ namespace rs {
 		LuaImport::RegisterClass<draw::ClearParam>(lsc);
 		LuaImport::RegisterClass<util::FBSwitch>(lsc);
 		LuaImport::RegisterClass<util::FBClear>(lsc);
+		LuaImport::RegisterClass<util::Viewport>(lsc);
 		LuaImport::RegisterClass<SystemInfo>(lsc);
 		LuaImport::RegisterClass<TPos2D>(lsc);
 		LuaImport::ImportClass(lsc, "System", "scene", &mgr_scene);

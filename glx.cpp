@@ -4,6 +4,7 @@
 #include <boost/format.hpp>
 #include <fstream>
 #include "spinner/unituple/operator.hpp"
+#include "util/screen.hpp"
 
 namespace rs {
 	IEffect::GlxId IEffect::s_myId;
@@ -307,6 +308,7 @@ namespace rs {
 		tech = spn::none;
 		_clean_drawvalue();
 		hlFb = HFb();
+		viewrect = spn::none;
 	}
 	void GLEffect::Current::_clean_drawvalue() {
 		pass = spn::none;
@@ -361,6 +363,15 @@ namespace rs {
 			else
 				GLFBufferTmp(0).getDrawToken(tokenML);
 			hlFb = spn::none;
+
+			// ビューポートはデフォルトでフルスクリーンに初期化
+			if(!viewrect)
+				viewrect = util::Viewport::ByRatio({0,1,0,1});
+		}
+		if(viewrect) {
+			using T = draw::Viewport;
+			new(tokenML.allocate_memory(sizeof(T), draw::CalcTokenOffset<T>())) T(*viewrect);
+			viewrect = spn::none;
 		}
 	}
 	void GLEffect::Current::_outputDrawCall(draw::VStream& vs) {
@@ -782,6 +793,9 @@ namespace rs {
 	}
 	void GLEffect::resetFramebuffer() {
 		_current.hlFb = HLFb();
+	}
+	void GLEffect::setViewport(const spn::Rect& r) {
+		_current.viewrect = r;
 	}
 	diff::Effect GLEffect::getDifference() const {
 		return _diffCount;

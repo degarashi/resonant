@@ -354,6 +354,8 @@ namespace rs {
 				} index, index_prev;
 				using HLFb_OP = spn::Optional<HLFb>;
 				HLFb_OP				hlFb;			//!< 描画対象のフレームバッファ (無効ならデフォルトターゲット)
+				using Rect_OP = spn::Optional<spn::Rect>;
+				Rect_OP				viewrect;
 				//! 前回とのバッファの差異
 				/*! Vertex, Indexバッファ情報を一時的にバックアップして差異の検出に備える */
 				diff::Buffer getDifference();
@@ -458,6 +460,7 @@ namespace rs {
 			void setFramebuffer(HFb fb) override;
 			//! アプリケーション初期化時のデフォルトフレームバッファに戻す
 			void resetFramebuffer() override;
+			void setViewport(const spn::Rect& r) override;
 
 			// ----------------- Vertex&Index Stream -----------------
 			//! 頂点宣言
