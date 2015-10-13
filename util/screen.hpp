@@ -34,8 +34,6 @@ namespace rs {
 				bool		_bPixel;
 				spn::RectF	_rect;
 			public:
-				static spn::Rect ByRatio(const spn::RectF& r);
-
 				Viewport(Priority dprio);
 				void onDraw(IEffect& e) const override;
 				void setByRatio(const spn::RectF& r);

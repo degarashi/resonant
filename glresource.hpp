@@ -244,9 +244,10 @@ namespace rs {
 		};
 		class Viewport : public TokenT<Viewport> {
 			private:
-				spn::Rect	_rect;
+				bool		_bPixel;
+				spn::RectF	_rect;
 			public:
-				Viewport(const spn::Rect& r);
+				Viewport(bool bPixel, const spn::RectF& r);
 				void exec() override;
 		};
 
@@ -783,7 +784,7 @@ namespace rs {
 			friend class RUser<GLFBufferCore>;
 			void use_begin() const;
 			void use_end() const;
-			static HFb	s_currentFb;
+			static thread_local spn::Size s_fbSize;
 
 			struct Att {
 				enum Id {
@@ -807,11 +808,10 @@ namespace rs {
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
 			using Res = boost::variant<boost::none_t, HLTex, HLRb>;
 			GLuint	_idFbo;
-			static void _SetCurrentHandle(HFb hFb);
+			static void _SetCurrentFBSize(const spn::Size& s);
 
 		public:
-			static HFb GetCurrentHandle();
-			static void ResetCurrentHandle();
+			static const spn::Size& GetCurrentFBSize();
 			GLFBufferCore(GLuint id);
 			GLuint getBufferID() const;
 
@@ -827,10 +827,11 @@ namespace rs {
 				GLuint	idRes;		// 0番は無効
 				Res		handle;
 			} _ent[Att::NUM_ATTACHMENT];
+			const spn::Size	_size;	//!< Colo0バッファのサイズ
 
 			public:
 				// from GLFBufferTmp
-				FrameBuff(GLuint idFb);
+				FrameBuff(GLuint idFb, const spn::Size& s);
 				// from GLFBuffer
 				FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]);
 
@@ -839,9 +840,11 @@ namespace rs {
 	}
 	//! 非ハンドル管理で一時的にFramebufferを使いたい時のヘルパークラス (内部用)
 	class GLFBufferTmp : public GLFBufferCore {
-		static void _Attach(GLenum flag, GLuint rb);
+		private:
+			static void _Attach(GLenum flag, GLuint rb);
+			const spn::Size	_size;
 		public:
-			GLFBufferTmp(GLuint idFb);
+			GLFBufferTmp(GLuint idFb, const spn::Size& s);
 			void attach(Att::Id att, GLuint rb);
 			void use_end() const;
 
@@ -854,6 +857,7 @@ namespace rs {
 		Res	_attachment[Att::NUM_ATTACHMENT];
 
 		public:
+			static spn::Size GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id);
 			static void LuaExport(LuaState& lsc);
 			GLFBuffer();
 			~GLFBuffer();

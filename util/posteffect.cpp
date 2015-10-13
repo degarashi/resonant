@@ -48,18 +48,7 @@ namespace rs {
 			_rect = r;
 		}
 		void Viewport::onDraw(IEffect& e) const {
-			spn::Rect r = (!_bPixel) ? ByRatio(_rect) : _rect.toRect<int>();
-			e.setViewport(r);
-		}
-		spn::Rect Viewport::ByRatio(const spn::RectF& r) {
-			spn::SizeF s = mgr_info.getScreenSize();
-			// もしデフォルトFB以外がセットされていれば、そのサイズを取得
-			if(HFb hFb = GLFBufferCore::GetCurrentHandle())
-				s = hFb->get()->getAttachmentSize(GLFBufferCore::Att::COLOR0);
-			return {r.x0 * s.width,
-					r.x1 * s.width,
-					r.y0 * s.height,
-					r.y1 * s.height};
+			e.setViewport(_bPixel, _rect);
 		}
 
 		// --------------------- FBSwitch ---------------------

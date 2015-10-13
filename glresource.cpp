@@ -1,6 +1,7 @@
 #include "glresource.hpp"
 #include "glx.hpp"
 #include "adaptsdl.hpp"
+#include "systeminfo.hpp"
 
 namespace rs {
 	const std::string& IGLResource::getResourceName() const {
@@ -175,7 +176,6 @@ namespace rs {
 			// 一旦DeviceLostしたらフレームバッファはデフォルトに戻る(in Gameloop)
 			_tmpFb->use_begin();
 			_tmpFb.reset(nullptr);
-			GLFBufferCore::ResetCurrentHandle();
 
 			_upFb->onDeviceLost();
 		}
@@ -184,7 +184,7 @@ namespace rs {
 		if(!_bInit) {
 			_bInit = true;
 			_upFb->onDeviceReset();
-			_tmpFb.reset(new GLFBufferTmp(_upFb->getBufferID()));
+			_tmpFb.reset(new GLFBufferTmp(_upFb->getBufferID(), mgr_info.getScreenSize()));
 			for(auto& r : *this)
 				r->onDeviceReset();
 		}

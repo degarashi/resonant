@@ -1,5 +1,6 @@
 #include "glresource.hpp"
 #include "event.hpp"
+#include "systeminfo.hpp"
 
 namespace rs {
 	// ------------------------- GLRBuffer -------------------------
@@ -138,7 +139,10 @@ namespace rs {
 	}
 
 	// ------------------------- GLFBufferTmp -------------------------
-	GLFBufferTmp::GLFBufferTmp(GLuint idFb): GLFBufferCore(idFb) {}
+	GLFBufferTmp::GLFBufferTmp(GLuint idFb, const spn::Size& s):
+		GLFBufferCore(idFb),
+		_size(s)
+	{}
 	RUser<GLFBufferTmp> GLFBufferTmp::use() const {
 		return RUser<GLFBufferTmp>(*this);
 	}
@@ -154,7 +158,7 @@ namespace rs {
 	}
 	void GLFBufferTmp::getDrawToken(draw::TokenDst& dst) const {
 		using UT = draw::FrameBuff;
-		new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(_idFbo);
+		new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(_idFbo, mgr_info.getScreenSize());
 	}
 
 	// ------------------------- GLFBufferCore -------------------------
@@ -194,14 +198,16 @@ namespace rs {
 				_dst.idRes = 0;
 			}
 		};
-		FrameBuff::FrameBuff(GLuint idFb):
-			GLFBufferCore(idFb), TokenR(HRes())
+		FrameBuff::FrameBuff(GLuint idFb, const spn::Size& s):
+			GLFBufferCore(idFb), TokenR(HRes()),
+			_size(s)
 		{
 			for(auto& p : _ent)
 				p.idRes = 0;
 		}
 		FrameBuff::FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]):
-			GLFBufferCore(idFb), TokenR(hRes)
+			GLFBufferCore(idFb), TokenR(hRes),
+			_size(GLFBuffer::GetAttachmentSize(att, Att::COLOR0))
 		{
 			for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++)
 				boost::apply_visitor(Visitor(_ent[i]), att[i]);
@@ -222,13 +228,24 @@ namespace rs {
 			GLenum e = GL.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			Assert(Trap, e==GL_FRAMEBUFFER_COMPLETE, GLFormat::QueryEnumString(e).c_str())
 
-			// 後で参照するためにFramebuffのハンドルを記録
-			GLFBufferCore::_SetCurrentHandle(HFb::FromHandle(this->_hlRes));
+			// 後で参照するためにFramebuff(Color0)のサイズを記録
+			GLFBufferCore::_SetCurrentFBSize(_size);
 		}
 
-		Viewport::Viewport(const spn::Rect& r): _rect(r) {}
+		Viewport::Viewport(bool bPixel, const spn::RectF& r):
+			_bPixel(bPixel),
+			_rect(r)
+		{}
 		void Viewport::exec() {
-			GL.glViewport(_rect.x0, _rect.y0, _rect.width(), _rect.height());
+			spn::RectF r = _rect;
+			if(!_bPixel) {
+				spn::Size s = GLFBufferCore::GetCurrentFBSize();
+				r.x0 *= s.width;
+				r.x1 *= s.width;
+				r.y0 *= s.height;
+				r.y1 *= s.height;
+			}
+			GL.glViewport(r.x0, r.y0, r.width(), r.height());
 		}
 	}
 	// ------------------------- GLFBuffer -------------------------
@@ -334,23 +351,23 @@ namespace rs {
 			}
 		};
 	}
+	spn::Size GLFBuffer::GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id) {
+		return boost::apply_visitor(GetSize_Visitor(), att[id]);
+	}
 	spn::Size GLFBuffer::getAttachmentSize(Att::Id att) const {
-		return boost::apply_visitor(GetSize_Visitor(), _attachment[att]);
+		return GetAttachmentSize(_attachment, att);
 	}
 	const std::string& GLFBuffer::getResourceName() const {
 		static std::string str("GLFBuffer");
 		return str;
 	}
 
-	HFb GLFBufferCore::s_currentFb;
-	void GLFBufferCore::ResetCurrentHandle() {
-		s_currentFb.setNull();
+	thread_local spn::Size GLFBufferCore::s_fbSize;
+	void GLFBufferCore::_SetCurrentFBSize(const spn::Size& s) {
+		s_fbSize = s;
 	}
-	void GLFBufferCore::_SetCurrentHandle(HFb hFb) {
-		s_currentFb = hFb;
-	}
-	HFb GLFBufferCore::GetCurrentHandle() {
-		return s_currentFb;
+	const spn::Size& GLFBufferCore::GetCurrentFBSize() {
+		return s_fbSize;
 	}
 }
 
