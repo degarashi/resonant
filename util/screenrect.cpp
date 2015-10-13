@@ -2,7 +2,7 @@
 #include "../glx.hpp"
 #include "../drawtag.hpp"
 #include "../sys_uniform.hpp"
-#include "../gameloophelper.hpp"
+#include "../systeminfo.hpp"
 
 namespace rs {
 	namespace util {
@@ -60,8 +60,7 @@ namespace rs {
 		}
 		void WindowRect::draw(IEffect& e) const {
 			auto& s2 = e.ref2D();
-			auto lkb = sharedbase.lockR();
-			auto s = lkb->screenSize;
+			auto s = mgr_info.getScreenSize();
 			float rx = spn::Rcp22Bit(s.width/2),
 					ry = spn::Rcp22Bit(s.height/2);
 			auto& sc = getScale();

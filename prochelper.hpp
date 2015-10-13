@@ -15,8 +15,6 @@ namespace rs {
 		HLFx			hlFx;
 		HInput			hlIk,
 						hlIm;
-		FPSCounter		fps;
-		spn::Size		screenSize;
 		SPWindow		spWindow;
 		SPLua			spLua;
 		diff::Effect	diffCount;

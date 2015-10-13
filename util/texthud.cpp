@@ -1,7 +1,7 @@
 #include "textdraw.hpp"
 #include "../glx_if.hpp"
 #include "../sys_uniform_value.hpp"
-#include "../gameloophelper.hpp"
+#include "../systeminfo.hpp"
 
 namespace rs {
 	namespace util {
@@ -17,8 +17,7 @@ namespace rs {
 			float rx, ry,
 				  ox, oy,
 				  diry;
-			auto lkb = sharedbase.lockR();
-			auto s = lkb->screenSize;
+			auto s = mgr_info.getScreenSize();
 			rx = spn::Rcp22Bit(s.width/2);
 			ry = spn::Rcp22Bit(s.height/2);
 			auto ofs = _offset;

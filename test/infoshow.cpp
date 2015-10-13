@@ -6,6 +6,7 @@
 #include "engine.hpp"
 #include "../util/dwrapper.hpp"
 #include "../util/screenrect.hpp"
+#include "../systeminfo.hpp"
 
 const rs::IdValue InfoShow::T_Info = GlxId::GenTechId("Text", "Default");
 const std::string g_fontName("IPAGothic");
@@ -20,12 +21,8 @@ struct InfoShow::MySt : StateT<MySt> {
 	void onUpdate(InfoShow& self, const rs::SPLua& ls) override;
 };
 void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
-	int fps;
-	{
-		auto lkb = sharedbase.lockR();
-		// FPSの表示
-		fps = lkb->fps.getFPS();
-	}
+	// FPSの表示
+	int fps = mgr_info.getFPS();
 	std::stringstream ss;
 	ss << "FPS: " << fps << std::endl;
 	ss << "State: " << self._stateName << std::endl;

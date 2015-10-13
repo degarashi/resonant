@@ -91,6 +91,18 @@ namespace rs {
 	using MPCreate = std::function<IMainProc* (const SPWindow&)>;
 	using DPCreate = std::function<IDrawProc* ()>;
 
+	//! FPS計測クラス
+	/*! GameLoop内で使用 */
+	struct FPSCounter {
+		Timepoint	_tmBegin;
+		int			_counter,
+					_fps;
+
+		FPSCounter();
+		void reset();
+		bool update();
+		int getFPS() const;
+	};
 	#define draw_thread (::rs::DrawThread::_ref())
 	//! 描画スレッド
 	class DrawThread : public spn::Singleton<DrawThread>,
@@ -109,6 +121,7 @@ namespace rs {
 				// SingleContext環境ではctxMainThread = nullptr
 				SPGLContext	ctxDrawThread,			//!< 描画スレッド用のGLコンテキスト
 							ctxMainThread;			//!< メインスレッド用のGLコンテキスト
+				FPSCounter	fps;
 			};
 			SpinLock<Info>		_info;
 		protected:
@@ -120,18 +133,6 @@ namespace rs {
 	};
 	#define main_thread (::rs::MainThread::_ref())
 
-	//! FPS計測クラス
-	/*! GameLoop内で使用 */
-	struct FPSCounter {
-		Timepoint	_tmBegin;
-		int			_counter,
-					_fps;
-
-		FPSCounter();
-		void reset();
-		bool update();
-		int getFPS() const;
-	};
 	struct GLoopInitializer {
 		using CB = std::function<void ()>;
 		CB	cbInit,			//!< 各種マネージャが初期化された後に呼ばれる

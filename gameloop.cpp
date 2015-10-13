@@ -88,8 +88,11 @@ namespace rs {
 				if(msg::DrawReq* p = *m) {
 					_info.lock()->state = State::Drawing;
 					// 1フレーム分の描画処理
-					if(up->runU(p->id, p->bSkip))
-						_info.lock()->ctxDrawThread->swapWindow();
+					if(up->runU(p->id, p->bSkip)) {
+						auto lk = _info.lock();
+						lk->fps.update();
+						lk->ctxDrawThread->swapWindow();
+					}
 					GL.glFlush();
 					{
 						auto lk = _info.lock();
@@ -355,6 +358,7 @@ PrintLog;
 					IMainProc::Query q(tp, skip);
 					{
 						auto p = spn::profiler.beginBlockObj("main_loop");
+						mgr_info.setInfo(w->getSize(), opDth->getInfo()->fps.getFPS());
 						if(!mp->runU(q)) {
 							PrintLogMsg("MainLoop END");
 							break;
@@ -381,6 +385,7 @@ PrintLog;
 			while(mgr_scene.getTop().valid()) {
 				mgr_scene.setPopScene(1);
 				IMainProc::Query q(Clock::now(), 0xffff);
+				mgr_info.setInfo(w->getSize(), opDth->getInfo()->fps.getFPS());
 				mp->runU(q);
 			}
 			// DrawThreadがIdleになるまで待つ

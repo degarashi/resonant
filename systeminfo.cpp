@@ -1,4 +1,5 @@
 #include "systeminfo.hpp"
+#include "glhead.hpp"
 
 namespace rs {
 	SystemInfo::SystemInfo():
@@ -8,6 +9,7 @@ namespace rs {
 	void SystemInfo::setInfo(const spn::SizeF& sz, int fps) {
 		_scrSize = sz;
 		_fps = fps;
+		GL.glViewport(0, 0, sz.width, sz.height);
 	}
 	const spn::SizeF& SystemInfo::getScreenSize() const {
 		return _scrSize;
