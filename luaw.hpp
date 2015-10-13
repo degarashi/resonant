@@ -262,6 +262,8 @@ namespace rs {
 	DEF_LCV(lua_State*, lua_State*)
 	DEF_LCV(spn::SizeF, const spn::SizeF&)
 	DERIVED_LCV(spn::Size, spn::SizeF)
+	DEF_LCV(spn::RectF, const spn::RectF&)
+	DERIVED_LCV(spn::Rect, spn::RectF)
 	DEF_LCV(SPLua, const SPLua&)
 	DEF_LCV(void*, const void*)
 	DEF_LCV(lua_CFunction, lua_CFunction)

@@ -116,6 +116,36 @@ namespace rs {
 	LuaType LCV<lua_State*>::operator()() const {
 		return LuaType::Thread; }
 
+	// --- LCV<spn::RectF> = LUA_TTABLE
+	int LCV<spn::RectF>::operator()(lua_State* ls, const spn::RectF& r) const {
+		lua_createtable(ls, 4, 0);
+		int idx = 1;
+		auto fnSet = [ls, &idx](float f){
+			lua_pushinteger(ls, idx++);
+			lua_pushnumber(ls, f);
+			lua_settable(ls, -3);
+		};
+		fnSet(r.x0);
+		fnSet(r.x1);
+		fnSet(r.y0);
+		fnSet(r.y1);
+		return 1;
+	}
+	spn::RectF LCV<spn::RectF>::operator()(int idx, lua_State* ls, LPointerSP*) const {
+		auto fnGet = [ls, idx](int n){
+			lua_pushinteger(ls, n);
+			lua_gettable(ls, idx);
+			auto ret = lua_tonumber(ls, -1);
+			lua_pop(ls, 1);
+			return ret;
+		};
+		return {fnGet(1), fnGet(2), fnGet(3), fnGet(4)};
+	}
+	std::ostream& LCV<spn::RectF>::operator()(std::ostream& os, const spn::RectF& r) const {
+		return os << r; }
+	LuaType LCV<spn::RectF>::operator()() const {
+		return LuaType::Table; }
+
 	// --- LCV<spn::Size> = LUA_TTABLE
 	int LCV<spn::SizeF>::operator()(lua_State* ls, const spn::SizeF& s) const {
 		lua_createtable(ls, 2, 0);
