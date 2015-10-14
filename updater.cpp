@@ -434,6 +434,9 @@ namespace rs {
 		// DrawGroupのonUpdateを呼ぶとエラーになるが、一応呼び出し
 		_hlDGroup->get()->onUpdate(ls);
 	}
+	void DrawGroupProxy::setPriority(Priority p) {
+		_dtag.priority = p;
+	}
 	const DSortV& DrawGroupProxy::getSortAlgorithm() const {
 		return _hlDGroup->get()->getSortAlgorithm();
 	}

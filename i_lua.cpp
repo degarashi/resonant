@@ -99,7 +99,7 @@ DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, rs::UpdGroup, UpdGroup, "Object", NOTHING, (
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_UpdGroup, U_UpdGroup, "UpdGroup", NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroup, DrawGroup, "Object", NOTHING, (addObj)(remObj)(setSortAlgorithmId)(getName)(setPriority))
 DEF_LUAIMPLEMENT_HDL(ObjMgr, rs::U_DrawGroup, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
-DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroupProxy, DrawGroupProxy, "Object", NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroupProxy, DrawGroupProxy, "Object", NOTHING, (setPriority)(getName))
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_DrawGroupProxy, U_DrawGroupProxy, "DrawGroupProxy", NOTHING, NOTHING, (rs::HDGroup))
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::GLRes, GLRes, NOTHING, (loadTexture)(loadCubeTexture)(createTexture)(makeFBuffer)(makeRBuffer))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLRBuffer, GLRBuffer, NOTHING, (getBufferID)(getSize))

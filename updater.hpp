@@ -459,6 +459,7 @@ namespace rs {
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
+			void setPriority(Priority p);
 			bool isNode() const override;
 			void onDraw(IEffect& e) const override;
 			const std::string& getName() const override;
