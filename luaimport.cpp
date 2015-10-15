@@ -107,6 +107,12 @@ namespace rs {
 	namespace {
 		int EmptyFunction(lua_State*) { return 0; }
 	}
+	namespace lua {
+		template <>
+		const char* LuaName(spn::SHandle*) {
+			return "SHandle";
+		}
+	}
 	// オブジェクト類を定義する為の基本関数定義など
 	void LuaImport::RegisterObjectBase(LuaState& lsc) {
 		if(IsObjectBaseRegistered(lsc))
@@ -221,6 +227,35 @@ namespace rs {
 		lua_pushboolean(ls, false);
 		return 1;
 	}
+	LuaImport::LogMap LuaImport::s_logMap;
+	std::stringstream LuaImport::s_importLog;
+	std::string LuaImport::s_firstBlock;
+	int LuaImport::s_indent = 0;
+	void LuaImport::BeginImportBlock(const std::string& s) {
+		_PushIndent(s_importLog) << '[' << s << ']' << std::endl;
+		if(s_indent++ == 0)
+			s_firstBlock = s;
+	}
+	void LuaImport::EndImportBlock() {
+		Assert(Trap, --s_indent >= 0, "indent error")
+		if(s_indent == 0) {
+			s_logMap[s_firstBlock] = s_importLog.str();
+			s_importLog.str("");
+			s_importLog.clear();
+		}
+	}
+	std::ostream& LuaImport::_PushIndent(std::ostream& s) {
+		for(int i=0 ; i<s_indent ; i++)
+			s << "    ";
+		return s;
+	}
+	void LuaImport::SaveImportLog(const std::string& path) {
+		std::ofstream ofs(path);
+		Assert(Trap, ofs.is_open(), "can't open file %1%", path)
+		for(auto& e : s_logMap)
+			ofs << e.second;
+		s_logMap.clear();
+	}
 
 	// ------------------- LCV<SHandle> -------------------
 	int LCV<SHandle>::operator()(lua_State* ls, SHandle h) const {
@@ -255,6 +290,7 @@ namespace rs {
 	LuaType LCV<SHandle>::operator()() const {
 		return LuaType::Userdata;
 	}
+	DEF_LCV_OSTREAM(SHandle)
 	// ------------------- LCV<WHandle> -------------------
 	int LCV<WHandle>::operator()(lua_State* ls, WHandle w) const {
 		if(!w.valid()) {
@@ -278,4 +314,5 @@ namespace rs {
 	LuaType LCV<WHandle>::operator()() const {
 		return LuaType::LightUserdata;
 	}
+	DEF_LCV_OSTREAM(WHandle)
 }

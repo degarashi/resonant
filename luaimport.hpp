@@ -45,6 +45,7 @@ namespace rs {
 			const char* LuaName(clazz*) { return #class_name; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
+				LuaImport::BeginImportBlock(#clazz); \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(base); \
 				lsc.push(#class_name); \
@@ -55,17 +56,22 @@ namespace rs {
 				lsc.rawSet(-3); \
 				lsc.setField(-1, luaNS::objBase::_Pointer, false); \
 				\
+				LuaImport::BeginImportBlock("Values"); \
 				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
 				lsc.rawGet(-2, ::rs::luaNS::objBase::ValueW); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (typename mgr::data_type)(clazz), seq_member) \
 				lsc.pop(2); \
+				LuaImport::EndImportBlock(); \
 				\
+				LuaImport::BeginImportBlock("Functions"); \
 				lsc.rawGet(-1, ::rs::luaNS::objBase::Func); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_HDL, (typename mgr::data_type)(clazz), seq_method) \
 				lsc.pop(1); \
+				LuaImport::EndImportBlock(); \
 				\
 				CallLuaExport<clazz>(lsc, rs::HasMethod_LuaExport_t<clazz>()); \
 				lsc.pop(1); \
+				LuaImport::EndImportBlock(); \
 			} \
 		}}
 #define DEF_LUAIMPLEMENT_HDL(mgr, clazz, class_name, base, seq_member, seq_method, seq_ctor) \
@@ -87,6 +93,7 @@ namespace rs {
 			const char* LuaName(clazz*) { return #class_name; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
+				LuaImport::BeginImportBlock(#clazz); \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(::rs::luaNS::ObjectBase); \
 				lsc.push(#class_name); \
@@ -98,17 +105,22 @@ namespace rs {
 				lsc.rawSet(-3); \
 				lsc.setField(-1, luaNS::objBase::_Pointer, true); \
 				\
+				LuaImport::BeginImportBlock("Values"); \
 				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
 				lsc.rawGet(-2, ::rs::luaNS::objBase::ValueW); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_PTR, clazz, seq_member) \
 				lsc.pop(2); \
+				LuaImport::EndImportBlock(); \
 				\
+				LuaImport::BeginImportBlock("Functions"); \
 				lsc.rawGet(-1, ::rs::luaNS::objBase::Func); \
 				BOOST_PP_SEQ_FOR_EACH(DEF_REGMEMBER_PTR, clazz, seq_method) \
 				lsc.pop(1); \
+				LuaImport::EndImportBlock(); \
 				\
 				CallLuaExport<clazz>(lsc, rs::HasMethod_LuaExport_t<clazz>()); \
 				lsc.pop(1); \
+				LuaImport::EndImportBlock(); \
 			} \
 		}}
 

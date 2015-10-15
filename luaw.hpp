@@ -206,6 +206,10 @@ namespace std {
 		}
 	};
 }
+namespace spn {
+	class Pose2D;
+	class Pose3D;
+}
 namespace rs {
 	class LCTable : public std::unordered_map<LCValue, LCValue> {
 		public:
@@ -233,6 +237,7 @@ namespace rs {
 	LCValue::LCValue(const std::tuple<Args...>& t): LCVar(_TupleAsTable(t)) {}
 
 	using LPointerSP = std::unordered_map<const void*, LCValue>;
+#define DEF_LCV_OSTREAM(typ)	std::ostream& operator << (std::ostream& os, LCV<typ>) { return os << #typ; }
 	// 値型の場合はUserdataにデータを格納
 	template <class T>
 	struct LCV;
@@ -240,6 +245,39 @@ namespace rs {
 	struct LCV<T*>;
 	template <class T>
 	struct LCV<T&>;
+	template <>
+	struct LCV<void> {};
+	std::ostream& operator << (std::ostream& os, LCV<void>);
+	std::ostream& operator << (std::ostream& os, LCV<lua_OtherNumber>);
+	std::ostream& operator << (std::ostream& os, LCV<lua_OtherInteger>);
+	std::ostream& operator << (std::ostream& os, LCV<spn::DegF>);
+	std::ostream& operator << (std::ostream& os, LCV<spn::RadF>);
+	std::ostream& operator << (std::ostream& os, LCV<spn::Pose2D>);
+	std::ostream& operator << (std::ostream& os, LCV<spn::Pose3D>);
+	template <bool A>
+	std::ostream& operator << (std::ostream& os, LCV<spn::PlaneT<A>>) {
+		if(A)
+			os << "A";
+		return os << "Plane";
+	}
+	template <bool A>
+	std::ostream& operator << (std::ostream& os, LCV<spn::QuatT<A>>) {
+		if(A)
+			os << "A";
+		return os << "Quat";
+	}
+	template <int N, bool A>
+	std::ostream& operator << (std::ostream& os, LCV<spn::VecT<N,A>>) {
+		if(A)
+			os << "A";
+		return os << "Vec" << N;
+	}
+	template <int M, int N, bool A>
+	std::ostream& operator << (std::ostream& os, LCV<spn::MatT<M,N,A>>) {
+		if(A)
+			os << "A";
+		return os << "Mat" << M << N;
+	}
 	template <class T>
 	class LValue;
 	class LV_Global;
@@ -249,7 +287,8 @@ namespace rs {
 		int operator()(lua_State* ls, argtyp t) const; \
 		rtyp operator()(int idx, lua_State* ls, LPointerSP* spm=nullptr) const; \
 		std::ostream& operator()(std::ostream& os, argtyp t) const; \
-		LuaType operator()() const; };
+		LuaType operator()() const; }; \
+		std::ostream& operator << (std::ostream& os, LCV<typ>);
 #define DEF_LCV(typ, argtyp) DEF_LCV0(typ, typ, argtyp)
 #define DERIVED_LCV(ntyp, btyp)	template <> \
 		struct LCV<ntyp> : LCV<btyp> {};
@@ -331,6 +370,10 @@ namespace rs {
 		LuaType operator()() const {
 			return GetLCVType<T>()(); }
 	};
+	template <class T>
+	std::ostream& operator << (std::ostream& os, LCV<spn::Optional<T>>) {
+		return os << "Optional<" << LCV<T>() << '>';
+	}
 	// --- LCV<spn::Range<T>> = LCV<std::vector<T>>
 	template <class T>
 	struct LCV<spn::Range<T>> {
@@ -347,6 +390,10 @@ namespace rs {
 		LuaType operator()() const {
 			return LCV_t()(); }
 	};
+	template <class T>
+	std::ostream& operator << (std::ostream& os, LCV<spn::Range<T>>) {
+		return os << "Range<" << LCV<T>() << '>';
+	}
 	// --- LCV<Duration> = LUA_TNUMBER
 	template <class Rep, class Period>
 	struct LCV<std::chrono::duration<Rep,Period>> {
@@ -360,6 +407,10 @@ namespace rs {
 		LuaType operator()() const {
 			return LuaType::Number; }
 	};
+	template <class... Ts>
+	std::ostream& operator << (std::ostream& os, LCV<std::chrono::duration<Ts...>>) {
+		return os << "duration";
+	}
 
 	template <class T, bool D>
 	struct LCV<spn::HdlLock<T,D>> {
@@ -374,6 +425,10 @@ namespace rs {
 		LuaType operator()() const {
 			return LCV<SH>()(); }
 	};
+	template <class T, bool D>
+	std::ostream& operator << (std::ostream& os, LCV<spn::HdlLock<T,D>>) {
+		return os << "LHandle";
+	}
 
 	template <class... Ts>
 	struct LCV<spn::SHandleT<Ts...>> : LCV<spn::SHandle> {
@@ -383,6 +438,10 @@ namespace rs {
 		Handle_t operator()(int idx, lua_State* ls) const {
 			return  Handle_t::FromHandle(LCV<spn::SHandle>()(idx, ls)); }
 	};
+	template <class T, class... Ts>
+	std::ostream& operator << (std::ostream& os, LCV<spn::SHandleT<T, Ts...>>) {
+		return os << "SHandle";
+	}
 	template <class... Ts>
 	struct LCV<spn::WHandleT<Ts...>> : LCV<spn::WHandle> {
 		using Handle_t = spn::WHandleT<Ts...>;
@@ -391,6 +450,10 @@ namespace rs {
 		Handle_t operator()(int idx, lua_State* ls) const {
 			return Handle_t::FromHandle(LCV<spn::WHandle>()(idx, ls)); }
 	};
+	template <class T, class... Ts>
+	std::ostream& operator << (std::ostream& os, LCV<spn::WHandleT<T, Ts...>>) {
+		return os << "WHandle";
+	}
 
 	template <class T, class A>
 	struct LCV<std::vector<T, A>> {
@@ -428,6 +491,10 @@ namespace rs {
 		LuaType operator()() const {
 			return LuaType::Table; }
 	};
+	template <class T, class A>
+	std::ostream& operator << (std::ostream& os, LCV<std::vector<T,A>>) {
+		return os << "vector<" << LCV<T>() << '>';
+	}
 	template <class... Ts>
 	struct LCV<std::tuple<Ts...>> {
 		using Tuple = std::tuple<Ts...>;
@@ -479,6 +546,10 @@ namespace rs {
 		}
 		using base_t::operator();
 	};
+	template <class T0, class T1>
+	std::ostream& operator << (std::ostream& os, LCV<std::pair<T0,T1>>) {
+		return os << "pair<" << LCV<T0>() << ", " << LCV<T1>() << '>';
+	}
 
 	//! lua_Stateの単純なラッパークラス
 	class LuaState : public std::enable_shared_from_this<LuaState> {
@@ -1210,8 +1281,19 @@ namespace rs {
 			return up->get();
 		}
 	};
+	namespace lua {
+		template <>
+		const char* LuaName(spn::SHandle*);
+	}
 	//! LuaへC++のクラスをインポート、管理する
 	class LuaImport {
+		//! インポートしたクラス、関数や変数をテキスト出力(デバッグ用)
+		static std::stringstream	s_importLog;
+		static std::string			s_firstBlock;
+		static int					s_indent;
+		using LogMap = std::unordered_map<std::string, std::string>;
+		static LogMap				s_logMap;
+
 		//! ハンドルオブジェクトの基本メソッド
 		static lua_Unsigned HandleId(spn::SHandle sh);
 		static lua_Integer NumRef(spn::SHandle sh);
@@ -1247,7 +1329,22 @@ namespace rs {
 		static void SetMethod(lua_State* ls, RT (T::*method)(Args...)) {
 			_SetUD(ls, method);
 		}
+
+		static std::ostream& _PushIndent(std::ostream& s);
+		template <class... Ts, class=typename std::enable_if<sizeof...(Ts)==0>::type>
+		static std::ostream& _OutputArgs(std::ostream& s, bool=true) { return s; }
+		template <class T, class... Ts>
+		static std::ostream& _OutputArgs(std::ostream& s, bool bFirst=true) {
+			if(!bFirst)
+				s << ", ";
+			s << LCV<T>();
+			return _OutputArgs<Ts...>(s, false);
+		}
 		public:
+			static void BeginImportBlock(const std::string& name);
+			static void EndImportBlock();
+			static void SaveImportLog(const std::string& path);
+
 			//! lscにFuncTableを積んだ状態で呼ぶ
 			template <class GET, class T, class RT, class FT, class... Ts>
 			static void RegisterMember(LuaState& lsc, const char* name, RT (FT::*func)(Ts...)) {
@@ -1255,6 +1352,10 @@ namespace rs {
 				SetMethod(lsc.getLS(), func);
 				lsc.pushCClosure(&CallMethod<GET,T,RT,FT,Ts...>, 1);
 				lsc.rawSet(-3);
+
+				// ---- ログ出力 ----
+				_PushIndent(s_importLog) << LCV<RT>() << ' ' << lua::LuaName((T*)nullptr) << "::" << name << '(';
+				_OutputArgs<Ts...>(s_importLog) << ')' << std::endl;
 			}
 			template <class GET, class T, class RT, class FT, class... Ts>
 			static void RegisterMember(LuaState& lsc, const char* name, RT (FT::*func)(Ts...) const) {
@@ -1273,6 +1374,9 @@ namespace rs {
 				SetMember(lsc.getLS(), member);
 				lsc.pushCClosure(&WriteValue<GET,T,V,VT>, 1);
 				lsc.rawSet(-3);
+
+				// ---- ログ出力 ----
+				_PushIndent(s_importLog) << LCV<V>() << ' ' << lua::LuaName((T*)nullptr) << "::" << name << std::endl;
 			}
 			//! static なメンバ関数はCFunctionとして登録
 			template <class GET, class T, class RT, class... Ts>
@@ -1282,6 +1386,10 @@ namespace rs {
 				PushFunction(lsc, func);
 				lsc.rawSet(-3);
 				lsc.pop(1);
+
+				// ---- ログ出力 ----
+				_PushIndent(s_importLog) << LCV<RT>() <<  ' ' << name << '(';
+				_OutputArgs<Ts...>(s_importLog) << ')' << std::endl;
 			}
 			static int ReturnException(lua_State* ls, const char* func, const std::exception& e, int nNeed);
 			//! luaスタックから変数ポインタとクラスを取り出しメンバ変数を読み込む
@@ -1473,4 +1581,22 @@ namespace rs {
 		std::ostream& operator()(std::ostream& os, const T& t) const {
 			return base_t()(os, &t); }
 	};
+
+	template <class T,
+			 typename std::enable_if<!std::is_pointer<T>::value &&
+											!std::is_reference<T>::value &&
+											!std::is_unsigned<T>::value>::type*& = spn::Enabler
+			>
+	std::ostream& operator << (std::ostream& os, const LCV<T>&) { return os << typeid(T).name(); }
+	template <class T,
+			 typename std::enable_if<std::is_unsigned<T>::value>::type*& = spn::Enabler>
+	std::ostream& operator << (std::ostream& os, const LCV<T>&) { return os << "unsigned " << LCV<typename std::make_signed<T>::type>(); }
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const LCV<const T>&) { return os << "const " << LCV<T>(); }
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const LCV<T*>&) { return os << LCV<T>() << '*'; }
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const LCV<T&>&) { return os << LCV<T>() << '&'; }
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const LCV<T&&>&) { return os << LCV<T>() << "&&"; }
 }

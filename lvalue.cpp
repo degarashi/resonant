@@ -11,6 +11,13 @@ namespace rs {
 	std::ostream& operator << (std::ostream& os, const LCTable& lct) {
 		return LCV<LCTable>()(os, lct);
 	}
+	DEF_LCV_OSTREAM(void)
+	DEF_LCV_OSTREAM(lua_OtherNumber)
+	DEF_LCV_OSTREAM(lua_OtherInteger)
+	DEF_LCV_OSTREAM(spn::DegF)
+	DEF_LCV_OSTREAM(spn::RadF)
+	DEF_LCV_OSTREAM(spn::Pose2D)
+	DEF_LCV_OSTREAM(spn::Pose3D)
 	// ------------------- LCValue -------------------
 	// --- LCV<boost::blank> = LUA_TNONE
 	int LCV<boost::blank>::operator()(lua_State* /*ls*/, boost::blank) const {
@@ -22,6 +29,7 @@ namespace rs {
 		return os << "(none)"; }
 	LuaType LCV<boost::blank>::operator()() const {
 		return LuaType::LNone; }
+	DEF_LCV_OSTREAM(boost::blank)
 
 	// --- LCV<LuaNil> = LUA_TNIL
 	int LCV<LuaNil>::operator()(lua_State* ls, LuaNil) const {
@@ -34,6 +42,7 @@ namespace rs {
 		return os << "(nil)"; }
 	LuaType LCV<LuaNil>::operator()() const {
 		return LuaType::Nil; }
+	DEF_LCV_OSTREAM(LuaNil)
 
 	// --- LCV<bool> = LUA_TBOOL
 	int LCV<bool>::operator()(lua_State* ls, bool b) const {
@@ -46,6 +55,7 @@ namespace rs {
 		return os << std::boolalpha << b; }
 	LuaType LCV<bool>::operator()() const {
 		return LuaType::Boolean; }
+	DEF_LCV_OSTREAM(bool)
 
 	// --- LCV<const char*> = LUA_TSTRING
 	int LCV<const char*>::operator()(lua_State* ls, const char* c) const {
@@ -58,6 +68,7 @@ namespace rs {
 		return os << c; }
 	LuaType LCV<const char*>::operator()() const {
 		return LuaType::String; }
+	DEF_LCV_OSTREAM(const char*)
 
 	// --- LCV<std::string> = LUA_TSTRING
 	int LCV<std::string>::operator()(lua_State* ls, const std::string& s) const {
@@ -72,6 +83,7 @@ namespace rs {
 		return os << s; }
 	LuaType LCV<std::string>::operator()() const {
 		return LuaType::String; }
+	DEF_LCV_OSTREAM(std::string)
 
 	// --- LCV<lua_Integer> = LUA_TNUMBER
 	int LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {
@@ -84,6 +96,7 @@ namespace rs {
 		return os << i; }
 	LuaType LCV<lua_Integer>::operator()() const {
 		return LuaType::Number; }
+	DEF_LCV_OSTREAM(lua_Integer)
 
 	// --- LCV<lua_Number> = LUA_TNUMBER
 	int LCV<lua_Number>::operator()(lua_State* ls, lua_Number f) const {
@@ -96,6 +109,7 @@ namespace rs {
 		return os << f; }
 	LuaType LCV<lua_Number>::operator()() const {
 		return LuaType::Number; }
+	DEF_LCV_OSTREAM(lua_Number)
 
 	// --- LCV<lua_State*> = LUA_TTHREAD
 	int LCV<lua_State*>::operator()(lua_State* ls, lua_State* lsp) const {
@@ -115,6 +129,7 @@ namespace rs {
 	}
 	LuaType LCV<lua_State*>::operator()() const {
 		return LuaType::Thread; }
+	DEF_LCV_OSTREAM(lua_State*)
 
 	// --- LCV<spn::RectF> = LUA_TTABLE
 	int LCV<spn::RectF>::operator()(lua_State* ls, const spn::RectF& r) const {
@@ -145,6 +160,7 @@ namespace rs {
 		return os << r; }
 	LuaType LCV<spn::RectF>::operator()() const {
 		return LuaType::Table; }
+	DEF_LCV_OSTREAM(spn::RectF)
 
 	// --- LCV<spn::Size> = LUA_TTABLE
 	int LCV<spn::SizeF>::operator()(lua_State* ls, const spn::SizeF& s) const {
@@ -172,6 +188,7 @@ namespace rs {
 	}
 	LuaType LCV<spn::SizeF>::operator()() const {
 		return LuaType::Table; }
+	DEF_LCV_OSTREAM(spn::SizeF)
 
 	// --- LCV<SPLua> = LUA_TTHREAD
 	int LCV<SPLua>::operator()(lua_State* ls, const SPLua& sp) const {
@@ -195,6 +212,7 @@ namespace rs {
 	}
 	LuaType LCV<SPLua>::operator()() const {
 		return LuaType::Thread; }
+	DEF_LCV_OSTREAM(SPLua)
 
 	// --- LCV<void*> = LUA_TLIGHTUSERDATA
 	int LCV<void*>::operator()(lua_State* ls, const void* ud) const {
@@ -211,6 +229,7 @@ namespace rs {
 		return os << "(userdata)" << std::hex << ud; }
 	LuaType LCV<void*>::operator()() const {
 		return LuaType::LightUserdata; }
+	DEF_LCV_OSTREAM(void*)
 
 	// --- LCV<lua_CFunction> = LUA_TFUNCTION
 	int LCV<lua_CFunction>::operator()(lua_State* ls, lua_CFunction f) const {
@@ -224,6 +243,7 @@ namespace rs {
 		return os << "(function)" << std::hex << reinterpret_cast<uintptr_t>(f); }
 	LuaType LCV<lua_CFunction>::operator()() const {
 		return LuaType::Function; }
+	DEF_LCV_OSTREAM(lua_CFunction)
 
 	// --- LCV<Timepoint> = LUA_TNUMBER
 	int LCV<Timepoint>::operator()(lua_State* ls, const Timepoint& t) const {
@@ -239,6 +259,7 @@ namespace rs {
 		return os << t; }
 	LuaType LCV<Timepoint>::operator()() const {
 		return LuaType::Number; }
+	DEF_LCV_OSTREAM(Timepoint)
 
 	// --- LCV<LCTable> = LUA_TTABLE
 	int LCV<LCTable>::operator()(lua_State* ls, const LCTable& t) const {
@@ -281,6 +302,7 @@ namespace rs {
 		return os << "(table)" << std::hex << reinterpret_cast<uintptr_t>(&t); }
 	LuaType LCV<LCTable>::operator()() const {
 		return LuaType::Table; }
+	DEF_LCV_OSTREAM(LCTable)
 
 	// --- LCV<LCValue>
 	namespace {
@@ -329,6 +351,7 @@ namespace rs {
 		return os << lcv; }
 	LuaType LCV<LCValue>::operator()() const {
 		return LuaType::LNone; }
+	DEF_LCV_OSTREAM(LCValue)
 
 	// --- LCV<LValueG>
 	int LCV<LValueG>::operator()(lua_State* ls, const LValueG& t) const {
@@ -344,6 +367,7 @@ namespace rs {
 		return os << t; }
 	LuaType LCV<LValueG>::operator()() const {
 		return LuaType::LNone; }
+	DEF_LCV_OSTREAM(LValueG)
 
 	namespace {
 		struct Visitor : boost::static_visitor<> {
