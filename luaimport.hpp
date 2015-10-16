@@ -55,6 +55,7 @@ namespace rs {
 				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((mgr)(clazz)seq_ctor)>); \
 				lsc.rawSet(-3); \
 				lsc.setField(-1, luaNS::objBase::_Pointer, false); \
+				lsc.setField(-1, luaNS::objBase::ClassName, mgr::_ref().getResourceName(spn::SHandle())); \
 				\
 				LuaImport::BeginImportBlock("Values"); \
 				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \
@@ -104,6 +105,7 @@ namespace rs {
 				lsc.push(makeobj<BOOST_PP_SEQ_ENUM((clazz)seq_ctor)>); \
 				lsc.rawSet(-3); \
 				lsc.setField(-1, luaNS::objBase::_Pointer, true); \
+				lsc.setField(-1, luaNS::objBase::ClassName, #class_name); \
 				\
 				LuaImport::BeginImportBlock("Values"); \
 				lsc.rawGet(-1, ::rs::luaNS::objBase::ValueR); \

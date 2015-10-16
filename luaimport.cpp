@@ -42,6 +42,7 @@ namespace rs {
 								Func("_func"),
 								UdataMT("_udata_mt"),
 								MT("_mt"),
+								ClassName("classname"),
 								_Pointer("_pointer"),
 								_New("_New");
 			namespace valueR {
@@ -74,14 +75,29 @@ namespace rs {
 	lua_Integer LuaImport::NumRef(SHandle sh) {
 		return sh.count(); }
 
-	void* LI_GetPtrBase::operator()(lua_State* ls, int idx) const {
+	namespace {
+		#ifdef DEBUG
+			void CheckClassName(lua_State* ls, int idx, const char* name) {
+				LuaState lsc(ls);
+				lsc.getField(idx, luaNS::objBase::ClassName);
+				auto objname = lsc.toString(-1);
+				Assert(Trap, objname==name, "invalid object (required %1%, but got %2%)", name, objname)
+				lsc.pop();
+			}
+		#else
+			void CheckClassName(lua_State*, int, const char*) {}
+		#endif
+	}
+	void* LI_GetPtrBase::operator()(lua_State* ls, int idx, const char* name) const {
+		CheckClassName(ls, idx, name);
 		LuaState lsc(ls);
 		lsc.getField(idx, luaNS::Pointer);
 		void* ret = LCV<void*>()(-1, ls);
 		lsc.pop();
 		return ret;
 	}
-	void* LI_GetHandleBase::operator()(lua_State* ls, int idx) const {
+	void* LI_GetHandleBase::operator()(lua_State* ls, int idx, const char* name) const {
+		CheckClassName(ls, idx, name);
 		SHandle sh = getHandle(ls, idx);
 		return spn::ResMgrBase::GetPtr(sh);
 	}
@@ -111,6 +127,10 @@ namespace rs {
 		template <>
 		const char* LuaName(spn::SHandle*) {
 			return "SHandle";
+		}
+		template <>
+		const char* LuaName(IGLResource*) {
+			return "IGLResource";
 		}
 	}
 	// オブジェクト類を定義する為の基本関数定義など

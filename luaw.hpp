@@ -1225,6 +1225,7 @@ namespace rs {
 									Func,
 									UdataMT,
 									MT,
+									ClassName,
 									_Pointer,
 									_New;
 			namespace valueR {
@@ -1245,31 +1246,30 @@ namespace rs {
 	// --- Lua->C++グルーコードにおけるクラスポインタの取得方法 ---
 	//! "pointer"に生ポインタが記録されている
 	struct LI_GetPtrBase {
-		void* operator()(lua_State* ls, int idx) const;
+		void* operator()(lua_State* ls, int idx, const char* name) const;
 	};
 	struct LI_GetHandleBase {
-		void* operator()(lua_State* ls, int idx) const;
+		void* operator()(lua_State* ls, int idx, const char* name) const;
 		spn::SHandle getHandle(lua_State* ls, int idx) const;
 	};
 	template <class T>
 	struct LI_GetPtr : LI_GetPtrBase {
 		T* operator()(lua_State* ls, int idx) const {
-			return reinterpret_cast<T*>(LI_GetPtrBase()(ls, idx));
+			return reinterpret_cast<T*>(LI_GetPtrBase()(ls, idx, lua::LuaName((T*)nullptr)));
 		}
 	};
 	//! "udata"にハンドルが記録されている -> void*からそのままポインタ変換
 	template <class T>
 	struct LI_GetHandle : LI_GetHandleBase {
 		T* operator()(lua_State* ls, int idx) const {
-			return reinterpret_cast<T*>(static_cast<const LI_GetHandleBase&>(*this)(ls, idx));
-		}
+			return reinterpret_cast<T*>(LI_GetHandleBase::operator()(ls, idx, lua::LuaName((T*)nullptr))); }
 	};
 	//! "udata"にハンドルが記録されている -> unique_ptrからポインタ変換
 	template <class T, class Deleter>
 	struct LI_GetHandle<std::unique_ptr<T, Deleter>> : LI_GetHandleBase {
 		T* operator()(lua_State* ls, int idx) const {
 			auto* up = reinterpret_cast<std::unique_ptr<T,Deleter>*>(
-				static_cast<const LI_GetHandleBase&>(*this)(ls, idx));
+				LI_GetHandleBase::operator()(ls, idx, lua::LuaName((T*)nullptr)));
 			return up->get();
 		}
 	};
@@ -1278,13 +1278,15 @@ namespace rs {
 	struct LI_GetHandle<std::shared_ptr<T>> : LI_GetHandleBase {
 		T* operator()(lua_State* ls, int idx) const {
 			auto* up = reinterpret_cast<std::shared_ptr<T>*>(
-				static_cast<const LI_GetHandleBase&>(*this)(ls, idx));
+				LI_GetHandleBase::operator()(ls, idx, lua::LuaName((T*)nullptr)));
 			return up->get();
 		}
 	};
 	namespace lua {
 		template <>
 		const char* LuaName(spn::SHandle*);
+		template <>
+		const char* LuaName(IGLResource*);
 	}
 	//! LuaへC++のクラスをインポート、管理する
 	class LuaImport {

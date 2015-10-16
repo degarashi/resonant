@@ -59,6 +59,7 @@ end
 		_valueR = {HandleId(func), NumRef(func)}
 		_valueW = {}
 		_func = {}
+		classname = "ObjectName"
 		RecvMsg(func) = RecvMsgCpp
 		RecvMsgCpp(func)
 		Ctor(func)

@@ -43,8 +43,12 @@ namespace rs {
 		onDeviceLost();
 	}
 	const std::string& GLRes::getResourceName(spn::SHandle sh) const {
-		IGLResource* gr = HRes::FromHandle(sh)->get();
-		return gr->getResourceName();
+		if(sh) {
+			IGLResource* gr = HRes::FromHandle(sh)->get();
+			return gr->getResourceName();
+		}
+		const static std::string name("IGLResource");
+		return name;
 	}
 	spn::URI GLRes::_modifyResourceName(spn::URI& key) const {
 		spn::URI key_k = base_type::_modifyResourceName(key);

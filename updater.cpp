@@ -5,6 +5,18 @@ ImplDrawGroup(rs::U_DrawGroup, 0x0000)
 ImplDrawGroup(rs::U_DrawGroupProxy, 0x0000)
 namespace rs {
 	const ObjTypeId InvalidObjId(~0);
+	HGroup ObjMgr::CastToGroup(HObj hObj) {
+		return Cast<GroupUP>(hObj);
+	}
+	const std::string& ObjMgr::getResourceName(spn::SHandle sh) const {
+		if(sh) {
+			Object* obj = HObj::FromHandle(sh)->get();
+			return obj->getName();
+		}
+		const static std::string name("Object");
+		return name;
+	}
+
 	namespace {
 		const std::string cs_objname("Object"),
 						cs_updgroupname("UpdGroup"),

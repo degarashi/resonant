@@ -175,13 +175,8 @@ namespace rs {
 				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
 				return std::make_pair(Cast<DrawGroupUP>(lhp.first.get()), lhp.second);
 			}
-			static HGroup CastToGroup(HObj hObj) {
-				return Cast<GroupUP>(hObj);
-			}
-			const std::string& getResourceName(spn::SHandle sh) const override {
-				Object* obj = HObj::FromHandle(sh)->get();
-				return obj->getName();
-			}
+			static HGroup CastToGroup(HObj hObj);
+			const std::string& getResourceName(spn::SHandle sh) const override;
 	};
 	#define rs_mgr_obj (::rs::ObjMgr::_ref())
 	/*! スクリプト対応のために型とではなく文字列とIDを関連付け
