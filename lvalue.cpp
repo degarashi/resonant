@@ -12,12 +12,12 @@ namespace rs {
 		return LCV<LCTable>()(os, lct);
 	}
 	DEF_LCV_OSTREAM(void)
-	DEF_LCV_OSTREAM(lua_OtherNumber)
-	DEF_LCV_OSTREAM(lua_OtherInteger)
-	DEF_LCV_OSTREAM(spn::DegF)
-	DEF_LCV_OSTREAM(spn::RadF)
-	DEF_LCV_OSTREAM(spn::Pose2D)
-	DEF_LCV_OSTREAM(spn::Pose3D)
+	DEF_LCV_OSTREAM2(lua_OtherNumber, float)
+	DEF_LCV_OSTREAM2(lua_OtherInteger, int)
+	DEF_LCV_OSTREAM2(spn::DegF, Degree)
+	DEF_LCV_OSTREAM2(spn::RadF, Radian)
+	DEF_LCV_OSTREAM2(spn::Pose2D, Pose2D)
+	DEF_LCV_OSTREAM2(spn::Pose3D, Pose3D)
 	// ------------------- LCValue -------------------
 	// --- LCV<boost::blank> = LUA_TNONE
 	int LCV<boost::blank>::operator()(lua_State* /*ls*/, boost::blank) const {
@@ -96,7 +96,7 @@ namespace rs {
 		return os << i; }
 	LuaType LCV<lua_Integer>::operator()() const {
 		return LuaType::Number; }
-	DEF_LCV_OSTREAM(lua_Integer)
+	DEF_LCV_OSTREAM2(lua_Integer, int)
 
 	// --- LCV<lua_Number> = LUA_TNUMBER
 	int LCV<lua_Number>::operator()(lua_State* ls, lua_Number f) const {
@@ -109,7 +109,7 @@ namespace rs {
 		return os << f; }
 	LuaType LCV<lua_Number>::operator()() const {
 		return LuaType::Number; }
-	DEF_LCV_OSTREAM(lua_Number)
+	DEF_LCV_OSTREAM2(lua_Number, float)
 
 	// --- LCV<lua_State*> = LUA_TTHREAD
 	int LCV<lua_State*>::operator()(lua_State* ls, lua_State* lsp) const {
@@ -160,7 +160,7 @@ namespace rs {
 		return os << r; }
 	LuaType LCV<spn::RectF>::operator()() const {
 		return LuaType::Table; }
-	DEF_LCV_OSTREAM(spn::RectF)
+	DEF_LCV_OSTREAM2(spn::RectF, Rect)
 
 	// --- LCV<spn::Size> = LUA_TTABLE
 	int LCV<spn::SizeF>::operator()(lua_State* ls, const spn::SizeF& s) const {
@@ -188,7 +188,7 @@ namespace rs {
 	}
 	LuaType LCV<spn::SizeF>::operator()() const {
 		return LuaType::Table; }
-	DEF_LCV_OSTREAM(spn::SizeF)
+	DEF_LCV_OSTREAM2(spn::SizeF, Size)
 
 	// --- LCV<SPLua> = LUA_TTHREAD
 	int LCV<SPLua>::operator()(lua_State* ls, const SPLua& sp) const {

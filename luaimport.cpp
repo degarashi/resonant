@@ -232,14 +232,16 @@ namespace rs {
 	std::string LuaImport::s_firstBlock;
 	int LuaImport::s_indent = 0;
 	void LuaImport::BeginImportBlock(const std::string& s) {
-		_PushIndent(s_importLog) << '[' << s << ']' << std::endl;
-		if(s_indent++ == 0)
+		if(s_indent > 0)
+			_PushIndent(s_importLog) << '[' << s << ']' << std::endl;
+		else
 			s_firstBlock = s;
+		++s_indent;
 	}
 	void LuaImport::EndImportBlock() {
 		Assert(Trap, --s_indent >= 0, "indent error")
 		if(s_indent == 0) {
-			s_logMap[s_firstBlock] = s_importLog.str();
+			s_logMap[s_firstBlock].append(s_importLog.str());
 			s_importLog.str("");
 			s_importLog.clear();
 		}
@@ -252,8 +254,9 @@ namespace rs {
 	void LuaImport::SaveImportLog(const std::string& path) {
 		std::ofstream ofs(path);
 		Assert(Trap, ofs.is_open(), "can't open file %1%", path)
-		for(auto& e : s_logMap)
-			ofs << e.second;
+		for(auto& e : s_logMap) {
+			ofs << '[' << e.first << ']' << std::endl << e.second;
+		}
 		s_logMap.clear();
 	}
 

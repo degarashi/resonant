@@ -237,7 +237,8 @@ namespace rs {
 	LCValue::LCValue(const std::tuple<Args...>& t): LCVar(_TupleAsTable(t)) {}
 
 	using LPointerSP = std::unordered_map<const void*, LCValue>;
-#define DEF_LCV_OSTREAM(typ)	std::ostream& operator << (std::ostream& os, LCV<typ>) { return os << #typ; }
+#define DEF_LCV_OSTREAM2(typ, name)	std::ostream& operator << (std::ostream& os, LCV<typ>) { return os << #name; }
+#define DEF_LCV_OSTREAM(typ)		DEF_LCV_OSTREAM2(typ, typ)
 	// 値型の場合はUserdataにデータを格納
 	template <class T>
 	struct LCV;
@@ -1291,7 +1292,7 @@ namespace rs {
 		static std::stringstream	s_importLog;
 		static std::string			s_firstBlock;
 		static int					s_indent;
-		using LogMap = std::unordered_map<std::string, std::string>;
+		using LogMap = std::map<std::string, std::string>;
 		static LogMap				s_logMap;
 
 		//! ハンドルオブジェクトの基本メソッド
@@ -1354,7 +1355,7 @@ namespace rs {
 				lsc.rawSet(-3);
 
 				// ---- ログ出力 ----
-				_PushIndent(s_importLog) << LCV<RT>() << ' ' << lua::LuaName((T*)nullptr) << "::" << name << '(';
+				_PushIndent(s_importLog) << LCV<RT>() << ' ' << name << '(';
 				_OutputArgs<Ts...>(s_importLog) << ')' << std::endl;
 			}
 			template <class GET, class T, class RT, class FT, class... Ts>
@@ -1376,7 +1377,7 @@ namespace rs {
 				lsc.rawSet(-3);
 
 				// ---- ログ出力 ----
-				_PushIndent(s_importLog) << LCV<V>() << ' ' << lua::LuaName((T*)nullptr) << "::" << name << std::endl;
+				_PushIndent(s_importLog) << LCV<V>() << ' ' << name << std::endl;
 			}
 			//! static なメンバ関数はCFunctionとして登録
 			template <class GET, class T, class RT, class... Ts>
@@ -1388,7 +1389,7 @@ namespace rs {
 				lsc.pop(1);
 
 				// ---- ログ出力 ----
-				_PushIndent(s_importLog) << LCV<RT>() <<  ' ' << name << '(';
+				_PushIndent(s_importLog) << "static " << LCV<RT>() <<  ' ' << name << '(';
 				_OutputArgs<Ts...>(s_importLog) << ')' << std::endl;
 			}
 			static int ReturnException(lua_State* ls, const char* func, const std::exception& e, int nNeed);
@@ -1462,6 +1463,12 @@ namespace rs {
 			static void RegisterFunction(LuaState& lsc, const char* name, RT (*func)(Ts...)) {
 				PushFunction(lsc, func);
 				lsc.setGlobal(name);
+
+				BeginImportBlock("--Global--");
+				// ---- ログ出力 ----
+				_PushIndent(s_importLog) << LCV<RT>() <<  ' ' << name << '(';
+				_OutputArgs<Ts...>(s_importLog) << ')' << std::endl;
+				EndImportBlock();
 			}
 			//! C++クラスの登録(登録名はクラスから取得)
 			template <class T>

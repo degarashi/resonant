@@ -45,7 +45,7 @@ namespace rs {
 			const char* LuaName(clazz*) { return #class_name; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
-				LuaImport::BeginImportBlock(#clazz); \
+				LuaImport::BeginImportBlock(#class_name); \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(base); \
 				lsc.push(#class_name); \
@@ -93,7 +93,7 @@ namespace rs {
 			const char* LuaName(clazz*) { return #class_name; } \
 			template <> \
 			void LuaExport(LuaState& lsc, clazz*) { \
-				LuaImport::BeginImportBlock(#clazz); \
+				LuaImport::BeginImportBlock(#class_name); \
 				lsc.getGlobal(::rs::luaNS::DerivedHandle); \
 				lsc.getGlobal(::rs::luaNS::ObjectBase); \
 				lsc.push(#class_name); \
