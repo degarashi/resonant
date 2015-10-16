@@ -14,8 +14,6 @@ namespace rs {
 	DEF_LCV_OSTREAM(void)
 	DEF_LCV_OSTREAM2(lua_OtherNumber, float)
 	DEF_LCV_OSTREAM2(lua_OtherInteger, int)
-	DEF_LCV_OSTREAM2(spn::DegF, Degree)
-	DEF_LCV_OSTREAM2(spn::RadF, Radian)
 	DEF_LCV_OSTREAM2(spn::Pose2D, Pose2D)
 	DEF_LCV_OSTREAM2(spn::Pose3D, Pose3D)
 	// ------------------- LCValue -------------------
@@ -84,6 +82,55 @@ namespace rs {
 	LuaType LCV<std::string>::operator()() const {
 		return LuaType::String; }
 	DEF_LCV_OSTREAM(std::string)
+
+	namespace {
+		auto GetAngleType(lua_State* ls, int idx) {
+			LuaState lsc(ls);
+			lsc.getField(idx, luaNS::objBase::ClassName);
+			auto cname = lsc.toString(-1);
+			lsc.pop();
+			return cname;
+		}
+	}
+	// --- LCV<spn::DegF>
+	int LCV<spn::DegF>::operator()(lua_State* ls, const spn::DegF& d) const {
+		return LCVRaw<spn::DegF>()(ls, d); }
+	spn::DegF LCV<spn::DegF>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		auto cname = GetAngleType(ls, idx);
+		if(cname == "Radian") {
+			// Degreeに変換して返す
+			auto rad = LCVRaw<spn::RadF>()(idx, ls, spm);
+			return spn::DegF(rad);
+		} else {
+			Assert(Trap, cname=="Degree", "invalid angle type (required Degree or Radian, but got %1%", cname)
+			return LCVRaw<spn::DegF>()(idx, ls, spm);
+		}
+	}
+	std::ostream& LCV<spn::DegF>::operator()(std::ostream& os, const spn::DegF& d) const {
+		return os << d; }
+	LuaType LCV<spn::DegF>::operator()() const {
+		return LuaType::Userdata; }
+	DEF_LCV_OSTREAM2(spn::DegF, Degree)
+
+	// --- LCV<spn::RadF>
+	int LCV<spn::RadF>::operator()(lua_State* ls, const spn::RadF& d) const {
+		return LCVRaw<spn::RadF>()(ls, d); }
+	spn::RadF LCV<spn::RadF>::operator()(int idx, lua_State* ls, LPointerSP* spm) const {
+		auto cname = GetAngleType(ls, idx);
+		if(cname == "Degree") {
+			// Radianに変換して返す
+			auto rad = LCVRaw<spn::DegF>()(idx, ls, spm);
+			return spn::RadF(rad);
+		} else {
+			Assert(Trap, cname=="Radian", "invalid angle type (required Degree or Radian, but got %1%", cname)
+			return LCVRaw<spn::RadF>()(idx, ls, spm);
+		}
+	}
+	std::ostream& LCV<spn::RadF>::operator()(std::ostream& os, const spn::RadF& r) const {
+		return os << r; }
+	LuaType LCV<spn::RadF>::operator()() const {
+		return LuaType::Userdata; }
+	DEF_LCV_OSTREAM2(spn::RadF, Radian)
 
 	// --- LCV<lua_Integer> = LUA_TNUMBER
 	int LCV<lua_Integer>::operator()(lua_State* ls, lua_Integer i) const {

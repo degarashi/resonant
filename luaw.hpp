@@ -241,11 +241,13 @@ namespace rs {
 #define DEF_LCV_OSTREAM(typ)		DEF_LCV_OSTREAM2(typ, typ)
 	// 値型の場合はUserdataにデータを格納
 	template <class T>
+	struct LCVRaw;
+	template <class T>
+	struct LCVRaw<T*>;
+	template <class T>
+	struct LCVRaw<T&>;
+	template <class T>
 	struct LCV;
-	template <class T>
-	struct LCV<T*>;
-	template <class T>
-	struct LCV<T&>;
 	template <>
 	struct LCV<void> {};
 	std::ostream& operator << (std::ostream& os, LCV<void>);
@@ -298,6 +300,8 @@ namespace rs {
 	DEF_LCV(bool, bool)
 	DEF_LCV(const char*, const char*)
 	DEF_LCV(std::string, const std::string&)
+	DEF_LCV(spn::DegF, const spn::DegF&)
+	DEF_LCV(spn::RadF, const spn::RadF&)
 	DERIVED_LCV(const std::string&, std::string)
 	DEF_LCV(lua_State*, lua_State*)
 	DEF_LCV(spn::SizeF, const spn::SizeF&)
@@ -1523,7 +1527,7 @@ namespace rs {
 			static int RecvMsgCpp(lua_State* ls);
 	};
 	template <class T>
-	struct LCV {
+	struct LCVRaw {
 		template <class T2>
 		int operator()(lua_State* ls, T2&& t) const {
 			LuaState lsc(ls);
@@ -1543,6 +1547,8 @@ namespace rs {
 		LuaType operator()() const {
 			return LuaType::Userdata; }
 	};
+	template <class T>
+	struct LCV : LCVRaw<T> {};
 	// 参照またはポインターの場合はUserdataに格納
 	template <class T>
 	struct LCV<const T&> : LCV<T> {};
@@ -1559,8 +1565,6 @@ namespace rs {
 	template <>
 	struct LCV<spn::QuatT<true>> : LCV<spn::QuatT<false>> {};
 
-	template struct LCV<spn::DegF>;
-	template struct LCV<spn::RadF>;
 	// Angleは内部数値をすべてfloatに変換
 	template <class Ang, class Rep>
 	struct LCV<spn::Angle<Ang, Rep>> : LCV<spn::Angle<Ang,float>> {};
