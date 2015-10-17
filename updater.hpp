@@ -79,7 +79,6 @@ namespace rs {
 			bool isDead() const;
 			bool onUpdateUpd(const SPLua& ls);
 			virtual bool isNode() const = 0;
-			virtual void setTerminationState();
 			//! オブジェクトの識別IDを取得
 			virtual ObjTypeId getTypeId() const = 0;
 
@@ -515,6 +514,9 @@ namespace rs {
 				bool _isNullState() const {
 					return _state.get() == &_nullState;
 				}
+				void _setNullState() {
+					setStateUse(&_nullState);
+				}
 			protected:
 				using Base::Base;
 
@@ -527,9 +529,6 @@ namespace rs {
 				template <class ST>
 				void setStateUse(ST* st) {
 					setState(FPState(st, false));
-				}
-				void setTerminationState() override {
-					setStateUse(&_nullState);
 				}
 				bool isNode() const override {
 					return false;
@@ -607,7 +606,7 @@ namespace rs {
 				void destroy() override {
 					Base::destroy();
 					// 終端ステートに移行
-					setTerminationState();
+					_setNullState();
 				}
 				//! 毎フレームの描画 (Scene用)
 				void onDraw(IEffect& e) const override {
