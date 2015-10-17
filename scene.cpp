@@ -77,7 +77,7 @@ namespace rs {
 				auto& sc = _scene.back().ref();
 				sc->onDisconnected(HGroup());
 				sc->destroy();
-				sc->onUpdate(ls);			// nullステートへ移行させる
+				sc->onUpdate(ls, true);			// nullステートへ移行させる
 				_scene.pop_back();
 			}
 			// Sceneスタックが空ならここで終わり
@@ -101,7 +101,7 @@ namespace rs {
 		if(_scene.empty())
 			return true;
 
-		_scene.back().ref()->onUpdate(ls);
+		_scene.back().ref()->onUpdate(ls, true);
 		// SceneOpがあれば処理
 		_doSceneOp(ls);
 		// スタックが空だったらtrue = 終了の合図 を返す

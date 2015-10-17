@@ -5,9 +5,7 @@
 
 namespace rs {
 	namespace util {
-		class ProfileShow : public DrawableObjT<ProfileShow>,
-							public spn::EnableFromThis<HDObj>
-		{
+		class ProfileShow : public DrawableObjT<ProfileShow> {
 			private:
 				IdValue					_idText,
 										_idRect;

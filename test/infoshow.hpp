@@ -7,9 +7,7 @@
 #include "../util/textdraw.hpp"
 
 extern const std::string g_fontName;
-class InfoShow : public rs::DrawableObjT<InfoShow>,
-				public spn::EnableFromThis<rs::HDObj>
-{
+class InfoShow : public rs::DrawableObjT<InfoShow> {
 	private:
 		rs::HDGroup			_hDg;
 		rs::util::TextHUD	_textHud;

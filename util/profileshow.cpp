@@ -21,11 +21,11 @@ namespace rs {
 					dg->addObj(hlp.first);
 					pRect = hlp.second;
 				}
-				dg->addObj(self.handleFromThis());
+				dg->addObj(HDObj::FromHandle(self.handleFromThis()));
 			}
 			void onDisconnected(ProfileShow& self, HGroup /*hGroup*/) override {
 				auto* dg = self._hDg->get();
-				dg->remObj(self.handleFromThis());
+				dg->remObj(HDObj::FromHandle(self.handleFromThis()));
 			}
 			void onDraw(const ProfileShow& self, IEffect& e) const override {
 				if(self._spProfile) {

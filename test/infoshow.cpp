@@ -71,12 +71,12 @@ void InfoShow::MySt::onConnected(InfoShow& self, rs::HGroup) {
 		d->addObj(hlp.first);
 		pRect = hlp.second;
 	}
-	auto lh = self.handleFromThis();
+	auto lh = rs::HDObj::FromHandle(self.handleFromThis());
 	d->addObj(lh);
 }
 void InfoShow::MySt::onDisconnected(InfoShow& self, rs::HGroup) {
 	auto* d = self._hDg->get();
-	auto lh = self.handleFromThis();
+	auto lh = rs::HDObj::FromHandle(self.handleFromThis());
 	d->remObj(lh);
 }
 rs::LCValue InfoShow::MySt::recvMsg(InfoShow& /*self*/, const rs::GMessageStr& /*msg*/, const rs::LCValue& /*arg*/) {

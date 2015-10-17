@@ -57,7 +57,7 @@ namespace rs {
 	bool Object::onUpdateUpd(const SPLua& ls) {
 		if(isDead())
 			return true;
-		onUpdate(ls);
+		onUpdate(ls, true);
 		return isDead();
 	}
 	void* Object::getInterface(InterfaceId /*id*/) {
@@ -68,7 +68,7 @@ namespace rs {
 	}
 	void Object::onConnected(HGroup /*hGroup*/) {}
 	void Object::onDisconnected(HGroup /*hGroup*/) {}
-	void Object::onUpdate(const SPLua& /*ls*/) {}
+	void Object::onUpdate(const SPLua& /*ls*/, bool /*bFirst*/) {}
 	void Object::destroy() {
 		_bDestroy = true;
 	}
@@ -175,7 +175,7 @@ namespace rs {
 		for(auto& obj : _objV)
 			obj.second->get()->onDraw(e);
 	}
-	void UpdGroup::onUpdate(const SPLua& ls) {
+	void UpdGroup::onUpdate(const SPLua& ls, bool /*bFirst*/) {
 		{
 			class FlagSet {
 				private:
@@ -256,7 +256,7 @@ namespace rs {
 	}
 	UpdGroup::UGVec UpdGroup::s_ug;
 	void UpdGroup::_doAddRemove() {
-		auto hThis = handleFromThis();
+		auto hThis = HGroup::FromHandle(handleFromThis());
 		for(;;) {
 			// -- add --
 			// オブジェクト追加中に更に追加オブジェクトが出るかも知れないので一旦退避
@@ -331,12 +331,12 @@ namespace rs {
 	const std::string& UpdTask::getName() const {
 		return cs_updtaskname;
 	}
-	void UpdTask::onUpdate(const SPLua& ls) {
+	void UpdTask::onUpdate(const SPLua& ls, bool /*bFirst*/) {
 		// アイドル時間チェック
 		if(_idleCount > 0)
 			--_idleCount;
 		else
-			_hlGroup->get()->onUpdate(ls);
+			_hlGroup->get()->onUpdate(ls, true);
 		++_accum;
 	}
 	void UpdTask::setIdle(int nFrame) {
@@ -426,7 +426,7 @@ namespace rs {
 	const std::string& DrawGroup::getName() const {
 		return cs_drawgroupname;
 	}
-	void DrawGroup::onUpdate(const SPLua& /*ls*/) {
+	void DrawGroup::onUpdate(const SPLua& /*ls*/, bool /*bFirst*/) {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
 	}
 	void DrawGroup::onDraw(IEffect& e) const {
@@ -442,9 +442,9 @@ namespace rs {
 
 	// -------------------- DrawGroupProxy --------------------
 	DrawGroupProxy::DrawGroupProxy(HDGroup hDg): _hlDGroup(hDg) {}
-	void DrawGroupProxy::onUpdate(const SPLua& ls) {
+	void DrawGroupProxy::onUpdate(const SPLua& ls, bool bFirst) {
 		// DrawGroupのonUpdateを呼ぶとエラーになるが、一応呼び出し
-		_hlDGroup->get()->onUpdate(ls);
+		_hlDGroup->get()->onUpdate(ls, bFirst);
 	}
 	void DrawGroupProxy::setPriority(Priority p) {
 		_dtag.priority = p;

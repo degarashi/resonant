@@ -66,11 +66,11 @@ namespace rs {
 		public:
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
 				_sbase(hUpd, hDraw) {}
-			void onUpdate(const SPLua& ls) override final {
-				base::onUpdate(ls);
+			void onUpdate(const SPLua& ls, bool /*bFirst*/) override final {
+				base::onUpdate(ls, true);
 				if(!base::isDead()) {
 					UpdGroup::SetAsUpdateRoot();
-					_sbase.getUpdate()->get()->onUpdate(ls);
+					_sbase.getUpdate()->get()->onUpdate(ls, true);
 				}
 			}
 			void onDraw(IEffect& e) const override final {

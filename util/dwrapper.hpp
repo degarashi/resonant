@@ -8,8 +8,7 @@ namespace rs {
 	namespace util {
 		template <class Base>
 		class DWrapper : public DrawableObjT<DWrapper<Base>>,
-						public Base,
-						public spn::EnableFromThis<HDObj>
+						public Base
 		{
 			private:
 				using CallDrawF = std::function<void (const Base&, IEffect& e)>;
@@ -25,11 +24,11 @@ namespace rs {
 			protected:
 				struct St_Default : base_dt::template StateT<St_Default> {
 					void onConnected(DWrapper& self, HGroup /*hGroup*/) override {
-						auto hl = self.handleFromThis();
+						auto hl = HDObj::FromHandle(self.handleFromThis());
 						self._getDGroup()->get()->addObj(hl);
 					}
 					void onDisconnected(DWrapper& self, HGroup /*hGroup*/) override {
-						auto hl = self.handleFromThis();
+						auto hl = HDObj::FromHandle(self.handleFromThis());
 						self._getDGroup()->get()->remObj(hl);
 					}
 					void onUpdate(DWrapper& self, const SPLua& /*ls*/) override {

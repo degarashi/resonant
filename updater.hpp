@@ -68,7 +68,7 @@ namespace rs {
 	using CBFindGroup = std::function<bool (HGroup)>;
 	class ObjMgr;
 	//! ゲームオブジェクト基底インタフェース
-	class Object {
+	class Object : public spn::EnableFromThis<HObj> {
 		private:
 			bool _bDestroy;
 		public:
@@ -91,7 +91,7 @@ namespace rs {
 			//! UpdGroupから削除される時に呼ばれる
 			virtual void onDisconnected(HGroup hGroup);
 			//! 各Objが実装するアップデート処理
-			virtual void onUpdate(const SPLua& ls);
+			virtual void onUpdate(const SPLua& ls, bool bFirst);
 
 			virtual void destroy();
 			virtual const std::string& getName() const;
@@ -188,7 +188,7 @@ namespace rs {
 	#define rs_rep_obj (::rs::ObjRep::_ref())
 
 	//! Objectのグループ管理
-	class UpdGroup : public Object, public spn::EnableFromThis<HGroup> {
+	class UpdGroup : public Object {
 		private:
 			static thread_local bool tls_bUpdateRoot;
 			using UGVec = std::vector<UpdGroup*>;
@@ -226,7 +226,7 @@ namespace rs {
 			bool isNode() const override;
 			void onConnected(HGroup hGroup) override;
 			void onDisconnected(HGroup hGroup) override;
-			void onUpdate(const SPLua& ls) override;
+			void onUpdate(const SPLua& ls, bool bFirst) override;
 			void onDraw(IEffect& e) const override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			const std::string& getName() const override;
@@ -284,7 +284,7 @@ namespace rs {
 
 			const std::string& getName() const override;
 
-			void onUpdate(const SPLua& ls) override;
+			void onUpdate(const SPLua& ls, bool bFirst) override;
 			void setIdle(int nFrame);
 			int getAccum() const;
 			// コピー禁止
@@ -432,7 +432,7 @@ namespace rs {
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
-			void onUpdate(const SPLua& ls) override;
+			void onUpdate(const SPLua& ls, bool bFirst) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
 			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
 			void setPriority(Priority p);
@@ -450,7 +450,7 @@ namespace rs {
 		public:
 			DrawGroupProxy(HDGroup hDg);
 
-			void onUpdate(const SPLua& ls) override;
+			void onUpdate(const SPLua& ls, bool bFirst) override;
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
@@ -473,7 +473,7 @@ namespace rs {
 				struct State {
 					virtual ~State() {}
 					virtual ObjTypeId getStateId() const = 0;
-					virtual void onUpdate(T& self, const SPLua& ls) { self.Base::onUpdate(ls); }
+					virtual void onUpdate(T& self, const SPLua& ls) { self.Base::onUpdate(ls, false); }
 					virtual LCValue recvMsg(T& self, const GMessageStr& msg, const LCValue& arg) { return self.Base::recvMsg(msg, arg); }
 					// onEnterとonExitは継承しない
 					virtual void onEnter(T& /*self*/, ObjTypeId /*prevId*/) {}
@@ -619,7 +619,7 @@ namespace rs {
 					_callWithSwitchState([&](){ _state->onDown(getRef(), prevId, arg); });
 				}
 				// ----------- 以下はStateのアダプタメソッド -----------
-				void onUpdate(const SPLua& ls) override {
+				void onUpdate(const SPLua& ls, bool /*bFirst*/) override {
 					_callWithSwitchState([&](){ return _state->onUpdate(getRef(), ls); });
 				}
 				LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override {
@@ -655,26 +655,29 @@ namespace rs {
 		};
 	}
 	template <class T, class Base=Object>
-	class ObjectT_Lua : public ObjectT<T,Base>, public spn::EnableFromThis<HObj> {
+	class ObjectT_Lua : public ObjectT<T,Base> {
+		private:
+			using base = ObjectT<T,Base>;
 		protected:
 			template <class... Ret, class... Ts>
 			auto _callLuaMethod(const SPLua& ls, const std::string& method, Ts&&... ts) {
-				ls->push(handleFromThis());
+				ls->push(base::handleFromThis());
 				LValueS lv(ls->getLS());
 				return lv.callMethod<Ret...>(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
 			}
 		public:
-			using base = ObjectT<T,Base>;
 			using base::base;
-			void onUpdate(const SPLua& ls) override {
-				base::onUpdate(ls);
-				if(!base::isDead())
-					_callLuaMethod(ls, luaNS::OnUpdate);
-				if(base::isDead())
-					_callLuaMethod(ls, luaNS::OnExit, "null");
+			void onUpdate(const SPLua& ls, bool bFirst) override {
+				base::onUpdate(ls, false);
+				if(bFirst) {
+					if(!base::isDead())
+						_callLuaMethod(ls, luaNS::OnUpdate);
+					if(base::isDead())
+						_callLuaMethod(ls, luaNS::OnExit, "null");
+				}
 			}
 			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override {
-				return detail::ObjectT_LuaBase::CallRecvMsg(ls, handleFromThis(), msg, arg);
+				return detail::ObjectT_LuaBase::CallRecvMsg(ls, base::handleFromThis(), msg, arg);
 			}
 	};
 	DefineUpdGroup(U_UpdGroup)
