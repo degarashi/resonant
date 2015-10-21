@@ -91,7 +91,7 @@ BoundingSprite::BoundingSprite(rs::IdValue tpId, rs::HDGroup hDg, rs::HTex hTex,
 	setStateNew<St_Default>();
 }
 struct BoundingSprite::St_Default : base_t::St_Default {
-	void onUpdate(base_t& self, const rs::SPLua& /*ls*/) override {
+	void onUpdate(base_t& self) override {
 		auto& ths = static_cast<BoundingSprite&>(self);
 		auto& sc = self.getScale();
 		auto& ofs = self.refOffset();

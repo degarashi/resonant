@@ -18,7 +18,7 @@ struct InfoShow::MySt : StateT<MySt> {
 	void onConnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDisconnected(InfoShow& self, rs::HGroup hGroup) override;
 	void onDraw(const InfoShow& self, rs::IEffect& e) const override;
-	void onUpdate(InfoShow& self, const rs::SPLua& ls) override;
+	void onUpdate(InfoShow& self) override;
 };
 void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 	// FPSの表示
@@ -40,7 +40,7 @@ void InfoShow::MySt::onDraw(const InfoShow& self, rs::IEffect& e) const {
 }
 #include "spinner/structure/profiler.hpp"
 #include <thread>
-void InfoShow::MySt::onUpdate(InfoShow& self, const rs::SPLua& ls) {
+void InfoShow::MySt::onUpdate(InfoShow& self) {
 	{
 		auto lk = sharedbase.lockR();
 		self._count = lk->diffCount;
@@ -53,7 +53,7 @@ void InfoShow::MySt::onUpdate(InfoShow& self, const rs::SPLua& ls) {
 
 	// ステート名を取得, 保存しておく -> onDrawで使用
 	rs::Object& obj = *mgr_scene.getScene(0).ref();
-	if(auto ret = obj.recvMsgLua(ls, MSG_GetState)) {
+	if(auto ret = obj.recvMsgLua(MSG_GetState)) {
 		auto& tbl = *boost::get<rs::SPLCTable>(ret);
 		self._stateName = tbl[1].toString();
 	}

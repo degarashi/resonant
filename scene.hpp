@@ -15,7 +15,7 @@ namespace rs {
 		HLScene		_scNext;
 		LCValue		_scArg;
 
-		void _doSceneOp(const SPLua& ls);
+		void _doSceneOp();
 
 		public:
 			bool isEmpty() const;
@@ -33,7 +33,7 @@ namespace rs {
 			void setPushScene(HScene hSc, bool bPop=false);
 			void setPopScene(int nPop, const LCValue& arg=LCValue());
 			//! フレーム更新のタイミングで呼ぶ
-			bool onUpdate(const SPLua& ls);
+			bool onUpdate();
 			//! 描画のタイミングで呼ぶ
 			void onDraw(IEffect& e);
 			void onPause();
@@ -66,11 +66,11 @@ namespace rs {
 		public:
 			Scene(HGroup hUpd=HGroup(), HDGroup hDraw=HDGroup()):
 				_sbase(hUpd, hDraw) {}
-			void onUpdate(const SPLua& ls, bool /*bFirst*/) override final {
-				base::onUpdate(ls, true);
+			void onUpdate(bool /*bFirst*/) override final {
+				base::onUpdate(true);
 				if(!base::isDead()) {
 					UpdGroup::SetAsUpdateRoot();
-					_sbase.getUpdate()->get()->onUpdate(ls, true);
+					_sbase.getUpdate()->get()->onUpdate(true);
 				}
 			}
 			void onDraw(IEffect& e) const override final {

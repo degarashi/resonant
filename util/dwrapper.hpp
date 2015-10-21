@@ -31,7 +31,7 @@ namespace rs {
 						auto hl = HDObj::FromHandle(self.handleFromThis());
 						self._getDGroup()->get()->remObj(hl);
 					}
-					void onUpdate(DWrapper& self, const SPLua& /*ls*/) override {
+					void onUpdate(DWrapper& self) override {
 						self.refreshDrawTag();
 					}
 					void onDraw(const DWrapper& self, IEffect& e) const override {

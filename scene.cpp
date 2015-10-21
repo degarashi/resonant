@@ -62,7 +62,7 @@ namespace rs {
 		_scArg = arg;
 		_scOp = true;
 	}
-	void SceneMgr::_doSceneOp(const SPLua& ls) {
+	void SceneMgr::_doSceneOp() {
 		if(!_scOp && _scene.back().ref()->isDead()) {
 			// Sceneがdestroyされていて、かつSceneOpが無ければpop(1)とする
 			setPopScene(1);
@@ -77,7 +77,7 @@ namespace rs {
 				auto& sc = _scene.back().ref();
 				sc->onDisconnected(HGroup());
 				sc->destroy();
-				sc->onUpdate(ls, true);			// nullステートへ移行させる
+				sc->onUpdate(true);			// nullステートへ移行させる
 				_scene.pop_back();
 			}
 			// Sceneスタックが空ならここで終わり
@@ -97,13 +97,13 @@ namespace rs {
 			}
 		}
 	}
-	bool SceneMgr::onUpdate(const SPLua& ls) {
+	bool SceneMgr::onUpdate() {
 		if(_scene.empty())
 			return true;
 
-		_scene.back().ref()->onUpdate(ls, true);
+		_scene.back().ref()->onUpdate(true);
 		// SceneOpがあれば処理
-		_doSceneOp(ls);
+		_doSceneOp();
 		// スタックが空だったらtrue = 終了の合図 を返す
 		return _scene.empty();
 	}

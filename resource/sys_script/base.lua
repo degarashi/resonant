@@ -37,6 +37,14 @@ local instance = {}
 setmetatable(instance, {
 	__mode = "v"
 })
+-- インスタンスリスト(強参照)
+-- (Luaで生成したインスタンスはC++側のハンドルが削除される時まで保持する)
+-- HandleUD -> ObjInstance
+local lua_instance = {}
+function DeleteHandle(id)
+	lua_instance[id] = nil
+end
+
 -- クラスのEnum値などを（あれば）読み込み
 function LoadAdditionalValue(modname)
 	-- モジュールが見つからなかった場合は空のテーブルを返すようにする
@@ -103,6 +111,15 @@ function __NewIndex(base, tbl, key, val)
 	end
 	rawset(tbl, key, val)
 end
+local MakeHandleWrap = function(obj)
+	local ret = {}
+	setmetatable(ret, {
+		__index = obj,
+		__newindex = obj,
+		__gc = DecrementHandle
+	})
+	return ret
+end
 function DerivedHandle(base, name, object, bNoLoadValue)
 	assert(base, "DerivedHandle: base-class is nil")
 	assert(type(name)=="string", "DerivedHandle: invalid ObjectName")
@@ -150,14 +167,13 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 	object._name = name
 	object._base = base
 
-	-- ポインターインスタンス用のMT = オブジェクトMT + __gc(DecrementHandle)
+	-- ポインターインスタンス用のMT = オブジェクトMT
 	local instanceP_mt = _mt
 	-- ハンドル用インスタンスにセットするMT
 	local instanceH_mt = {
 		__index = _mt.__index,
 		-- tblにはインスタンスが渡される
-		__newindex = _mt.__newindex,
-		__gc = DecrementHandle
+		__newindex = _mt.__newindex
 	}
 	-- [Public] (from LCV<SHandle> [C++])
 	-- ハンドルIDからLua内のクラスインスタンスを取得
@@ -167,8 +183,13 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 		assert(type(ud) == "userdata")
 		local obj = instance[ud]
 		if obj == nil then
-			obj = {udata = ud}
-			setmetatable(obj, instanceH_mt)
+			obj = lua_instance[ud]
+			if obj == nil then
+				obj = {udata = ud}
+				setmetatable(obj, instanceH_mt)
+				lua_instance[ud] = obj
+			end
+			obj = MakeHandleWrap(obj)
 			instance[ud] = obj
 			IncrementHandle(obj)
 		end
@@ -188,6 +209,9 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 		local ud = object._New(...)
 		local obj = {udata = ud}
 		setmetatable(obj, instanceH_mt)
+		lua_instance[ud] = obj
+
+		obj = MakeHandleWrap(obj)
 		assert(not instance[ud])
 		instance[ud] = obj
 		return obj

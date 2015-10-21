@@ -77,7 +77,7 @@ namespace rs {
 			virtual Priority getPriority() const;
 
 			bool isDead() const;
-			bool onUpdateUpd(const SPLua& ls);
+			bool onUpdateUpd();
 			virtual bool isNode() const = 0;
 			//! オブジェクトの識別IDを取得
 			virtual ObjTypeId getTypeId() const = 0;
@@ -90,7 +90,7 @@ namespace rs {
 			//! UpdGroupから削除される時に呼ばれる
 			virtual void onDisconnected(HGroup hGroup);
 			//! 各Objが実装するアップデート処理
-			virtual void onUpdate(const SPLua& ls, bool bFirst);
+			virtual void onUpdate(bool bFirst);
 
 			virtual void destroy();
 			virtual const std::string& getName() const;
@@ -98,7 +98,7 @@ namespace rs {
 			virtual void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const;
 			// ---- Message ----
 			virtual LCValue recvMsg(const GMessageStr& msg, const LCValue& arg=LCValue());
-			virtual LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg=LuaNil());
+			virtual LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg=LuaNil());
 			//! 特定の優先度範囲のオブジェクトを処理
 			virtual void proc(UpdProc p, bool bRecursive,
 								Priority prioBegin=std::numeric_limits<Priority>::lowest(),
@@ -142,8 +142,11 @@ namespace rs {
 		decltype(auto) _makeObj(std::true_type, Ts&&... ts) {
 			return _makeHandle(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
+		SPLua _lua;
 
 		public:
+			void setLua(const SPLua& ls);
+			const SPLua& getLua() const;
 			// デフォルトのリソース作成関数は無効化
 			void acquire() = delete;
 			void emplace() = delete;
@@ -225,13 +228,13 @@ namespace rs {
 			bool isNode() const override;
 			void onConnected(HGroup hGroup) override;
 			void onDisconnected(HGroup hGroup) override;
-			void onUpdate(const SPLua& ls, bool bFirst) override;
+			void onUpdate(bool bFirst) override;
 			void onDraw(IEffect& e) const override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			const std::string& getName() const override;
 			//! グループ内のオブジェクト全てに配信
 			LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override;
-			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override;
+			LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg) override;
 			void proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) override;
 
 			const ObjVP& getList() const;
@@ -278,12 +281,12 @@ namespace rs {
 			void onDisconnected(HGroup hGroup) override;
 			void enumGroup(CBFindGroup cb, GroupTypeId id, int depth) const override;
 			LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override;
-			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override;
+			LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg) override;
 			void proc(UpdProc p, bool bRecursive, Priority prioBegin, Priority prioEnd) override;
 
 			const std::string& getName() const override;
 
-			void onUpdate(const SPLua& ls, bool bFirst) override;
+			void onUpdate(bool bFirst) override;
 			void setIdle(int nFrame);
 			int getAccum() const;
 			// コピー禁止
@@ -431,7 +434,7 @@ namespace rs {
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
-			void onUpdate(const SPLua& ls, bool bFirst) override;
+			void onUpdate(bool bFirst) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
 			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
 			void setPriority(Priority p);
@@ -449,7 +452,7 @@ namespace rs {
 		public:
 			DrawGroupProxy(HDGroup hDg);
 
-			void onUpdate(const SPLua& ls, bool bFirst) override;
+			void onUpdate(bool bFirst) override;
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
@@ -472,7 +475,7 @@ namespace rs {
 				struct State {
 					virtual ~State() {}
 					virtual ObjTypeId getStateId() const = 0;
-					virtual void onUpdate(T& self, const SPLua& ls) { self.Base::onUpdate(ls, false); }
+					virtual void onUpdate(T& self) { self.Base::onUpdate(false); }
 					virtual LCValue recvMsg(T& self, const GMessageStr& msg, const LCValue& arg) { return self.Base::recvMsg(msg, arg); }
 					// onEnterとonExitは継承しない
 					virtual void onEnter(T& /*self*/, ObjTypeId /*prevId*/) {}
@@ -618,8 +621,8 @@ namespace rs {
 					_callWithSwitchState([&](){ _state->onDown(getRef(), prevId, arg); });
 				}
 				// ----------- 以下はStateのアダプタメソッド -----------
-				void onUpdate(const SPLua& ls, bool /*bFirst*/) override {
-					_callWithSwitchState([&](){ return _state->onUpdate(getRef(), ls); });
+				void onUpdate(bool /*bFirst*/) override {
+					_callWithSwitchState([&](){ return _state->onUpdate(getRef()); });
 				}
 				LCValue recvMsg(const GMessageStr& msg, const LCValue& arg) override {
 					return _callWithSwitchState([&](){ return _state->recvMsg(getRef(), msg, arg); });
@@ -657,26 +660,33 @@ namespace rs {
 	class ObjectT_Lua : public ObjectT<T,Base> {
 		private:
 			using base = ObjectT<T,Base>;
+			HObj _hMe;
+			HObj _getHandle() {
+				if(!_hMe)
+					_hMe = base::handleFromThis();
+				return _hMe;
+			}
 		protected:
 			template <class... Ret, class... Ts>
-			auto _callLuaMethod(const SPLua& ls, const std::string& method, Ts&&... ts) {
-				ls->push(base::handleFromThis());
-				LValueS lv(ls->getLS());
+			auto _callLuaMethod(const std::string& method, Ts&&... ts) {
+				auto sp = rs_mgr_obj.getLua();
+				sp->push(_getHandle());
+				LValueS lv(sp->getLS());
 				return lv.callMethod<Ret...>(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
 			}
 		public:
 			using base::base;
-			void onUpdate(const SPLua& ls, bool bFirst) override {
-				base::onUpdate(ls, false);
+			void onUpdate(bool bFirst) override {
+				base::onUpdate(false);
 				if(bFirst) {
 					if(!base::isDead())
-						_callLuaMethod(ls, luaNS::OnUpdate);
+						_callLuaMethod(luaNS::OnUpdate);
 					if(base::isDead())
-						_callLuaMethod(ls, luaNS::OnExit, "null");
+						_callLuaMethod(luaNS::OnExit, "null");
 				}
 			}
-			LCValue recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) override {
-				return detail::ObjectT_LuaBase::CallRecvMsg(ls, base::handleFromThis(), msg, arg);
+			LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg) override {
+				return detail::ObjectT_LuaBase::CallRecvMsg(rs_mgr_obj.getLua(), _getHandle(), msg, arg);
 			}
 	};
 	DefineUpdGroup(U_UpdGroup)

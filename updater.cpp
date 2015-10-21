@@ -16,6 +16,12 @@ namespace rs {
 		const static std::string name("Object");
 		return name;
 	}
+	void ObjMgr::setLua(const SPLua& ls) {
+		_lua = ls;
+	}
+	const SPLua& ObjMgr::getLua() const {
+		return _lua;
+	}
 
 	namespace {
 		const std::string cs_objname("Object"),
@@ -53,10 +59,10 @@ namespace rs {
 	bool Object::isDead() const {
 		return _bDestroy;
 	}
-	bool Object::onUpdateUpd(const SPLua& ls) {
+	bool Object::onUpdateUpd() {
 		if(isDead())
 			return true;
-		onUpdate(ls, true);
+		onUpdate(true);
 		return isDead();
 	}
 	void* Object::getInterface(InterfaceId /*id*/) {
@@ -67,7 +73,7 @@ namespace rs {
 	}
 	void Object::onConnected(HGroup /*hGroup*/) {}
 	void Object::onDisconnected(HGroup /*hGroup*/) {}
-	void Object::onUpdate(const SPLua& /*ls*/, bool /*bFirst*/) {}
+	void Object::onUpdate(bool /*bFirst*/) {}
 	void Object::destroy() {
 		_bDestroy = true;
 	}
@@ -80,7 +86,7 @@ namespace rs {
 	LCValue Object::recvMsg(const GMessageStr& /*id*/, const LCValue& /*arg*/) {
 		return LCValue();
 	}
-	LCValue Object::recvMsgLua(const SPLua& /*ls*/, const GMessageStr& /*id*/, const LCValue& /*arg*/) {
+	LCValue Object::recvMsgLua(const GMessageStr& /*id*/, const LCValue& /*arg*/) {
 		return LCValue();
 	}
 	void Object::proc(UpdProc /*p*/, bool /*bRecursive*/, Priority /*prioBegin*/, Priority /*prioEnd*/) {
@@ -174,7 +180,7 @@ namespace rs {
 		for(auto& obj : _objV)
 			obj.second->get()->onDraw(e);
 	}
-	void UpdGroup::onUpdate(const SPLua& ls, bool /*bFirst*/) {
+	void UpdGroup::onUpdate(bool /*bFirst*/) {
 		{
 			class FlagSet {
 				private:
@@ -188,7 +194,7 @@ namespace rs {
 
 			for(auto& obj : _objV) {
 				auto* ent = obj.second->get();
-				auto b = ent->onUpdateUpd(ls);
+				auto b = ent->onUpdateUpd();
 				if(b) {
 					// 次のフレーム直前で消す
 					remObj(obj.second.get());
@@ -248,9 +254,9 @@ namespace rs {
 			obj.second->get()->recvMsg(msg, arg);
 		return LCValue();
 	}
-	LCValue UpdGroup::recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) {
+	LCValue UpdGroup::recvMsgLua(const GMessageStr& msg, const LCValue& arg) {
 		for(auto& obj : _objV)
-			obj.second->get()->recvMsgLua(ls, msg, arg);
+			obj.second->get()->recvMsgLua(msg, arg);
 		return LCValue();
 	}
 	UpdGroup::UGVec UpdGroup::s_ug;
@@ -323,19 +329,19 @@ namespace rs {
 	LCValue UpdTask::recvMsg(const GMessageStr& msg, const LCValue& arg) {
 		return _hlGroup->get()->recvMsg(msg, arg);
 	}
-	LCValue UpdTask::recvMsgLua(const SPLua& ls, const GMessageStr& msg, const LCValue& arg) {
-		return _hlGroup->get()->recvMsgLua(ls, msg, arg);
+	LCValue UpdTask::recvMsgLua(const GMessageStr& msg, const LCValue& arg) {
+		return _hlGroup->get()->recvMsgLua(msg, arg);
 	}
 
 	const std::string& UpdTask::getName() const {
 		return cs_updtaskname;
 	}
-	void UpdTask::onUpdate(const SPLua& ls, bool /*bFirst*/) {
+	void UpdTask::onUpdate(bool /*bFirst*/) {
 		// アイドル時間チェック
 		if(_idleCount > 0)
 			--_idleCount;
 		else
-			_hlGroup->get()->onUpdate(ls, true);
+			_hlGroup->get()->onUpdate(true);
 		++_accum;
 	}
 	void UpdTask::setIdle(int nFrame) {
@@ -425,7 +431,7 @@ namespace rs {
 	const std::string& DrawGroup::getName() const {
 		return cs_drawgroupname;
 	}
-	void DrawGroup::onUpdate(const SPLua& /*ls*/, bool /*bFirst*/) {
+	void DrawGroup::onUpdate(bool /*bFirst*/) {
 		Assert(Warn, "called deleted function: DrawGroup::onUpdate()")
 	}
 	void DrawGroup::onDraw(IEffect& e) const {
@@ -441,9 +447,9 @@ namespace rs {
 
 	// -------------------- DrawGroupProxy --------------------
 	DrawGroupProxy::DrawGroupProxy(HDGroup hDg): _hlDGroup(hDg) {}
-	void DrawGroupProxy::onUpdate(const SPLua& ls, bool bFirst) {
+	void DrawGroupProxy::onUpdate(bool bFirst) {
 		// DrawGroupのonUpdateを呼ぶとエラーになるが、一応呼び出し
-		_hlDGroup->get()->onUpdate(ls, bFirst);
+		_hlDGroup->get()->onUpdate(bFirst);
 	}
 	void DrawGroupProxy::setPriority(Priority p) {
 		_dtag.priority = p;

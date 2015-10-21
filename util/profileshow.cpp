@@ -50,7 +50,7 @@ namespace rs {
 					self._textHud.draw(e);
 				}
 			}
-			void onUpdate(ProfileShow& self, const SPLua& /*ls*/) override {
+			void onUpdate(ProfileShow& self) override {
 				// プロファイラの(1フレーム前の)情報を取得
 				self._spProfile = spn::profiler.getRoot();
 				auto sz = self._textHud.getText()->getSize();

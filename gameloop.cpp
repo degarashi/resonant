@@ -227,13 +227,13 @@ namespace rs {
 			UPtr<Camera2DMgr>	cam2P(new Camera2DMgr());
 			UPtr<PointerMgr>	pmP(new PointerMgr());
 			UPtr<InputMgr>		inpP(new InputMgr());
-			UPtr<ObjMgr>		objP(new ObjMgr());
 PrintLog;
 			UPtr<SceneMgr>		scP(new SceneMgr());
 			UPtr<SoundMgr>		sndP(new SoundMgr(44100));
 			UPtr<UpdRep>		urep(new UpdRep());
 			UPtr<ObjRep>		orep(new ObjRep());
 			UPtr<LSysFunc>		lsys(new LSysFunc());
+			UPtr<ObjMgr>		objP(new ObjMgr());
 			sndP->makeCurrent();
 			using UPHandler = UPtr<Handler>;
 			UPHandler drawHandler(new Handler(opDth->getLooper()));
@@ -397,11 +397,12 @@ PrintLog;
 
 			mp.reset();
 
+			objP.reset();
+			lsys.reset();
 			orep.reset();
 			urep.reset();
 			sndP.reset();
 			scP.reset();
-			objP.reset();
 			inpP.reset();
 			camP.reset();
 			fgenP.reset();
@@ -409,6 +410,8 @@ PrintLog;
 			appPath.reset();
 			rwP.reset();
 			glrP.reset();
+			randP.reset();
+			infoP.reset();
 
 			GL.glFlush();
 

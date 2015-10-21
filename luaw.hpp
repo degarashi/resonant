@@ -1211,6 +1211,7 @@ namespace rs {
 								Pointer,
 								ToString;
 		extern const std::string GetInstance,
+								DeleteHandle,
 								ObjectBase,
 								ConstructPtr,
 								DerivedHandle,
