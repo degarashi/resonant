@@ -672,7 +672,10 @@ namespace rs {
 				auto sp = rs_mgr_obj.getLua();
 				sp->push(_getHandle());
 				LValueS lv(sp->getLS());
-				return lv.callMethod<Ret...>(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
+				int top = sp->getTop();
+				auto ret = lv.callMethod<Ret...>(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
+				sp->setTop(top);
+				return ret;
 			}
 		public:
 			using base::base;
