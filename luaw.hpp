@@ -1051,6 +1051,7 @@ namespace rs {
 				auto spTbl = std::make_shared<LCTable>();
 				for(int i=0 ; i<nRet ; i++)
 					(*spTbl)[i+1] = lsc.toLCValue(top + i + 1);
+				lsc.setTop(top);
 				return spTbl;
 			}
 			template <class... Ret, class... Args>
