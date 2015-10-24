@@ -74,6 +74,7 @@ namespace rs {
 		public:
 			Object();
 			virtual ~Object() {}
+			virtual void preDtor() {}
 			virtual Priority getPriority() const;
 
 			bool isDead() const;
@@ -142,11 +143,15 @@ namespace rs {
 		decltype(auto) _makeObj(std::true_type, Ts&&... ts) {
 			return _makeHandle(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
+		bool _bInDtor;
 		SPLua _lua;
 
 		public:
+			ObjMgr();
+			~ObjMgr();
 			void setLua(const SPLua& ls);
 			const SPLua& getLua() const;
+			bool release(spn::SHandle s) override;
 			// デフォルトのリソース作成関数は無効化
 			void acquire() = delete;
 			void emplace() = delete;
@@ -667,15 +672,12 @@ namespace rs {
 				return _hMe;
 			}
 		protected:
-			template <class... Ret, class... Ts>
+			template <class... Ts>
 			auto _callLuaMethod(const std::string& method, Ts&&... ts) {
 				auto sp = rs_mgr_obj.getLua();
 				sp->push(_getHandle());
 				LValueS lv(sp->getLS());
-				int top = sp->getTop();
-				auto ret = lv.callMethod<Ret...>(luaNS::RecvMsg, method, std::forward<Ts>(ts)...);
-				sp->setTop(top);
-				return ret;
+				return lv.callMethod(method, std::forward<Ts>(ts)...);
 			}
 		public:
 			using base::base;
@@ -683,10 +685,13 @@ namespace rs {
 				base::onUpdate(false);
 				if(bFirst) {
 					if(!base::isDead())
-						_callLuaMethod(luaNS::OnUpdate);
-					if(base::isDead())
-						_callLuaMethod(luaNS::OnExit, "null");
+						_callLuaMethod(luaNS::RecvMsg, luaNS::OnUpdate);
 				}
+			}
+			void preDtor() override {
+				// Lua側を終端ステートへ移行
+				_callLuaMethod(luaNS::SetState, luaNS::Null);
+				_callLuaMethod(luaNS::SwitchState);
 			}
 			LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg) override {
 				return detail::ObjectT_LuaBase::CallRecvMsg(rs_mgr_obj.getLua(), _getHandle(), msg, arg);

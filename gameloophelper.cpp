@@ -49,6 +49,7 @@ namespace rs {
 			SPLua ls = lkb->spLua = LuaState::FromResource("main");
 			LuaImport::RegisterRSClass(*ls);
 			init.cbInit();
+			rs_mgr_obj.setLua(lkb->spLua);
 			// Lua初期化関数を呼ぶ
 			ls->getGlobal("Initialize");
 			ls->call(0,1);

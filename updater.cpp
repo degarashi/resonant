@@ -5,6 +5,20 @@ ImplDrawGroup(rs::U_DrawGroup, 0x0000)
 ImplDrawGroup(rs::U_DrawGroupProxy, 0x0000)
 namespace rs {
 	const ObjTypeId InvalidObjId(~0);
+	ObjMgr::ObjMgr(): _bInDtor(false) {}
+	ObjMgr::~ObjMgr() {
+		_bInDtor = true;
+		_lua.reset();
+	}
+	bool ObjMgr::release(spn::SHandle s) {
+		if(_bInDtor)
+			return base::release(s);
+		if(s.count() == 1) {
+			Object* obj = HObj::FromHandle(s)->get();
+			obj->preDtor();
+		}
+		return base::release(s);
+	}
 	HGroup ObjMgr::CastToGroup(HObj hObj) {
 		return Cast<GroupUP>(hObj);
 	}

@@ -25,6 +25,9 @@ namespace rs {
 						ToString("tostring");
 		const std::string GetInstance("GetInstance"),
 						DeleteHandle("DeleteHandle"),
+						SetState("SetState"),
+						SwitchState("SwitchState"),
+						Null("Null"),
 						ObjectBase("ObjectBase"),
 						ConstructPtr("ConstructPtr"),
 						DerivedHandle("DerivedHandle"),
@@ -67,14 +70,15 @@ namespace rs {
 		}
 		int DecrementHandle(lua_State* ls) {
 			SHandle sh = GetLCVType<SHandle>()(1, ls);
+			int count = sh.count();
+			sh.release();
 			// リソースが削除される時はLua側の強参照も削除
-			if(sh.count() == 1) {
+			if(count == 1) {
 				LuaState lsc(ls);
 				lsc.getGlobal(luaNS::DeleteHandle);
 				lsc.push(reinterpret_cast<void*>(sh.getValue()));
 				lsc.call(1,0);
 			}
-			sh.release();
 			return 0;
 		}
 	}

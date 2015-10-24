@@ -77,7 +77,9 @@ FSMachine = DerivedHandle(upd_obj, "FSMachine", {
 			local prevS = self.stateS
 			self.state = self[nextS]
 			self.stateS = nextS
-			self:RecvMsg("OnEnter", prevS, table.unpack(tmpParam))
+			if self.state then
+				self:RecvMsg("OnEnter", prevS, table.unpack(tmpParam))
+			end
 		end
 	end,
 	-- 全てのメッセージは先頭引数がself, lc(ステートローカル領域)
