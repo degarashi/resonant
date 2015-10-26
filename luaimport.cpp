@@ -218,7 +218,7 @@ namespace rs {
 		lsc.pushValue(-2);
 		lsc.call(1,0);
 		// ユーザーのクラス定義をスタックに積むが、まだ実行はしない
-		lsc.load(hRW, "LuaImport::LoadClass", "bt", false);
+		lsc.load(hRW, (boost::format("LuaImport::LoadClass(%1%)") % name).str().c_str(), "bt", false);
 		// _ENVをクラステーブルに置き換えてからチャンクを実行
 		// グローバル変数に代入しようとしたらクラスのstatic変数として扱う
 		lsc.pushValue(-2);
