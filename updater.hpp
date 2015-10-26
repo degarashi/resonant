@@ -74,7 +74,6 @@ namespace rs {
 		public:
 			Object();
 			virtual ~Object() {}
-			virtual void preDtor() {}
 			virtual Priority getPriority() const;
 
 			bool isDead() const;
@@ -143,15 +142,11 @@ namespace rs {
 		decltype(auto) _makeObj(std::true_type, Ts&&... ts) {
 			return _makeHandle(spn::AAllocator<T>::NewUF(std::forward<Ts>(ts)...));
 		}
-		bool _bInDtor;
 		SPLua _lua;
 
 		public:
-			ObjMgr();
-			~ObjMgr();
 			void setLua(const SPLua& ls);
 			const SPLua& getLua() const;
-			bool release(spn::SHandle s) override;
 			// デフォルトのリソース作成関数は無効化
 			void acquire() = delete;
 			void emplace() = delete;
@@ -198,7 +193,7 @@ namespace rs {
 	class UpdGroup : public Object {
 		private:
 			static thread_local bool tls_bUpdateRoot;
-			using UGVec = std::vector<UpdGroup*>;
+			using UGVec = std::vector<WGroup>;
 			static UGVec	s_ug;
 
 			using ObjV = std::vector<HLObj>;
@@ -686,12 +681,12 @@ namespace rs {
 				if(bFirst) {
 					if(!base::isDead())
 						_callLuaMethod(luaNS::RecvMsg, luaNS::OnUpdate);
+					if(base::isDead()) {
+						// Lua側を終端ステートへ移行
+						_callLuaMethod(luaNS::SetState, luaNS::Null);
+						_callLuaMethod(luaNS::SwitchState);
+					}
 				}
-			}
-			void preDtor() override {
-				// Lua側を終端ステートへ移行
-				_callLuaMethod(luaNS::SetState, luaNS::Null);
-				_callLuaMethod(luaNS::SwitchState);
 			}
 			LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg) override {
 				return detail::ObjectT_LuaBase::CallRecvMsg(rs_mgr_obj.getLua(), _getHandle(), msg, arg);

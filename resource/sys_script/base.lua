@@ -170,11 +170,7 @@ function DerivedHandle(base, name, object, bNoLoadValue)
 	-- ポインターインスタンス用のMT = オブジェクトMT
 	local instanceP_mt = _mt
 	-- ハンドル用インスタンスにセットするMT
-	local instanceH_mt = {
-		__index = _mt.__index,
-		-- tblにはインスタンスが渡される
-		__newindex = _mt.__newindex
-	}
+	local instanceH_mt = _mt
 	-- [Public] (from LCV<SHandle> [C++])
 	-- ハンドルIDからLua内のクラスインスタンスを取得
 	-- 同一ハンドルなら同じインスタンスを返す

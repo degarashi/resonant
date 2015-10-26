@@ -5,20 +5,6 @@ ImplDrawGroup(rs::U_DrawGroup, 0x0000)
 ImplDrawGroup(rs::U_DrawGroupProxy, 0x0000)
 namespace rs {
 	const ObjTypeId InvalidObjId(~0);
-	ObjMgr::ObjMgr(): _bInDtor(false) {}
-	ObjMgr::~ObjMgr() {
-		_bInDtor = true;
-		_lua.reset();
-	}
-	bool ObjMgr::release(spn::SHandle s) {
-		if(_bInDtor)
-			return base::release(s);
-		if(s.count() == 1) {
-			Object* obj = HObj::FromHandle(s)->get();
-			obj->preDtor();
-		}
-		return base::release(s);
-	}
 	HGroup ObjMgr::CastToGroup(HObj hObj) {
 		return Cast<GroupUP>(hObj);
 	}
@@ -163,7 +149,7 @@ namespace rs {
 	}
 	void UpdGroup::_registerUGVec() {
 		if(_addObj.empty() && _remObj.empty())
-			s_ug.push_back(this);
+			s_ug.push_back(WGroup::FromHandle(handleFromThis().weak()));
 	}
 	void UpdGroup::remObj(HObj hObj) {
 		_registerUGVec();
@@ -221,8 +207,11 @@ namespace rs {
 				// 削除中、他に追加削除されるオブジェクトが出るかも知れないので一旦リストを退避
 				decltype(s_ug) tmp;
 				tmp.swap(s_ug);
-				for(auto ent : tmp)
-					ent->_doAddRemove();
+				for(auto ent : tmp) {
+					if(auto hdl = ent.lock()) {
+						hdl->get()->_doAddRemove();
+					}
+				}
 			}
 		}
 	}
