@@ -59,6 +59,9 @@ namespace rs {
 	bool Object::isDead() const {
 		return _bDestroy;
 	}
+	bool Object::hasLuaState() const {
+		return false;
+	}
 	bool Object::onUpdateUpd() {
 		if(isDead())
 			return true;

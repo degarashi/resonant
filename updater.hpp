@@ -79,6 +79,7 @@ namespace rs {
 			bool isDead() const;
 			bool onUpdateUpd();
 			virtual bool isNode() const = 0;
+			virtual bool hasLuaState() const;
 			//! オブジェクトの識別IDを取得
 			virtual ObjTypeId getTypeId() const = 0;
 
@@ -674,6 +675,11 @@ namespace rs {
 				LValueS lv(sp->getLS());
 				return lv.callMethod(method, std::forward<Ts>(ts)...);
 			}
+			//! Lua側を終端ステートへ移行
+			void _setNullState() {
+				_callLuaMethod(luaNS::SetState, luaNS::Null);
+				_callLuaMethod(luaNS::SwitchState);
+			}
 		public:
 			using base::base;
 			void onUpdate(bool bFirst) override {
@@ -681,11 +687,18 @@ namespace rs {
 				if(bFirst) {
 					if(!base::isDead())
 						_callLuaMethod(luaNS::RecvMsg, luaNS::OnUpdate);
-					if(base::isDead()) {
-						// Lua側を終端ステートへ移行
-						_callLuaMethod(luaNS::SetState, luaNS::Null);
-						_callLuaMethod(luaNS::SwitchState);
+				}
+			}
+			bool hasLuaState() const override {
+				return true;
+			}
+			void destroy() override {
+				if(!base::isDead()) {
+					if(!base::hasLuaState()) {
+						// Lua側ステートをNullにセット
+						_setNullState();
 					}
+					base::destroy();
 				}
 			}
 			LCValue recvMsgLua(const GMessageStr& msg, const LCValue& arg) override {
