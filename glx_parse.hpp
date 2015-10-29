@@ -283,8 +283,9 @@ namespace rs {
 		std::vector<ArgItem>	args;
 		//! シェーダーの中身(文字列)
 		std::string				info;
+		mutable std::string		info_str;	//!< シェーダー文字列を1つに纏めた物
 
-		void swap(ShStruct& a) noexcept;
+		const std::string& getShaderString() const;
 		void output(std::ostream& os) const;
 	};
 
@@ -305,13 +306,6 @@ namespace rs {
 		std::vector<std::string>	derive;
 	};
 	std::ostream& operator << (std::ostream& os, const TPStruct& t);
-
-	//! 括弧の中身
-	struct Bracket;
-	struct Bracket {
-		std::string str;
-		boost::optional<boost::recursive_wrapper<Bracket>> child;
-	};
 
 	//! エフェクト全般
 	struct GLXStruct {
@@ -340,7 +334,6 @@ FUSION_ADAPT_STRUCT_AUTO(rs::UnifStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::ConstStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::ShStruct, (type)(version_str)(name)(args)(info))
 FUSION_ADAPT_STRUCT_AUTO(rs::TPStruct, (name)(blkL)(bsL)(mcL)(shL)(tpL)(vsL)(derive))
-FUSION_ADAPT_STRUCT_AUTO(rs::Bracket, (str)(child))
 FUSION_ADAPT_STRUCT_AUTO(rs::GLXStruct, (atM)(csM)(shM)(tpL)(uniM)(varM))
 FUSION_ADAPT_STRUCT_AUTO(rs::ArgItem, (type)(name))
 FUSION_ADAPT_STRUCT_AUTO(rs::BlockUse, (type)(bAdd)(name))

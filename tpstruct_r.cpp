@@ -219,7 +219,7 @@ namespace rs {
 			acheck.finalizeCheck();
 
 			// 関数名はmain()に書き換え
-			ss << "void main() {" << s.info << '}' << std::endl;
+			ss << "void main() " << s.info << std::endl;
 	#ifdef DEBUG
 			std::cout << ss.str();
 			std::cout.flush();

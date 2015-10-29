@@ -775,11 +775,9 @@ namespace rs {
 	void GLEffect::_prepareUniforms() {}
 
 	// ------------- ShStruct -------------
-	void ShStruct::swap(ShStruct& a) noexcept {
-		std::swap(type, a.type);
-		std::swap(version_str, a.version_str);
-		std::swap(name, a.name);
-		std::swap(args, a.args);
-		std::swap(info, a.info);
+	const std::string& ShStruct::getShaderString() const {
+		if(info_str.empty()) {
+		}
+		return info_str;
 	}
 }

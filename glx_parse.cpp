@@ -8,7 +8,7 @@ namespace rs {
 		const x3::rule<class Glx, GLXStruct>						Glx;
 		const x3::rule<class String, std::string>					String;		//!< "で囲まれた文字列
 		const x3::rule<class NameToken, std::string>				NameToken;	//!< 文字列トークン
-		const x3::rule<class Bracket_t, std::string>				Bracket;	//!< 任意の括弧で囲まれたブロック
+		const x3::rule<class Bracket, std::string>					Bracket;	//!< 任意の括弧で囲まれたブロック
 
 		// 変数宣言(attribute, uniform, varying)
 		const x3::rule<class AttrEnt, AttrEntry> 					AttrEnt;
@@ -43,6 +43,14 @@ namespace rs {
 		using x3::no_case;
 		// Arg: GLType NameToken
 		const auto Arg_def = GLType > NameToken;
+		// Bracket: (\.)[^\1]Bracket?[^\1](\1)
+		const auto fnAddBegin = [](auto& ctx){ _val(ctx) += "{"; };
+		const auto fnAddClose = [](auto& ctx){ _val(ctx) += "}"; };
+		const auto fnAddStr = [](auto& ctx){ _val(ctx) += _attr(ctx); };
+		const auto Bracket_def = lit('{')[fnAddBegin] >
+									lexeme[*(char_ - lit('{') - lit('}'))][fnAddStr] >
+									*(Bracket[fnAddStr] > lexeme[*(char_ - lit('{') - lit('}'))][fnAddStr]) >
+									lit('}')[fnAddClose];
 		// ShBlock: GLShadertype\([^\)]+\) NameToken \(Arg (, Arg)*\) \{[^\}]*\}
 		DEF_SETVAL(fnSetType, type)
 		DEF_SETVAL(fnSetVer, version_str)
@@ -52,8 +60,7 @@ namespace rs {
 		const auto ShBlock_def = no_case[GLShadertype][fnSetType] >
 						'(' > lexeme[*(char_ - lit(')'))][fnSetVer] > ')' >
 						NameToken[fnSetName] > '(' >
-						-(Arg[fnPushArg] > *(',' > Arg[fnPushArg])) > ')' >
-						lit('{') > (lexeme[*lexeme[char_ - '}']])[fnSetInfo] > '}';
+						-(Arg[fnPushArg] > *(',' > Arg[fnPushArg])) > ')' > Bracket[fnSetInfo];
 		// MacroBlock: macro \{ MacroEnt \}
 		const auto MacroBlock_def = no_case[lit("macro")] > '{' > *MacroEnt > '}';
 		// PassBlock: pass \{ (BlockUse | BoolSet | MacroBlock | ShSet | ValueSet)* \}
@@ -95,8 +102,6 @@ namespace rs {
 		const auto String_def = lit('"') > +(char_ - '"') > '"';
 		// NameToken: [:Alnum:_]+;
 		const auto NameToken_def = lexeme[+(alnum | char_('_'))];
-		// Bracket: (\.)[^\1]Bracket?[^\1](\1)
-		const auto Bracket_def = lit('{') > lexeme[*(char_ - lit('{') - lit('}'))] > -Bracket > lit('}');
 		// AttrEnt: GLPrecision? GLType NameToken : GLSem;
 		const auto AttrEnt_def = (-(GLPrecision) >> GLType >> NameToken >> ':') > GLSem > ';';
 		// VaryEnt: GLPrecision? GLType NameToken;
@@ -152,15 +157,15 @@ namespace rs {
 							'{' > *ConstEnt[fnPushEntry] > '}';
 		#pragma GCC diagnostic push
 		#pragma GCC diagnostic ignored "-Wunused-parameter"
-		BOOST_SPIRIT_DEFINE(Arg,
-							ShBlock,
+		BOOST_SPIRIT_DEFINE(ShBlock,
 							MacroBlock,
 							PassBlock,
 							TechBlock,
 							Glx);
-		BOOST_SPIRIT_DEFINE(String,
-							NameToken,
+		BOOST_SPIRIT_DEFINE(Arg,
 							Bracket,
+							String,
+							NameToken,
 							AttrEnt,
 							VaryEnt,
 							UnifEnt,
