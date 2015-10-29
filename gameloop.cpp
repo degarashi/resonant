@@ -47,93 +47,98 @@ namespace rs {
 	// --------------------- DrawThread ---------------------
 	DrawThread::DrawThread(): ThreadL("DrawThread") {}
 	void DrawThread::runL(const SPLooper& mainLooper, const SPWindow& w, IDrawProc* dproc) {
-		auto fnMakeContext = [this, &w](bool bForce){
-			auto lk = _info.lock();
-			auto& ctxD = lk->ctxDrawThread;
-			auto& ctxM = lk->ctxMainThread;
-			if(bForce || !ctxD) {
-				ctxD = GLContext::CreateContext(w, false);
-				ctxD->makeCurrent(w);
-				if(MULTICONTEXT) {
-					ctxM = GLContext::CreateContext(w, true);
+		try {
+			auto fnMakeContext = [this, &w](bool bForce){
+				auto lk = _info.lock();
+				auto& ctxD = lk->ctxDrawThread;
+				auto& ctxM = lk->ctxMainThread;
+				if(bForce || !ctxD) {
+					ctxD = GLContext::CreateContext(w, false);
 					ctxD->makeCurrent(w);
+					if(MULTICONTEXT) {
+						ctxM = GLContext::CreateContext(w, true);
+						ctxD->makeCurrent(w);
+					}
+					return true;
 				}
-				return true;
-			}
-			return false;
-		};
-		auto fnDestroyContext = [this](){
-			auto lk = _info.lock();
-			Assert(Warn, static_cast<bool>(lk->ctxDrawThread), "OpenGL context is not initialized")
-			if(MULTICONTEXT)
-				lk->ctxMainThread.reset();
-			lk->ctxDrawThread.reset();
-		};
+				return false;
+			};
+			auto fnDestroyContext = [this](){
+				auto lk = _info.lock();
+				Assert(Warn, static_cast<bool>(lk->ctxDrawThread), "OpenGL context is not initialized")
+				if(MULTICONTEXT)
+					lk->ctxMainThread.reset();
+				lk->ctxDrawThread.reset();
+			};
 
-		fnMakeContext(true);
-		Handler mainHandler(mainLooper);
-		Handler drawHandler(Looper::GetLooper());
-		GLW.initializeDrawThread(drawHandler);
-		GLW.loadGLFunc();
-		// ここで一旦MainThreadにOpenGLコンテキストの初期化が終ったことを通知
-		mainHandler.postArgs(msg::DrawInit());
-		UPDrawProc up(dproc);
+			fnMakeContext(true);
+			Handler mainHandler(mainLooper);
+			Handler drawHandler(Looper::GetLooper());
+			GLW.initializeDrawThread(drawHandler);
+			GLW.loadGLFunc();
+			// ここで一旦MainThreadにOpenGLコンテキストの初期化が終ったことを通知
+			mainHandler.postArgs(msg::DrawInit());
+			UPDrawProc up(dproc);
 
-		bool bLoop = true;
-		do {
-			// メインスレッドから描画開始の指示が来るまで待機
-			// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
-			while(auto m = getLooper()->wait()) {
-				GL.setSwapInterval(0);
-				if(msg::DrawReq* p = *m) {
-					_info.lock()->state = State::Drawing;
-					// 1フレーム分の描画処理
-					if(up->runU(p->id, p->bSkip)) {
-						auto lk = _info.lock();
-						lk->fps.update();
-						lk->ctxDrawThread->swapWindow();
-					}
-					GL.glFlush();
-					{
-						auto lk = _info.lock();
-						lk->state = State::Idle;
-						lk->accum = p->id;
-					}
-				} else if(static_cast<msg::QuitReq*>(*m)) {
-					bLoop = false;
-					break;
-				} else if(static_cast<msg::MakeContext*>(*m)) {
-					// OpenGLコンテキストを再度作成
-					fnMakeContext(false);
-					// Assert(Warn, !b, "initialized OpenGL context twice")
-
-					// OpenGLリソースの再確保
-					mgr_gl.onDeviceReset();
-					GL.glFlush();
+			bool bLoop = true;
+			do {
+				// メインスレッドから描画開始の指示が来るまで待機
+				// AndroidではContextSharingが出来ないのでメインスレッドからロードするタスクを受け取ってここで処理
+				while(auto m = getLooper()->wait()) {
 					GL.setSwapInterval(0);
-				} else if(static_cast<msg::DestroyContext*>(*m)) {
-					mgr_gl.onDeviceLost();
-					GL.glFlush();
-					fnDestroyContext();
-				}
-			}
-		} while(bLoop && !isInterrupted());
-		LogOutput("DrawThread destructor begun");
+					if(msg::DrawReq* p = *m) {
+						_info.lock()->state = State::Drawing;
+						// 1フレーム分の描画処理
+						if(up->runU(p->id, p->bSkip)) {
+							auto lk = _info.lock();
+							lk->fps.update();
+							lk->ctxDrawThread->swapWindow();
+						}
+						GL.glFlush();
+						{
+							auto lk = _info.lock();
+							lk->state = State::Idle;
+							lk->accum = p->id;
+						}
+					} else if(static_cast<msg::QuitReq*>(*m)) {
+						bLoop = false;
+						break;
+					} else if(static_cast<msg::MakeContext*>(*m)) {
+						// OpenGLコンテキストを再度作成
+						fnMakeContext(false);
+						// Assert(Warn, !b, "initialized OpenGL context twice")
 
-		up.reset();
-		// 後片付けフェーズ
-		bLoop = true;
-		while(bLoop && !isInterrupted()) {
-			while(auto m = getLooper()->wait()) {
-				if(static_cast<msg::QuitReq*>(*m)) {
-					bLoop = false;
-					break;
+						// OpenGLリソースの再確保
+						mgr_gl.onDeviceReset();
+						GL.glFlush();
+						GL.setSwapInterval(0);
+					} else if(static_cast<msg::DestroyContext*>(*m)) {
+						mgr_gl.onDeviceLost();
+						GL.glFlush();
+						fnDestroyContext();
+					}
+				}
+			} while(bLoop && !isInterrupted());
+			LogOutput("DrawThread destructor begun");
+
+			up.reset();
+			// 後片付けフェーズ
+			bLoop = true;
+			while(bLoop && !isInterrupted()) {
+				while(auto m = getLooper()->wait()) {
+					if(static_cast<msg::QuitReq*>(*m)) {
+						bLoop = false;
+						break;
+					}
 				}
 			}
+			fnDestroyContext();
+			GLW.terminateDrawThread();
+			LogOutput("DrawThread destructor ended");
+		} catch(const std::exception& e) {
+			LogOutput("exception throwed at DrawThread\ntype: %1%\nwhat: %2%", typeid(e).name(), e.what());
+			throw;
 		}
-		fnDestroyContext();
-		GLW.terminateDrawThread();
-		LogOutput("DrawThread destructor ended");
 	}
 
 	namespace {
