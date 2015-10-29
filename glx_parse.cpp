@@ -9,6 +9,7 @@ namespace rs {
 		const x3::rule<class String, std::string>					String;		//!< "で囲まれた文字列
 		const x3::rule<class NameToken, std::string>				NameToken;	//!< 文字列トークン
 		const x3::rule<class Bracket, std::string>					Bracket;	//!< 任意の括弧で囲まれたブロック
+		const x3::rule<class FileToken, std::string>				FileToken;	//!< ファイル文字列
 
 		// 変数宣言(attribute, uniform, varying)
 		const x3::rule<class AttrEnt, AttrEntry> 					AttrEnt;
@@ -32,6 +33,7 @@ namespace rs {
 		const x3::rule<class MacroBlock, std::vector<MacroEntry>>	MacroBlock;
 		const x3::rule<class PassBlock, TPStruct>					PassBlock;
 		const x3::rule<class TechBlock, TPStruct>					TechBlock;
+		const x3::rule<class Import, std::string>					Import;
 
 		// 各種変数定義
 		const x3::rule<class Vec, std::vector<float>>				Vec;
@@ -41,8 +43,11 @@ namespace rs {
 		using x3::char_;
 		using x3::lexeme;
 		using x3::no_case;
+		using x3::alnum;
 		// Arg: GLType NameToken
 		const auto Arg_def = GLType > NameToken;
+		// FileToken: [:Alnum:_\.]+;
+		const auto FileToken_def = lexeme[+(alnum | char_('_') | char_('.'))];
 		// Bracket: (\.)[^\1]Bracket?[^\1](\1)
 		const auto fnAddBegin = [](auto& ctx){ _val(ctx) += "{"; };
 		const auto fnAddClose = [](auto& ctx){ _val(ctx) += "}"; };
@@ -79,18 +84,22 @@ namespace rs {
 								> NameToken[fnSetName] > -(':' > (NameToken % ',')[fnSetDerive]) > '{' >
 				*(PassBlock[fnPushTp] | BlockUse[fnPushBu] | ValueSet[fnPushVs] | BoolSet[fnPushBs] |
 				MacroBlock[fnSetMacro] | ShSet[fnPushSh]) > '}';
-		// GLX: (AttrBlock | ConstBlock | ShBlock | TechBlock | UnifBlock | VaryBlock)*
+		// GLX: (AttrBlock | ConstBlock | ShBlock | TechBlock | UnifBlock | VaryBlock | Import)*
+		DEF_PUSHVAL(fnPushImport, incl)
 		DEF_INSVAL(fnInsAttr, atM, name)
 		DEF_INSVAL(fnInsConst, csM, name)
 		DEF_INSVAL(fnInsSh, shM, name)
 		DEF_INSVAL(fnInsUnif, uniM, name)
 		DEF_INSVAL(fnInsVary, varM, name)
-		const auto Glx_def = *(AttrBlock[fnInsAttr] |
-				ConstBlock[fnInsConst] |
-				ShBlock[fnInsSh] |
-				TechBlock[fnPushTp] |
-				UnifBlock[fnInsUnif] |
-				VaryBlock[fnInsVary]);
+		const auto Glx_def = *(
+			Import[fnPushImport] |
+			AttrBlock[fnInsAttr] |
+			ConstBlock[fnInsConst] |
+			ShBlock[fnInsSh] |
+			TechBlock[fnPushTp] |
+			UnifBlock[fnInsUnif] |
+			VaryBlock[fnInsVary]
+		);
 
 		using x3::alnum;
 		using x3::int_;
@@ -155,6 +164,11 @@ namespace rs {
 		// ConstBlock: const NameToken (: NameToken)? \{ConstEnt*\}
 		const auto ConstBlock_def = lit("const") > NameToken[fnSetName] > -(':' > (NameToken % ',')[fnSetDerive]) >
 							'{' > *ConstEnt[fnPushEntry] > '}';
+		// Import: import ImportFileName ;
+		const auto fnSetStr = [](auto& ctx){ _val(ctx)=_attr(ctx); };
+		const auto Import_def = lit("import") >
+								(('"' > FileToken[fnSetStr] > '"') | FileToken[fnSetStr]) >
+								';';
 		#pragma GCC diagnostic push
 		#pragma GCC diagnostic ignored "-Wunused-parameter"
 		BOOST_SPIRIT_DEFINE(ShBlock,
@@ -166,6 +180,7 @@ namespace rs {
 							Bracket,
 							String,
 							NameToken,
+							FileToken,
 							AttrEnt,
 							VaryEnt,
 							UnifEnt,
@@ -179,7 +194,8 @@ namespace rs {
 							AttrBlock,
 							VaryBlock,
 							UnifBlock,
-							ConstBlock);
+							ConstBlock,
+							Import);
 		#pragma GCC diagnostic pop
 	}
 	namespace {

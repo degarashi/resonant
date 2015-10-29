@@ -6,6 +6,7 @@
 #include "spinner/unituple/operator.hpp"
 #include "util/screen.hpp"
 #include "systeminfo.hpp"
+#include "adaptsdl.hpp"
 
 namespace rs {
 	IEffect::GlxId IEffect::s_myId;
@@ -140,8 +141,58 @@ namespace rs {
 			throw GLE_InvalidArgument(_shName, "(missing arguments)");
 	}
 
+	namespace {
+		const std::string cs_rtname[] = {
+			"effect"
+		};
+		thread_local BlockSet tls_blockset;
+		BlockSet LoadGLXStructSet(const std::string& name) {
+			tls_blockset.emplace(mgr_block.loadResourceApp(name, GLEffect::LoadGLXStruct, [](auto&&){}));
+			return std::move(tls_blockset);
+		}
+	}
+	// ----------------- FxBlock -----------------
+	FxBlock::FxBlock(): ResMgrApp(cs_rtname) {}
+	// ----------------- BlockSet -----------------
+	template <class RET, class GETM>
+	auto FindBlock(const BlockSet& bs, GETM getM, const std::string& s) -> spn::Optional<const RET&> {
+		for(auto& b : bs) {
+			const auto& m = getM(b.cref()).get();
+			auto itr = m.find(s);
+			if(itr != m.cend())
+				return itr->second;
+		}
+		return spn::none;
+	}
+	spn::Optional<const AttrStruct&> BlockSet::findAttribute(const std::string& s) const {
+		return FindBlock<AttrStruct>(*this, [](auto&& str) { return std::cref(str.atM); }, s);
+	}
+	spn::Optional<const ConstStruct&> BlockSet::findConst(const std::string& s) const {
+		return FindBlock<ConstStruct>(*this, [](auto&& str) { return std::cref(str.csM); }, s);
+	}
+	spn::Optional<const UnifStruct&> BlockSet::findUniform(const std::string& s) const {
+		return FindBlock<UnifStruct>(*this, [](auto&& str) { return std::cref(str.uniM); }, s);
+	}
+	spn::Optional<const VaryStruct&> BlockSet::findVarying(const std::string& s) const {
+		return FindBlock<VaryStruct>(*this, [](auto&& str) { return std::cref(str.varM); }, s);
+	}
+	spn::Optional<const ShStruct&> BlockSet::findShader(const std::string& s) const {
+		return FindBlock<ShStruct>(*this, [](auto&& str) { return std::cref(str.shM); }, s);
+	}
+	spn::Optional<const TPStruct&> BlockSet::findTechPass(const std::string& s) const {
+		for(auto& b : *this) {
+			auto& tpL = b->tpL;
+			auto itr = std::find_if(tpL.cbegin(), tpL.cend(), [&](auto& tp){ return tp.name == s; });
+			if(itr != tpL.cend())
+				return *itr;
+		}
+		return spn::none;
+	}
+
 	// ----------------- GLEffect -----------------
-	GLEffect::GLEffect(spn::AdaptStream& s) {
+	GLXStruct GLEffect::LoadGLXStruct(const spn::URI& uri) {
+		AdaptSDL s(mgr_rw.fromURI(uri, RWops::Read));
+
 		// 一括でメモリに読み込む
 		std::string str;
 		s.seekg(0, s.end);
@@ -150,23 +201,37 @@ namespace rs {
 		str.resize(len);
 		s.read(&str[0], len);
 
-		_result = ParseGlx(std::move(str));
+		auto result = ParseGlx(std::move(str));
+		// インポートブロックの読み込み
+		for(auto& name : result.incl)
+			tls_blockset.emplace(mgr_block.loadResourceApp(name, LoadGLXStruct, [](auto&&){}));
+		return result;
+	}
+	GLEffect::GLEffect(const std::string& name) {
+		_blockSet = LoadGLXStructSet(name);
+		std::vector<TPStruct*> tpV;
+		for(auto& blk : _blockSet) {
+			auto& b = blk.get().ref();
+			for(auto& tp : b.tpL)
+				tpV.emplace_back(&tp);
+		}
+		auto op = _blockSet.findAttribute("CubeAttr");
 		try {
 			// Tech/Passを順に実行形式へ変換
 			// (一緒にTech/Pass名リストを構築)
-			int nI = _result.tpL.size();
+			int nI = tpV.size();
 			_techName.resize(nI);
 			for(int techID=0 ; techID<nI ; techID++) {
 				auto& nmm = _techName[techID];
-				auto& tpTech = _result.tpL.at(techID);
+				auto& tpTech = *tpV.at(techID);
 				// Pass毎に処理
-				int nJ = _result.tpL[techID].tpL.size();
+				int nJ = tpTech.tpL.size();
 				nmm.resize(nJ+1);
 				nmm[0] = tpTech.name;
 				for(int passID=0 ; passID<nJ ; passID++) {
 					nmm[passID+1] = tpTech.tpL.at(passID).get().name;
 					GL16Id tpid{{uint8_t(techID), uint8_t(passID)}};
-					auto res = _techMap.insert(std::make_pair(tpid, TPStructR(_result, techID, passID)));
+					auto res = _techMap.insert(std::make_pair(tpid, TPStructR(_blockSet, tpTech, tpTech.tpL.at(passID).get())));
 					// テクスチャインデックスリスト作成
 					TPStructR& tpr = res.first->second;
 					GLuint pid = tpr.getProgram().cref()->getProgramID();
@@ -655,7 +720,7 @@ namespace rs {
 				std::vector<const IGLTexture*> pTexA(n);
 				for(int i=0 ; i<n ; i++)
 					pTexA[i] = (hTex[i].cref()).get();
-				MakeUniformToken<draw::TextureA>(dst, id, 
+				MakeUniformToken<draw::TextureA>(dst, id,
 								id, reinterpret_cast<const HRes*>(hTex),
 								pTexA.data(), aID, n);
 				return;
@@ -705,7 +770,7 @@ namespace rs {
 
 		_unifId.resultCur = nullptr;
 		// 全てのTech&Passの組み合わせについてそれぞれUniform名を検索し、番号(GLint)を登録
-		int nTech = _result.tpL.size();
+		int nTech = _techName.size();
 		for(int i=0 ; i<nTech ; i++) {
 			GL16Id tpId{{uint8_t(i),0}};
 			for(;;) {

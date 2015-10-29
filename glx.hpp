@@ -124,6 +124,15 @@ namespace rs {
 	using UnifPool = boost::object_pool<draw::TokenBuffer>;
 	draw::TokenBuffer* MakeUniformTokenBuffer(UniMap& um, UnifPool& pool, GLint id);
 
+	class BlockSet : public std::unordered_set<HLBlock> {
+		public:
+			spn::Optional<const AttrStruct&> findAttribute(const std::string& s) const;
+			spn::Optional<const ConstStruct&> findConst(const std::string& s) const;
+			spn::Optional<const UnifStruct&> findUniform(const std::string& s) const;
+			spn::Optional<const VaryStruct&> findVarying(const std::string& s) const;
+			spn::Optional<const ShStruct&> findShader(const std::string& s) const;
+			spn::Optional<const TPStruct&> findTechPass(const std::string& s) const;
+	};
 	extern const int DefaultUnifPoolSize;
 	// OpenGLのレンダリング設定
 	using Setting = boost::variant<BoolSettingR, ValueSettingR>;
@@ -163,7 +172,7 @@ namespace rs {
 			TPStructR();
 			TPStructR(TPStructR&& tp);
 			//! エフェクトファイルのパース結果を読み取る
-			TPStructR(const GLXStruct& gs, int tech, int pass);
+			TPStructR(const BlockSet& bs, const TPStruct& tech, const TPStruct& pass);
 
 			//! OpenGL関連のリソースを解放
 			/*! GLResourceの物とは別。GLEffectから呼ぶ */
@@ -307,6 +316,11 @@ namespace rs {
 				void execTask();
 		};
 	}
+	#define mgr_block (::rs::FxBlock::_ref())
+	class FxBlock : public ResMgrApp<GLXStruct, FxBlock> {
+		public:
+			FxBlock();
+	};
 	//! GLXエフェクト管理クラス
 	class GLEffect : public IEffect {
 		public:
@@ -320,7 +334,7 @@ namespace rs {
 			using TPRef = spn::Optional<const TPStructR&>;
 
 		private:
-			GLXStruct		_result;			//!< 元になった構造体 (Effectファイル解析結果)
+			BlockSet		_blockSet;
 			TechMap			_techMap;			//!< ゼロから設定を構築する場合の情報や頂点セマンティクス
 			TechName		_techName;
 			TexMap			_texMap;
@@ -411,9 +425,10 @@ namespace rs {
 		protected:
 			virtual void _prepareUniforms();
 		public:
+			static GLXStruct LoadGLXStruct(const spn::URI& uri);
 			//! Effectファイル(gfx)を読み込む
 			/*! フォーマットの解析まではするがGLリソースの確保はしない */
-			GLEffect(spn::AdaptStream& s);
+			GLEffect(const std::string& name);
 			void onDeviceLost() override;
 			void onDeviceReset() override;
 			//! GLEffectで発生する例外基底

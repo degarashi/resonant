@@ -16,7 +16,7 @@ namespace rs {
 		};
 
 		using CBMakeSV = std::function<SharedBase_UP ()>;
-		using CBEngine = std::function<IEffect* (rs::AdaptSDL&)>;
+		using CBEngine = std::function<IEffect* (const std::string&)>;
 		using CBScene = std::function<HLScene ()>;
 		//! ゲームループヘルパークラスの実装
 		class GameloopHelper {
@@ -75,8 +75,8 @@ namespace rs {
 				\retval 0以外	異常終了
 			*/
 			static int Run(const GLoopInitializer& init, int rx, int ry, const std::string& appname, const std::string& pathfile="") {
-				auto cbEngine = [](rs::AdaptSDL& as){
-					return new EngineT(as);
+				auto cbEngine = [](auto& name){
+					return new EngineT(name);
 				};
 				auto cbMakeSV = [](){
 					return detail::SharedBase_UP(

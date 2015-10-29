@@ -108,6 +108,7 @@ namespace rs {
 		using GLE_Error::GLE_Error;
 	};
 
+	std::shared_ptr<FxBlock> InitFxBlock();
 	enum MipState {
 		NoMipmap,
 		MipmapNear,
@@ -196,10 +197,9 @@ namespace rs {
 			HLProg makeProgram(HSh vsh, HSh fsh);
 
 			// ------------ Buffer ------------
-			using CBCreateFx = std::function<IEffect* (AdaptSDL&)>;
+			using CBCreateFx = std::function<IEffect* (const std::string&)>;
 			//! ファイルからエフェクトの読み込み
 			HLFx loadEffect(const std::string& name, const CBCreateFx& cb);
-			HLFx loadEffect(const spn::URI& uri, const CBCreateFx& cb);
 			//! 頂点バッファの確保
 			HLVb makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保

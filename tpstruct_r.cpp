@@ -5,40 +5,37 @@ namespace rs {
 		class TPSDupl {
 			private:
 				using TPList = std::vector<const TPStruct*>;
-				const GLXStruct &_glx;
+				const BlockSet& _bset;
 				const TPStruct &_tTech, &_tPass;
 				//! 優先度順に並べたTPStructのポインタリスト [Pass][Tech][Tech(Base0)][Tech(Base1)]...
 				TPList _tpList;
 
+				//! Techの継承元Techをリストアップ
 				void _listupBlocks(TPList& dst, const TPStruct* tp) const {
 					dst.push_back(tp);
-					auto& tpL = _glx.tpL;
 					for(auto& name : tp->derive) {
-						auto itr = std::find_if(tpL.begin(),
-												tpL.end(),
-												[&name](const boost::recursive_wrapper<TPStruct>& t){
-													return t.get().name == name;
-												});
+						auto op = _bset.findTechPass(name);
 						// 継承Techは必ずGLEffectが持っている筈
-						Assert(Trap, itr!=tpL.end());
-						_listupBlocks(dst, &(*itr));
+						Assert(Trap, op)
+						_listupBlocks(dst, &op.get());
 					}
 				}
-				template <class ST>
-				void _extractBlocks(std::vector<const ST*>& dst, const ST* attr, const NameMap<ST> (GLXStruct::*mfunc)) const {
+				template <class ST, class MFunc>
+				void _extractBlocks(std::vector<const ST*>& dst, const ST* attr, MFunc&& mfunc) const {
 					for(auto itr=attr->derive.rbegin() ; itr!=attr->derive.rend() ; itr++) {
-						Assert(Trap, (_glx.*mfunc).count(*itr)==1)
-						auto* der = &(_glx.*mfunc).at(*itr);
+						auto op = mfunc(_bset, *itr);
+						Assert(Trap, op)
+						auto* der = &(*op);
 						_extractBlocks(dst, der, mfunc);
 					}
 					if(std::find(dst.begin(), dst.end(), attr) == dst.end())
 						dst.push_back(attr);
 				}
 			public:
-				TPSDupl(const GLXStruct& gs, int tech, int pass):
-					_glx(gs),
-					_tTech(gs.tpL.at(tech)),
-					_tPass(_tTech.tpL.at(pass).get())
+				TPSDupl(const BlockSet& bs, const TPStruct& tech, const TPStruct& pass):
+					_bset(bs),
+					_tTech(tech),
+					_tPass(pass)
 				{
 					// 継承関係をリストアップ
 					// Pass, Tech, Tech(Base0) ... Tech(BaseN) の順番
@@ -46,8 +43,8 @@ namespace rs {
 					_listupBlocks(_tpList, &_tTech);
 				}
 
-				template <class ST, class ENT>
-				std::vector<const ENT*> exportEntries(uint32_t blockID, const std::map<std::string,ST> (GLXStruct::*mfunc)) const {
+				template <class ST, class ENT, class MFunc>
+				std::vector<const ENT*> exportEntries(uint32_t blockID, MFunc&& mfunc) const {
 					// 使用されるAttributeブロックを収集
 					std::vector<const ST*> tmp, tmp2;
 					// 配列末尾から処理をする = Pass, Tech, TechBase... の順
@@ -60,8 +57,9 @@ namespace rs {
 								if(!blk.bAdd)
 									tmp.clear();
 								for(auto& name : blk.name) {
-									Assert(Trap, (_glx.*mfunc).count(name)==1)
-									tmp.push_back(&(_glx.*mfunc).at(name));
+									auto op = mfunc(_bset, name);
+									Assert(Trap, op)
+									tmp.push_back(&(*op));
 								}
 							}
 						}
@@ -165,30 +163,28 @@ namespace rs {
 		}
 		return ret;
 	}
-	TPStructR::TPStructR(const GLXStruct& gs, int tech, int pass) {
-		auto& tp = gs.tpL.at(tech);
-		auto& tps = tp.tpL[pass].get();
+	TPStructR::TPStructR(const BlockSet& bs, const TPStruct& tech, const TPStruct& pass) {
 		const ShSetting* selectSh[ShType::NUM_SHTYPE] = {};
 		// PassかTechからシェーダー名を取ってくる
-		for(auto& a : tp.shL)
+		for(auto& a : tech.shL)
 			selectSh[a.type] = &a;
-		for(auto& a : tps.shL)
+		for(auto& a : pass.shL)
 			selectSh[a.type] = &a;
 
 		// VertexとPixelシェーダは必須、Geometryは任意
 		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::FRAGMENT]), (GLE_LogicalError)(const char*), "no vertex or fragment shader found")
 
 		std::stringstream ss;
-		TPSDupl dupl(gs, tech, pass);
+		TPSDupl dupl(bs, tech, pass);
 		HLSh shP[ShType::NUM_SHTYPE];
 		for(int i=0 ; i<static_cast<int>(countof(selectSh)) ; i++) {
 			auto* shp = selectSh[i];
 			if(!shp)
 				continue;
-			Assert(Trap, gs.shM.count(shp->shName)==1)
-			const ShStruct& s = gs.shM.at(shp->shName);
+			auto s = bs.findShader(shp->shName);
+			Assert(Trap, s)
 			// シェーダーバージョンを出力
-			ss << "#version " << s.version_str << std::endl;
+			ss << "#version " << s->version_str << std::endl;
 			{
 				// マクロを定義をGLSLソースに出力
 				auto mc = dupl.exportMacro();
@@ -197,29 +193,41 @@ namespace rs {
 			}
 			if(i==ShType::VERTEX) {
 				// Attribute定義は頂点シェーダの時だけ出力
-				_attrL = dupl.exportEntries<AttrStruct,AttrEntry>(GLBlocktype_::attributeT, &GLXStruct::atM);
+				_attrL = dupl.exportEntries<AttrStruct,AttrEntry>(GLBlocktype_::attributeT,
+						[](auto& bs, auto& name) -> decltype(auto) {
+							return bs.findAttribute(name);
+						});
 				OutputS(ss, _attrL);
 			}
 			// それぞれ変数ブロックをGLSLソースに出力
 			// :Varying
-			_varyL = dupl.exportEntries<VaryStruct,VaryEntry>(GLBlocktype_::varyingT, &GLXStruct::varM);
+			_varyL = dupl.exportEntries<VaryStruct,VaryEntry>(GLBlocktype_::varyingT,
+					[](auto& bs, auto& name) -> decltype(auto) {
+						return bs.findVarying(name);
+					});
 			OutputS(ss, _varyL);
 			// :Const
-			_constL = dupl.exportEntries<ConstStruct,ConstEntry>(GLBlocktype_::constT, &GLXStruct::csM);
+			_constL = dupl.exportEntries<ConstStruct,ConstEntry>(GLBlocktype_::constT,
+					[](auto& bs, auto& name) -> decltype(auto) {
+						return bs.findConst(name);
+					});
 			OutputS(ss, _constL);
 			// :Uniform
-			_unifL = dupl.exportEntries<UnifStruct,UnifEntry>(GLBlocktype_::uniformT, &GLXStruct::uniM);
+			_unifL = dupl.exportEntries<UnifStruct,UnifEntry>(GLBlocktype_::uniformT,
+					[](auto& bs, auto& name) -> decltype(auto) {
+						return bs.findUniform(name);
+					});
 			OutputS(ss, _unifL);
 
 			// シェーダー引数の型チェック
 			// ユーザー引数はグローバル変数として用意
-			ArgChecker acheck(ss, shp->shName, s.args);
+			ArgChecker acheck(ss, shp->shName, s->args);
 			for(auto& a : shp->args)
 				boost::apply_visitor(acheck, a);
 			acheck.finalizeCheck();
 
 			// 関数名はmain()に書き換え
-			ss << "void main() " << s.info << std::endl;
+			ss << "void main() " << s->info << std::endl;
 	#ifdef DEBUG
 			std::cout << ss.str();
 			std::cout.flush();

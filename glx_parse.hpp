@@ -315,6 +315,7 @@ namespace rs {
 		std::vector<TPStruct>	tpL;
 		NameMap<UnifStruct>		uniM;
 		NameMap<VaryStruct>		varM;
+		std::vector<std::string>	incl;
 	};
 	std::ostream& operator << (std::ostream& os, const GLXStruct& glx);
 
@@ -334,6 +335,6 @@ FUSION_ADAPT_STRUCT_AUTO(rs::UnifStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::ConstStruct, (name)(derive)(entry))
 FUSION_ADAPT_STRUCT_AUTO(rs::ShStruct, (type)(version_str)(name)(args)(info))
 FUSION_ADAPT_STRUCT_AUTO(rs::TPStruct, (name)(blkL)(bsL)(mcL)(shL)(tpL)(vsL)(derive))
-FUSION_ADAPT_STRUCT_AUTO(rs::GLXStruct, (atM)(csM)(shM)(tpL)(uniM)(varM))
+FUSION_ADAPT_STRUCT_AUTO(rs::GLXStruct, (atM)(csM)(shM)(tpL)(uniM)(varM)(incl))
 FUSION_ADAPT_STRUCT_AUTO(rs::ArgItem, (type)(name))
 FUSION_ADAPT_STRUCT_AUTO(rs::BlockUse, (type)(bAdd)(name))

@@ -18,6 +18,9 @@ namespace rs {
 		}
 	}
 
+	std::shared_ptr<FxBlock> InitFxBlock() {
+		return std::make_shared<FxBlock>();
+	}
 	const std::string GLRes::cs_rtname[] = {
 		"texture",
 		"effect"
@@ -125,19 +128,15 @@ namespace rs {
 		_cbInit(lh);
 		return Cast<UPShader>(std::move(lh));
 	}
-	HLFx GLRes::loadEffect(const spn::URI& uri, const CBCreateFx& cb) {
-		LHdl lh = loadResourceApp(uri,
-				[&](const spn::URI& uri){
-					AdaptSDL as(mgr_rw.fromURI(uri, RWops::Read));
-					return UPResource(cb(as));
-				},
-				_cbInit);
-		return Cast<UPEffect>(std::move(lh));
-	}
 	HLFx GLRes::loadEffect(const std::string& name, const CBCreateFx& cb) {
 		_chPostfix = spn::none;
 		_setResourceTypeId(ResourceType::Effect);
-		return loadEffect(_uriFromResourceName(name), cb);
+		auto ret = this->base_t::acquire(name, [&](const spn::URI& u){
+				return UPResource(cb(u.plain_utf8()));
+		});
+		if(ret.second)
+			_cbInit(ret.first);
+		return Cast<UPEffect>(ret.first);
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
 		LHdl lh = base_type::acquire(UPResource(new GLVBuffer(dtype)));
@@ -202,8 +201,8 @@ namespace rs {
 		// is it Effect(Shader)?
 		else if(ext == "glx") {
 			HLRW hlRW = mgr_rw.fromURI(uri, RWops::Read);
-			ret = loadEffect(uri.plain_utf8(), [](AdaptSDL& as){
-					return new GLEffect(as); });
+			ret = loadEffect(uri.plain_utf8(), [](auto& name){
+					return new GLEffect(name); });
 		}
 		return ret;
 	}

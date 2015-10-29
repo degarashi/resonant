@@ -216,6 +216,7 @@ namespace rs {
 			infoP->setInfo({param.wparam.width, param.wparam.height}, 0);
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
+			auto				fxP(InitFxBlock());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			// デフォルトでルートディレクトリからの探索パスを追加
 			SPUriHandler sph = std::make_shared<UriH_File>(u8"/");
@@ -414,6 +415,7 @@ PrintLog;
 			fontP.reset();
 			appPath.reset();
 			rwP.reset();
+			fxP.reset();
 			glrP.reset();
 			randP.reset();
 			infoP.reset();

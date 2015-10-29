@@ -42,6 +42,9 @@ namespace rs {
 	DEF_NHANDLE_PROP(GLRes, Fx, UPResource, UPEffect, std::allocator, spn::URI)
 	DEF_NHANDLE_PROP(GLRes, Fb, UPResource, UPFBuffer, std::allocator, spn::URI)
 	DEF_NHANDLE_PROP(GLRes, Rb, UPResource, UPRBuffer, std::allocator, spn::URI)
+	class FxBlock;
+	struct GLXStruct;
+	DEF_NHANDLE_PROP(FxBlock, Block, GLXStruct, GLXStruct, std::allocator, spn::URI)
 
 	class FontGen;
 	class TextObj;
