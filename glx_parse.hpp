@@ -2,8 +2,7 @@
 #define BOOST_NO_CXX11_DECLTYPE_N3276
 #include "glhead.hpp"
 #include "glx_macro.hpp"
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix.hpp>
+#include <boost/spirit/home/x3.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
@@ -15,10 +14,10 @@
 #define FUSION_ADAPT_STRUCT_AUTO(name, members) \
 	BOOST_FUSION_ADAPT_STRUCT(name, BOOST_PP_SEQ_FOR_EACH(TRANSFORM_STRUCT_MEMBER, name, members))
 
-#define DEF_TYPE(typ, name, seq) struct typ##_ : qi::symbols<char,unsigned> { \
+#define DEF_TYPE(typ, name, seq) struct typ##_ : x3::symbols<unsigned> { \
 			enum TYPE { BOOST_PP_SEQ_FOR_EACH(PPFUNC_ENUM, T, seq) }; \
 			const static char* cs_typeStr[BOOST_PP_SEQ_SIZE(seq)]; \
-			typ##_(): symbols(std::string(name)) { \
+			typ##_(): x3::symbols<unsigned>(std::string(name)) { \
 				add \
 				BOOST_PP_SEQ_FOR_EACH(PPFUNC_ADD, T, seq); } }; \
 		extern const typ##_ typ;
@@ -40,8 +39,8 @@ namespace rs {
 	//! GLSL浮動小数点数精度
 	DEF_TYPE(GLPrecision, "PrecisionFlag", SEQ_PRECISION)
 	//! boolでフラグを切り替える項目
-	struct GLBoolsetting_ : qi::symbols<char, unsigned> {
-		GLBoolsetting_(): symbols(std::string("BooleanSettingName")) {
+	struct GLBoolsetting_ : x3::symbols<unsigned> {
+		GLBoolsetting_(): x3::symbols<unsigned>(std::string("BooleanSettingName")) {
 			add("cullface", GL_CULL_FACE)
 				("polyoffsetfill", GL_POLYGON_OFFSET_FILL)
 				("scissortest", GL_SCISSOR_TEST)
@@ -54,17 +53,17 @@ namespace rs {
 		}
 	};
 	//! 数値指定するタイプの設定項目フラグ
-	struct GLSetting_ : qi::symbols<char, unsigned> {
-		enum TYPE { BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_ENUM, T, SEQ_GLSETTING) };
+	struct GLSetting_ : x3::symbols<unsigned> {
+		enum TYPE : unsigned { BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_ENUM, T, SEQ_GLSETTING) };
 		const static char* cs_typeStr[BOOST_PP_SEQ_SIZE(SEQ_GLSETTING)];
-		GLSetting_(): symbols(std::string("SettingName")) {
+		GLSetting_(): x3::symbols<unsigned>(std::string("SettingName")) {
 				add
 				BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_ADD, T, SEQ_GLSETTING);
 		}
 	};
 	//! 設定項目毎に用意したほうがいい？
-	struct GLStencilop_ : qi::symbols<char, unsigned> {
-		GLStencilop_(): symbols(std::string("StencilOperator")) {
+	struct GLStencilop_ : x3::symbols<unsigned> {
+		GLStencilop_(): x3::symbols<unsigned>(std::string("StencilOperator")) {
 			add("keep", GL_KEEP)
 				("zero", GL_ZERO)
 				("replace", GL_REPLACE)
@@ -75,8 +74,8 @@ namespace rs {
 				("decrementwrap", GL_DECR_WRAP);
 		}
 	};
-	struct GLFunc_ : qi::symbols<char, unsigned> {
-		GLFunc_(): symbols(std::string("CompareFunction")) {
+	struct GLFunc_ : x3::symbols<unsigned> {
+		GLFunc_(): x3::symbols<unsigned>(std::string("CompareFunction")) {
 			add("never", GL_NEVER)
 				("always", GL_ALWAYS)
 				("less", GL_LESS)
@@ -87,15 +86,15 @@ namespace rs {
 				("notequal", GL_NOTEQUAL);
 		}
 	};
-	struct GLEq_ : qi::symbols<char, unsigned> {
-		GLEq_(): symbols(std::string("BlendEquation")) {
+	struct GLEq_ : x3::symbols<unsigned> {
+		GLEq_(): x3::symbols<unsigned>(std::string("BlendEquation")) {
 			add("add", GL_FUNC_ADD)
 				("subtract", GL_FUNC_SUBTRACT)
 				("invsubtract", GL_FUNC_REVERSE_SUBTRACT);
 		}
 	};
-	struct GLBlend_ : qi::symbols<char, unsigned> {
-		GLBlend_(): symbols(std::string("BlendOperator")) {
+	struct GLBlend_ : x3::symbols<unsigned> {
+		GLBlend_(): x3::symbols<unsigned>(std::string("BlendOperator")) {
 			add("zero", GL_ZERO)
 				("one", GL_ONE)
 				("invsrccolor", GL_ONE_MINUS_SRC_COLOR)
@@ -111,29 +110,29 @@ namespace rs {
 				("srcalphasaturate", GL_SRC_ALPHA_SATURATE);
 		}
 	};
-	struct GLFace_ : qi::symbols<char, unsigned> {
-		GLFace_(): symbols(std::string("Face(Front or Back)")) {
+	struct GLFace_ : x3::symbols<unsigned> {
+		GLFace_(): x3::symbols<unsigned>(std::string("Face(Front or Back)")) {
 			add("front", GL_FRONT)
 				("back", GL_BACK)
 				("frontandback", GL_FRONT_AND_BACK);
 		}
 	};
-	struct GLFacedir_ : qi::symbols<char, unsigned> {
-		GLFacedir_(): symbols(std::string("FaceDir")) {
+	struct GLFacedir_ : x3::symbols<unsigned> {
+		GLFacedir_(): x3::symbols<unsigned>(std::string("FaceDir")) {
 			add("ccw", GL_CCW)
 				("cw", GL_CW);
 		}
 	};
-	struct GLColormask_ : qi::symbols<char, unsigned> {
-		GLColormask_(): symbols(std::string("ColorMask")) {
+	struct GLColormask_ : x3::symbols<unsigned> {
+		GLColormask_(): x3::symbols<unsigned>(std::string("ColorMask")) {
 			add("r", 0x08)
 				("g", 0x04)
 				("b", 0x02)
 				("a", 0x01);
 		}
 	};
-	struct GLShadertype_ : qi::symbols<char, unsigned> {
-		GLShadertype_(): symbols(std::string("ShaderType")) {
+	struct GLShadertype_ : x3::symbols<unsigned> {
+		GLShadertype_(): x3::symbols<unsigned>(std::string("ShaderType")) {
 			add("vertexshader", (unsigned)rs::ShType::VERTEX)
 				("fragmentshader", (unsigned)rs::ShType::FRAGMENT)
 				("geometryshader", (unsigned)rs::ShType::GEOMETRY);
@@ -187,9 +186,9 @@ namespace rs {
 	std::ostream& operator << (std::ostream& os, const BoolSetting& s);
 	//! 数値設定エントリ
 	struct ValueSetting {
-		using ValueT = boost::variant<boost::blank,unsigned int,float,bool>;
+		using ValueT = boost::variant<boost::blank, unsigned int,float,bool>;
 
-		GLSetting_::TYPE 		type;
+		unsigned				type;
 		std::vector<ValueT>		value;
 	};
 	std::ostream& operator << (std::ostream& os, const ValueSetting& s);
@@ -324,6 +323,8 @@ namespace rs {
 		NameMap<VaryStruct>		varM;
 	};
 	std::ostream& operator << (std::ostream& os, const GLXStruct& glx);
+
+	GLXStruct ParseGlx(std::string str);
 }
 FUSION_ADAPT_STRUCT_AUTO(rs::AttrEntry, (prec)(type)(name)(sem))
 FUSION_ADAPT_STRUCT_AUTO(rs::VaryEntry, (prec)(type)(name))
@@ -343,44 +344,3 @@ FUSION_ADAPT_STRUCT_AUTO(rs::Bracket, (str)(child))
 FUSION_ADAPT_STRUCT_AUTO(rs::GLXStruct, (atM)(csM)(shM)(tpL)(uniM)(varM))
 FUSION_ADAPT_STRUCT_AUTO(rs::ArgItem, (type)(name))
 FUSION_ADAPT_STRUCT_AUTO(rs::BlockUse, (type)(bAdd)(name))
-
-namespace rs {
-	using Itr = std::string::const_iterator;
-	//! GLX構文解析器
-	struct GR_Glx : qi::grammar<Itr, GLXStruct(), standard::space_type> {
-		void _initRule0();
-		void _initRule1();
-
-		// GLX文法のEBNF記述
-		qi::rule<Itr, std::string(), standard::space_type> 			rlString,		//!< "で囲まれた文字列
-																	rlNameToken;	//!< 文字列トークン
-		qi::rule<Itr, Bracket(char,char), standard::space_type>		rlBracket;		//!< 任意の括弧で囲まれたブロック
-		// 変数宣言(attribute, uniform, varying)
-		qi::rule<Itr, AttrEntry(), standard::space_type> 				rlAttrEnt;
-		qi::rule<Itr, VaryEntry(), standard::space_type>				rlVaryEnt;
-		qi::rule<Itr, UnifEntry(), standard::space_type>				rlUnifEnt;
-		qi::rule<Itr, ConstEntry(), standard::space_type>				rlConstEnt;
-		qi::rule<Itr, MacroEntry(), standard::space_type>				rlMacroEnt;
-
-		qi::rule<Itr, BoolSetting(), standard::space_type>				rlBoolSet;
-		qi::rule<Itr, ValueSetting(), standard::space_type>				rlValueSet;
-		qi::rule<Itr, BlockUse(), standard::space_type>					rlBlockUse;
-
-		qi::rule<Itr, ShSetting(), standard::space_type>				rlShSet;
-		// 各種定義ブロック
-		qi::rule<Itr, AttrStruct(), standard::space_type>				rlAttrBlock;
-		qi::rule<Itr, VaryStruct(), standard::space_type>				rlVaryBlock;
-		qi::rule<Itr, UnifStruct(), standard::space_type>				rlUnifBlock;
-		qi::rule<Itr, ConstStruct(), standard::space_type>				rlConstBlock;
-		qi::rule<Itr, ShStruct(), standard::space_type>					rlShBlock;
-		qi::rule<Itr, std::vector<MacroEntry>(), standard::space_type>	rlMacroBlock;
-		qi::rule<Itr, TPStruct(), standard::space_type>					rlPassBlock,
-																		rlTechBlock;
-		qi::rule<Itr, GLXStruct(), standard::space_type>				rlGLX;
-		// 各種変数定義
-		qi::rule<Itr, std::vector<float>(), standard::space_type>		rlVec;
-		qi::rule<Itr, ArgItem(), standard::space_type>					rlArg;
-
-		GR_Glx();
-	};
-}

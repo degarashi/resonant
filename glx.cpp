@@ -140,10 +140,6 @@ namespace rs {
 			throw GLE_InvalidArgument(_shName, "(missing arguments)");
 	}
 
-	namespace {
-		boost::regex re_comment(R"(//[^\n$]+)"),		//!< 一行コメント
-					re_comment2(R"(/\*[^\*]*\*/)");		//!< 範囲コメント
-	}
 	// ----------------- GLEffect -----------------
 	GLEffect::GLEffect(spn::AdaptStream& s) {
 		// 一括でメモリに読み込む
@@ -154,33 +150,7 @@ namespace rs {
 		str.resize(len);
 		s.read(&str[0], len);
 
-		// コメント部分を除去 -> スペースに置き換える
-		str = boost::regex_replace(str, re_comment, " ");
-		str = boost::regex_replace(str, re_comment2, " ");
-
-		GR_Glx glx;
-		auto itr = str.cbegin();
-		bool bS = boost::spirit::qi::phrase_parse(itr, str.cend(), glx, standard::space, _result);
-	#ifdef DEBUG
-		LogOutput((bS) ? "------- analysis succeeded! -------"
-					: "------- analysis failed! -------");
-		if(itr != str.cend()) {
-			LogOutput("<but not reached to end>\nremains: %1%", std::string(itr, str.cend()));
-		} else {
-			// 解析結果の表示
-			std::stringstream ss;
-			ss << _result;
-			LogOutput(ss.str());
-		}
-	#endif
-		if(!bS || itr!=str.cend()) {
-			std::stringstream ss;
-			ss << "GLEffect parse error:";
-			if(itr != str.cend())
-				ss << "remains:\n" << std::string(itr, str.cend());
-			throw EC_GLXGrammar(ss.str());
-		}
-
+		_result = ParseGlx(std::move(str));
 		try {
 			// Tech/Passを順に実行形式へ変換
 			// (一緒にTech/Pass名リストを構築)
