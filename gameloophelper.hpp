@@ -1,6 +1,7 @@
 #pragma once
 #include "handle.hpp"
 #include "prochelper.hpp"
+#include <unordered_set>
 
 namespace rs {
 	struct AdaptSDL;
@@ -41,7 +42,10 @@ namespace rs {
 			private:
 				//! ゲーム内グローバル変数
 				detail::SharedBase_UP	_upsv;
+				CBEngine				_cbEngine;
 				GLoopInitializer		_init;
+				using PathSet = std::unordered_set<std::string>;
+				PathSet					_updatePath;
 			public:
 				GHelper_Main(const SPWindow& sp,
 							const CBEngine& cbEngine,

@@ -71,6 +71,14 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<GlobalValue>(*lkb->spLua);
 		rs::LuaImport::ImportClass(*lkb->spLua, "Global", "cpp", &gv);
 		rs::LuaImport::RegisterClass<FPSCamera>(*lkb->spLua);
+		// init Random
+		{
+			mgr_random.initEngine(RandomId);
+			gv.random = mgr_random.get(RandomId);
+		}
+	};
+	init.cbEngineInit = [](){
+		auto& gv = *tls_gvalue;
 		// init Camera
 		{
 			gv.hlCam = mgr_cam.emplace();
@@ -80,15 +88,11 @@ int main(int argc, char **argv) {
 			cd.setFov(spn::DegF(60));
 			cd.setZPlane(0.01f, 500.f);
 		}
+		auto lkb = sharedbase.lockR();
 		// init Effect
 		{
 			gv.pEngine = static_cast<Engine*>(lkb->hlFx->get());
 			gv.pEngine->ref<rs::SystemUniform3D>().setCamera(gv.hlCam);
-		}
-		// init Random
-		{
-			mgr_random.initEngine(RandomId);
-			gv.random = mgr_random.get(RandomId);
 		}
 	};
 	init.cbPreTerm = [](){

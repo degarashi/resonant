@@ -7,12 +7,17 @@
 #include "glhead.hpp"
 #include "differential.hpp"
 
+namespace spn {
+	class FNotify;
+	using Notify_SP = std::shared_ptr<FNotify>;
+}
 namespace rs {
 	class Window;
 	struct IEffect;
 	using SPWindow = std::shared_ptr<Window>;
 	struct SharedBaseValue {
 		HLFx			hlFx;
+		spn::Notify_SP	spNtf;
 		HInput			hlIk,
 						hlIm;
 		SPWindow		spWindow;

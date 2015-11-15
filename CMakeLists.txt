@@ -79,7 +79,25 @@ if(NOT DEFINED ARCHITECTURE)
 		set(LINK_LIBS resonant boomstick spinner mingw32 SDL2_image SDL2main SDL2
 			freetype opengl32 OpenAL32 vorbisfile vorbis ogg boost_system boost_regex boost_serialization png z lua)
 	else()
-		set(LINK_LIBS resonant boomstick spinner SDL2_image SDL2 freetype vorbisfile ogg boost_system boost_regex boost_serialization GL openal lua dl z)
+		set(LINK_LIBS
+			resonant
+			boomstick
+			spinner
+			SDL2_image
+			SDL2
+			freetype
+			vorbisfile
+			ogg
+			boost_system
+			boost_regex
+			boost_serialization
+			boost_thread
+			pthread
+			GL
+			openal
+			lua
+			dl
+			z)
 	endif()
 
 	# -------- 動作テスト --------

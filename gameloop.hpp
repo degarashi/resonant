@@ -136,6 +136,7 @@ namespace rs {
 	struct GLoopInitializer {
 		using CB = std::function<void ()>;
 		CB	cbInit,			//!< 各種マネージャが初期化された後に呼ばれる
+			cbEngineInit,	//!< 描画エンジンが初期化された後に呼ばれる
 			cbPreTerm,		//!< 各種マネージャが破棄される前に呼ばれる
 			cbPostTerm;		//!< 各種マネージャが破棄された後に呼ばれる
 	};

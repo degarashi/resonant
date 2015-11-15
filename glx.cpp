@@ -146,10 +146,23 @@ namespace rs {
 		const std::string cs_rtname[] = {
 			"effect"
 		};
-		thread_local BlockSet tls_blockset;
 		BlockSet LoadGLXStructSet(const std::string& name) {
-			tls_blockset.emplace(mgr_block.loadResourceApp(name, GLEffect::LoadGLXStruct, [](auto&&){}));
-			return std::move(tls_blockset);
+			BlockSet bs;
+			std::unordered_set<std::string> loaded,
+											inclset{name};
+			while(!inclset.empty()) {
+				auto itr = inclset.begin();
+				// インポートブロックの読み込み
+				auto hdl = mgr_block.loadResourceApp(*itr, GLEffect::LoadGLXStruct, [](auto&&){});
+				loaded.emplace(*itr);
+				inclset.erase(itr);
+				for(auto& inc : hdl->incl) {
+					if(loaded.count(inc) == 0)
+						inclset.emplace(inc);
+				}
+				bs.emplace(std::move(hdl));
+			}
+			return bs;
 		}
 	}
 	// ----------------- FxBlock -----------------
@@ -202,11 +215,7 @@ namespace rs {
 		str.resize(len);
 		s.read(&str[0], len);
 
-		auto result = ParseGlx(std::move(str));
-		// インポートブロックの読み込み
-		for(auto& name : result.incl)
-			tls_blockset.emplace(mgr_block.loadResourceApp(name, LoadGLXStruct, [](auto&&){}));
-		return result;
+		return ParseGlx(std::move(str));
 	}
 	GLEffect::GLEffect(const std::string& name) {
 		_blockSet = LoadGLXStructSet(name);

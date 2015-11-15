@@ -109,6 +109,7 @@ namespace rs {
 	};
 
 	std::shared_ptr<FxBlock> InitFxBlock();
+	void ReloadFxBlock(const spn::URI& uri);
 	enum MipState {
 		NoMipmap,
 		MipmapNear,
@@ -200,6 +201,8 @@ namespace rs {
 			using CBCreateFx = std::function<IEffect* (const std::string&)>;
 			//! ファイルからエフェクトの読み込み
 			HLFx loadEffect(const std::string& name, const CBCreateFx& cb);
+			//! エフェクトファイルの置き換え
+			bool replaceEffect(HLFx& fx, const CBCreateFx& cb);
 			//! 頂点バッファの確保
 			HLVb makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保
