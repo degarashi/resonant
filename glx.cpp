@@ -7,6 +7,7 @@
 #include "util/screen.hpp"
 #include "systeminfo.hpp"
 #include "adaptsdl.hpp"
+#include "drawtask.hpp"
 
 namespace rs {
 	IEffect::GlxId IEffect::s_myId;
@@ -544,59 +545,6 @@ namespace rs {
 				ibuff->use_end();
 		}
 
-		// -------------- Task --------------
-		Task::Task(): _curWrite(0), _curRead(0) {}
-		TokenML& Task::refWriteEnt() {
-			UniLock lk(_mutex);
-			return _entry[_curWrite % NUM_ENTRY];
-		}
-		TokenML& Task::refReadEnt() {
-			UniLock lk(_mutex);
-			return _entry[_curRead % NUM_ENTRY];
-		}
-		void Task::beginTask() {
-			UniLock lk(_mutex);
-			// 読み込みカーソルが追いついてない時は追いつくまで待つ
-			auto diff = _curWrite - _curRead;
-			Assert(Trap, diff >= 0)
-			while(diff >= NUM_ENTRY) {
-				_cond.wait(lk);
-				diff = _curWrite - _curRead;
-				Assert(Trap, diff >= 0)
-			}
-			auto& we = refWriteEnt();
-			lk.unlock();
-			we.clear();
-		}
-		void Task::endTask() {
-			GL.glFlush();
-			UniLock lk(_mutex);
-			++_curWrite;
-		}
-		void Task::clear() {
-			UniLock lk(_mutex);
-			_curWrite = _curRead+1;
-			GL.glFinish();
-			for(auto& e : _entry)
-				e.clear();
-			_curWrite = _curRead = 0;
-		}
-		void Task::execTask() {
-			spn::Optional<UniLock> lk(_mutex);
-			auto diff = _curWrite - _curRead;
-			Assert(Trap, diff >= 0)
-			if(diff > 0) {
-				auto& readent = refReadEnt();
-				lk = spn::none;
-				// MThとアクセスするエントリが違うから同期をとらなくて良い
-				readent.exec();
-				GL.glFlush();
-				lk = spn::construct(std::ref(_mutex));
-				++_curRead;
-				_cond.signal();
-			}
-		}
-
 		// -------------- UserFunc --------------
 		UserFunc::UserFunc(const Func& f):
 			_func(f)
@@ -675,7 +623,7 @@ namespace rs {
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
 		_prepareUniforms();
 		_current.outputDrawCall(mode, first, count);
-		_task.refWriteEnt().append(std::move(_current.tokenML));
+		mgr_drawtask.refWriteEnt().append(std::move(_current.tokenML));
 
 		_diffCount.buffer += _current.getDifference();
 		++_diffCount.drawNoIndexed;
@@ -686,7 +634,7 @@ namespace rs {
 		auto str = hIb->get()->getStride();
 		auto szF = GLIBuffer::GetSizeFlag(str);
 		_current.outputDrawCallIndexed(mode, count, szF, offsetElem*str);
-		_task.refWriteEnt().append(std::move(_current.tokenML));
+		mgr_drawtask.refWriteEnt().append(std::move(_current.tokenML));
 
 		_diffCount.buffer += _current.getDifference();
 		++_diffCount.drawIndexed;
@@ -750,18 +698,18 @@ namespace rs {
 		return hProg->get()->getUniformID(name);
 	}
 	void GLEffect::beginTask() {
-		_task.beginTask();
+		mgr_drawtask.beginTask(HFx::FromHandle(handleFromThis()));
 		_current.reset();
 		spn::TupleZeroFill(_diffCount);
 	}
 	void GLEffect::endTask() {
-		_task.endTask();
+		mgr_drawtask.endTask();
 	}
 	void GLEffect::clearTask() {
-		_task.clear();
+		mgr_drawtask.clear();
 	}
 	void GLEffect::execTask() {
-		_task.execTask();
+		mgr_drawtask.execTask();
 	}
 	void GLEffect::_setConstantUniformList(const StrV* src) {
 		_unifId.src = src;

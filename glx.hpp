@@ -291,30 +291,6 @@ namespace rs {
 				DrawIndexed(VStream&& vs, GLenum mode, GLsizei count, GLenum sizeF, GLuint offset);
 				void exec() override;
 		};
-
-		/*! PreFuncとして(TPStructR::applySettingsを追加)
-			[Program, FrameBuff, RenderBuff] */
-		class Task {
-			private:
-				constexpr static int NUM_ENTRY = 3;
-				//! 描画エントリのリングバッファ
-				draw::TokenML	_entry[NUM_ENTRY];
-				//! 読み書きカーソル位置
-				int			_curWrite, _curRead;
-				Mutex		_mutex;
-				CondV		_cond;
-
-			public:
-				Task();
-				draw::TokenML& refWriteEnt();
-				draw::TokenML& refReadEnt();
-				// -------------- from MainThread --------------
-				void beginTask();
-				void endTask();
-				void clear();
-				// -------------- from DrawThread --------------
-				void execTask();
-		};
 	}
 	#define mgr_block (::rs::FxBlock::_ref())
 	class FxBlock : public ResMgrApp<GLXStruct, FxBlock> {
@@ -341,7 +317,6 @@ namespace rs {
 			bool			_bInit = false;		//!< deviceLost/Resetの状態区別
 			diff::Effect	_diffCount;			/*!< バッファのカウントクリアはclearTask()かbeginTask()の呼び出しタイミング */
 
-			draw::Task		_task;
 			struct Current {
 				class Vertex {
 					private:

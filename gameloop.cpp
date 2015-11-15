@@ -17,6 +17,7 @@
 #include "lsys.hpp"
 #include "spinner/structure/profiler.hpp"
 #include "systeminfo.hpp"
+#include "drawtask.hpp"
 
 namespace rs {
 	// --------------------- FPSCounter ---------------------
@@ -216,6 +217,7 @@ namespace rs {
 			infoP->setInfo({param.wparam.width, param.wparam.height}, 0);
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
+			UPtr<draw::Task>	dtaskP(new draw::Task());
 			auto				fxP(InitFxBlock());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			// デフォルトでルートディレクトリからの探索パスを追加
@@ -402,6 +404,7 @@ PrintLog;
 			drawHandler->postArgs(msg::QuitReq());
 
 			mp.reset();
+			dtaskP->clear();
 
 			objP.reset();
 			lsys.reset();
@@ -415,6 +418,7 @@ PrintLog;
 			fontP.reset();
 			appPath.reset();
 			rwP.reset();
+			dtaskP.reset();
 			fxP.reset();
 			glrP.reset();
 			randP.reset();
