@@ -115,12 +115,12 @@ namespace rs {
 		// DrawフェーズでのSceneOpは許可されない
 		AssertP(Trap, !_scOp)
 	}
-	#define DEF_ADAPTOR(name) void SceneMgr::name() { \
-		_scene.front().ref()->name(); }
-	DEF_ADAPTOR(onPause)
-	DEF_ADAPTOR(onStop)
-	DEF_ADAPTOR(onResume)
-	DEF_ADAPTOR(onReStart)
+	#define DEF_ADAPTOR(ret, name) ret SceneMgr::name() { \
+		return _scene.front().ref()->name(); }
+	DEF_ADAPTOR(bool, onPause)
+	DEF_ADAPTOR(void, onStop)
+	DEF_ADAPTOR(void, onResume)
+	DEF_ADAPTOR(void, onReStart)
 	#undef DEF_ADAPTOR
 
 	// -------------- U_Scene --------------

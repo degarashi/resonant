@@ -283,9 +283,12 @@ PrintLog;
 				// 何かメッセージが来てたら処理する
 				while(OPMessage m = getLooper()->peek(std::chrono::seconds(0))) {
 					if(static_cast<msg::PauseReq*>(*m)) {
-						mgr_sound.pauseAllSound();
 						// ユーザーに通知(Pause)
-						mp->onPause();
+						if(!mp->onPause()) {
+							// 戻り値がfalseならゲーム進行を止めない
+							continue;
+						}
+						mgr_sound.pauseAllSound();
 						std::stringstream buffer;	// サウンドデバイスデータ
 						for(;;) {
 							// DrawThreadがIdleになるまで待つ

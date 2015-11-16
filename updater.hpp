@@ -109,7 +109,7 @@ namespace rs {
 			virtual void onDraw(IEffect& e) const;
 			// ---------- Scene用メソッド ----------
 			virtual void onDown(ObjTypeId prevId, const LCValue& arg);
-			virtual void onPause();
+			virtual bool onPause();
 			virtual void onStop();
 			virtual void onResume();
 			virtual void onReStart();
@@ -486,7 +486,7 @@ namespace rs {
 					// --------- Scene用メソッド ---------
 					virtual void onDraw(const T& self, IEffect& e) const { self.Base::onDraw(e); }
 					virtual void onDown(T& self, ObjTypeId prevId, const LCValue& arg) { self.Base::onDown(prevId, arg); }
-					virtual void onPause(T& self) { self.Base::onPause(); }
+					virtual bool onPause(T& self) { return self.Base::onPause(); }
 					virtual void onStop(T& self) { self.Base::onStop(); }
 					virtual void onResume(T& self) { self.Base::onResume(); }
 					virtual void onReStart(T& self) { self.Base::onReStart(); }
@@ -656,6 +656,7 @@ namespace rs {
 		struct ObjectT_LuaBase {
 			static LCValue CallRecvMsg(const SPLua& ls, HObj hObj, const GMessageStr& msg, const LCValue& arg);
 		};
+		extern const bool c_pauseDefault;
 	}
 	template <class T, class Base=Object>
 	class ObjectT_Lua : public ObjectT<T,Base> {
@@ -669,11 +670,11 @@ namespace rs {
 			}
 		protected:
 			template <class... Ts>
-			auto _callLuaMethod(const std::string& method, Ts&&... ts) {
+			LCValue _callLuaMethod(const std::string& method, Ts&&... ts) {
 				auto sp = rs_mgr_obj.getLua();
 				sp->push(_getHandle());
 				LValueS lv(sp->getLS());
-				return lv.callMethod(method, std::forward<Ts>(ts)...);
+				return lv.callMethodNRet(method, std::forward<Ts>(ts)...);
 			}
 			//! Lua側を終端ステートへ移行
 			void _setNullState() {
@@ -688,6 +689,18 @@ namespace rs {
 					if(!base::isDead())
 						_callLuaMethod(luaNS::RecvMsg, luaNS::OnUpdate);
 				}
+			}
+			bool onPause() override {
+				auto ret = _callLuaMethod(luaNS::RecvMsg, luaNS::OnPause);
+				auto& tbl = boost::get<SPLCTable>(ret);
+				// FSMachineから返答があったらそれを返す
+				if(static_cast<bool>((*tbl).at(1)))
+					return static_cast<bool>((*tbl).at(2));
+				// なければデフォルト値を返す
+				return detail::c_pauseDefault;
+			}
+			void onResume() override {
+				_callLuaMethod(luaNS::RecvMsg, luaNS::OnResume);
 			}
 			bool hasLuaState() const override {
 				return true;

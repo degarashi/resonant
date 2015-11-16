@@ -38,6 +38,8 @@ namespace rs {
 						RecvMsg("RecvMsg"),
 						RecvMsgCpp("RecvMsgCpp"),
 						OnUpdate("OnUpdate"),
+						OnPause("OnPause"),
+						OnResume("OnResume"),
 						OnExit("OnExit"),
 						System("System");
 		namespace objBase {

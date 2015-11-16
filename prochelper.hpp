@@ -45,7 +45,7 @@ namespace rs {
 		public:
 			MainProc(const SPWindow& sp, bool bInitInput);
 			bool runU(IMainProc::Query& q) override final;
-			void onPause() override;
+			bool onPause() override;
 			void onResume() override;
 			void onStop() override;
 			void onReStart() override;

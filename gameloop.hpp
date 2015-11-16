@@ -66,6 +66,9 @@ namespace rs {
 		virtual bool runU(uint64_t accum, bool bSkip) = 0;
 		virtual ~IDrawProc() {}
 	};
+	namespace detail {
+		extern const bool c_pauseDefault;
+	}
 	using UPDrawProc = UPtr<IDrawProc>;
 	struct IMainProc {
 		class Query {
@@ -80,7 +83,7 @@ namespace rs {
 				bool getDraw() const;
 		};
 		virtual bool runU(Query& q) = 0;		//!< 毎フレームのアップデート処理
-		virtual void onPause() {}
+		virtual bool onPause() { return detail::c_pauseDefault; }
 		virtual void onResume() {}
 		virtual void onStop() {}
 		virtual void onReStart() {}

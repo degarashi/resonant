@@ -85,8 +85,9 @@ namespace rs {
 		fx.endTask();
 		lk->diffCount = fx.getDifference();
 	}
-	void MainProc::onPause() {
-		mgr_scene.onPause(); }
+	bool MainProc::onPause() {
+		return mgr_scene.onPause();
+	}
 	void MainProc::onResume() {
 		mgr_scene.onResume(); }
 	void MainProc::onStop() {

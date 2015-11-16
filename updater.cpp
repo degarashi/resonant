@@ -97,7 +97,7 @@ namespace rs {
 	}
 	void Object::onDraw(IEffect& /*e*/) const {}
 	void Object::onDown(ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
-	void Object::onPause() {}
+	bool Object::onPause() { return detail::c_pauseDefault; }
 	void Object::onStop() {}
 	void Object::onResume() {}
 	void Object::onReStart() {}
@@ -478,6 +478,7 @@ namespace rs {
 	DrawTag& DrawGroupProxy::refDTag() {
 		return _dtag;
 	}
+	const bool detail::c_pauseDefault = false;
 	// -------------------- ObjectT_LuaBase --------------------
 	LCValue detail::ObjectT_LuaBase::CallRecvMsg(const SPLua& ls, HObj hObj, const GMessageStr& msg, const LCValue& arg) {
 		ls->push(hObj);

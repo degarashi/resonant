@@ -1226,6 +1226,8 @@ namespace rs {
 								RecvMsg,
 								RecvMsgCpp,
 								OnUpdate,
+								OnPause,
+								OnResume,
 								OnExit,
 								System;
 		namespace objBase {
