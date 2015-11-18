@@ -211,14 +211,18 @@ namespace rs {
 				}
 			};
 			fnMakeCurrent();
-
+			{
+			UPtr<Camera3DMgr>	camP(new Camera3DMgr());
+			UPtr<Camera2DMgr>	cam2P(new Camera2DMgr());
+			UPtr<PointerMgr>	pmP(new PointerMgr());
+			UPtr<InputMgr>		inpP(new InputMgr());
 			UPtr<SystemInfo>	infoP(new SystemInfo());
 			// 初回はここで情報をセットする (以降はIMainProc::runUにて)
 			infoP->setInfo({param.wparam.width, param.wparam.height}, 0);
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
-			UPtr<draw::Task>	dtaskP(new draw::Task());
 			auto				fxP(InitFxBlock());
+			UPtr<draw::Task>	dtaskP(new draw::Task());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));
 			// デフォルトでルートディレクトリからの探索パスを追加
 			SPUriHandler sph = std::make_shared<UriH_File>(u8"/");
@@ -231,10 +235,6 @@ namespace rs {
 			UPtr<FontFamily>	fontP(new FontFamily());
 			GameLoop::LoadFonts();
 			UPtr<FontGen>		fgenP(new FontGen(spn::PowSize(512,512)));
-			UPtr<Camera3DMgr>	camP(new Camera3DMgr());
-			UPtr<Camera2DMgr>	cam2P(new Camera2DMgr());
-			UPtr<PointerMgr>	pmP(new PointerMgr());
-			UPtr<InputMgr>		inpP(new InputMgr());
 PrintLog;
 			UPtr<SceneMgr>		scP(new SceneMgr());
 			UPtr<SoundMgr>		sndP(new SoundMgr(44100));
@@ -405,30 +405,8 @@ PrintLog;
 
 			// 描画スレッドを後片付けフェーズへ移行
 			drawHandler->postArgs(msg::QuitReq());
-
-			mp.reset();
-			dtaskP->clear();
-
-			objP.reset();
-			lsys.reset();
-			orep.reset();
-			urep.reset();
-			sndP.reset();
-			scP.reset();
-			inpP.reset();
-			camP.reset();
-			fgenP.reset();
-			fontP.reset();
-			appPath.reset();
-			rwP.reset();
-			dtaskP.reset();
-			fxP.reset();
-			glrP.reset();
-			randP.reset();
-			infoP.reset();
-
+			}
 			GL.glFlush();
-
 			// MultiContext環境ではContextの関連付けを解除
 			if(MULTICONTEXT)
 				opDth->getInfo()->ctxMainThread->makeCurrent();
