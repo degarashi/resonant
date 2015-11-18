@@ -45,6 +45,12 @@ namespace rs {
 	const VSFunc ValueSettingR::cs_func[] = {
 		BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_FUNC, EMPTY, SEQ_GLSETTING)
 	};
+	const int ValueSettingR::cs_funcNArg[] = {
+		BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_NARG, EMPTY, SEQ_GLSETTING)
+	};
+	const char* ValueSettingR::cs_funcName[] = {
+		BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_NAME, EMPTY, SEQ_GLSETTING)
+	};
 	const char* GLPrecision_::cs_typeStr[] = {
 		BOOST_PP_SEQ_FOR_EACH(PPFUNC_STR, EMPTY, SEQ_PRECISION)
 	};
@@ -59,6 +65,10 @@ namespace rs {
 	ValueSettingR::ValueSettingR(const ValueSetting& s) {
 		func = cs_func[s.type];
 		int nV = std::min(s.value.size(), countof(value));
+		// 引数の数が合わなかったらエラー
+		const int ArgLength = cs_funcNArg[s.type];
+		Assert(Throw, ArgLength==nV, "amount of argument(s) is not valid(func=%1%, required=%2%, actual=%3%)",
+				cs_funcName[s.type], ArgLength, nV)
 		for(int i=0 ; i<nV ; i++)
 			value[i] = s.value[i];
 		for(int i=nV ; i<static_cast<int>(countof(value)) ; i++)

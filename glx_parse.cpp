@@ -234,6 +234,7 @@ namespace rs {
 						% std::string(e.where(), str.cend())
 						% e.which()
 						% e.what()).str());
+			throw;
 		}
 		return result;
 	}

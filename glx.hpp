@@ -24,6 +24,8 @@ namespace rs {
 		VSFunc					func;
 
 		const static VSFunc cs_func[];
+		const static int cs_funcNArg[];
+		const static char* cs_funcName[];
 
 		explicit ValueSettingR(const ValueSetting& s);
 		void action() const;
