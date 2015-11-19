@@ -41,7 +41,7 @@ namespace rs {
 
 			unsigned int ofs = 0;
 			for(auto& t2 : t) {
-				AssertT(Trap, ofs<=t2.offset, (GLE_Error)(const char*), "invalid vertex offset")
+				AssertT(Trap, ofs<=t2.offset, GLE_Error, "invalid vertex offset")
 				ofs += GLFormat::QuerySize(t2.elemFlag) * t2.elemSize;
 			}
 		}

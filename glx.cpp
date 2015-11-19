@@ -123,8 +123,8 @@ namespace rs {
 	void ArgChecker::_checkAndSet(TARGET tgt) {
 		auto t = _target[_cursor];
 		auto* arg = _arg[_cursor];
-		AssertT(Trap, t!=NONE, (GLE_InvalidArgument)(const std::string&)(const char*), _shName, "(none)")
-		AssertT(Trap, t==tgt, (GLE_InvalidArgument)(const std::string&)(const std::string&), _shName, arg->name)
+		AssertTArg(Trap, t!=NONE, (GLE_InvalidArgument)(const std::string&)(const char*), _shName, "(none)")
+		AssertTArg(Trap, t==tgt, (GLE_InvalidArgument)(const std::string&)(const std::string&), _shName, arg->name)
 		_ost << GLType_::cs_typeStr[arg->type] << ' ' << arg->name;
 		++_cursor;
 	}
@@ -385,7 +385,7 @@ namespace rs {
 	}
 	void GLEffect::Current::setPass(GLint idPass, TechMap& tmap, TexMap& texMap) {
 		// TechIdをセットせずにPassIdをセットするのは禁止
-		AssertT(Trap, tech, (GLE_Error)(const char*), "tech is not selected")
+		AssertT(Trap, tech, GLE_Error, "tech is not selected")
 		if(!pass || *pass != idPass) {
 			_clean_drawvalue();
 			pass = idPass;
@@ -515,7 +515,7 @@ namespace rs {
 		return spn::none;
 	}
 	OPGLint GLEffect::getPassId(const std::string& pass) const {
-		AssertT(Trap, _current.tech, (GLE_Error)(const char*), "tech is not selected")
+		AssertT(Trap, _current.tech, GLE_Error, "tech is not selected")
 		return _getPassId(*_current.tech, pass);
 	}
 	OPGLint GLEffect::getCurPassId() const {

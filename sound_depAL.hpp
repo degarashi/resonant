@@ -3,9 +3,9 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-#define ALEC_Base(flag, act, ...)	::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::ALError(), SOURCEPOS, __VA_ARGS__)
-#define ALEC_Chk_Base(flag, act)	::spn::EChk##flag(AAct_##act<std::runtime_error>(), ::rs::ALError(), SOURCEPOS);
-#define ALCEC_Base(flag, act, ...)	::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::ALCError(::rs::SoundMgr_depAL::_ref().getDevice()), SOURCEPOS, __VA_ARGS__)
+#define ALEC_Base(flag, act, ...)	::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error, const char*>("OpenALCheck"), ::rs::ALError(), SOURCEPOS, __VA_ARGS__)
+#define ALEC_Chk_Base(flag, act)	::spn::EChk##flag(AAct_##act<std::runtime_error, const char*>("OpenALCheck"), ::rs::ALError(), SOURCEPOS)
+#define ALCEC_Base(flag, act, ...)	::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error, const char*>("OpenALCtxCheck"), ::rs::ALCError(::rs::SoundMgr_depAL::_ref().getDevice()), SOURCEPOS, __VA_ARGS__)
 
 #define ALEC(...)					ALEC_Base(_a, __VA_ARGS__)
 #define ALCEC(...)					ALCEC_Base(_a, __VA_ARGS__)

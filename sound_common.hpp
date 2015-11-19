@@ -8,7 +8,7 @@
 #include <boost/serialization/level.hpp>
 #include <boost/serialization/access.hpp>
 
-#define OVEC_Base(flag, act, ...)	::spn::EChk_code##flag(AAct_##act<std::runtime_error>(), OVError(), SOURCEPOS, __VA_ARGS__);
+#define OVEC_Base(flag, act, ...)	::spn::EChk_code##flag(AAct_##act<std::runtime_error, const char*>("OggCheck"), OVError(), SOURCEPOS, __VA_ARGS__)
 #define OVEC(...)					OVEC_Base(_a, __VA_ARGS__)
 #define OVEC_D(...)					OVEC_Base(_d, __VA_ARGS__)
 

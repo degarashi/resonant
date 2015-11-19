@@ -74,7 +74,7 @@ namespace rs {
 					for(auto& p : tmp2) {
 						for(auto& e : p->entry) {
 							if(std::find_if(ret.begin(), ret.end(), [&e](const ENT* tmp){return e.name==tmp->name;}) != ret.end())
-								throw GLE_LogicalError((boost::format("duplication of entry \"%1%\"") % e.name).str());
+								AssertFT(Throw, GLE_LogicalError, "duplication of entry \"%1%\"", e.name)
 							ret.push_back(&e);
 						}
 					}
@@ -172,7 +172,8 @@ namespace rs {
 			selectSh[a.type] = &a;
 
 		// VertexとPixelシェーダは必須、Geometryは任意
-		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::FRAGMENT]), (GLE_LogicalError)(const char*), "no vertex or fragment shader found")
+		AssertT(Throw, (selectSh[ShType::VERTEX] && selectSh[ShType::FRAGMENT]),
+				GLE_LogicalError, "no vertex or fragment shader found")
 
 		std::stringstream ss;
 		TPSDupl dupl(bs, tech, pass);
@@ -302,7 +303,7 @@ namespace rs {
 			// 頂点セマンティクス対応リストを生成
 			// セマンティクスの重複はエラー
 			auto& atID = _vAttrID[p->sem];
-			AssertT(Throw, atID==-2, (GLE_LogicalError)(const std::string&), (boost::format("duplication of vertex semantics \"%1% : %2%\"") % p->name % GLSem_::cs_typeStr[p->sem]).str())
+			AssertT(Throw, atID==-2, GLE_LogicalError, "duplication of vertex semantics \"%1% : %2%\"", p->name, GLSem_::cs_typeStr[p->sem])
 			auto at = prog.getAttribID(p->name.c_str());
 			atID = (at) ? *at : -1;
 			// -1の場合は警告を出す(もしかしたらシェーダー内で使ってないだけかもしれない)

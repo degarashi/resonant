@@ -3,7 +3,7 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
-#define SLEC_Base(flag, act, code)		::spn::EChk_usercode##flag(AAct_##act<std::runtime_error>(), ::rs::SLError(), SOURCEPOS, code)
+#define SLEC_Base(flag, act, code)		::spn::EChk_usercode##flag(AAct_##act<std::runtime_error, const char*>("OpenSLCheck"), ::rs::SLError(), SOURCEPOS, code)
 #define SLEC(act, func, ...)			SLEC_Base(_a, act, func(__VA_ARGS__))
 #define SLEC_M(act, obj, method, ...)	SLEC_Base(_a, act, (*obj)->method(obj, __VA_ARGS__))
 #define SLEC_M0(act, obj, method)		SLEC_Base(_a, act, (*obj)->method(obj))

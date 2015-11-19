@@ -52,9 +52,9 @@ namespace rs {
 	}
 
 	RWops RWops::FromConstMem(const void* mem, size_t size, Callback* cb) {
-		AssertT(Trap, mem, (RWE_NullMemory))
+		AssertTArg(Trap, mem, (RWE_NullMemory))
 		SDL_RWops* ops = SDL_RWFromConstMem(mem,size);
-		SDLEC_Chk(Throw)
+		SDLEC_Chk(Throw);
 		return RWops(ops,
 					Type::ConstMem,
 					Read,
@@ -62,9 +62,9 @@ namespace rs {
 					cb);
 	}
 	RWops RWops::FromMem(void* mem, size_t size, Callback* cb) {
-		AssertT(Trap, mem, (RWE_NullMemory))
+		AssertTArg(Trap, mem, (RWE_NullMemory))
 		SDL_RWops* ops = SDL_RWFromMem(mem,size);
-		SDLEC_Chk(Throw)
+		SDLEC_Chk(Throw);
 		return RWops(ops,
 					Type::Mem,
 					Read|Write,
@@ -83,7 +83,7 @@ namespace rs {
 					nullptr);
 	}
 	RWops RWops::FromURI(SDL_RWops* ops, const spn::URI& uri, int access) {
-		AssertT(Trap, ops, (RWE_File)(const std::string&), uri.plain_utf8())
+		AssertT(Trap, ops, RWE_File, uri.plain_utf8().c_str())
 		return RWops(ops,
 					Type::File,
 					access,
@@ -92,7 +92,7 @@ namespace rs {
 	}
 	RWops RWops::_FromVector(spn::ByteBuff&& buff, Callback* cb, std::false_type) {
 		SDL_RWops* ops = SDL_RWFromMem(&buff[0], buff.size());
-		SDLEC_Chk(Throw)
+		SDLEC_Chk(Throw);
 		return RWops(ops,
 					Type::Vector,
 					Read|Write,
@@ -101,7 +101,7 @@ namespace rs {
 	}
 	RWops RWops::_FromVector(spn::ByteBuff&& buff, Callback* cb, std::true_type) {
 		SDL_RWops* ops = SDL_RWFromConstMem(&buff[0], buff.size());
-		SDLEC_Chk(Throw)
+		SDLEC_Chk(Throw);
 		return RWops(ops,
 					Type::ConstVector,
 					Read,
@@ -217,7 +217,7 @@ namespace rs {
 	}
 	int64_t RWops::seek(int64_t offset, Hence hence) {
 		auto res = SDL_RWseek(_ops, offset, hence);
-		AssertT(Trap, res>=0, (RWE_OutOfRange)(int64_t)(Hence)(int64_t), offset, hence, tell())
+		AssertTArg(Trap, res>=0, (RWE_OutOfRange)(int64_t)(Hence)(int64_t), offset, hence, tell())
 		return res;
 	}
 	int64_t RWops::tell() const {
@@ -283,7 +283,7 @@ namespace rs {
 			auto& d = boost::get<spn::ByteBuff>(_data);
 			return std::make_pair(&d[0], d.size());
 		}
-		AssertP(Trap, false);
+		AssertP(Trap, false)
 		return std::make_pair(nullptr, 0);
 	}
 	std::pair<void*, size_t> RWops::getMemoryPtr() {
@@ -295,7 +295,7 @@ namespace rs {
 			auto& d = boost::get<spn::ByteBuff>(_data);
 			return std::make_pair(&d[0], d.size());
 		}
-		AssertP(Trap, false);
+		AssertP(Trap, false)
 		return std::make_pair(nullptr, 0);
 	}
 	// ---------------------------- RWMgr ----------------------------
@@ -333,7 +333,7 @@ namespace rs {
 	}
 	HLRW RWMgr::fromURI(const spn::URI& uri, int access) {
 		HLRW ret = getHandler().procHandler(uri, access);
-		AssertT(Throw, ret.valid(), (RWops::RWE_File)(const std::string&), uri.plain_utf8())
+		AssertT(Throw, ret.valid(), RWops::RWE_File, uri.plain_utf8().c_str())
 		return ret;
 	}
 	HLRW RWMgr::fromFile(const std::string& path, int access) {

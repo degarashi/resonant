@@ -9,7 +9,7 @@
 #include "spinner/error.hpp"
 #include "handle.hpp"
 
-#define FTEC_Base(flag, act, ...)	::spn::EChk_code##flag(AAct_##act<std::runtime_error>(), ::rs::FTError(), SOURCEPOS, __VA_ARGS__)
+#define FTEC_Base(flag, act, ...)	::spn::EChk_code##flag(AAct_##act<std::runtime_error, const char*>("FreeTypeCheck"), ::rs::FTError(), SOURCEPOS, __VA_ARGS__)
 #define FTEC(...)					FTEC_Base(_a, __VA_ARGS__)
 #define FTEC_D(...)					FTEC_Base(_d, __VA_ARGS__)
 

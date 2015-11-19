@@ -21,15 +21,15 @@
 #include "handle.hpp"
 #include "sdlformat.hpp"
 
-#define SDLEC_Base(flag, act, ...)		::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::SDLError(), SOURCEPOS, __VA_ARGS__)
-#define SDLEC_Base0(flag, act)			::spn::EChk##flag(AAct_##act<std::runtime_error>(), ::rs::SDLError(), SOURCEPOS);
+#define SDLEC_Base(flag, act, ...)		::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error, const char*>("SDLCheck"), ::rs::SDLError(), SOURCEPOS, __VA_ARGS__)
+#define SDLEC_Base0(flag, act)			::spn::EChk##flag(AAct_##act<std::runtime_error, const char*>("SDLCheck"), ::rs::SDLError(), SOURCEPOS)
 #define SDLEC(...)						SDLEC_Base(_a, __VA_ARGS__)
 #define SDLEC_Chk(act)					SDLEC_Base0(_a, act)
 #define SDLEC_D(...)					SDLEC_Base(_d, __VA_ARGS__)
 #define SDLEC_Chk_D(act)				SDLEC_Base0(_d, act)
 
-#define IMGEC_Base(flag, act, ...)		::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error>(), ::rs::IMGError(), SOURCEPOS, __VA_ARGS__)
-#define IMGEC_Base0(flag, act)			::spn::EChk##flag(AAct_##act<std::runtime_error>(), ::rs::IMGError(), SOURCEPOS)
+#define IMGEC_Base(flag, act, ...)		::spn::EChk_memory##flag<::spn::none_t>(AAct_##act<std::runtime_error, const char*>("SDLImgCheck"), ::rs::IMGError(), SOURCEPOS, __VA_ARGS__)
+#define IMGEC_Base0(flag, act)			::spn::EChk##flag(AAct_##act<std::runtime_error, const char*>("SDLImgCheck"), ::rs::IMGError(), SOURCEPOS)
 #define IMGEC(act, ...)					IMGEC_Base(_a, act, __VA_ARGS__)
 #define IMGEC_Chk(act)					IMGEC_Base0(_a, act)
 #define IMGEC_D(act, ...)				IMGEC_Base(_d, act, __VA_ARGS__)
@@ -728,7 +728,7 @@ namespace rs {
 				if(_thread) {
 					int res = SDL_CondWaitTimeout(_condP, _mtxP.getMutex(), ms);
 					_mtxP.unlock();
-					SDLEC_Chk(Trap)
+					SDLEC_Chk(Trap);
 					if(res == 0 || !isRunning()) {
 						SDL_WaitThread(_thread, nullptr);
 						_thread = nullptr;
@@ -1022,7 +1022,7 @@ namespace rs {
 			RWops() = default;
 			template <class T>
 			RWops(SDL_RWops* ops, Type type, int access, T&& data, Callback* cb=nullptr) {
-				AssertT(Trap, ops, (RWE_Error)(const char*), "unknown error")
+				AssertT(Trap, ops, RWE_Error, "unknown error")
 				_ops = ops;
 				_type = type;
 				_access = access;
