@@ -202,7 +202,7 @@ namespace rs {
 			//! ファイルからエフェクトの読み込み
 			HLFx loadEffect(const std::string& name, const CBCreateFx& cb);
 			//! エフェクトファイルの置き換え
-			bool replaceEffect(HLFx& fx, const CBCreateFx& cb);
+			void replaceEffect(HLFx& fx, const CBCreateFx& cb);
 			//! 頂点バッファの確保
 			HLVb makeVBuffer(GLuint dtype);
 			//! インデックスバッファの確保

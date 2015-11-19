@@ -58,7 +58,8 @@ namespace rs {
 									tmp.clear();
 								for(auto& name : blk.name) {
 									auto op = mfunc(_bset, name);
-									Assert(Trap, op)
+									AssertT(Throw, op, GLE_LogicalError,
+											"entry block \"%1%\" not found", name)
 									tmp.push_back(&(*op));
 								}
 							}
@@ -183,7 +184,8 @@ namespace rs {
 			if(!shp)
 				continue;
 			auto s = bs.findShader(shp->shName);
-			Assert(Trap, s)
+			AssertT(Throw, s, GLE_LogicalError,
+					"requested shader \"%1%\" not found", shp->shName)
 			// シェーダーバージョンを出力
 			ss << "#version " << s->version_str << std::endl;
 			{

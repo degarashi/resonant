@@ -141,19 +141,12 @@ namespace rs {
 			_cbInit(ret.first);
 		return Cast<UPEffect>(ret.first);
 	}
-	bool GLRes::replaceEffect(HLFx& hlFx, const CBCreateFx& cb) {
-		// 読み込みトライ
-		try {
-			auto& key = this->base_t::getKey(hlFx.get());
-			UPResource res(cb(key.plain_utf8()));
-			hlFx->get()->onDeviceLost();
-			hlFx = Cast<UPEffect>(this->base_t::replace(key, std::move(res)));
-			_cbInit(hlFx.get());
-			return true;
-		} catch(const std::runtime_error& e) {
-			// 文法エラーが起こったら差し替えない
-		}
-		return false;
+	void GLRes::replaceEffect(HLFx& hlFx, const CBCreateFx& cb) {
+		auto& key = this->base_t::getKey(hlFx.get());
+		UPResource res(cb(key.plain_utf8()));
+		hlFx->get()->onDeviceLost();
+		hlFx = Cast<UPEffect>(this->base_t::replace(key, std::move(res)));
+		_cbInit(hlFx.get());
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
 		LHdl lh = base_type::acquire(UPResource(new GLVBuffer(dtype)));

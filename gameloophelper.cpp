@@ -105,12 +105,13 @@ namespace rs {
 					}
 					_updatePath.clear();
 					if(bLoad) {
-						// Effectファイルの再構築
+						// Effectファイルの再構築(読み込みトライ)
 						mgr_gl.replaceEffect(lkb->hlFx, _cbEngine);
 						if(_init.cbEngineInit)
 							_init.cbEngineInit();
 					}
 				} catch(const std::exception& e) {
+					// 文法エラーが起こったら差し替えない
 					std::cout << e.what() << std::endl;
 				}
 			}
