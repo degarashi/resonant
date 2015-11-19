@@ -56,7 +56,8 @@ namespace rs {
 			auto idv = getUnifId(id);
 			// 定数値に対応するUniform変数が見つからない時は警告を出す
 			Assert(Warn, idv, "Uniform-ConstantId: %1% not found", id.value)
-			setUniform(*idv, std::forward<T>(t), bT);
+			if(idv)
+				setUniform(*idv, std::forward<T>(t), bT);
 		}
 		//! 単体Uniform変数セット
 		template <class T, class = typename std::enable_if< !std::is_pointer<T>::value >::type>
