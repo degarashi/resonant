@@ -12,7 +12,7 @@ namespace rs {
 		current(blk.current),
 		result(std::move(blk.result)) {}
 	// ------------------- LSysFunc -------------------
-	LSysFunc::LSysFunc(): _serialCur(0), _procCur(0), _progress(0), _state(State::Idle), _bLoop(true) {
+	LSysFunc::LSysFunc(): _serialCur(0), _procCur(0), _progress(0), _state(State::Idle), _bLoop(true), _objIdCursor(0) {
 		_thread.start(*this);
 	}
 	LSysFunc::~LSysFunc() {
@@ -120,10 +120,24 @@ namespace rs {
 	void LSysFunc::sleep(lua_Integer ms) const {
 		SDL_Delay(ms);
 	}
+	ObjTypeId LSysFunc::addObjectId(const std::string& name) {
+		Assert(Trap, _nameMap.count(name)==0, "registered same object(%1%) twice", name)
+		return _nameMap[name] = ++_objIdCursor;
+	}
+	ObjTypeId_OP LSysFunc::getObjectId(const std::string& name) const {
+		auto itr = _nameMap.find(name);
+		if(itr != _nameMap.end())
+			return itr->second;
+		return spn::none;
+	}
 }
 #include "apppath.hpp"
 namespace rs {
 	void LSysFunc::loadClass(const std::string& name, const SPLua& ls) {
+		// オブジェクトIdの生成
+		if(_nameMap.count(name) == 0)
+			_nameMap[name] = ++_objIdCursor;
+
 		std::string fileName(name);
 		fileName.append(".");
 		fileName.append(luaNS::ScriptExtension);

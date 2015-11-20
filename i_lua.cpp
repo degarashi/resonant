@@ -88,7 +88,7 @@ DEF_LUAIMPLEMENT_PTR(spn::Pose3D, Pose3D, NOTHING,
 		(setAll)(setScale)(setRot)(addAxisRot)(setOffset)(addOffset)
 		(identity)(moveFwd2D)(moveSide2D)(moveFwd3D)(moveSide3D)(turnAxis)(turnYPR)(addRot)(lerpTurn)(adjustNoRoll)(lerp)(equal)(toString), NOTHING)
 
-DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(loadResources)(loadResourcesASync)(queryProgress)(getResult)(getNTask)(sleep)(loadClass)(getObjectId))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ObjMgr, Object, Object, NOTHING,
 		(destroy)(getName))

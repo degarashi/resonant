@@ -3,6 +3,8 @@
 #include "luaw.hpp"
 
 namespace rs {
+	using ObjTypeId = uint32_t;
+	using ObjTypeId_OP = spn::Optional<ObjTypeId>;
 	#define mgr_lsys (::rs::LSysFunc::_ref())
 	class LSysFunc : public spn::Singleton<LSysFunc> {
 		class LoadThread : public Thread<void (LSysFunc&)> {
@@ -37,6 +39,10 @@ namespace rs {
 		bool			_bLoop;
 		Mutex			_mutex;			//!< CondV, またはクラス全体の同期
 		CondV			_cond;			//!< 非同期タスクがアイドルになった時に起こす
+		using NameMap = std::unordered_map<std::string, ObjTypeId>;
+		NameMap			_nameMap;
+		ObjTypeId		_objIdCursor;
+
 		public:
 			LSysFunc();
 			~LSysFunc();
@@ -58,6 +64,16 @@ namespace rs {
 			void sleep(lua_Integer ms) const;
 			//! クラス定義ファイルを読み込む
 			void loadClass(const std::string& name, const SPLua& ls);
+			//! クラスIdの登録
+			ObjTypeId addObjectId(const std::string& name);
+			//! loadClassで読み込んだクラスIdの取得
+			ObjTypeId_OP getObjectId(const std::string& name) const;
+			//! タイプ指定でクラスIdの取得
+			/*! C++からクラスIdを取得したい時用 */
+			template <class T>
+			ObjTypeId_OP getObjectIdType() const {
+				return getObjectId(lua::LuaName(static_cast<T*>(nullptr)));
+			}
 	};
 }
 DEF_LUAIMPORT(rs::LSysFunc)

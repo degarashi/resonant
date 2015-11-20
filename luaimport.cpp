@@ -351,3 +351,9 @@ namespace rs {
 	}
 	DEF_LCV_OSTREAM(WHandle)
 }
+#include "lsys.hpp"
+namespace rs {
+	void LuaImport::AddObjectId(const char* name) {
+		mgr_lsys.addObjectId(name);
+	}
+}

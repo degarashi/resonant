@@ -1487,8 +1487,11 @@ namespace rs {
 			template <class T>
 			static void RegisterClass(LuaState& lsc) {
 				RegisterObjectBase(lsc);
-				lua::LuaExport(lsc, static_cast<T*>(nullptr));
+				auto* ptr = static_cast<T*>(nullptr);
+				AddObjectId(lua::LuaName(ptr));
+				lua::LuaExport(lsc, ptr);
 			}
+			static void AddObjectId(const char* name);
 			static bool IsObjectBaseRegistered(LuaState& lsc);
 			static bool IsUpdaterObjectRegistered(LuaState& lsc);
 			//! C++クラス登録基盤を初期化
