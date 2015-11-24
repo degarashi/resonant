@@ -65,9 +65,8 @@ st_idle = {
 		self.litpos = lp
 
 		-- 光源位置のセット
+		Global.engine:setLightPosition(self.litpos)
 		self.lit:setOffset(self.litpos)
-		self.cube:setLightPosition(self.litpos)
-		self.room:setLightPosition(self.litpos)
 		-- キューブを回転
 		self.cube:advance()
 		scbase.CheckSwitch()

@@ -4,8 +4,7 @@
 
 // ---------------------- Cube ----------------------
 rs::WVb Cube::s_wVb[2];
-const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
-				Cube::U_litpos = GlxId::GenUnifId("vLitPos");
+const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default");
 void Cube::_initVb(bool bFlip) {
 	int index = bFlip ? 1 : 0;
 
@@ -76,8 +75,7 @@ void Cube::_initVb(bool bFlip) {
 	}
 }
 Cube::Cube(float s, rs::HTex hTex, bool bFlip):
-	_hlTex(hTex),
-	_vLitPos(0,2,2)
+	_hlTex(hTex)
 {
 	setScale({s,s,s});
 	_initVb(bFlip);
@@ -92,11 +90,7 @@ void Cube::draw(Engine& e) const {
 	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
-	e.setUniform(U_litpos, _vLitPos, false);
 	e.draw(GL_TRIANGLES, 0, 6*6);
-}
-void Cube::setLightPosition(const spn::Vec3& pos) {
-	_vLitPos = pos;
 }
 void Cube::exportDrawTag(rs::DrawTag& d) const {
 	d.idTex[0] = _hlTex.get();
@@ -118,7 +112,6 @@ CubeObj::CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex, bool bFlip):
 #include "../luaimport.hpp"
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "Object", NOTHING,
-		(setLightPosition)
 		(advance)
 		(setOffset)
 		(setPriority),

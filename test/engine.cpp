@@ -21,3 +21,10 @@ void Engine::_prepareUniforms() {
 	DEF_SETUNIF(Power, getLight)
 	#undef DEF_SETUNIF
 }
+#include "../updater_lua.hpp"
+DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
+			NOTHING,
+			(setLightPosition<const spn::Vec3&>)
+			(setLightColor<const spn::Vec3&>)
+			(setLightDir<const spn::Vec3&>)
+			(setLightPower<float>))

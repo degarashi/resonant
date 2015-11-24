@@ -12,7 +12,7 @@ uniform CubeUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
 	sampler2D sys_texDiffuse;
-	mediump vec3 vLitPos;
+	mediump vec3 m_vLightPos;
 	mediump vec3 sys_vEyePos;
 }
 vertexshader(400) CubeVS() {
@@ -27,7 +27,7 @@ vertexshader(400) CubeVS() {
 fragmentshader(400) CubePS() {
 	vec3 fromEye = normalize(varPos - sys_vEyePos);
 	vec3 refv = fromEye + varNormal * (-dot(varNormal, fromEye) * 2);
-	vec3 toLit = normalize(vLitPos - varPos);
+	vec3 toLit = normalize(m_vLightPos - varPos);
 	float lit = pow(max(0, dot(toLit, refv)),16);
 	float lit_d = dot(toLit, varNormal) * 0.5 + 0.5;
 	lit_d *= 0.5;

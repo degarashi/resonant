@@ -26,3 +26,4 @@ class Engine : public rs::util::GLEffect_2D3D {
 		RFLAG_GETMETHOD_S(SEQ_UNIF)
 		#undef SEQ_UNIF
 };
+DEF_LUAIMPORT(Engine)

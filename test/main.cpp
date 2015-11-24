@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
 		{
 			gv.pEngine = static_cast<Engine*>(lkb->hlFx->get());
 			gv.pEngine->ref<rs::SystemUniform3D>().setCamera(gv.hlCam);
+			rs::LuaImport::ImportClass(*lkb->spLua, "Global", "engine", gv.pEngine);
 		}
 	};
 	init.cbPreTerm = [](){
