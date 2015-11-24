@@ -17,6 +17,7 @@
 #include "../util/profileshow.hpp"
 #include "cube.hpp"
 #include "sprite.hpp"
+#include "sprite3d.hpp"
 #include "blureffect.hpp"
 
 rs::CCoreID GetCID() {
@@ -65,12 +66,14 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<BlurEffect>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<U_BoundingSprite>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<PointSprite3D>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<CubeObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<InfoShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<U_ProfileShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<GlobalValue>(*lkb->spLua);
 		rs::LuaImport::ImportClass(*lkb->spLua, "Global", "cpp", &gv);
 		rs::LuaImport::RegisterClass<FPSCamera>(*lkb->spLua);
+
 		// init Random
 		{
 			mgr_random.initEngine(RandomId);

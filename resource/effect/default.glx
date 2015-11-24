@@ -43,6 +43,15 @@ technique Text {
 	}
 }
 
+uniform Sprite3DUnif {
+	highp mat4 sys_mTrans;
+	sampler2D sys_texDiffuse;
+	float sys_fAlpha;
+}
+vertexshader(400) Sprite3DVS() {
+	gl_Position = vec4(atPos, 0,1) * sys_mTrans;
+	varTex = atTex;
+}
 attribute SpriteAttr {
 	highp vec2 atPos : POSITION;
 	mediump vec2 atTex : TEXCOORD0;
@@ -82,8 +91,8 @@ technique Sprite {
 	FrontFace = cw;
 	Blend = true;
 	BlendFunc = SrcAlpha InvSrcAlpha;
-	DepthTest = false;
-	DepthMask = false;
+	DepthTest = true;
+	DepthMask = true;
 	Attribute = SpriteAttr;
 	Varying = CubeVary;
 	Uniform = SpriteUnif;
@@ -95,6 +104,11 @@ technique Sprite {
 		Uniform = RectUnif;
 		VertexShader = SpriteVS();
 		FragmentShader = RectFS();
+	}
+	pass Default3D {
+		Uniform = Sprite3DUnif;
+		VertexShader = Sprite3DVS();
+		FragmentShader = SpriteFS();
 	}
 }
 uniform PFxUnif {

@@ -19,8 +19,8 @@ class Sprite : public spn::Pose2D {
 		spn::RangeF	_zRange;
 		float		_zOffset,
 					_alpha;
-		void _initBuffer();
 	public:
+		static std::pair<rs::HLVb, rs::HLIb> InitBuffer();
 		const static rs::IdValue	T_Sprite;
 		Sprite(rs::HTex hTex, float z);
 		void draw(Engine& e) const;

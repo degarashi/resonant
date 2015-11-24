@@ -3,11 +3,13 @@
 #include "cube.hpp"
 
 // ---------------------- Cube ----------------------
-rs::WVb Cube::s_wVb;
+rs::WVb Cube::s_wVb[2];
 const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
 				Cube::U_litpos = GlxId::GenUnifId("vLitPos");
-void Cube::_initVb() {
-	if(!(_hlVb = s_wVb.lock())) {
+void Cube::_initVb(bool bFlip) {
+	int index = bFlip ? 1 : 0;
+
+	if(!(_hlVb = s_wVb[index].lock())) {
 		using spn::Vec2;
 		using spn::Vec3;
 		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
@@ -44,6 +46,9 @@ void Cube::_initVb() {
 			7,6,4,
 			4,5,7
 		};
+		const int tmpI_CW[3] = {0,1,2},
+				tmpI_CCW[3] = {2,1,0};
+		const int (&tmpI_Index)[3] = (bFlip) ? tmpI_CCW : tmpI_CW;
 		const int tmpI_uv[6] = {
 			0,1,2,
 			2,1,3
@@ -57,32 +62,41 @@ void Cube::_initVb() {
 			Vec3(0,0,1)
 		};
 		for(int i=0 ; i<6*6 ; i++) {
-			tmpV[i].pos = tmpPos[tmpI[i]];
+			tmpV[i].pos = tmpPos[tmpI[(i/3*3)+tmpI_Index[i%3]]];
 			auto& uv = tmpUV[tmpI_uv[i%6]];
 			tmpV[i].tex = uv;
 			tmpV[i].normal = normal[i/6];
+			if(bFlip)
+				tmpV[i].normal *= -1;
 		}
 
 		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
 		_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
-		s_wVb = _hlVb.weak();
+		s_wVb[index] = _hlVb.weak();
 	}
 }
-Cube::Cube(float s, rs::HTex hTex): _hlTex(hTex) {
+Cube::Cube(float s, rs::HTex hTex, bool bFlip):
+	_hlTex(hTex),
+	_vLitPos(0,2,2)
+{
 	setScale({s,s,s});
-	_initVb();
+	_initVb(bFlip);
 }
-void Cube::draw(Engine& e) const {
+void Cube::advance() {
 	const spn::AQuat& q = this->getRot();
 	auto& self = const_cast<Cube&>(*this);
 	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
-
+}
+void Cube::draw(Engine& e) const {
 	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());
 	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
-	e.setUniform(U_litpos, spn::Vec3(0,2,2), false);
+	e.setUniform(U_litpos, _vLitPos, false);
 	e.draw(GL_TRIANGLES, 0, 6*6);
+}
+void Cube::setLightPosition(const spn::Vec3& pos) {
+	_vLitPos = pos;
 }
 void Cube::exportDrawTag(rs::DrawTag& d) const {
 	d.idTex[0] = _hlTex.get();
@@ -99,8 +113,13 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::cube>::GetVDecl() {
 }
 
 // ---------------------- CubeObj ----------------------
-CubeObj::CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex):
-	DWrapper(::MakeCallDraw<Engine>(), Cube::T_Cube, hDg, size, hTex) {}
+CubeObj::CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex, bool bFlip):
+	DWrapper(::MakeCallDraw<Engine>(), Cube::T_Cube, hDg, size, hTex, bFlip) {}
 #include "../luaimport.hpp"
 #include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "Object", NOTHING, (setOffset)(setPriority), (rs::HDGroup)(float)(rs::HTex))
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "Object", NOTHING,
+		(setLightPosition)
+		(advance)
+		(setOffset)
+		(setPriority),
+		(rs::HDGroup)(float)(rs::HTex)(bool))

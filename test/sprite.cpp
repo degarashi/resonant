@@ -7,8 +7,9 @@ const rs::IdValue Sprite::T_Sprite = GlxId::GenTechId("Sprite", "Default");
 // ----------------------- Sprite -----------------------
 rs::WVb Sprite::s_wVb;
 rs::WIb Sprite::s_wIb;
-void Sprite::_initBuffer() {
-	if(!(_hlVb = s_wVb.lock())) {
+std::pair<rs::HLVb, rs::HLIb> Sprite::InitBuffer() {
+	std::pair<rs::HLVb, rs::HLIb> ret;
+	if(!(ret.first = s_wVb.lock())) {
 		// 大きさ1の矩形を定義して後でスケーリング
 		vertex::sprite tmpV[] = {
 			{{0,1}, {0,0}},
@@ -16,24 +17,25 @@ void Sprite::_initBuffer() {
 			{{1,0}, {1,1}},
 			{{0,0}, {0,1}}
 		};
-		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-		_hlVb->get()->initData(tmpV, countof(tmpV), sizeof(vertex::sprite));
+		ret.first = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+		ret.first->get()->initData(tmpV, countof(tmpV), sizeof(vertex::sprite));
 
 		GLushort idx[] = {0,1,2, 2,3,0};
-		_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
-		_hlIb->get()->initData(idx, countof(idx));
+		ret.second = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+		ret.second->get()->initData(idx, countof(idx));
 
-		s_wVb = _hlVb.weak();
-		s_wIb = _hlIb.weak();
+		s_wVb = ret.first.weak();
+		s_wIb = ret.second.weak();
 	} else
-		_hlIb = s_wIb.lock();
+		ret.second = s_wIb.lock();
+	return ret;
 }
 Sprite::Sprite(rs::HTex hTex, float z) {
 	_hlTex = hTex;
 	_zOffset = z;
 	_zRange = {0.f, 1.f};
 	_alpha = 1.f;
-	_initBuffer();
+	std::tie(_hlVb, _hlIb) = InitBuffer();
 }
 void Sprite::setZOffset(float z) {
 	_zOffset = z;

@@ -10,6 +10,8 @@ function InitInput()
 	Global.cpp.actMoveX = System.input:makeAction("moveX")
 	Global.cpp.actMoveY = System.input:makeAction("moveY")
 	Global.cpp.actPress = System.input:makeAction("press")
+	Global.cpp.actLightR0 = System.input:makeAction("light0")
+	Global.cpp.actLightR1 = System.input:makeAction("light1")
 	local hK = Keyboard.OpenKeyboard(0)
 	local hM = Mouse.OpenMouse(0)
 	Global.cpp.hlIm = hM
@@ -35,6 +37,9 @@ function InitInput()
 	-- left, right, up, down [A,D,W,S]		カメラ移動
 	Global.cpp.actAx:linkButtonAsAxis(hK, Action.Key.A, Action.Key.D)
 	Global.cpp.actAy:linkButtonAsAxis(hK, Action.Key.S, Action.Key.W)
+	-- [Q, E] ライト回転
+	Global.cpp.actLightR0:addLink(hK, Action.InputFlag.Button, Action.Key.Q)
+	Global.cpp.actLightR1:addLink(hK, Action.InputFlag.Button, Action.Key.E)
 	-- rotate-camera[MouseX,Y]				カメラ向き変更
 	Global.cpp.actMoveX:addLink(hM, Action.InputFlag.Axis, 0)
 	Global.cpp.actMoveY:addLink(hM, Action.InputFlag.Axis, 1)
