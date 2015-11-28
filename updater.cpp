@@ -98,6 +98,7 @@ namespace rs {
 	void Object::onDraw(IEffect& /*e*/) const {}
 	void Object::onDown(ObjTypeId /*prevId*/, const LCValue& /*arg*/) {}
 	bool Object::onPause() { return detail::c_pauseDefault; }
+	void Object::onEffectReset() {}
 	void Object::onStop() {}
 	void Object::onResume() {}
 	void Object::onReStart() {}
@@ -361,6 +362,9 @@ namespace rs {
 	const DrawTag& DrawableObj::getDTag() const {
 		return _dtag;
 	}
+	void DrawableObj::setDrawPriority(Priority p) {
+		_dtag.priority = p;
+	}
 	// -------------------- DrawGroup --------------------
 	const DSortSP DrawGroup::cs_dsort[static_cast<int>(SortAlg::_Num)] = {
 		cs_dsort_z_asc,
@@ -388,9 +392,6 @@ namespace rs {
 		_dsort(_MakeDSort(al)),
 		_bDynamic(bDynamic)
 	{}
-	void DrawGroup::setPriority(Priority p) {
-		_dtag.priority = p;
-	}
 	bool DrawGroup::isNode() const {
 		return true;
 	}

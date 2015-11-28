@@ -39,6 +39,7 @@ namespace rs {
 						RecvMsgCpp("RecvMsgCpp"),
 						OnUpdate("OnUpdate"),
 						OnPause("OnPause"),
+						OnEffectReset("OnEffectReset"),
 						OnResume("OnResume"),
 						OnExit("OnExit"),
 						System("System");

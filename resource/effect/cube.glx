@@ -7,13 +7,20 @@ varying CubeVary {
 	mediump vec2 varTex;
 	mediump vec3 varNormal;
 	mediump vec3 varPos;
+	mediump vec3 varLsPos;
+	mediump float varLsDist;
 }
 uniform CubeUnif {
 	highp mat4 sys_mTrans;
+	highp mat4 sys_mView;
 	highp mat4 sys_mWorld;
 	sampler2D sys_texDiffuse;
-	mediump vec3 m_vLightPos;
-	mediump vec3 sys_vEyePos;
+	sampler2D m_texLightDepth;
+	vec3 m_vLightPos;
+	vec3 m_vLightDir;
+	vec3 sys_vEyePos;
+	vec2 m_depthRange;
+	highp mat4 m_mLight;
 }
 vertexshader(400) CubeVS() {
 	vec4 v = vec4(atPos,1);
@@ -23,16 +30,52 @@ vertexshader(400) CubeVS() {
 
 	varNormal = normalize((vec4(atNormal, 0) * sys_mWorld).xyz);
 	varPos = v.xyz;
+	vec4 lv = v * m_mLight;
+	varLsPos = lv.xyw;
+	varLsDist = lv.w;
 }
-fragmentshader(400) CubePS() {
+fragmentshader(400) CubeFS() {
 	vec3 fromEye = normalize(varPos - sys_vEyePos);
 	vec3 refv = fromEye + varNormal * (-dot(varNormal, fromEye) * 2);
 	vec3 toLit = normalize(m_vLightPos - varPos);
 	float lit = pow(max(0, dot(toLit, refv)),16);
 	float lit_d = dot(toLit, varNormal) * 0.5 + 0.5;
-	lit_d *= 0.5;
+	/* lit_d *= 0.5; */
 	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit + lit_d);
+	vec2 uv;
+	uv.x = (varLsPos.x/varLsPos.z * 0.5) + 0.5;
+	uv.y = (varLsPos.y/varLsPos.z * 0.5) + 0.5;
+	float d = (varLsDist - m_depthRange.x) / (m_depthRange.y-m_depthRange.x);
+	d -= 3e-3;
+	const float diff = 1e-3;
+	const float shadow = 0.5;
+	float td[4] = {texture2D(m_texLightDepth, uv+vec2(diff,diff)).x < d ? shadow : 1,
+					texture2D(m_texLightDepth, uv+vec2(diff,-diff)).x < d ? shadow : 1,
+					texture2D(m_texLightDepth, uv+vec2(-diff,diff)).x < d ? shadow : 1,
+					texture2D(m_texLightDepth, uv+vec2(-diff,-diff)).x < d ? shadow : 1};
+	float tdsum = td[0] + td[1] + td[2] + td[3];
+	tdsum /= 4;
+	gl_FragColor.xyz *= tdsum;
+	float dt = max(0, dot(-toLit, m_vLightDir));
+	gl_FragColor.xyz *= vec3(dt < 0.8 ? 0.2 : 1);
 	gl_FragColor.w = 1;
+}
+
+varying CubeDepthVary {
+	mediump float varDist;
+}
+uniform CubeDepthUnif {
+	highp mat4 sys_mTrans;
+	mediump vec2 m_depthRange;
+}
+vertexshader(400) CubeDepthVS() {
+	vec4 v = vec4(atPos,1);
+	gl_Position = v * sys_mTrans;
+	varDist = gl_Position.w;
+}
+fragmentshader(400) CubeDepthFS() {
+	float d = (varDist - m_depthRange.x) / (m_depthRange.y-m_depthRange.x);
+	gl_FragColor = vec4(d,d,d,1);
 }
 technique Cube {
 	CullFace = true;
@@ -41,10 +84,16 @@ technique Cube {
 	DepthTest = true;
 	DepthMask = true;
 	Attribute = CubeAttr;
-	Varying = CubeVary;
-	Uniform = CubeUnif;
 	pass Default {
+		Varying = CubeVary;
+		Uniform = CubeUnif;
 		VertexShader = CubeVS();
-		FragmentShader = CubePS();
+		FragmentShader = CubeFS();
+	}
+	pass Depth {
+		Varying = CubeDepthVary;
+		Uniform = CubeDepthUnif;
+		VertexShader = CubeDepthVS();
+		FragmentShader = CubeDepthFS();
 	}
 }

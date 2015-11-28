@@ -37,6 +37,7 @@ namespace rs {
 			//! 描画のタイミングで呼ぶ
 			void onDraw(IEffect& e);
 			bool onPause();
+			void onEffectReset();
 			void onStop();
 			void onResume();
 			void onReStart();
@@ -113,6 +114,8 @@ namespace rs {
 				return base::onPause(); }
 			void onResume() override final {
 				base::onResume(); }
+			void onEffectReset() override final {
+				base::onEffectReset(); }
 			#define DEF_ADAPTOR(name) void name() override final { \
 				base::getState()->name(base::getRef()); \
 				base::_doSwitchState(); }

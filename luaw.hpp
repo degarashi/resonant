@@ -1227,6 +1227,7 @@ namespace rs {
 								RecvMsgCpp,
 								OnUpdate,
 								OnPause,
+								OnEffectReset,
 								OnResume,
 								OnExit,
 								System;

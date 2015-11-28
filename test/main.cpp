@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 		auto& gv = *tls_gvalue;
 
 		rs::LuaImport::RegisterClass<BlurEffect>(*lkb->spLua);
-		rs::LuaImport::RegisterClass<U_BoundingSprite>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<BoundingSprite>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<PointSprite3D>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<CubeObj>(*lkb->spLua);
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 	init.cbEngineInit = [](){
 		auto& gv = *tls_gvalue;
 		// init Camera
-		{
+		if(!gv.hlCam) {
 			gv.hlCam = mgr_cam.emplace();
 			auto& cd = gv.hlCam.ref();
 			auto& ps = cd.refPose();

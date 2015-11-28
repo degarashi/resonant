@@ -30,21 +30,22 @@ class Sprite : public spn::Pose2D {
 		void exportDrawTag(rs::DrawTag& d) const;
 };
 #include "../util/dwrapper.hpp"
-class BoundingSprite : public rs::util::DWrapper<Sprite> {
+class BoundingSprite : public rs::DrawableObjT<BoundingSprite>,
+						public Sprite
+{
 	private:
-		using base_t = rs::util::DWrapper<Sprite>;
 		spn::Vec2	_svec;
 		struct St_Default;
 	public:
-		BoundingSprite(rs::IdValue tpId, rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec);
+		BoundingSprite(rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec);
 };
-class U_BoundingSprite : public BoundingSprite {
+DEF_LUAIMPORT(BoundingSprite)
+class SpriteObj : public rs::DrawableObjT<SpriteObj>,
+					public Sprite
+{
+	private:
+		struct St_Default;
 	public:
-		U_BoundingSprite(rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec);
-};
-DEF_LUAIMPORT(U_BoundingSprite)
-class SpriteObj : public rs::util::DWrapper<Sprite> {
-	public:
-		SpriteObj(rs::HDGroup hDg, rs::HTex hTex, float depth);
+		SpriteObj(rs::HTex hTex, float depth);
 };
 DEF_LUAIMPORT(SpriteObj)

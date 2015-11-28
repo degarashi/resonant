@@ -110,6 +110,7 @@ namespace rs {
 			// ---------- Scene用メソッド ----------
 			virtual void onDown(ObjTypeId prevId, const LCValue& arg);
 			virtual bool onPause();
+			virtual void onEffectReset();
 			virtual void onStop();
 			virtual void onResume();
 			virtual void onReStart();
@@ -298,6 +299,7 @@ namespace rs {
 			DrawTag		_dtag;
 		public:
 			const DrawTag& getDTag() const;
+			void setDrawPriority(Priority p);
 	};
 	using DLObjP = std::pair<const DrawTag*, HLDObj>;
 	using DLObjV = std::vector<DLObjP>;
@@ -438,7 +440,6 @@ namespace rs {
 			void onUpdate(bool bFirst) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
 			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
-			void setPriority(Priority p);
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
 
@@ -702,6 +703,9 @@ namespace rs {
 			void onResume() override {
 				_callLuaMethod(luaNS::RecvMsg, luaNS::OnResume);
 			}
+			void onEffectReset() override {
+				_callLuaMethod(luaNS::RecvMsg, luaNS::OnEffectReset);
+			}
 			bool hasLuaState() const override {
 				return true;
 			}
@@ -724,6 +728,7 @@ namespace rs {
 }
 #include "luaimport.hpp"
 DEF_LUAIMPORT(rs::Object)
+DEF_LUAIMPORT(rs::DrawableObj)
 DEF_LUAIMPORT(rs::UpdGroup)
 DEF_LUAIMPORT(rs::DrawGroup)
 DEF_LUAIMPORT(rs::DrawGroupProxy)

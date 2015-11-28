@@ -207,7 +207,7 @@ namespace rs {
 		}
 		FrameBuff::FrameBuff(HRes hRes, GLuint idFb, const Res (&att)[Att::NUM_ATTACHMENT]):
 			GLFBufferCore(idFb), TokenR(hRes),
-			_size(GLFBuffer::GetAttachmentSize(att, Att::COLOR0))
+			_size(*GLFBuffer::GetAttachmentSize(att, Att::COLOR0))
 		{
 			for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++)
 				boost::apply_visitor(Visitor(_ent[i]), att[i]);
@@ -340,21 +340,20 @@ namespace rs {
 		return _attachment[att];
 	}
 	namespace {
-		struct GetSize_Visitor : boost::static_visitor<spn::Size> {
-			spn::Size operator()(boost::none_t) const {
-				Assert(Trap, false, "invalid Attachment type (=none)")
-				return {};
+		struct GetSize_Visitor : boost::static_visitor<Size_OP> {
+			Size_OP operator()(boost::none_t) const {
+				return spn::none;
 			}
 			template <class T>
-			spn::Size operator()(const T& t) const {
+			Size_OP operator()(const T& t) const {
 				return t->get()->getSize();
 			}
 		};
 	}
-	spn::Size GLFBuffer::GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id) {
+	Size_OP GLFBuffer::GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id) {
 		return boost::apply_visitor(GetSize_Visitor(), att[id]);
 	}
-	spn::Size GLFBuffer::getAttachmentSize(Att::Id att) const {
+	Size_OP GLFBuffer::getAttachmentSize(Att::Id att) const {
 		return GetAttachmentSize(_attachment, att);
 	}
 	const std::string& GLFBuffer::getResourceName() const {

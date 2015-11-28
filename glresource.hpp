@@ -854,13 +854,14 @@ namespace rs {
 			void getDrawToken(draw::TokenDst& dst) const;
 			RUser<GLFBufferTmp> use() const;
 	};
+	using Size_OP = spn::Optional<spn::Size>;
 	//! OpenGL: FrameBufferObjectインタフェース
 	class GLFBuffer : public GLFBufferCore, public IGLResource {
 		// GLuintは内部処理用 = RenderbufferのID
 		Res	_attachment[Att::NUM_ATTACHMENT];
 
 		public:
-			static spn::Size GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id);
+			static Size_OP GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id);
 			static void LuaExport(LuaState& lsc);
 			GLFBuffer();
 			~GLFBuffer();
@@ -872,7 +873,7 @@ namespace rs {
 			void onDeviceLost() override;
 			void getDrawToken(draw::TokenDst& dst) const;
 			const Res& getAttachment(Att::Id att) const;
-			spn::Size getAttachmentSize(Att::Id att) const;
+			Size_OP getAttachmentSize(Att::Id att) const;
 			const std::string& getResourceName() const override;
 	};
 }

@@ -22,9 +22,11 @@ class Sprite3D : public spn::Pose3D {
 		void exportDrawTag(rs::DrawTag& d) const;
 };
 #include "../util/dwrapper.hpp"
-class PointSprite3D : public rs::util::DWrapper<Sprite3D> {
+class PointSprite3D : public rs::DrawableObjT<PointSprite3D>,
+						public Sprite3D
+{
 	private:
-		using base_t = rs::util::DWrapper<Sprite3D>;
+		struct St_Default;
 	public:
-		PointSprite3D(rs::HDGroup hDg, rs::HTex hTex, const spn::Vec3& pos);
+		PointSprite3D(rs::HTex hTex, const spn::Vec3& pos);
 };

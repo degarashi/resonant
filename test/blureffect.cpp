@@ -2,9 +2,7 @@
 #include "../sys_uniform_value.hpp"
 #include "../glx_if.hpp"
 
-namespace {
-	const rs::IdValue T_PostEffect = rs::IEffect::GlxId::GenTechId("PostEffect", "Default");
-}
+const rs::IdValue T_PostEffect = rs::IEffect::GlxId::GenTechId("PostEffect", "Default");
 BlurEffect::BlurEffect(rs::Priority p): PostEffect(T_PostEffect, p) {}
 void BlurEffect::setAlpha(float a) {
 	setParam(rs::unif::Alpha, a);

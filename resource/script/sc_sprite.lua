@@ -34,17 +34,18 @@ st_idle = {
 		for i=1,N_Sprite do
 			local hSt = System.glres:loadTexture("spr" .. i-1 .. ".png", G.GLRes.MipState.MipmapLinear, nil)
 			hSt:setFilter(true, true)
-			local spr = G.SpriteObj.New(dg, hSt, i*0.1)
-			spr:setPriority(0x2000)
+			local spr = G.SpriteObj.New(hSt, i*0.1)
+			spr:setDrawPriority(0x2000)
 			self.hSpr[i] = spr
 			upd:addObj(spr)
+			dg:addObj(spr)
 
 			spr:setScale(G.Vec2.New(0.3, 0.3))
 			spr:setOffset(G.Vec2.New(-1.0 + i*0.2,
 									(i&1)*-0.1))
 		end
 		upd:addObj(self.baseUpd)
-		self.baseDg:setPriority(0x1000)
+		self.baseDg:setDrawPriority(0x1000)
 		dg:addObj(self.baseDg)
 
 		local clp = G.ClearParam.New(G.Vec4.New(0,0.15,0,0), 1.0, nil)

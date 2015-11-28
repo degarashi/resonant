@@ -4,7 +4,8 @@
 
 // ---------------------- Cube ----------------------
 rs::WVb Cube::s_wVb[2];
-const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default");
+const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
+				Cube::T_CubeDepth = GlxId::GenTechId("Cube", "Depth");
 void Cube::_initVb(bool bFlip) {
 	int index = bFlip ? 1 : 0;
 
@@ -86,8 +87,12 @@ void Cube::advance() {
 	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
 }
 void Cube::draw(Engine& e) const {
+	if(e.getDrawType() == Engine::DrawType::Normal) {
+		e.setTechPassId(T_Cube);
+		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+	} else
+		e.setTechPassId(T_CubeDepth);
 	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());
-	e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
 	e.draw(GL_TRIANGLES, 0, 6*6);
@@ -107,12 +112,19 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::cube>::GetVDecl() {
 }
 
 // ---------------------- CubeObj ----------------------
-CubeObj::CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex, bool bFlip):
-	DWrapper(::MakeCallDraw<Engine>(), Cube::T_Cube, hDg, size, hTex, bFlip) {}
+struct CubeObj::St_Default : StateT<St_Default> {
+	void onDraw(const CubeObj& self, rs::IEffect& e) const override {
+		self.draw(static_cast<Engine&>(e));
+	}
+};
+CubeObj::CubeObj(float size, rs::HTex hTex, bool bFlip):
+	Cube(size, hTex, bFlip)
+{
+	setStateNew<St_Default>();
+}
 #include "../luaimport.hpp"
 #include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "Object", NOTHING,
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "DrawableObj", NOTHING,
 		(advance)
-		(setOffset)
-		(setPriority),
-		(rs::HDGroup)(float)(rs::HTex)(bool))
+		(setOffset),
+		(float)(rs::HTex)(bool))

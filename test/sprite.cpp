@@ -47,14 +47,17 @@ void Sprite::setZRange(const spn::RangeF& r) {
 	_zRange = r;
 }
 void Sprite::draw(Engine& e) const {
-	spn::profiler.beginBlockObj("sprite::draw");
-	e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
-	e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
-	e.setUniform(rs::unif::Alpha, _alpha);
-	e.ref<rs::SystemUniform2D>().setWorld(getToWorld().convertA33());
-	e.setVStream(_hlVb, 0);
-	e.setIStream(_hlIb);
-	e.drawIndexed(GL_TRIANGLES, 6);
+	if(e.getDrawType() == Engine::DrawType::Normal) {
+		spn::profiler.beginBlockObj("sprite::draw");
+		e.setTechPassId(T_Sprite);
+		e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
+		e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
+		e.setUniform(rs::unif::Alpha, _alpha);
+		e.ref<rs::SystemUniform2D>().setWorld(getToWorld().convertA33());
+		e.setVStream(_hlVb, 0);
+		e.setIStream(_hlIb);
+		e.drawIndexed(GL_TRIANGLES, 6);
+	}
 }
 void Sprite::exportDrawTag(rs::DrawTag& d) const {
 	d.idTex[0] = _hlTex;
@@ -72,28 +75,41 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::sprite>::GetVDecl() {
 }
 
 // ----------------------- SpriteObj -----------------------
-SpriteObj::SpriteObj(rs::HDGroup hDg, rs::HTex hTex, float depth):
-	DWrapper(::MakeCallDraw<Engine>(), Sprite::T_Sprite, hDg, hTex, depth) {}
+struct SpriteObj::St_Default : StateT<St_Default> {
+	void onUpdate(SpriteObj& self) override {
+		self.exportDrawTag(self._dtag);
+	}
+	void onDraw(const SpriteObj& self, rs::IEffect& e) const override {
+		self.draw(static_cast<Engine&>(e));
+	}
+};
+SpriteObj::SpriteObj(rs::HTex hTex, float depth):
+	Sprite(hTex, depth)
+{
+	setStateNew<St_Default>();
+}
 #include "../luaimport.hpp"
 #include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, SpriteObj, SpriteObj, "Object", NOTHING, (setOffset)(setScale)(setAngle)(setZOffset)(setZRange)(setAlpha)(setPriority), (rs::HDGroup)(rs::HTex)(float))
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, SpriteObj, SpriteObj, "DrawableObj", NOTHING,
+		(setOffset)
+		(setScale)
+		(setAngle)
+		(setZOffset)
+		(setZRange)
+		(setAlpha),
+		(rs::HTex)(float))
 
-// ----------------------- U_BoundingSprite -----------------------
-U_BoundingSprite::U_BoundingSprite(rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
-	BoundingSprite(Sprite::T_Sprite, hDg, hTex, pos, svec) {}
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, U_BoundingSprite, U_BoundingSprite, "Object", NOTHING,
-		(setScale), (rs::HDGroup)(rs::HTex)(const spn::Vec2&)(const spn::Vec2&))
 // ----------------------- BoundingSprite -----------------------
-BoundingSprite::BoundingSprite(rs::IdValue tpId, rs::HDGroup hDg, rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
-	base_t(::MakeCallDraw<Engine>(), tpId, hDg, hTex, 0.f),
+BoundingSprite::BoundingSprite(rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
+	Sprite(hTex, 0.f),
 	_svec(svec)
 {
 	setOffset(pos);
 	setZRange({-1.f, 1.f});
 	setStateNew<St_Default>();
 }
-struct BoundingSprite::St_Default : base_t::St_Default {
-	void onUpdate(base_t& self) override {
+struct BoundingSprite::St_Default : StateT<St_Default> {
+	void onUpdate(BoundingSprite& self) override {
 		auto& ths = static_cast<BoundingSprite&>(self);
 		auto& sc = self.getScale();
 		auto& ofs = self.refOffset();
@@ -123,6 +139,12 @@ struct BoundingSprite::St_Default : base_t::St_Default {
 
 		// ZOffset = y
 		self.setZOffset(ofs.y);
-		self.refreshDrawTag();
+		self.exportDrawTag(self._dtag);
+	}
+	void onDraw(const BoundingSprite& self, rs::IEffect& e) const override {
+		self.draw(static_cast<Engine&>(e));
 	}
 };
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, BoundingSprite, BoundingSprite, "DrawableObj", NOTHING,
+		(setScale),
+		(rs::HTex)(const spn::Vec2&)(const spn::Vec2&))

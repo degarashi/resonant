@@ -121,6 +121,7 @@ namespace rs {
 	DEF_ADAPTOR(void, onStop)
 	DEF_ADAPTOR(void, onResume)
 	DEF_ADAPTOR(void, onReStart)
+	DEF_ADAPTOR(void, onEffectReset)
 	#undef DEF_ADAPTOR
 
 	// -------------- U_Scene --------------

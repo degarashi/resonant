@@ -41,7 +41,7 @@ st_idle = {
 		-- [現シーンのDG] Z値でソート(Dynamic)
 		do
 			local dgCur = G.U_DrawGroup.New({Alg.Z_Asc}, true)
-			dgCur:setPriority(0x1000)
+			dgCur:setDrawPriority(0x1000)
 			dg:addObj(dgCur)
 			self.dgCur = dgCur
 		end
@@ -65,7 +65,7 @@ st_idle = {
 			self.blur1 = blur1
 		end
 		-- [HUD]
-		self.baseDg:setPriority(0xffff)
+		self.baseDg:setDrawPriority(0xffff)
 		dg:addObj(self.baseDg)
 
 		-- バウンドするスプライトの初期化
@@ -85,9 +85,10 @@ st_idle = {
 			hTex[i]:setFilter(true, true)
 		end
 		for i=0,150-1 do
-			local spr = G.U_BoundingSprite.New(self.dgCur, hTex[(i%N_Sprite)+1], fnPos(), fnSV())
+			local spr = G.BoundingSprite.New(hTex[(i%N_Sprite)+1], fnPos(), fnSV())
 			spr:setScale(G.Vec2.New(0.2, 0.2))
 			upd:addObj(spr)
+			self.dgCur:addObj(spr)
 		end
 	end,
 	OnUpdate = function(self, slc, ...)

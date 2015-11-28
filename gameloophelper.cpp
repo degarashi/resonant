@@ -109,6 +109,7 @@ namespace rs {
 						mgr_gl.replaceEffect(lkb->hlFx, _cbEngine);
 						if(_init.cbEngineInit)
 							_init.cbEngineInit();
+						mgr_scene.onEffectReset();
 					}
 				} catch(const std::exception& e) {
 					// 文法エラーが起こったら差し替えない

@@ -14,7 +14,8 @@ class Cube : public spn::Pose3D {
 		rs::HLTex		_hlTex;
 		void _initVb(bool bFlip);
 	public:
-		const static rs::IdValue	T_Cube;
+		const static rs::IdValue	T_Cube,
+									T_CubeDepth;
 		/*! \param s[in]		一辺のサイズ
 			\param hTex[in]		張り付けるテクスチャ
 			\param bFlip[in]	面反転フラグ */
@@ -24,8 +25,12 @@ class Cube : public spn::Pose3D {
 		void advance();
 };
 #include "../util/dwrapper.hpp"
-class CubeObj : public rs::util::DWrapper<Cube> {
+class CubeObj : public rs::DrawableObjT<CubeObj>,
+				public Cube
+{
+	private:
+		struct St_Default;
 	public:
-		CubeObj(rs::HDGroup hDg, float size, rs::HTex hTex, bool bFlip);
+		CubeObj(float size, rs::HTex hTex, bool bFlip);
 };
 DEF_LUAIMPORT(CubeObj)
