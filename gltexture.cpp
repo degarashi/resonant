@@ -14,7 +14,10 @@ namespace rs {
 	IGLTexture::IGLTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::Size& sz, bool bCube):
 		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE),
 		_actID(0), _mipLevel(miplevel), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D),
-		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _coeff(0), _size(sz), _format(fmt) {}
+		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _coeff(0), _size(sz), _format(fmt)
+	{
+		Assert(Trap, !bCube || (_size.width==_size.height))
+	}
 	#define FUNC_COPY(z, data, elem)	(elem(data.elem))
 	#define FUNC_MOVE(z, data, elem)	(elem(std::move(data.elem)))
 	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_actID)\
@@ -29,7 +32,7 @@ namespace rs {
 	}
 	void IGLTexture::use_begin() const {
 		GLEC_D(Trap, glActiveTexture, GL_TEXTURE0 + _actID);
-		GLEC_D(Trap, glBindTexture, _texFlag, _idTex);
+		GLEC_D(Trap, glBindTexture, getTexFlag(), _idTex);
 		GLEC_Chk_D(Trap);
 	}
 	void IGLTexture::use_end() const {
@@ -47,7 +50,9 @@ namespace rs {
 	GLenum IGLTexture::getTexFlag() const {
 		return _texFlag;
 	}
-	GLenum IGLTexture::getFaceFlag() const {
+	GLenum IGLTexture::getFaceFlag(CubeFace face) const {
+		if(isCubemap())
+			return _faceFlag + static_cast<int>(face) - static_cast<int>(CubeFace::PositiveX);
 		return _faceFlag;
 	}
 	const OPInCompressedFmt& IGLTexture::getFormat() const {
@@ -62,7 +67,7 @@ namespace rs {
 	bool IGLTexture::IsMipmap(MipState level) {
 		return level >= MipmapNear;
 	}
-	void IGLTexture::save(const std::string& path) {
+	void IGLTexture::save(const std::string& path, CubeFace face) {
 		auto saveFmt = GL_RGBA;
 		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(saveFmt, GL_UNSIGNED_BYTE);
 		spn::ByteBuff buff(sz);
@@ -70,7 +75,7 @@ namespace rs {
 			{
 				// OpenGL ES2では無効
 				auto u = use();
-				GL.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
+				GL.glGetTexImage(getFaceFlag(face), 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
 			}
 		#else
 			Assert(Trap, false, "not implemented yet");
@@ -115,11 +120,6 @@ namespace rs {
 	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool /*bStream*/, bool bRestore):
 		IGLTexture(NoMipmap, fmt, sz, bCube), /*_bStream(bStream),*/ _bRestore(bRestore)
 	{}
-	Texture_Mem::Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff):
-		Texture_Mem(bCube, fmt, sz, bStream, bRestore)
-	{
-		writeData(buff, srcFmt);
-	}
 	const GLFormatDesc& Texture_Mem::_prepareBuffer() {
 		auto& info = *GLFormat::QueryInfo(*_format);
 		_typeFormat = info.elementType;
@@ -139,7 +139,7 @@ namespace rs {
 				tmp.attach(GLFBuffer::Att::COLOR0, 0);
 	#else
 				auto u = use();
-				GLEC(Warn, glGetTexImage, GL_TEXTURE_2D, 0, info.baseType, info.elementType, &_buff->operator[](0));
+				GLEC(Warn, glGetTexImage, getFaceFlag(), 0, info.baseType, info.elementType, &_buff->operator[](0));
 	#endif
 			}
 			IGLTexture::onDeviceLost();
@@ -151,18 +151,22 @@ namespace rs {
 			if(_bRestore && _buff) {
 				// バッファの内容から復元
 				GLenum baseFormat = GLFormat::QueryInfo(_format.get())->baseType;
-				GLEC(Warn, glTexImage2D, GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, baseFormat, _typeFormat.get(), &_buff->operator [](0));
+				GLEC(Warn, glTexImage2D, getFaceFlag(), 0, _format.get(), _size.width, _size.height, 0, baseFormat, _typeFormat.get(), &_buff->operator [](0));
 				// DeviceがActiveな時はバッファを空にしておく
 				_buff = spn::none;
 				_typeFormat = spn::none;
 			} else {
 				// とりあえず領域だけ確保しておく
-				GLEC(Warn, glTexImage2D, GL_TEXTURE_2D, 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+				if(isCubemap()) {
+					for(int i=0 ; i<=static_cast<int>(CubeFace::NegativeZ) ; i++)
+						GLEC(Warn, glTexImage2D, getFaceFlag(static_cast<CubeFace>(i)), 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+				} else
+					GLEC(Warn, glTexImage2D, getFaceFlag(), 0, _format.get(), _size.width, _size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 			}
 		}
 	}
 	// DeviceLostの時にこのメソッドを読んでも無意味
-	void Texture_Mem::writeData(spn::AB_Byte buff, GLTypeFmt srcFmt, CubeFace /*face*/) {
+	void Texture_Mem::writeData(spn::AB_Byte buff, GLTypeFmt srcFmt, CubeFace face) {
 		// バッファ容量がサイズ以上かチェック
 		auto szInput = GLFormat::QuerySize(srcFmt);
 		Assert(Trap, buff.getLength() >= _size.width*_size.height*szInput)
@@ -172,7 +176,7 @@ namespace rs {
 			auto& tfm = getFormat();
 			auto& sz = getSize();
 			auto u = use();
-			GL.glTexImage2D(GL_TEXTURE_2D, 0, tfm.get(), sz.width, sz.height,
+			GL.glTexImage2D(getFaceFlag(face), 0, tfm.get(), sz.width, sz.height,
 							0, tfm.get(), srcFmt.get(), buff.getPtr());
 			GLEC_Chk_D(Trap);
 		} else {
@@ -183,7 +187,7 @@ namespace rs {
 			}
 		}
 	}
-	void Texture_Mem::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace /*face*/) {
+	void Texture_Mem::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace face) {
 		size_t bs = GLFormat::QueryByteSize(_format.get(), GL_UNSIGNED_BYTE);
 		auto sz = buff.getLength();
 		int height = sz / (width * bs);
@@ -192,7 +196,7 @@ namespace rs {
 			auto u = use();
 			// GLテクスチャに転送
 			GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;
-			GL.glTexSubImage2D(GL_TEXTURE_2D, 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
+			GL.glTexSubImage2D(getFaceFlag(face), 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
 		} else {
 			// 内部バッファが存在すればそこに書き込んでおく
 			if(_buff) {
@@ -334,7 +338,7 @@ namespace rs {
 	std::pair<spn::Size, GLInCompressedFmt> Texture_StaticURI::LoadTexture(IGLTexture& tex, HRW hRW, CubeFace face) {
 		SPSurface sfc = Surface::Load(hRW);
 		auto tbd = tex.use();
-		GLenum tflag = tex.getFaceFlag() + static_cast<int>(face) - static_cast<int>(CubeFace::PositiveX);
+		GLenum tflag = tex.getFaceFlag(face);
 		return MakeTex(tflag, sfc, tex.getFormat(), true, tex.isMipmap());
 	}
 
@@ -366,10 +370,10 @@ namespace rs {
 				if(_gen->isSingle()) {
 					auto buff = _gen->generate(getSize());
 					for(int i=0 ; i<6 ; i++)
-						MakeMip(getFaceFlag()+i, fmt, size, buff, true, isMipmap());
+						MakeMip(getFaceFlag(static_cast<CubeFace>(i)), fmt, size, buff, true, isMipmap());
 				}
 				for(int i=0 ; i<6 ; i++)
-					MakeMip(getFaceFlag()+i, fmt, size, _gen->generate(getSize(), static_cast<CubeFace>(i)), true, isMipmap());
+					MakeMip(getFaceFlag(static_cast<CubeFace>(i)), fmt, size, _gen->generate(getSize(), static_cast<CubeFace>(i)), true, isMipmap());
 			} else
 				MakeMip(getFaceFlag(), fmt, size, _gen->generate(getSize(), CubeFace::PositiveX), true, isMipmap());
 		}

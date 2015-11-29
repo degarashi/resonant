@@ -176,11 +176,14 @@ namespace rs {
 			HLTex loadCubeTextureFromResource(MipState miplevel, OPInCompressedFmt fmt, Ts&&... ts) {
 				return loadCubeTexture(miplevel, fmt, _uriFromResourceName(std::forward<Ts>(ts))...);
 			}
+			HLTex _createTexture(bool bCube, const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore);
 			//! 空のテクスチャを作成
 			/*! 領域だけ確保 */
 			HLTex createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore);
 			/*! 用意したデータで初期化 */
 			HLTex createTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data);
+			//! 空のキューブテクスチャを作成
+			HLTex createCubeTexture(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream);
 			//! 共通のデータで初期化
 			HLTex createCubeTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bRestore, bool bStream, spn::AB_Byte data);
 			//! 個別のデータで初期化
@@ -554,7 +557,7 @@ namespace rs {
 			GLint getTextureID() const;
 			const OPInCompressedFmt& getFormat() const;
 			GLenum getTexFlag() const;
-			GLenum getFaceFlag() const;
+			GLenum getFaceFlag(CubeFace face=CubeFace::PositiveX) const;
 			void onDeviceLost() override;
 			//! テクスチャユニット番号を指定してBind
 			void setActiveID(GLuint n);
@@ -562,7 +565,7 @@ namespace rs {
 			static bool IsMipmap(MipState level);
 			bool isMipmap() const;
 			//! 内容をファイルに保存 (主にデバッグ用)
-			void save(const std::string& path);
+			void save(const std::string& path, CubeFace face=CubeFace::PositiveX);
 
 			bool isCubemap() const;
 			bool operator == (const IGLTexture& t) const;
@@ -650,7 +653,6 @@ namespace rs {
 		const GLFormatDesc& _prepareBuffer();
 		public:
 			Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore);
-			Texture_Mem(bool bCube, GLInSizedFmt fmt, const spn::Size& sz, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte buff);
 			void onDeviceReset() override;
 			void onDeviceLost() override;
 			//! テクスチャ全部書き換え = バッファも置き換え
@@ -805,11 +807,13 @@ namespace rs {
 			};
 			static GLenum _AttIDtoGL(Att::Id att);
 			void _attachRenderbuffer(Att::Id aId, GLuint rb);
+			void _attachCubeTexture(Att::Id aId, GLuint faceFlag, GLuint tb);
 			void _attachTexture(Att::Id aId, GLuint tb);
+			using TexRes = std::pair<HLTex, CubeFace>;
 			// attachは受け付けるがハンドルを格納するだけであり、実際OpenGLにセットされるのはDTh
 		protected:
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
-			using Res = boost::variant<boost::none_t, HLTex, HLRb>;
+			using Res = boost::variant<boost::none_t, TexRes, HLRb>;
 			GLuint	_idFbo;
 			static void _SetCurrentFBSize(const spn::Size& s);
 
@@ -827,8 +831,9 @@ namespace rs {
 			struct Visitor;
 			struct Pair {
 				bool	bTex;
-				GLuint	idRes;		// 0番は無効
 				Res		handle;
+				GLuint	idRes,		// 0番は無効
+						faceFlag;
 			} _ent[Att::NUM_ATTACHMENT];
 			const spn::Size	_size;	//!< Colo0バッファのサイズ
 
@@ -867,6 +872,7 @@ namespace rs {
 			~GLFBuffer();
 			void attachRBuffer(Att::Id att, HRb hRb);
 			void attachTexture(Att::Id att, HTex hTex);
+			void attachTextureFace(Att::Id att, HTex hTex, CubeFace face);
 			void detach(Att::Id att);
 
 			void onDeviceReset() override;

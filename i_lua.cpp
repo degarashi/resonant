@@ -104,9 +104,9 @@ DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroup, DrawGroup, "DrawableObj",
 DEF_LUAIMPLEMENT_HDL(ObjMgr, rs::U_DrawGroup, U_DrawGroup, "DrawGroup", NOTHING, NOTHING, (const SortAlgList&)(bool))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroupProxy, DrawGroupProxy, "DrawableObj", NOTHING, (setPriority)(getName))
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_DrawGroupProxy, U_DrawGroupProxy, "DrawGroupProxy", NOTHING, NOTHING, (rs::HDGroup))
-DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::GLRes, GLRes, NOTHING, (loadTexture)(loadCubeTexture)(createTexture)(makeFBuffer)(makeRBuffer))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::GLRes, GLRes, NOTHING, (loadTexture)(loadCubeTexture)(createTexture)(createCubeTexture)(makeFBuffer)(makeRBuffer))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLRBuffer, GLRBuffer, NOTHING, (getBufferID)(getSize))
-DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLFBuffer, GLFBuffer, NOTHING, (attachRBuffer)(attachTexture)(detach))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::GLFBuffer, GLFBuffer, NOTHING, (attachRBuffer)(attachTexture)(attachTextureFace)(detach))
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ABufMgr, rs::ABuffer, ABuffer, NOTHING, (isStreaming))
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::SGroupMgr, rs::AGroup, AGroup, NOTHING, (pause)(resume)(clear)(play)(fadeIn)(fadeInOut)(getChannels)(getIdleChannels)(getPlayingChannels))

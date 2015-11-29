@@ -116,13 +116,21 @@ namespace rs {
 				_cbInit)
 		);
 	}
-	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore) {
-		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore)));
+	HLTex GLRes::_createTexture(bool bCube, const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore) {
+		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(bCube, fmt, size, bStream, bRestore)));
 		_cbInit(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
+	HLTex GLRes::createCubeTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore) {
+		return _createTexture(true, size, fmt, bStream, bRestore);
+	}
+	HLTex GLRes::createTexture(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore) {
+		return _createTexture(false, size, fmt, bStream, bRestore);
+	}
 	HLTex GLRes::createTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data) {
-		LHdl lh = base_type::acquire(UPResource(new Texture_Mem(false, fmt, size, bStream, bRestore, srcFmt, data)));
+		auto ptr = std::make_unique<Texture_Mem>(false, fmt, size, bStream, bRestore);
+		ptr->writeData(data, srcFmt);
+		LHdl lh = base_type::acquire(std::move(ptr));
 		_cbInit(lh);
 		return Cast<UPTexture>(std::move(lh));
 	}
