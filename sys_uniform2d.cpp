@@ -3,6 +3,12 @@
 #include "camera2d.hpp"
 
 namespace rs {
+	SystemUniform2D::Getter::counter_t SystemUniform2D::Getter::operator()(const HLCam2DF& c, Camera*) const {
+		if(c)
+			return c->getAccum();
+		return 0;
+	}
+
 	using GlxId = IEffect::GlxId;
 	namespace unif2d {
 		const IdValue	Depth = GlxId::GenUnifId("sys_fDepth");
@@ -23,37 +29,28 @@ namespace rs {
 	}
 	spn::RFlagRet SystemUniform2D::_refresh(spn::Mat33& m, WorldInv*) const {
 		getWorld().inversion(m);
-		return {};
+		return {true, 0};
 	}
-	spn::RFlagRet SystemUniform2D::_refresh(uint32_t& ac, CameraAc*) const {
-		getCamera();
-		ac = ~0;
-		return {};
-	}
-	spn::RFlagRet SystemUniform2D::_refresh(spn::AcWrapper<spn::Mat33>& m, Transform*) const {
-		auto& hc = getCamera();
-		auto cur_ac = getCameraAc();
-		if(hc) {
-			bool b = spn::CompareAndSet(m.ac_counter, _rflag.getAcCounter<World>());
-			auto n_ac = hc->getAccum();
-			b |= cur_ac != n_ac;
-			if(b) {
-				_rflag.ref<CameraAc>() = n_ac;
-				m = getWorld() * hc->getViewProj();
-			}
-			// 次回も更新チェックする
-			return {0, true};
-		} else
+	spn::RFlagRet SystemUniform2D::_refresh(typename Transform::value_type& m, Transform*) const {
+		auto ret = _rflag.getWithCheck(this, m);
+		auto& cam = *std::get<1>(ret.first);
+		bool b = ret.second;
+		if(b) {
 			m = getWorld();
-		return {};
+			if(cam)
+				m *= cam->getViewProj();
+		}
+		return {b, 0};
 	}
 	spn::RFlagRet SystemUniform2D::_refresh(spn::Mat33& m, TransformInv*) const {
 		getTransform().inversion(m);
-		return {};
+		return {true, 0};
 	}
 
 	SystemUniform2D::SystemUniform2D() {
-		setWorld(spn::Mat33(1, spn::Mat33::TagDiagonal));
+		auto im = spn::Mat33(1, spn::Mat33::TagDiagonal);
+		setWorld(im);
+		setTransform(im);
 	}
 	void SystemUniform2D::outputUniforms(IEffect& e) const {
 		#define DEF_SETUNIF(name, func) \

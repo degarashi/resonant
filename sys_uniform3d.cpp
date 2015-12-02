@@ -3,6 +3,12 @@
 #include "glx_if.hpp"
 
 namespace rs {
+	SystemUniform3D::Getter::counter_t SystemUniform3D::Getter::operator()(const HLCamF& c, Camera*) const {
+		if(c)
+			return c->getAccum();
+		return 0;
+	}
+
 	using GlxId = IEffect::GlxId;
 	namespace sysunif3d {
 		namespace matrix {
@@ -28,39 +34,30 @@ namespace rs {
 		}
 	}
 
-	spn::RFlagRet SystemUniform3D::_refresh(uint32_t& ac, CameraAc*) const {
-		getCamera();
-		ac = ~0;
-		return {};
-	}
-	spn::RFlagRet SystemUniform3D::_refresh(spn::AcWrapper<spn::AMat44>& m, Transform*) const {
-		auto& hc = getCamera();
-		auto cur_ac = getCameraAc();
-		if(hc) {
-			bool b = spn::CompareAndSet(m.ac_counter, _rflag.getAcCounter<World>());
-			auto n_ac = hc->getAccum();
-			b |= cur_ac != n_ac;
-			if(b) {
-				_rflag.ref<CameraAc>() = n_ac;
-				m = getWorld() * hc->getViewProj();
-			}
-			// 次回も更新チェックする
-			return {0, true};
-		} else
+	spn::RFlagRet SystemUniform3D::_refresh(typename Transform::value_type& m, Transform*) const {
+		auto ret = _rflag.getWithCheck(this, m);
+		auto& cam = *std::get<1>(ret.first);
+		bool b = ret.second;
+		if(b) {
 			m = getWorld();
-		return {};
+			if(cam)
+				m *= cam->getViewProj();
+		}
+		return {true, 0};
 	}
 	spn::RFlagRet SystemUniform3D::_refresh(spn::AMat44& m, TransformInv*) const {
 		getTransform().inversion(m);
-		return {};
+		return {true, 0};
 	}
 	spn::RFlagRet SystemUniform3D::_refresh(spn::AMat44& m, WorldInv*) const {
 		getWorld().inversion(m);
-		return {};
+		return {true, 0};
 	}
 
 	SystemUniform3D::SystemUniform3D() {
-		setWorld(spn::AMat44(1, spn::AMat44::TagDiagonal));
+		auto im = spn::AMat44(1, spn::AMat44::TagDiagonal);
+		setWorld(im);
+		setTransform(im);
 	}
 	void SystemUniform3D::outputUniforms(IEffect& e) const {
 		#define DEF_SETUNIF(name, func) \

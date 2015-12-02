@@ -2,6 +2,7 @@
 #include "spinner/rflag.hpp"
 #include "spinner/pose.hpp"
 #include "spinner/structure/angle.hpp"
+#include "spinner/structure/wrapper.hpp"
 #include "glx_id.hpp"
 #include "handle.hpp"
 
@@ -10,15 +11,24 @@ namespace rs {
 		姿勢の保持はPose2Dクラスが行い，カメラ固有の変数だけを持つ */
 	class Camera2D : public spn::CheckAlign<16,Camera2D> {
 		private:
+			struct Pose;
+			struct Getter : spn::RFlag_Getter<uint32_t> {
+				using RFlag_Getter::operator ();
+				counter_t operator()(const spn::Pose2D& pose, Pose*) const {
+					return pose.getAccum();
+				}
+			};
+			using View_t = spn::AcCheck<spn::Mat33, Getter>;
+			using Accum_t = spn::AcCheck<spn::Wrapper<uint32_t>, Getter>;
 			#define SEQ_CAMERA2D \
 				((Pose)(spn::Pose2D)) \
-				((View)(spn::Mat33)(Pose)) \
+				((View)(View_t)(Pose)) \
 				((ViewInv)(spn::Mat33)(View)) \
 				((AspectRatio)(float)) \
 				((Proj)(spn::Mat33)(AspectRatio)) \
 				((ViewProj)(spn::Mat33)(View)(Proj)) \
 				((ViewProjInv)(spn::Mat33)(ViewProj)) \
-				((Accum)(uint32_t)(Pose)(AspectRatio))
+				((Accum)(Accum_t)(Pose)(AspectRatio))
 			RFLAG_S(Camera2D, SEQ_CAMERA2D)
 			RFLAG_SETMETHOD(Accum)
 		public:

@@ -24,14 +24,20 @@ namespace rs {
 	};
 	class SystemUniform3D : public spn::CheckAlign<16, SystemUniform3D> {
 		private:
+			struct Camera;
+			struct Getter : spn::RFlag_Getter<uint32_t> {
+				using RFlag_Getter::operator();
+				counter_t operator()(const HLCamF& c, Camera*) const;
+			};
+			using Transform_t = spn::AcCheck<spn::AMat44, Getter>;
 			#define SEQ_SYSUNI3D \
 				((World)(spn::AMat44)) \
 				((WorldInv)(spn::AMat44)(World)) \
 				((Camera)(HLCamF)) \
-				((CameraAc)(uint32_t)(Camera)) \
-				((Transform)(spn::AcWrapper<spn::AMat44>)(World)(CameraAc)) \
+				((Transform)(Transform_t)(World)(Camera)) \
 				((TransformInv)(spn::AMat44)(Transform))
 			RFLAG_S(SystemUniform3D, SEQ_SYSUNI3D)
+			RFLAG_SETMETHOD(Transform)
 		public:
 			RFLAG_GETMETHOD_S(SEQ_SYSUNI3D)
 			RFLAG_REFMETHOD_S(SEQ_SYSUNI3D)
@@ -47,16 +53,23 @@ namespace rs {
 	*/
 	class SystemUniform2D {
 		private:
+			struct Camera;
+			struct Getter : spn::RFlag_Getter<uint32_t> {
+				using RFlag_Getter::operator();
+				counter_t operator()(const HLCam2DF& c, Camera*) const;
+			};
+			using Transform_t = spn::AcCheck<spn::Mat33, Getter>;
 			#define SEQ_SYSUNI2D \
 				((World)(spn::Mat33)) \
 				((WorldInv)(spn::Mat33)(World)) \
 				((Camera)(HLCam2DF)) \
-				((CameraAc)(uint32_t)(Camera)) \
-				((Transform)(spn::AcWrapper<spn::Mat33>)(World)(CameraAc)) \
+				((Transform)(Transform_t)(World)(Camera)) \
 				((TransformInv)(spn::Mat33)(Transform))
 			RFLAG_S(SystemUniform2D, SEQ_SYSUNI2D)
+			RFLAG_SETMETHOD(Transform)
 		public:
 			RFLAG_GETMETHOD_S(SEQ_SYSUNI2D)
+			RFLAG_REFMETHOD_S(SEQ_SYSUNI2D)
 			RFLAG_SETMETHOD_S(SEQ_SYSUNI2D)
 			#undef SEQ_SYSUNI2D
 

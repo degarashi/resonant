@@ -47,7 +47,7 @@ void Engine::_prepareUniforms() {
 #include "../camera.hpp"
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, LightDepth*) const {
 	tex = mgr_gl.createTexture(getLightDepthSize(), GL_R16, false, false);
-	return {};
+	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLCam& c, LightCamera*) const {
 	c = mgr_cam.emplace();
@@ -56,24 +56,24 @@ spn::RFlagRet Engine::_refresh(rs::HLCam& c, LightCamera*) const {
 	pose.setRot(spn::AQuat::Rotation({0,0,1}, getLightDir()));
 	c->setFov(spn::DegF(90));
 	c->setZPlane(0.01f, 500.f);
-	return {};
+	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(spn::Mat44& m, LightMatrix*) const {
 	auto& c = getLightCamera().cref();
 	m = c.getViewProj();
-	return {};
+	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, LightColorBuff*) const {
 	tex = mgr_gl.createTexture(getLightDepthSize(), GL_R16, false, false);
 	tex->get()->setFilter(true, true);
-	return {};
+	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLFb& fb, LightFB*) const {
 	if(!fb)
 		fb = mgr_gl.makeFBuffer();
 	fb->get()->attachTexture(rs::GLFBuffer::Att::COLOR0, getLightColorBuff());
 	fb->get()->attachTexture(rs::GLFBuffer::Att::DEPTH, getLightDepth());
-	return {};
+	return {true, 0};
 }
 #include "../util/screen.hpp"
 class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {

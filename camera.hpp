@@ -5,6 +5,7 @@
 #include "spinner/resmgr.hpp"
 #include "spinner/alignedalloc.hpp"
 #include "spinner/rflag.hpp"
+#include "spinner/structure/wrapper.hpp"
 #include "boomstick/geom3D.hpp"
 #include "handle.hpp"
 
@@ -12,9 +13,18 @@ namespace rs {
 	/*! 姿勢の保持はPose3Dクラスが行い，カメラ固有の変数だけを持つ */
 	class Camera3D : public spn::CheckAlign<16, Camera3D> {
 		private:
+			struct Pose;
+			struct Getter : spn::RFlag_Getter<uint32_t> {
+				using RFlag_Getter::operator ();
+				counter_t operator()(const spn::Pose3D& pose, Pose*) const {
+					return pose.getAccum();
+				}
+			};
+			using View_t = spn::AcCheck<spn::AMat43, Getter>;
+			using Accum_t = spn::AcCheck<spn::Wrapper<uint32_t>, Getter>;
 			#define SEQ_CAMERA3D \
 				((Pose)(spn::Pose3D)) \
-				((View)(spn::AMat43)(Pose)) \
+				((View)(View_t)(Pose)) \
 				((Fov)(spn::RadF)) \
 				((Aspect)(float)) \
 				((NearZ)(float)) \
@@ -23,7 +33,7 @@ namespace rs {
 				((ViewProj)(spn::AMat44)(View)(Proj)) \
 				((ViewProjInv)(spn::AMat44)(ViewProj)) \
 				((VFrustum)(boom::geo3d::Frustum)(View)(Fov)(Aspect)(NearZ)(FarZ)) \
-				((Accum)(uint32_t)(Pose)(Fov)(Aspect)(NearZ)(FarZ))
+				((Accum)(Accum_t)(Pose)(Fov)(Aspect)(NearZ)(FarZ))
 			RFLAG_S(Camera3D, SEQ_CAMERA3D)
 			RFLAG_SETMETHOD(Accum)
 		public:
