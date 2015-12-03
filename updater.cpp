@@ -432,6 +432,9 @@ namespace rs {
 		}
 		_dobj.erase(itr);
 	}
+	void DrawGroup::clear() {
+		_dobj.clear();
+	}
 	void DrawGroup::_doDrawSort() {
 		DSort::DoSort(_dsort, 0, _dobj.begin(), _dobj.end());
 	}

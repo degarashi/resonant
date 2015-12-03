@@ -437,6 +437,7 @@ namespace rs {
 
 			void addObj(HDObj hObj);
 			void remObj(HDObj hObj);
+			void clear();
 			void onUpdate(bool bFirst) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
 			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
