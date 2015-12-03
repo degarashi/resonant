@@ -12,6 +12,7 @@ function InitInput()
 	Global.cpp.actPress = System.input:makeAction("press")
 	Global.cpp.actLightR0 = System.input:makeAction("light0")
 	Global.cpp.actLightR1 = System.input:makeAction("light1")
+	Global.cpp.actScene = System.input:makeAction("sw_scene")
 	local hK = Keyboard.OpenKeyboard(0)
 	local hM = Mouse.OpenMouse(0)
 	Global.cpp.hlIm = hM
@@ -44,6 +45,8 @@ function InitInput()
 	Global.cpp.actMoveX:addLink(hM, Action.InputFlag.Axis, 0)
 	Global.cpp.actMoveY:addLink(hM, Action.InputFlag.Axis, 1)
 	Global.cpp.actPress:addLink(hM, Action.InputFlag.Button, 0)
+	-- [J] シーン切り替え
+	Global.cpp.actScene:addLink(hK, Action.InputFlag.Button, Action.Key.J)
 end
 function Initialize()
 	System.lsys:loadClass("FPSCameraU")

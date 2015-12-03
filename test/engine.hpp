@@ -9,6 +9,7 @@ namespace myunif {
 									Dir,			// "m_vLightDir"
 									Power,			// "m_fLightPower"
 									Depth,			// "m_texLightDepth"
+									CubeDepth,		// "m_texCubeDepth"
 									DepthRange,		// "m_depthRange"
 									LightMat;		// "m_mLight"
 	}
@@ -20,6 +21,8 @@ class Engine : public rs::util::GLEffect_2D3D {
 			enum E {
 				Normal,
 				Depth,
+				CubeNormal,
+				CubeDepth,
 				_Num
 			};
 		};
@@ -33,14 +36,16 @@ class Engine : public rs::util::GLEffect_2D3D {
 			((LightCamera)(rs::HLCam)(LightPosition)(LightDir)) \
 			((LightMatrix)(spn::Mat44)(LightPosition)(LightDir)) \
 			((LightDepthSize)(spn::Size)) \
-			((LightDepth)(rs::HLTex)(LightDepthSize)) \
+			((LightDepth)(rs::HLRb)(LightDepthSize)) \
 			((LightColorBuff)(rs::HLTex)(LightDepthSize)) \
-			((LightFB)(rs::HLFb)(LightDepth)(LightColorBuff))
+			((LightFB)(rs::HLFb)(LightDepth)(LightColorBuff)) \
+			((CubeColorBuff)(rs::HLTex)(LightDepthSize))
 		RFLAG_S(Engine, SEQ_UNIF)
 
 		DrawType::E	_drawType;
 		rs::HLDGroup	_hlDg;
 		class DrawScene;
+		class CubeScene;
 	protected:
 		void _prepareUniforms() override;
 	public:
@@ -54,7 +59,9 @@ class Engine : public rs::util::GLEffect_2D3D {
 		#undef SEQ_UNIF
 
 		rs::HLDObj getDrawScene(rs::Priority dprio) const;
+		rs::HLDObj getCubeScene(rs::Priority dprio) const;
 		void addSceneObject(rs::HDObj hdObj);
 		void remSceneObject(rs::HDObj hdObj);
+		void clearScene();
 };
 DEF_LUAIMPORT(Engine)

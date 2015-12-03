@@ -15,7 +15,9 @@ class Cube : public spn::Pose3D {
 		void _initVb(bool bFlip);
 	public:
 		const static rs::IdValue	T_Cube,
-									T_CubeDepth;
+									T_CubeDepth,
+									T_CubeCubeDepth,
+									T_CubeCube;
 		/*! \param s[in]		一辺のサイズ
 			\param hTex[in]		張り付けるテクスチャ
 			\param bFlip[in]	面反転フラグ */

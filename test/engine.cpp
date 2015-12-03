@@ -8,6 +8,7 @@ namespace myunif {
 							Dir =	GlxId::GenUnifId("m_vLightDir"),
 							Power =	GlxId::GenUnifId("m_fLightPower"),
 							Depth = GlxId::GenUnifId("m_texLightDepth"),
+							CubeDepth = GlxId::GenUnifId("m_texCubeDepth"),
 							DepthRange = GlxId::GenUnifId("m_depthRange"),
 							LightMat = GlxId::GenUnifId("m_mLight");
 	}
@@ -39,14 +40,22 @@ void Engine::_prepareUniforms() {
 	DEF_SETUNIF(Power, getLight)
 	DEF_SETUNIF(DepthRange, get)
 	#undef DEF_SETUNIF
+	if(auto idv = getUnifId(myunif::light::CubeDepth))
+		setUniform(*idv, getCubeColorBuff(), true);
 	if(auto idv = getUnifId(myunif::light::Depth))
 		setUniform(*idv, getLightColorBuff(), true);
 	if(auto idv = getUnifId(myunif::light::LightMat))
 		setUniform(*idv, getLightMatrix(), true);
 }
 #include "../camera.hpp"
-spn::RFlagRet Engine::_refresh(rs::HLTex& tex, LightDepth*) const {
-	tex = mgr_gl.createTexture(getLightDepthSize(), GL_R16, false, false);
+spn::RFlagRet Engine::_refresh(rs::HLRb& rb, LightDepth*) const {
+	auto& sz = getLightDepthSize();
+	rb = mgr_gl.makeRBuffer(sz.width, sz.height, GL_DEPTH_COMPONENT16);
+	return {true, 0};
+}
+spn::RFlagRet Engine::_refresh(rs::HLTex& tex, CubeColorBuff*) const {
+	tex = mgr_gl.createCubeTexture(getLightDepthSize(), GL_R16, false, false);
+	tex->get()->setFilter(true, true);
 	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLCam& c, LightCamera*) const {
@@ -72,7 +81,7 @@ spn::RFlagRet Engine::_refresh(rs::HLFb& fb, LightFB*) const {
 	if(!fb)
 		fb = mgr_gl.makeFBuffer();
 	fb->get()->attachTexture(rs::GLFBuffer::Att::COLOR0, getLightColorBuff());
-	fb->get()->attachTexture(rs::GLFBuffer::Att::DEPTH, getLightDepth());
+	fb->get()->attachRBuffer(rs::GLFBuffer::Att::DEPTH, getLightDepth());
 	return {true, 0};
 }
 #include "../util/screen.hpp"
@@ -102,6 +111,62 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 			setStateNew<St_Default>();
 		}
 };
+namespace {
+	const spn::DegF c_deg90(90);
+	const spn::AQuat c_cubedir[6] = {
+		spn::AQuat::RotationY(c_deg90),			// NegativeX
+		spn::AQuat::RotationY(-c_deg90),		// PositiveX
+		spn::AQuat::RotationX(c_deg90),			// PositiveY
+		spn::AQuat::RotationX(-c_deg90),		// NegativeY
+		spn::AQuat::RotationY(spn::DegF(0)),	// PositiveZ
+		spn::AQuat::RotationY(c_deg90*2),		// NegativeZ
+	};
+}
+class Engine::CubeScene : public rs::DrawableObjT<CubeScene> {
+	private:
+		struct St_Default : StateT<St_Default> {
+			mutable int count = 0;
+			void onDraw(const CubeScene&, rs::IEffect& e) const override {
+				auto& engine = static_cast<Engine&>(e);
+
+				rs::HLCam cam = engine.ref3D().getCamera();
+				auto hlC = mgr_cam.emplace();
+				hlC->setFov(spn::DegF(90));
+				hlC->setAspect(1.f);
+				hlC->setZPlane(0.01f, 100.0f);
+				engine.ref3D().setCamera(hlC);
+
+				rs::HLFb fb = mgr_gl.makeFBuffer();
+				fb->get()->attachRBuffer(rs::GLFBuffer::Att::DEPTH,
+										engine.getLightDepth());
+				auto& pose = hlC->refPose();
+				pose.setOffset(engine.getLightPosition());
+				engine._drawType = DrawType::CubeDepth;
+				for(int i=0 ; i<6 ; i++) {
+					fb->get()->attachTextureFace(rs::GLFBuffer::Att::COLOR0,
+												engine.getCubeColorBuff(),
+												static_cast<rs::CubeFace>(i));
+					e.setFramebuffer(fb);
+					e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4(0), 1.f, spn::none});
+					// カメラの方向をキューブの各面へ
+					pose.setRot(c_cubedir[i]);
+					// 深度描画
+					engine._hlDg->get()->onDraw(e);
+				}
+
+				e.setFramebuffer(rs::HFb());
+				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,1,0}, 1.f, spn::none});
+				// カメラ位置を元に戻して通常描画
+				engine.ref3D().setCamera(cam);
+				engine._drawType = DrawType::CubeNormal;
+				engine._hlDg->get()->onDraw(e);
+			}
+		};
+	public:
+		CubeScene() {
+			setStateNew<St_Default>();
+		}
+};
 Engine::~Engine() {
 	if(!rs::ObjMgr::Initialized())
 		_hlDg.setNull();
@@ -111,11 +176,19 @@ rs::HLDObj Engine::getDrawScene(rs::Priority dprio) const {
 	ret.second->setDrawPriority(dprio);
 	return ret.first;
 }
+rs::HLDObj Engine::getCubeScene(rs::Priority dprio) const {
+	auto ret = rs_mgr_obj.makeDrawable<CubeScene>();
+	ret.second->setDrawPriority(dprio);
+	return ret.first;
+}
 void Engine::addSceneObject(rs::HDObj hdObj) {
 	_hlDg->get()->addObj(hdObj);
 }
 void Engine::remSceneObject(rs::HDObj hdObj) {
 	_hlDg->get()->remObj(hdObj);
+}
+void Engine::clearScene() {
+	_hlDg->get()->clear();
 }
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
@@ -127,5 +200,7 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	(setLightDepthSize<const spn::Size&>)
 	(setDepthRange<const spn::Vec2&>)
 	(getDrawScene)
+	(getCubeScene)
 	(addSceneObject)
-	(remSceneObject))
+	(remSceneObject)
+	(clearScene))

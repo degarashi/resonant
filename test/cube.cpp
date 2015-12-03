@@ -5,7 +5,9 @@
 // ---------------------- Cube ----------------------
 rs::WVb Cube::s_wVb[2];
 const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
-				Cube::T_CubeDepth = GlxId::GenTechId("Cube", "Depth");
+				Cube::T_CubeDepth = GlxId::GenTechId("Cube", "Depth"),
+				Cube::T_CubeCube = GlxId::GenTechId("Cube", "CubeDefault"),
+				Cube::T_CubeCubeDepth = GlxId::GenTechId("Cube", "CubeDepth");
 void Cube::_initVb(bool bFlip) {
 	int index = bFlip ? 1 : 0;
 
@@ -87,9 +89,15 @@ void Cube::advance() {
 	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
 }
 void Cube::draw(Engine& e) const {
-	if(e.getDrawType() == Engine::DrawType::Normal) {
+	auto typ = e.getDrawType();
+	if(typ == Engine::DrawType::Normal) {
 		e.setTechPassId(T_Cube);
 		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+	} else if(typ == Engine::DrawType::CubeNormal) {
+		e.setTechPassId(T_CubeCube);
+		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+	} else if(typ == Engine::DrawType::CubeDepth) {
+		e.setTechPassId(T_CubeCubeDepth);
 	} else
 		e.setTechPassId(T_CubeDepth);
 	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());

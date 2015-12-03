@@ -47,7 +47,10 @@ void Sprite::setZRange(const spn::RangeF& r) {
 	_zRange = r;
 }
 void Sprite::draw(Engine& e) const {
-	if(e.getDrawType() == Engine::DrawType::Normal) {
+	auto typ = e.getDrawType();
+	if(typ == Engine::DrawType::Normal ||
+		typ == Engine::DrawType::CubeNormal)
+	{
 		spn::profiler.beginBlockObj("sprite::draw");
 		e.setTechPassId(T_Sprite);
 		e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
