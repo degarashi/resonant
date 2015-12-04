@@ -1,6 +1,7 @@
 #include "test.hpp"
 #include "engine.hpp"
 #include "cube.hpp"
+#include "geometry.hpp"
 
 // ---------------------- Cube ----------------------
 rs::WVb Cube::s_wVb[2];
@@ -9,72 +10,36 @@ const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
 				Cube::T_CubeCube = GlxId::GenTechId("Cube", "CubeDefault"),
 				Cube::T_CubeCubeDepth = GlxId::GenTechId("Cube", "CubeDepth");
 void Cube::_initVb(bool bFlip) {
-	int index = bFlip ? 1 : 0;
+	int indexI = bFlip ? 1 : 0;
 
-	if(!(_hlVb = s_wVb[index].lock())) {
-		using spn::Vec2;
-		using spn::Vec3;
+	if(!(_hlVb = s_wVb[indexI].lock())) {
+		boom::Vec3V tmpPos;
+		boom::IndexV tmpIndex;
+		boom::geo3d::Geometry::MakeCube(tmpPos, tmpIndex);
+		if(bFlip)
+			boom::FlipFace(tmpIndex.begin(), tmpIndex.end(), tmpIndex.begin(), 0);
+
+		boom::Vec2V tmpUv;
+		spn::Pose3D pose;
+		boom::geo3d::Geometry::UVUnwrapCylinder(tmpUv, pose, tmpPos);
+
+		boom::Vec3V posv, normalv;
+		boom::Vec2V uvv;
+		boom::IndexV indexv;
+		boom::geo3d::Geometry::MakeVertexNormalFlat(posv, indexv, normalv, uvv,
+													tmpPos, tmpIndex, tmpUv);
 		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
 		vertex::cube tmpV[6*6];
-		Vec3 tmpPos[8];
-		Vec2 tmpUV[4];
-		for(int i=0 ; i<0x8 ; i++) {
-			// 座標生成
-			int cur0 = (i & 0x01) ? 1 : -1,
-				cur1 = (i & 0x02) ? 1 : -1,
-				cur2 = (i & 0x04) ? 1 : -1;
-			tmpPos[i] = Vec3(cur0, cur1, cur2);
-			// UV座標生成
-			if(i<4)
-				tmpUV[i] = Vec2(std::max(cur0, 0), std::max(cur1, 0));
-		}
-		const int tmpI[6*6] = {
-			// Front
-			0,2,1,
-			2,3,1,
-			// Right
-			1,3,7,
-			7,5,1,
-			// Left
-			4,6,2,
-			2,0,4,
-			// Top
-			6,7,2,
-			7,3,2,
-			// Bottom
-			0,1,5,
-			5,4,0,
-			// Back
-			7,6,4,
-			4,5,7
-		};
-		const int tmpI_CW[3] = {0,1,2},
-				tmpI_CCW[3] = {2,1,0};
-		const int (&tmpI_Index)[3] = (bFlip) ? tmpI_CCW : tmpI_CW;
-		const int tmpI_uv[6] = {
-			0,1,2,
-			2,1,3
-		};
-		const Vec3 normal[6] = {
-			Vec3(0,0,-1),
-			Vec3(1,0,0),
-			Vec3(-1,0,0),
-			Vec3(0,1,0),
-			Vec3(0,-1,0),
-			Vec3(0,0,1)
-		};
 		for(int i=0 ; i<6*6 ; i++) {
-			tmpV[i].pos = tmpPos[tmpI[(i/3*3)+tmpI_Index[i%3]]];
-			auto& uv = tmpUV[tmpI_uv[i%6]];
-			tmpV[i].tex = uv;
-			tmpV[i].normal = normal[i/6];
-			if(bFlip)
-				tmpV[i].normal *= -1;
+			const auto idx = indexv[i];
+			tmpV[i].pos = posv[idx];
+			tmpV[i].tex = uvv[idx];
+			tmpV[i].normal = normalv[idx];
 		}
 
 		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
 		_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
-		s_wVb[index] = _hlVb.weak();
+		s_wVb[indexI] = _hlVb.weak();
 	}
 }
 Cube::Cube(float s, rs::HTex hTex, bool bFlip):
