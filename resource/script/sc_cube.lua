@@ -27,24 +27,29 @@ function InitScene(self)
 		dg:addObj(ds)
 		self.prevDS = ds
 	end
-	do
-		local hTex = System.glres:loadTexture("block.jpg", G.GLRes.MipState.MipmapLinear, nil)
-		hTex:setFilter(true, true)
-		local cube = G.CubeObj.New(1.0, hTex, false)
-		cube:setOffset(G.Vec3.New(0,0,2))
-		cube:setDrawPriority(0x1000)
-		engine:addSceneObject(cube)
-		self.cube = cube
+	local addObj = function(size, tex, typ, bFlat, bFlip, pos, bRotate)
+		local obj = G.CubeObj.New(size, tex, typ, bFlat, bFlip)
+		obj:setOffset(pos)
+		obj:setDrawPriority(0x1000)
+		engine:addSceneObject(obj)
+		if bRotate then
+			self.rotate[#self.rotate+1] = obj
+		end
 	end
-	do
-		local hTex = System.glres:loadTexture("floor.jpg", G.GLRes.MipState.MipmapLinear, nil)
-		hTex:setFilter(true, true)
-		local room = G.CubeObj.New(6.0, hTex, true)
-		room:setOffset(G.Vec3.New(0,0,2))
-		room:setDrawPriority(0x1000)
-		engine:addSceneObject(room)
-		self.room = room
-	end
+	self.rotate = {}
+	local texBlock = System.glres:loadTexture("block.jpg", G.GLRes.MipState.MipmapLinear, nil)
+	local texFloor = System.glres:loadTexture("floor.jpg", G.GLRes.MipState.MipmapLinear, nil)
+	texBlock:setFilter(true, true)
+	addObj(1.0, texBlock, G.CubeObj.Type.Torus, false, false,
+			G.Vec3.New(0,0,2), true)
+	addObj(6.0, texFloor, G.CubeObj.Type.Cube, true, true,
+			G.Vec3.New(0,0,2), false)
+	addObj(0.5, texBlock, G.CubeObj.Type.Cube, true, false,
+			G.Vec3.New(-2,-4,0), true)
+	addObj(1.0, texBlock, G.CubeObj.Type.Sphere, false, false,
+			G.Vec3.New(2,-3,0), true)
+	addObj(2.0, texBlock, G.CubeObj.Type.Cone, false, false,
+			G.Vec3.New(-3,3,4), true)
 	do
 		local hTex = System.glres:loadTexture("light.png", G.GLRes.MipState.MipmapLinear, nil)
 		hTex:setFilter(true, true)
@@ -84,12 +89,13 @@ st_idle = {
 		elseif Global.cpp.actLightR1:isKeyPressing() then
 			lv = -1
 		end
-		local lscale = 4
+		local lscale = {3,4,4}
+		local lfreq = {1,1.5,2}
 		self.litangle = self.litangle + G.Degree.New(lv)
 		local angv = self.litangle:toRadian():get()
-		local lp = G.Vec3.New(G.math.sin(angv)*lscale,
-								G.math.cos(angv)*lscale,
-								-G.math.sin(angv)*lscale + 2)
+		local lp = G.Vec3.New(G.math.sin(angv*lfreq[1])*lscale[1],
+								G.math.cos(angv*lfreq[2])*lscale[2],
+								-G.math.sin(angv*lfreq[3])*lscale[3] + 2)
 		self.litpos = lp
 
 		-- スポットライトと点光源を切り替え
@@ -104,7 +110,9 @@ st_idle = {
 		engine:setLightPosition(self.litpos)
 		engine:setLightDir((G.Vec3.New(0,0,2) - self.litpos):normalization())
 		-- キューブを回転
-		self.cube:advance()
+		for i=1,#self.rotate do
+			self.rotate[i]:advance()
+		end
 		scbase.CheckSwitch()
 	end,
 	OnExit = function(self, slc, ...)

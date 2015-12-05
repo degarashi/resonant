@@ -130,7 +130,7 @@ fragmentshader(400) CubeCubeFS() {
 	vec3 refv = fromEye + varNormal * (-dot(varNormal, fromEye) * 2);
 	vec3 toLit = normalize(m_vLightPos - varPos);
 	float lit = pow(max(0, dot(toLit, refv)),16);
-	float lit_d = dot(toLit, varNormal) * 0.5;
+	float lit_d = dot(toLit, varNormal) * 1.0;
 	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit + lit_d);
 	float d = distance(varPos, m_vLightPos);
 	d = (d - m_depthRange.x) / (m_depthRange.y-m_depthRange.x);

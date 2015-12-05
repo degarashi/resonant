@@ -4,18 +4,37 @@
 #include "geometry.hpp"
 
 // ---------------------- Cube ----------------------
-rs::WVb Cube::s_wVb[2];
+rs::WVb Cube::s_wVb[Type::Num][2];
+rs::WIb Cube::s_wIb[Type::Num][2];
 const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
 				Cube::T_CubeDepth = GlxId::GenTechId("Cube", "Depth"),
 				Cube::T_CubeCube = GlxId::GenTechId("Cube", "CubeDefault"),
 				Cube::T_CubeCubeDepth = GlxId::GenTechId("Cube", "CubeDepth");
-void Cube::_initVb(bool bFlip) {
+void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 	int indexI = bFlip ? 1 : 0;
 
-	if(!(_hlVb = s_wVb[indexI].lock())) {
+	if(!(_hlVb = s_wVb[typ][indexI].lock())) {
 		boom::Vec3V tmpPos;
 		boom::IndexV tmpIndex;
-		boom::geo3d::Geometry::MakeCube(tmpPos, tmpIndex);
+		switch(typ) {
+			case Type::Cone:
+				boom::geo3d::Geometry::MakeCone(tmpPos, tmpIndex, 16);
+				break;
+			case Type::Cube:
+				boom::geo3d::Geometry::MakeCube(tmpPos, tmpIndex);
+				break;
+			case Type::Sphere:
+				boom::geo3d::Geometry::MakeSphere(tmpPos, tmpIndex, 16, 8);
+				break;
+			case Type::Torus:
+				boom::geo3d::Geometry::MakeTorus(tmpPos, tmpIndex, 0.5f, 16, 12);
+				break;
+			case Type::Capsule:
+				boom::geo3d::Geometry::MakeCapsule(tmpPos, tmpIndex, 1, 8);
+				break;
+			default:
+				AssertF(Trap, "invalid type")
+		};
 		if(bFlip)
 			boom::FlipFace(tmpIndex.begin(), tmpIndex.end(), tmpIndex.begin(), 0);
 
@@ -26,27 +45,37 @@ void Cube::_initVb(bool bFlip) {
 		boom::Vec3V posv, normalv;
 		boom::Vec2V uvv;
 		boom::IndexV indexv;
-		boom::geo3d::Geometry::MakeVertexNormalFlat(posv, indexv, normalv, uvv,
-													tmpPos, tmpIndex, tmpUv);
-		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
-		vertex::cube tmpV[6*6];
-		for(int i=0 ; i<6*6 ; i++) {
-			const auto idx = indexv[i];
-			tmpV[i].pos = posv[idx];
-			tmpV[i].tex = uvv[idx];
-			tmpV[i].normal = normalv[idx];
+		if(bFlat) {
+			boom::geo3d::Geometry::MakeVertexNormalFlat(posv, indexv, normalv, uvv,
+														tmpPos, tmpIndex, tmpUv);
+		} else {
+			boom::geo3d::Geometry::MakeVertexNormal(normalv, tmpPos, tmpIndex);
+			posv = tmpPos;
+			uvv = tmpUv;
+			indexv = tmpIndex;
 		}
-
+		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
+		const int nV = posv.size();
+		std::vector<vertex::cube> tmpV(nV);
+		for(int i=0 ; i<nV ; i++) {
+			tmpV[i].pos = posv[i];
+			tmpV[i].tex = uvv[i];
+			tmpV[i].normal = normalv[i];
+		}
 		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-		_hlVb.ref()->initData(tmpV, countof(tmpV), sizeof(vertex::cube));
-		s_wVb[indexI] = _hlVb.weak();
-	}
+		_hlVb.ref()->initData(std::move(tmpV));
+		s_wVb[typ][indexI] = _hlVb.weak();
+		_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+		_hlIb.ref()->initData(std::move(indexv));
+		s_wIb[typ][indexI] = _hlIb.weak();
+	} else
+		_hlIb = s_wIb[typ][indexI].lock();
 }
-Cube::Cube(float s, rs::HTex hTex, bool bFlip):
+Cube::Cube(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
 	_hlTex(hTex)
 {
 	setScale({s,s,s});
-	_initVb(bFlip);
+	_initVb(typ, bFlat, bFlip);
 }
 void Cube::advance() {
 	const spn::AQuat& q = this->getRot();
@@ -68,7 +97,8 @@ void Cube::draw(Engine& e) const {
 	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
-	e.draw(GL_TRIANGLES, 0, 6*6);
+	e.setIStream(_hlIb);
+	e.drawIndexed(GL_TRIANGLES, _hlIb->get()->getNElem());
 }
 void Cube::exportDrawTag(rs::DrawTag& d) const {
 	d.idTex[0] = _hlTex.get();
@@ -90,8 +120,8 @@ struct CubeObj::St_Default : StateT<St_Default> {
 		self.draw(static_cast<Engine&>(e));
 	}
 };
-CubeObj::CubeObj(float size, rs::HTex hTex, bool bFlip):
-	Cube(size, hTex, bFlip)
+CubeObj::CubeObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
+	Cube(size, hTex, typ, bFlat, bFlip)
 {
 	setStateNew<St_Default>();
 }
@@ -100,4 +130,4 @@ CubeObj::CubeObj(float size, rs::HTex hTex, bool bFlip):
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "DrawableObj", NOTHING,
 		(advance)
 		(setOffset),
-		(float)(rs::HTex)(bool))
+		(float)(rs::HTex)(Cube::Type::E)(bool)(bool))

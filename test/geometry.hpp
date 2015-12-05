@@ -22,6 +22,9 @@ namespace boom {
 			static void UVUnwrapCylinder(Vec2V& uv,
 									const Pose3D& pose,
 									const Vec3V& srcPos);
+			static void MakeVertexNormal(Vec3V& dstNormal,
+											const Vec3V& srcPos,
+											const IndexV& srcIndex);
 			static void MakeVertexNormalFlat(Vec3V& dstPos,
 											IndexV& dstIndex,
 											Vec3V& dstNormal,
@@ -29,9 +32,36 @@ namespace boom {
 											const Vec3V& srcPos,
 											const IndexV& srcIndex,
 											const Vec2V& srcUv);
+			// Sphere
+			static void MakeSphere(Vec3V& dstPos,
+									IndexV& dstIndex,
+									int divH,
+									int divV);
+			// Arc
+			static void MakeArc(Vec3V& dstPos,
+								IndexV& dstIndex,
+								spn::RadF angle,
+								int divH,
+								int divV,
+								bool bCap);
 			// Cube
 			static void MakeCube(Vec3V& dstPos,
 								IndexV& dstIndex);
+			// Capsule
+			static void MakeCapsule(Vec3V& dstPos,
+									IndexV& dstIndex,
+									float length,
+									int div);
+			// Cone
+			static void MakeCone(Vec3V& dstPos,
+								IndexV& dstIndex,
+								int div);
+			// Torus
+			static void MakeTorus(Vec3V& dstPos,
+								IndexV& dstIndex,
+								float radius,
+								int divH,
+								int divR);
 		};
 	}
 }

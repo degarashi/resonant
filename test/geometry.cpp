@@ -2,15 +2,15 @@
 
 namespace {
 	template <class I>
-	auto MakeAdd3(I* dst) {
-		return [dst](int i0, int i1, int i2) mutable {
+	auto MakeAdd3(I*& dst) {
+		return [&dst](int i0, int i1, int i2) mutable {
 			*dst++ = i0;
 			*dst++ = i1;
 			*dst++ = i2;
 		};
 	}
 	template <class I>
-	auto MakeAdd4(I* dst) {
+	auto MakeAdd4(I*& dst) {
 		auto add3 = MakeAdd3(dst);
 		return [add3](int i0, int i1, int i2, int i3) mutable {
 			add3(i0, i1, i2);
@@ -102,6 +102,52 @@ namespace boom {
 				}
 			}
 		}
+		void Geometry::MakeVertexNormal(Vec3V& dstNormal,
+								const Vec3V& srcPos,
+								const IndexV& srcIndex)
+		{
+			const int nI = srcIndex.size(),
+					nV = srcPos.size();
+			AssertT(Trap, nI%3==0, std::invalid_argument, "Invalid face count")
+			dstNormal.resize(nV);
+
+			struct Tmp {
+				Vec3	vec{0,0,0};
+				int		count=0;
+				void add(const Vec3& v) {
+					vec += v;
+					++count;
+				}
+				Vec3 get() const {
+					return vec.normalization();
+				}
+			};
+			std::vector<Tmp> vn(nV);
+			for(int i=0 ; i<nI ; i+=3) {
+				// 面法線を計算
+				auto i0 = srcIndex[i],
+					i1 = srcIndex[i+1],
+					i2 = srcIndex[i+2];
+				auto p = Plane::FromPts(srcPos[i0],
+										srcPos[i1],
+										srcPos[i2]);
+				auto nml = p.getNormal();
+				vn[i0].add(nml);
+				vn[i1].add(nml);
+				vn[i2].add(nml);
+			}
+			// 頂点法線を計算
+			for(int i=0 ; i<nV ; i++) {
+				dstNormal[i] = vn[i].get();
+			}
+		}
+		void Geometry::MakeSphere(Vec3V& dstPos,
+								IndexV& dstIndex,
+								const int divH,
+								const int divV)
+		{
+			MakeArc(dstPos, dstIndex, spn::RadF((spn::PI*2 / divH) * (divH-1)), divH-1, divV, true);
+		}
 		void Geometry::MakeCube(Vec3V& dstPos,
 								IndexV& dstIndex)
 		{
@@ -121,7 +167,8 @@ namespace boom {
 				// ---- インデックス ----
 				const int nI = 2*3*6;
 				dstIndex.resize(nI);
-				auto add4 = MakeAdd4(dstIndex.data());
+				auto* pI = dstIndex.data();
+				auto add4 = MakeAdd4(pI);
 				// front
 				add4(0,2,3,1);
 				// left
@@ -134,6 +181,203 @@ namespace boom {
 				add4(2,6,7,3);
 				// bottom
 				add4(0,1,5,4);
+				Assert(Trap, pI==dstIndex.data()+nI)
+			}
+		}
+		void Geometry::MakeArc(Vec3V& dstPos,
+								IndexV& dstIndex,
+								const spn::RadF angle,
+								const int divH,
+								const int divV,
+								const bool bCap)
+		{
+			AssertT(Trap, divH>=2 && divV>=2, std::invalid_argument, "Invalid division number")
+			const int nV = 2 + (divV-1) * (divH+1);
+			{
+				dstPos.resize(nV);
+				auto* pV = dstPos.data();
+				*pV++ = Vec3(0, 0, -1);
+				for(int i=0 ; i<=divH ; i++) {
+					const float diffV = spn::PI / divV;
+					float curV = 0;
+					auto q = Quat::RotationZ(-angle * i / divH);
+					for(int j=1 ; j<divV ; j++) {
+						curV += diffV;
+						*pV++ = Vec3(0, std::sin(curV), -std::cos(curV)) * q;
+					}
+				}
+				*pV++ = Vec3(0, 0, 1);
+				Assert(Trap, pV==dstPos.data()+nV)
+			}
+			{
+				const int nI = divH*2*3 + (divV-2)*6*divH
+								+ ((bCap) ? ((divV-2)*6 + 2*3) : 0);
+				dstIndex.resize(nI);
+				auto* pI = dstIndex.data();
+				auto add3 = MakeAdd3(pI);
+				auto add4 = MakeAdd4(pI);
+				const int base = 1,
+						stride = divV-1,
+						baseE = base + stride - 1;
+				for(int i=0 ; i<divH ; i++) {
+					const int ofs0 = i*stride,
+							ofs1 = ofs0+stride;
+					// 始点側
+					add3(0, base+ofs0, base+ofs1);
+					// 中央部
+					for(int j=0 ; j<divV-2 ; j++)
+						add4(base+ofs0+j, base+ofs0+j+1, base+ofs1+j+1, base+ofs1+j);
+					// 終点側
+					add3(nV-1, baseE+ofs1, baseE+ofs0);
+				}
+				// キャップ部
+				if(bCap) {
+					// 始点側
+					add3(0, nV-1-stride, base);
+					// 中央部
+					for(int i=0 ; i<divV-2 ; i++) {
+						const int base0 = base+i,
+								base1 = nV-1-stride+i;
+						add4(base0+1, base0, base1, base1+1);
+					}
+					// 終点側
+					add3(nV-1, baseE, nV-2);
+				}
+				Assert(Trap, pI==dstIndex.data()+nI)
+			}
+		}
+		void Geometry::MakeCapsule(Vec3V& dstPos,
+									IndexV& dstIndex,
+									const float length,
+									const int div)
+		{
+			// 右半分
+			MakeArc(dstPos, dstIndex, spn::RadF(spn::PI), div, div, false);
+			const auto mRot = spn::Mat33::RotationY(spn::DegF(90));
+			// Y軸を中心に90度回転
+			for(auto& v : dstPos)
+				v *= mRot;
+
+			const int nV = dstPos.size();
+			// 左半分
+			dstPos.resize(nV*2);
+			// 右半分の座標を反転しつつコピー
+			for(int i=0 ; i<nV ; i++)
+				dstPos[i+nV] = dstPos[i] * Vec3(1,1,-1) + Vec3(0,0,length);
+			const int nI = dstIndex.size();
+			dstIndex.resize(nI*2 + div*2*6);
+			// 面は反転
+			FlipFace(dstIndex.begin(), dstIndex.begin()+nI, dstIndex.begin()+nI, nV);
+
+			// 中央部分
+			const int roundN = 2+(div-1)*2;
+			std::vector<int> idxF(roundN);
+			auto* pR = idxF.data();
+			*pR++ = 0;
+			for(int i=0 ; i<div-1 ; i++)
+				*pR++  = i+1;
+			*pR++ = nV-1;
+			for(int i=0 ; i<div-1 ; i++)
+				*pR++ = nV-i-2;
+			Assert(Trap, pR==idxF.data()+roundN)
+
+			auto* pI = dstIndex.data()+nI*2;
+			auto add4 = MakeAdd4(pI);
+			for(int i=0 ; i<div*2-1 ; i++) {
+				const int baseF0 = idxF[i],
+							baseF1 = idxF[i+1],
+							baseB0 = baseF0 + nV,
+							baseB1 = baseF1 + nV;
+				add4(baseF1, baseF0, baseB0, baseB1);
+			}
+			const int baseF0 = idxF.back(),
+						baseF1 = idxF[0],
+						baseB0 = baseF0 + nV,
+						baseB1 = baseF1 + nV;
+			add4(baseF1, baseF0, baseB0, baseB1);
+			Assert(Trap, pI==dstIndex.data()+dstIndex.size())
+		}
+		void Geometry::MakeCone(Vec3V& dstPos,
+								IndexV& dstIndex,
+								const int div)
+		{
+			AssertT(Trap, div>=3, std::invalid_argument, "Invalid division number")
+			const int nV = 2+div;
+			{
+				dstPos.resize(nV);
+				auto* pV = dstPos.data();
+				*pV++ = Vec3(0, 0, 0);
+				const float diff = spn::PI*2 / div;
+				float cur = 0;
+				for(int i=0 ; i<div ; i++) {
+					*pV++ = Vec3(std::sin(cur)*0.5f, std::cos(cur)*0.5f, 1);
+					cur += diff;
+				}
+				*pV++ = Vec3(0, 0, 1);
+				Assert(Trap, pV==dstPos.data()+nV)
+			}
+			{
+				const int nI = (div+div)*3;
+				dstIndex.resize(nI);
+				auto* pI = dstIndex.data();
+				auto add3 = MakeAdd3(pI);
+				// 側面
+				for(int i=0 ; i<div-1 ; i++)
+					add3(0, i+1, i+2);
+				add3(0, div, 1);
+				// 底面
+				for(int i=0 ; i<div-1 ; i++)
+					add3(i+2, i+1, nV-1);
+				add3(1, div, nV-1);
+				Assert(Trap, pI==dstIndex.data()+nI)
+			}
+		}
+		void Geometry::MakeTorus(Vec3V& dstPos,
+								IndexV& dstIndex,
+								const float radius,
+								const int divH,
+								const int divR)
+		{
+			AssertT(Trap, divH>=3 && divR>=3, std::invalid_argument, "Invalid division number")
+			const int nV = divR * divH;
+			{
+				dstPos.resize(nV);
+				auto* pV = dstPos.data();
+				const float diffH = spn::PI*2 / divH;
+				float curH = 0;
+				for(int i=0 ; i<divH ; i++) {
+					auto q = Quat::RotationZ(spn::RadF(curH));
+					const float diffR = spn::PI*2 / divR;
+					float curR = 0;
+					for(int j=0 ; j<divR ; j++) {
+						*pV = Vec3(1+std::sin(curR)*radius,
+										0,
+										-std::cos(curR)*radius);
+						*pV *= q;
+						++pV;
+						curR += diffR;
+					}
+					curH += diffH;
+				}
+				Assert(Trap, pV==dstPos.data()+nV)
+			}
+			{
+				const int nI = 6*divR*divH;
+				dstIndex.resize(nI);
+				auto* pI = dstIndex.data();
+				auto add4 = MakeAdd4(pI);
+				auto fnR = [&add4,divR](int base0, int base1) {
+					for(int j=0 ; j<divR-1 ; j++)
+						add4(base0+j, base1+j, base1+j+1, base0+j+1);
+					add4(base0, base0+divR-1, base1+divR-1, base1);
+				};
+				for(int i=0 ; i<divH-1 ; i++) {
+					const int base0 = i*divR,
+								base1 = base0+divR;
+					fnR(base0, base1);
+				}
+				fnR((divH-1)*divR, 0);
+				Assert(Trap, pI==dstIndex.data()+nI)
 			}
 		}
 	}
