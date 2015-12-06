@@ -22,7 +22,7 @@ namespace rs {
 		const SetF c_systagF[] = {
 			[](const SystemUniform& s, IEffect& e) {
 				auto& ss = s.getScreenSize();
-				e.setUniform_try(sysunif::screen::Size,
+				e.setUniform<false>(sysunif::screen::Size,
 									spn::Vec4(ss.width,
 										ss.height,
 										spn::Rcp22Bit(ss.width),

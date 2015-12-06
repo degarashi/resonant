@@ -45,20 +45,21 @@ namespace rs {
 			new(dst.allocate_memory(sizeof(UT), draw::CalcTokenOffset<UT>())) UT(std::forward<Ts>(ts)...);
 		}
 		//! 定数値を使ったUniform変数設定。Uniform値が存在しなくてもエラーにならない
-		template <class T>
-		void setUniform_try(IdValue id, T&& t, bool bT=false) {
+		template <bool Check, class... Ts>
+		void _setUniformById(IdValue id, Ts&&... ts) {
 			if(auto idv = getUnifId(id))
-				setUniform(*idv, std::forward<T>(t), bT);
+				setUniform(*idv, std::forward<Ts>(ts)...);
+			else {
+				// 定数値に対応するUniform変数が見つからない時は警告を出す
+				Assert(Warn, !Check, "Uniform-ConstantId: %1% not found", id.value)
+			}
 		}
+
 		//! 定数値を使ったUniform変数設定
-		template <class T>
+		/*! clang補完の為の引数明示 -> _setUniform(...) */
+		template <bool Check=true, class T>
 		void setUniform(IdValue id, T&& t, bool bT=false) {
-			auto idv = getUnifId(id);
-			// 定数値に対応するUniform変数が見つからない時は警告を出す
-			Assert(Warn, idv, "Uniform-ConstantId: %1% not found", id.value)
-			if(idv)
-				setUniform(*idv, std::forward<T>(t), bT);
-		}
+			_setUniformById<Check>(id, std::forward<T>(t), bT); }
 		//! 単体Uniform変数セット
 		template <class T, class = typename std::enable_if< !std::is_pointer<T>::value >::type>
 		void setUniform(GLint id, const T& t, bool bT=false) {
@@ -67,6 +68,10 @@ namespace rs {
 		template <class T>
 		void setUniform(GLint id, const T* t, int n, bool bT=false) {
 			_makeUniformToken(_makeUniformTokenBuffer(id), id, t, n, bT); }
+		// clang補完の為の引数明示 -> _setUniform(...)
+		template <bool Check=true, class T>
+		void setUniform(IdValue id, const T* t, int n, bool bT=false) {
+			_setUniformById<Check>(id, t, n, bT); }
 		//! ベクトルUniform変数
 		template <int DN, bool A>
 		void _makeUniformToken(draw::TokenDst& dst, GLint id, const spn::VecT<DN,A>* v, int n, bool) const {
