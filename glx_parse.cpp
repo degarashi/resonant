@@ -137,7 +137,7 @@ namespace rs {
 		// BlockUse: GLBlocktype (= | +=) NameToken (, NameToken)*;
 		DEF_SETVAL(Bu_fnSetName, name)
 		const auto Bu_fnSetFalse = [](auto& ctx){ _val(ctx).bAdd = false; };
-		const auto Bu_fnSetTrue = [](auto& ctx){ _val(ctx).bAdd = false; };
+		const auto Bu_fnSetTrue = [](auto& ctx){ _val(ctx).bAdd = true; };
 		const auto BlockUse_def = no_case[GLBlocktype][fnSetType]
 									> (lit('=')[Bu_fnSetFalse] | lit("+=")[Bu_fnSetTrue])
 									> (NameToken % ',')[Bu_fnSetName] > ';';
