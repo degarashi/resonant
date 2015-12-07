@@ -139,11 +139,11 @@ namespace rs {
 	}
 	void ArgChecker::operator()(float v) {
 		_checkAndSet(SCALAR);
-		_ost << v << ';' << std::endl;
+		_ost << '=' << v << ';' << std::endl;
 	}
 	void ArgChecker::operator()(bool b) {
 		_checkAndSet(BOOLEAN);
-		_ost << b << ';' << std::endl;
+		_ost << '=' << b << ';' << std::endl;
 	}
 	void ArgChecker::finalizeCheck() {
 		if(_cursor >=static_cast<int>(countof(_target)))
