@@ -212,6 +212,9 @@ namespace rs {
 		}
 		return spn::none;
 	}
+	spn::Optional<const CodeStruct&> BlockSet::findCode(const std::string& s) const {
+		return FindBlock<CodeStruct>(*this, [](auto&& str) { return std::cref(str.codeM); }, s);
+	}
 
 	// ----------------- GLEffect -----------------
 	GLXStruct GLEffect::LoadGLXStruct(const spn::URI& uri) {
@@ -809,6 +812,7 @@ namespace rs {
 	// ------------- ShStruct -------------
 	const std::string& ShStruct::getShaderString() const {
 		if(info_str.empty()) {
+			info_str = '{' + info + '}';
 		}
 		return info_str;
 	}

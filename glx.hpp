@@ -15,6 +15,7 @@
 #include <boost/pool/object_pool.hpp>
 
 namespace rs {
+	void OutputComment(std::ostream& os, const std::string& msg);
 	//! OpenGLの値設定関数代理クラス
 	struct ValueSettingR;
 	using VSFunc = void (*)(const ValueSettingR&);
@@ -134,6 +135,7 @@ namespace rs {
 			spn::Optional<const VaryStruct&> findVarying(const std::string& s) const;
 			spn::Optional<const ShStruct&> findShader(const std::string& s) const;
 			spn::Optional<const TPStruct&> findTechPass(const std::string& s) const;
+			spn::Optional<const CodeStruct&> findCode(const std::string& s) const;
 	};
 	extern const int DefaultUnifPoolSize;
 	// OpenGLのレンダリング設定

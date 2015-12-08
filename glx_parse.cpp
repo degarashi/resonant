@@ -30,6 +30,7 @@ namespace rs {
 		const x3::rule<class UnifBlock, UnifStruct>					UnifBlock;
 		const x3::rule<class ConstBlock, ConstStruct>				ConstBlock;
 		const x3::rule<class ShBlock, ShStruct>						ShBlock;
+		const x3::rule<class CodeBlock, CodeStruct>					CodeBlock;
 		const x3::rule<class MacroBlock, std::vector<MacroEntry>>	MacroBlock;
 		const x3::rule<class PassBlock, TPStruct>					PassBlock;
 		const x3::rule<class TechBlock, TPStruct>					TechBlock;
@@ -42,6 +43,7 @@ namespace rs {
 		using x3::lit;
 		using x3::char_;
 		using x3::lexeme;
+		using x3::no_skip;
 		using x3::no_case;
 		using x3::alnum;
 		// Arg: GLType NameToken
@@ -49,21 +51,29 @@ namespace rs {
 		// FileToken: [:Alnum:_\.]+;
 		const auto FileToken_def = lexeme[+(alnum | char_('_') | char_('.'))];
 		// Bracket: (\.)[^\1]Bracket?[^\1](\1)
-		const auto fnAddBegin = [](auto& ctx){ _val(ctx) += "{"; };
-		const auto fnAddClose = [](auto& ctx){ _val(ctx) += "}"; };
-		const auto fnAddStr = [](auto& ctx){ _val(ctx) += _attr(ctx); };
-		const auto Bracket_def = lit('{')[fnAddBegin] >
-									lexeme[*(char_ - lit('{') - lit('}'))][fnAddStr] >
-									*(Bracket[fnAddStr] > lexeme[*(char_ - lit('{') - lit('}'))][fnAddStr]) >
-									lit('}')[fnAddClose];
+		const auto fnAddStr = [](auto& ctx){
+			_val(ctx) += _attr(ctx);
+		};
+		const auto fnAddStrB= [](auto& ctx){
+			_val(ctx) += "{";
+			_val(ctx) += _attr(ctx);
+			_val(ctx) += "}";
+		};
+		const auto Bracket_def = lit('{') >
+									no_skip[*(char_ - lit('{') - lit('}'))][fnAddStr] >
+									*(Bracket[fnAddStrB] > no_skip[*(char_ - lit('{') - lit('}'))][fnAddStr]) >
+									lit('}');
+		// CodeBlock: code NameToken \{[^\}]*\}
+		DEF_SETVAL(fnSetName, name)
+		DEF_SETVAL(fnSetInfo, info)
+		const auto CodeBlock_def = no_case[lit("code")] > NameToken[fnSetName] > Bracket[fnSetInfo];
 		// ShBlock: GLShadertype\([^\)]+\) NameToken \(Arg (, Arg)*\) \{[^\}]*\}
 		DEF_SETVAL(fnSetType, type)
 		DEF_SETVAL(fnSetVer, version_str)
-		DEF_SETVAL(fnSetName, name)
 		DEF_PUSHVAL(fnPushArg, args)
-		DEF_SETVAL(fnSetInfo, info)
+		DEF_PUSHVAL(fnPushCode, code)
 		const auto ShBlock_def = no_case[GLShadertype][fnSetType] >
-						'(' > lexeme[*(char_ - lit(')'))][fnSetVer] > ')' >
+						'(' > NameToken[fnSetVer] > -(',' > NameToken[fnPushCode] % ',') > ')' >
 						NameToken[fnSetName] > '(' >
 						-(Arg[fnPushArg] > *(',' > Arg[fnPushArg])) > ')' > Bracket[fnSetInfo];
 		// MacroBlock: macro \{ MacroEnt \}
@@ -84,13 +94,14 @@ namespace rs {
 								> NameToken[fnSetName] > -(':' > (NameToken % ',')[fnSetDerive]) > '{' >
 				*(PassBlock[fnPushTp] | BlockUse[fnPushBu] | ValueSet[fnPushVs] | BoolSet[fnPushBs] |
 				MacroBlock[fnSetMacro] | ShSet[fnPushSh]) > '}';
-		// GLX: (AttrBlock | ConstBlock | ShBlock | TechBlock | UnifBlock | VaryBlock | Import)*
+		// GLX: (AttrBlock | ConstBlock | ShBlock | TechBlock | UnifBlock | VaryBlock | Import | CodeBlock)*
 		DEF_PUSHVAL(fnPushImport, incl)
 		DEF_INSVAL(fnInsAttr, atM, name)
 		DEF_INSVAL(fnInsConst, csM, name)
 		DEF_INSVAL(fnInsSh, shM, name)
 		DEF_INSVAL(fnInsUnif, uniM, name)
 		DEF_INSVAL(fnInsVary, varM, name)
+		DEF_INSVAL(fnInsCode, codeM, name)
 		const auto Glx_def = *(
 			Import[fnPushImport] |
 			AttrBlock[fnInsAttr] |
@@ -98,7 +109,8 @@ namespace rs {
 			ShBlock[fnInsSh] |
 			TechBlock[fnPushTp] |
 			UnifBlock[fnInsUnif] |
-			VaryBlock[fnInsVary]
+			VaryBlock[fnInsVary] |
+			CodeBlock[fnInsCode]
 		);
 
 		using x3::alnum;
@@ -175,6 +187,7 @@ namespace rs {
 							MacroBlock,
 							PassBlock,
 							TechBlock,
+							CodeBlock,
 							Glx);
 		BOOST_SPIRIT_DEFINE(Arg,
 							Bracket,

@@ -222,6 +222,14 @@ namespace rs {
 					});
 			OutputS(ss, _unifL);
 
+			// コードブロック出力
+			for(auto& cn : s->code) {
+				auto code = bs.findCode(cn);
+				AssertT(Throw, code, GLE_LogicalError,
+							"requested code block %1% not found (in shader %2%)", cn, s->name)
+				ss << *code << std::endl;
+			}
+
 			// シェーダー引数の型チェック
 			// ユーザー引数はグローバル変数として用意
 			ArgChecker acheck(ss, shp->shName, s->args);
@@ -229,8 +237,9 @@ namespace rs {
 				boost::apply_visitor(acheck, a);
 			acheck.finalizeCheck();
 
+			OutputComment(ss, s->name);
 			// 関数名はmain()に書き換え
-			ss << "void main() " << s->info << std::endl;
+			ss << "void main() " << s->getShaderString() << std::endl;
 	#ifdef DEBUG
 			std::cout << ss.str();
 			std::cout.flush();

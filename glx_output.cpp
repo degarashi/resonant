@@ -5,6 +5,11 @@ namespace rs {
 	namespace {
 		const static char* c_shType[] = {"VertexShader", "GeometryShader", "FragmentShader"};
 	}
+
+	void OutputComment(std::ostream& os, const std::string& msg) {
+		const char* c_separate = "-------------";
+		os << "// " << c_separate << ' ' << msg << ' ' << c_separate << std::endl;
+	}
 	// (prec) type name の順に出力
 	std::ostream& operator << (std::ostream& os, const EntryBase& e) {
 		if(e.prec)
@@ -58,12 +63,21 @@ namespace rs {
 		return os << ';';
 	}
 
+	std::ostream& operator << (std::ostream& os, const CodeStruct& s) {
+		OutputComment(os, (boost::format("code block \"%1%\"") % s.name).str());
+		os << s.info << std::endl;
+		return os;
+	}
 	std::ostream& operator << (std::ostream& os, const ShStruct& s) {
 		using std::endl;
 
 		os << '"' << s.name << '"' << endl;
 		os << "version: " << s.version_str << endl;
 		os << "type: " << c_shType[s.type] << endl;
+		os << "codeblock: ";
+		for(auto& c : s.code)
+			os << c << ' ';
+		os << endl;
 		os << "args: ";
 		for(auto& a : s.args)
 			os << GLType_::cs_typeStr[a.type] << ' ' << a.name << ", ";
@@ -99,7 +113,7 @@ namespace rs {
 
 	#define SEQ_TPS_ (blkL, BlockUse)(bsL, BoolSetting)(mcL, MacroEntry)(shL, ShSetting)(vsL, ValueSetting)(tpL, Pass)
 	#define SEQ_TPS MAKE_SEQ(2, SEQ_TPS_)
-	#define SEQ_GLX_ (atM, Attribute)(csM, Const)(shM, Shader)(uniM, Uniform)(varM, Varying)
+	#define SEQ_GLX_ (atM, Attribute)(csM, Const)(shM, Shader)(uniM, Uniform)(varM, Varying)(codeM, Code)
 	#define SEQ_GLX MAKE_SEQ(2, SEQ_GLX_)
 	#define PRINTIT(ign,data,elem) for(auto& a : data.BOOST_PP_TUPLE_ELEM(0,elem)) {PrintIt(os, BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(1,elem), _array)), a);}
 	#define PRINTITM(ign,data,elem) for(auto& a : data.BOOST_PP_TUPLE_ELEM(0,elem)) {PrintIt(os, BOOST_PP_STRINGIZE(BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(1,elem), _map)), a.second);}

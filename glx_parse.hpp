@@ -269,14 +269,15 @@ namespace rs {
 	struct ArgItem {
 		int			type;
 		std::string	name;
-
-		void output(std::ostream& os) const;
 	};
+	using StrV = std::vector<std::string>;
 	struct ShStruct {
 		//! シェーダータイプ
 		uint32_t				type;
 		//! バージョン文字列
 		std::string				version_str;
+		//! 組み込みコードブロック名
+		StrV					code;
 		//! シェーダー名
 		std::string				name;
 		//! 引数群(型ID + 名前)
@@ -286,8 +287,14 @@ namespace rs {
 		mutable std::string		info_str;	//!< シェーダー文字列を1つに纏めた物
 
 		const std::string& getShaderString() const;
-		void output(std::ostream& os) const;
 	};
+	struct CodeStruct {
+		//! コードブロック名
+		std::string				name;
+		//! シェーダーコード文字列
+		std::string				info;
+	};
+	std::ostream& operator << (std::ostream& os, const CodeStruct& t);
 
 	template <typename T>
 	using NameMap = std::map<std::string, T>;
@@ -315,6 +322,7 @@ namespace rs {
 		std::vector<TPStruct>	tpL;
 		NameMap<UnifStruct>		uniM;
 		NameMap<VaryStruct>		varM;
+		NameMap<CodeStruct>		codeM;
 		std::vector<std::string>	incl;
 	};
 	std::ostream& operator << (std::ostream& os, const GLXStruct& glx);
