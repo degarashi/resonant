@@ -1,6 +1,7 @@
 #pragma once
 #include "../util/sys_unif.hpp"
 #include "../updater.hpp"
+#include "gaussblur.hpp"
 
 namespace myunif {
 	namespace light {
@@ -42,6 +43,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 			((CubeColorBuff)(rs::HLTex)(LightDepthSize))
 		RFLAG_S(Engine, SEQ_UNIF)
 
+		mutable GaussBlur	_gauss;
 		DrawType::E	_drawType;
 		rs::HLDGroup	_hlDg;
 		class DrawScene;
@@ -63,5 +65,6 @@ class Engine : public rs::util::GLEffect_2D3D {
 		void addSceneObject(rs::HDObj hdObj);
 		void remSceneObject(rs::HDObj hdObj);
 		void clearScene();
+		void setDispersion(float d);
 };
 DEF_LUAIMPORT(Engine)

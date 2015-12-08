@@ -24,7 +24,7 @@ void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 				boom::geo3d::Geometry::MakeCube(tmpPos, tmpIndex);
 				break;
 			case Type::Sphere:
-				boom::geo3d::Geometry::MakeSphere(tmpPos, tmpIndex, 16, 8);
+				boom::geo3d::Geometry::MakeSphere(tmpPos, tmpIndex, 32, 16);
 				break;
 			case Type::Torus:
 				boom::geo3d::Geometry::MakeTorus(tmpPos, tmpIndex, 0.5f, 16, 12);

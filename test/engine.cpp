@@ -17,6 +17,7 @@ DefineDrawGroup(MyDrawGroup)
 ImplDrawGroup(MyDrawGroup, 0x0000)
 Engine::Engine(const std::string& name):
 	rs::util::GLEffect_2D3D(name),
+	_gauss(0),
 	_drawType(DrawType::Normal)
 {
 	_hlDg = rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_priority_asc}, true). first;
@@ -54,7 +55,7 @@ spn::RFlagRet Engine::_refresh(rs::HLRb& rb, LightDepth*) const {
 	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, CubeColorBuff*) const {
-	tex = mgr_gl.createCubeTexture(getLightDepthSize(), GL_R16, false, false);
+	tex = mgr_gl.createCubeTexture(getLightDepthSize(), GL_RG16, false, false);
 	tex->get()->setFilter(true, true);
 	return {true, 0};
 }
@@ -73,7 +74,7 @@ spn::RFlagRet Engine::_refresh(spn::Mat44& m, LightMatrix*) const {
 	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, LightColorBuff*) const {
-	tex = mgr_gl.createTexture(getLightDepthSize(), GL_R16, false, false);
+	tex = mgr_gl.createTexture(getLightDepthSize(), GL_RG16, false, false);
 	tex->get()->setFilter(true, true);
 	return {true, 0};
 }
@@ -97,6 +98,11 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 				rs::HLCam cam = engine.ref3D().getCamera();
 				engine.ref3D().setCamera(engine.getLightCamera());
 				engine._hlDg->get()->onDraw(e);
+
+				// ライト深度にブラーをかける
+				engine._gauss.setSource(engine.getLightColorBuff());
+				engine._gauss.setDest(engine.getLightColorBuff());
+				engine._gauss.onDraw(e);
 
 				e.setFramebuffer(rs::HFb());
 				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,1,0}, 1.f, spn::none});
@@ -190,6 +196,9 @@ void Engine::remSceneObject(rs::HDObj hdObj) {
 void Engine::clearScene() {
 	_hlDg->get()->clear();
 }
+void Engine::setDispersion(float d) {
+	_gauss.setDispersion(d);
+}
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	NOTHING,
@@ -199,6 +208,7 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	(setLightPower<float>)
 	(setLightDepthSize<const spn::Size&>)
 	(setDepthRange<const spn::Vec2&>)
+	(setDispersion)
 	(getDrawScene)
 	(getCubeScene)
 	(addSceneObject)

@@ -9,6 +9,7 @@ end
 function InitScene(self)
 	local upd,dg = self:getUpdGroup(), self:getDrawGroup()
 	local engine = Global.engine
+	engine:setDispersion(3.7)
 	engine:clearScene()
 	-- 深度バッファ範囲指定
 	engine:setDepthRange(G.Vec2.New(0, 20));
@@ -40,6 +41,7 @@ function InitScene(self)
 	local texBlock = System.glres:loadTexture("block.jpg", G.GLRes.MipState.MipmapLinear, nil)
 	local texFloor = System.glres:loadTexture("floor.jpg", G.GLRes.MipState.MipmapLinear, nil)
 	texBlock:setFilter(true, true)
+	texFloor:setFilter(true, true)
 	addObj(1.0, texBlock, G.CubeObj.Type.Torus, false, false,
 			G.Vec3.New(0,0,2), true)
 	addObj(6.0, texFloor, G.CubeObj.Type.Cube, true, true,
