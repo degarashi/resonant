@@ -19,6 +19,7 @@
 #include "sprite.hpp"
 #include "sprite3d.hpp"
 #include "blureffect.hpp"
+#include "gaussblur.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -64,6 +65,7 @@ int main(int argc, char **argv) {
 		auto& gv = *tls_gvalue;
 
 		rs::LuaImport::RegisterClass<BlurEffect>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<GaussBlur>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<BoundingSprite>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<PointSprite3D>(*lkb->spLua);

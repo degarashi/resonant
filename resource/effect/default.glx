@@ -130,6 +130,58 @@ fragmentshader(400) PFxFS() {
 	c.w = sys_fAlpha;
 	gl_FragColor = c;
 }
+
+uniform GaussUnif {
+	vec2 mapWidth;
+	float weight[8];
+}
+vertexshader(400) Gauss_VS(float dx, float dy) {
+	gl_Position.xy = atPos;
+	gl_Position.z = sys_fDepth;
+	gl_Position.w = 1;
+	varTex = atTex + vec2(dx/mapWidth.x, dy/mapWidth.y);
+}
+fragmentshader(400) GaussH_FS() {
+	vec4 c;
+	c = weight[0] * texture2D(sys_texDiffuse, varTex);
+	c += weight[1] * (texture2D(sys_texDiffuse, varTex + vec2(2/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(2/mapWidth.x, 0)));
+	c += weight[2] * (texture2D(sys_texDiffuse, varTex + vec2(4/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(4/mapWidth.x, 0)));
+	c += weight[3] * (texture2D(sys_texDiffuse, varTex + vec2(6/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(6/mapWidth.x, 0)));
+	c += weight[4] * (texture2D(sys_texDiffuse, varTex + vec2(8/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(8/mapWidth.x, 0)));
+	c += weight[5] * (texture2D(sys_texDiffuse, varTex + vec2(10/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(10/mapWidth.x, 0)));
+	c += weight[6] * (texture2D(sys_texDiffuse, varTex + vec2(12/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(12/mapWidth.x, 0)));
+	c += weight[7] * (texture2D(sys_texDiffuse, varTex + vec2(14/mapWidth.x, 0))
+						+ texture2D(sys_texDiffuse, varTex - vec2(14/mapWidth.x, 0)));
+	c.w = 1;
+	gl_FragColor = c;
+}
+fragmentshader(400) GaussV_FS() {
+	vec4 c;
+	c = weight[0] * texture2D(sys_texDiffuse, varTex);
+	c += weight[1] * (texture2D(sys_texDiffuse, varTex + vec2(0, 2/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 2/mapWidth.y)));
+	c += weight[2] * (texture2D(sys_texDiffuse, varTex + vec2(0, 4/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 4/mapWidth.y)));
+	c += weight[3] * (texture2D(sys_texDiffuse, varTex + vec2(0, 6/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 6/mapWidth.y)));
+	c += weight[4] * (texture2D(sys_texDiffuse, varTex + vec2(0, 8/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 8/mapWidth.y)));
+	c += weight[5] * (texture2D(sys_texDiffuse, varTex + vec2(0, 10/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 10/mapWidth.y)));
+	c += weight[6] * (texture2D(sys_texDiffuse, varTex + vec2(0, 12/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 12/mapWidth.y)));
+	c += weight[7] * (texture2D(sys_texDiffuse, varTex + vec2(0, 14/mapWidth.y))
+						+ texture2D(sys_texDiffuse, varTex - vec2(0, 14/mapWidth.y)));
+	c.w = 1;
+	gl_FragColor = c;
+}
+
 technique PostEffect {
 	CullFace = true;
 	FrontFace = cw;
@@ -143,5 +195,15 @@ technique PostEffect {
 	pass Default {
 		VertexShader = PFxVS();
 		FragmentShader = PFxFS();
+	}
+	pass GaussH {
+		Uniform += GaussUnif;
+		VertexShader = Gauss_VS(0.5, 0.5);
+		FragmentShader = GaussH_FS();
+	}
+	pass GaussV {
+		Uniform += GaussUnif;
+		VertexShader = Gauss_VS(-0.5, -0.5);
+		FragmentShader = GaussV_FS();
 	}
 }
