@@ -17,6 +17,7 @@ namespace rs {
 				void _applyParam(IEffect& e) const;
 			public:
 				PostEffect(IdValue idTech, Priority dprio);
+				void setTechPassId(IdValue idTech);
 				template <class T>
 				void setParam(IdValue id, const T& t) {
 					setParamFunc(id, [id,tv=t](auto& e){ e.setUniform(id, tv); });

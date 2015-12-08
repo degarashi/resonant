@@ -11,6 +11,9 @@ namespace rs {
 		{
 			_dtag.priority = dprio;
 		}
+		void PostEffect::setTechPassId(IdValue idTech) {
+			_idTech = idTech;
+		}
 		void PostEffect::_applyParam(IEffect& e) const {
 			for(auto& p : _param)
 				p.second(e);
