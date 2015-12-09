@@ -165,7 +165,9 @@ namespace rs {
 	};
 	std::ostream& operator << (std::ostream& os, const AttrEntry& e);
 	//! Varying宣言エントリ
-	struct VaryEntry : EntryBase {};
+	struct VaryEntry : EntryBase {
+		boost::optional<int>	arraySize;
+	};
 	std::ostream& operator << (std::ostream& os, const VaryEntry& e);
 	//! Uniform宣言エントリ
 	struct UnifEntry : EntryBase {
@@ -330,7 +332,7 @@ namespace rs {
 	GLXStruct ParseGlx(std::string str);
 }
 FUSION_ADAPT_STRUCT_AUTO(rs::AttrEntry, (prec)(type)(name)(sem))
-FUSION_ADAPT_STRUCT_AUTO(rs::VaryEntry, (prec)(type)(name))
+FUSION_ADAPT_STRUCT_AUTO(rs::VaryEntry, (prec)(type)(name)(arraySize))
 FUSION_ADAPT_STRUCT_AUTO(rs::UnifEntry, (prec)(type)(name)(arraySize)(defStr))
 FUSION_ADAPT_STRUCT_AUTO(rs::ConstEntry, (prec)(type)(name)(defVal))
 FUSION_ADAPT_STRUCT_AUTO(rs::BoolSetting, (type)(value))

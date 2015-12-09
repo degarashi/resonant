@@ -23,7 +23,11 @@ namespace rs {
 		return os << "attribute " << static_cast<const EntryBase&>(e) << ';';
 	}
 	std::ostream& operator << (std::ostream& os, const VaryEntry& e) {
-		return os << "varying " << static_cast<const EntryBase&>(e) << ';';
+		os << "varying " << static_cast<const EntryBase&>(e);
+		if(e.arraySize) {
+			os << '[' << *e.arraySize << ']';
+		}
+		return os << ';';
 	}
 	// nameの代わりにsemanticを出力
 	std::ostream& operator << (std::ostream& os, const UnifEntry& e) {

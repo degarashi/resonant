@@ -126,7 +126,7 @@ namespace rs {
 		// AttrEnt: GLPrecision? GLType NameToken : GLSem;
 		const auto AttrEnt_def = (-(GLPrecision) >> GLType >> NameToken >> ':') > GLSem > ';';
 		// VaryEnt: GLPrecision? GLType NameToken;
-		const auto VaryEnt_def = -(GLPrecision) >> GLType >> NameToken >> ';';
+		const auto VaryEnt_def = -(GLPrecision) >> GLType >> NameToken >> -('[' > int_ > ']') > ';';
 		// UnifEntry: Precision`GLPrecision` ValueName`rlNameToken` [SizeSem`rlNameToken`] = DefaultValue`rlVec|float|bool`
 		const auto UnifEnt_def = (-(GLPrecision) >> GLType) > NameToken >
 					-('[' > int_ > ']') >
