@@ -107,8 +107,8 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 				engine._gauss.setDest(engine.getLightColorBuff());
 				engine._gauss.onDraw(e);
 
-				e.setFramebuffer(rs::HFb());
-				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,1,0}, 1.f, spn::none});
+				e.setFramebuffer(engine._hlFb);
+				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,0,1}, 1.f, spn::none});
 				// カメラ位置を元に戻す
 				engine.ref3D().setCamera(cam);
 				engine._drawType = DrawType::Normal;

@@ -20,6 +20,7 @@
 #include "sprite3d.hpp"
 #include "blureffect.hpp"
 #include "gaussblur.hpp"
+#include "bilateralblur.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -67,6 +68,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<BlurEffect>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<TwoPhaseBlur>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<GaussBlur>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<BilateralBlur>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<BoundingSprite>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<PointSprite3D>(*lkb->spLua);

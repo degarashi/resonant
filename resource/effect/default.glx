@@ -135,6 +135,11 @@ uniform GaussUnif {
 	vec2 mapWidth;
 	float weight[8];
 }
+uniform BilateralUnif {
+	vec2 mapWidth;
+	vec4 bl_weight;
+	float bl_coeff;
+}
 varying GaussVary {
 	mediump vec2 varTex[8];
 }
@@ -201,6 +206,56 @@ fragmentshader(400) GaussV_FS() {
 	gl_FragColor = c;
 }
 
+code Bilateral {
+	vec4 CalcBilateral(sampler2D tex, vec2 uv[8], vec2 diff, float coeff_l, vec4 weight) {
+		vec4 tC = texture2D(tex, uv[0]);
+		vec4 tL[4] = vec4[](texture2D(tex, uv[4] - diff),
+							texture2D(tex, uv[3] - diff),
+							texture2D(tex, uv[2] - diff),
+							texture2D(tex, uv[1] - diff));
+		vec4 tR[4] = vec4[](texture2D(tex, uv[1]),
+							texture2D(tex, uv[2]),
+							texture2D(tex, uv[3]),
+							texture2D(tex, uv[4]));
+		vec3 dcL[4] = vec3[](tL[0].rgb - tC.rgb,
+							tL[1].rgb - tC.rgb,
+							tL[2].rgb - tC.rgb,
+							tL[3].rgb - tC.rgb);
+		vec3 dcR[4] = vec3[](tR[0].rgb - tC.rgb,
+							tR[1].rgb - tC.rgb,
+							tR[2].rgb - tC.rgb,
+							tR[3].rgb - tC.rgb);
+		vec4 lL = vec4(dot(dcL[0], dcL[0]),
+							dot(dcL[1], dcL[1]),
+							dot(dcL[2], dcL[2]),
+							dot(dcL[3], dcL[3]));
+		vec4 lR = vec4(dot(dcR[0], dcR[0]),
+							dot(dcR[1], dcR[1]),
+							dot(dcR[2], dcR[2]),
+							dot(dcR[3], dcR[3]));
+
+		lL = weight * exp(coeff_l * lL);
+		lR = weight * exp(coeff_l * lR);
+
+		vec4 c = tC;
+		c += lL.x * tL[0] + lR.x * tR[0];
+		c += lL.y * tL[1] + lR.y * tR[1];
+		c += lL.z * tL[2] + lR.z * tR[2];
+		c += lL.w * tL[3] + lR.w * tR[3];
+		return c;
+	}
+}
+fragmentshader(400, Bilateral) BilateralH_FS() {
+	vec2 diff = vec2(9/mapWidth.x, 0);
+	vec4 c = CalcBilateral(sys_texDiffuse, varTex, diff, bl_coeff, bl_weight);
+	gl_FragColor = c / 4;
+}
+fragmentshader(400, Bilateral) BilateralV_FS() {
+	vec2 diff = vec2(0, 9/mapWidth.y);
+	vec4 c = CalcBilateral(sys_texDiffuse, varTex, diff, bl_coeff, bl_weight);
+	gl_FragColor = c / c.a;
+}
+
 technique PostEffect {
 	CullFace = true;
 	FrontFace = cw;
@@ -226,5 +281,19 @@ technique PostEffect {
 		Varying = GaussVary;
 		VertexShader = Gauss_VS([-0.5 -0.5], [0 0], [0 2]);
 		FragmentShader = GaussV_FS();
+	}
+	pass BilateralH {
+		Blend = false;
+		Uniform += BilateralUnif;
+		Varying = GaussVary;
+		VertexShader = Gauss_VS([0 0], [1.5 0], [2 0]);
+		FragmentShader = BilateralH_FS();
+	}
+	pass BilateralV {
+		Blend = false;
+		Uniform += BilateralUnif;
+		Varying = GaussVary;
+		VertexShader = Gauss_VS([0 0], [0 1.5], [0 2]);
+		FragmentShader = BilateralV_FS();
 	}
 }
