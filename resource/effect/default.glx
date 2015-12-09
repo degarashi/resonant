@@ -135,49 +135,74 @@ uniform GaussUnif {
 	vec2 mapWidth;
 	float weight[8];
 }
-vertexshader(400) Gauss_VS(float dx, float dy) {
+varying GaussVary {
+	mediump vec2 varTex[8];
+}
+vertexshader(400) GaussH_VS(float dx, float dy) {
 	gl_Position.xy = atPos;
 	gl_Position.z = sys_fDepth;
 	gl_Position.w = 1;
-	varTex = atTex + vec2(dx/mapWidth.x, dy/mapWidth.y);
+	varTex[0] = atTex + vec2(dx/mapWidth.x, dy/mapWidth.y);
+	varTex[1] = varTex[0] + vec2(2/mapWidth.x, 0);
+	varTex[2] = varTex[0] + vec2(4/mapWidth.x, 0);
+	varTex[3] = varTex[0] + vec2(6/mapWidth.x, 0);
+	varTex[4] = varTex[0] + vec2(8/mapWidth.x, 0);
+	varTex[5] = varTex[0] + vec2(10/mapWidth.x, 0);
+	varTex[6] = varTex[0] + vec2(12/mapWidth.x, 0);
+	varTex[7] = varTex[0] + vec2(14/mapWidth.x, 0);
+}
+vertexshader(400) GaussV_VS(float dx, float dy) {
+	gl_Position.xy = atPos;
+	gl_Position.z = sys_fDepth;
+	gl_Position.w = 1;
+	varTex[0] = atTex + vec2(dx/mapWidth.x, dy/mapWidth.y);
+	varTex[1] = varTex[0] + vec2(0, 2/mapWidth.y);
+	varTex[2] = varTex[0] + vec2(0, 4/mapWidth.y);
+	varTex[3] = varTex[0] + vec2(0, 6/mapWidth.y);
+	varTex[4] = varTex[0] + vec2(0, 8/mapWidth.y);
+	varTex[5] = varTex[0] + vec2(0, 10/mapWidth.y);
+	varTex[6] = varTex[0] + vec2(0, 12/mapWidth.y);
+	varTex[7] = varTex[0] + vec2(0, 14/mapWidth.y);
 }
 fragmentshader(400) GaussH_FS() {
 	vec4 c;
-	c = weight[0] * texture2D(sys_texDiffuse, varTex);
-	c += weight[1] * (texture2D(sys_texDiffuse, varTex + vec2(2/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(2/mapWidth.x, 0)));
-	c += weight[2] * (texture2D(sys_texDiffuse, varTex + vec2(4/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(4/mapWidth.x, 0)));
-	c += weight[3] * (texture2D(sys_texDiffuse, varTex + vec2(6/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(6/mapWidth.x, 0)));
-	c += weight[4] * (texture2D(sys_texDiffuse, varTex + vec2(8/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(8/mapWidth.x, 0)));
-	c += weight[5] * (texture2D(sys_texDiffuse, varTex + vec2(10/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(10/mapWidth.x, 0)));
-	c += weight[6] * (texture2D(sys_texDiffuse, varTex + vec2(12/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(12/mapWidth.x, 0)));
-	c += weight[7] * (texture2D(sys_texDiffuse, varTex + vec2(14/mapWidth.x, 0))
-						+ texture2D(sys_texDiffuse, varTex - vec2(14/mapWidth.x, 0)));
+	vec2 diff = vec2(16/mapWidth.x, 0);
+	c = weight[0] * texture2D(sys_texDiffuse, varTex[0]);
+	c += weight[1] * (texture2D(sys_texDiffuse, varTex[1])
+						+ texture2D(sys_texDiffuse, varTex[7] - diff));
+	c += weight[2] * (texture2D(sys_texDiffuse, varTex[2])
+						+ texture2D(sys_texDiffuse, varTex[6] - diff));
+	c += weight[3] * (texture2D(sys_texDiffuse, varTex[3])
+						+ texture2D(sys_texDiffuse, varTex[5] - diff));
+	c += weight[4] * (texture2D(sys_texDiffuse, varTex[4])
+						+ texture2D(sys_texDiffuse, varTex[4] - diff));
+	c += weight[5] * (texture2D(sys_texDiffuse, varTex[5])
+						+ texture2D(sys_texDiffuse, varTex[3] - diff));
+	c += weight[6] * (texture2D(sys_texDiffuse, varTex[6])
+						+ texture2D(sys_texDiffuse, varTex[2]));
+	c += weight[7] * (texture2D(sys_texDiffuse, varTex[7])
+						+ texture2D(sys_texDiffuse, varTex[1]));
 	c.w = 1;
 	gl_FragColor = c;
 }
 fragmentshader(400) GaussV_FS() {
 	vec4 c;
-	c = weight[0] * texture2D(sys_texDiffuse, varTex);
-	c += weight[1] * (texture2D(sys_texDiffuse, varTex + vec2(0, 2/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 2/mapWidth.y)));
-	c += weight[2] * (texture2D(sys_texDiffuse, varTex + vec2(0, 4/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 4/mapWidth.y)));
-	c += weight[3] * (texture2D(sys_texDiffuse, varTex + vec2(0, 6/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 6/mapWidth.y)));
-	c += weight[4] * (texture2D(sys_texDiffuse, varTex + vec2(0, 8/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 8/mapWidth.y)));
-	c += weight[5] * (texture2D(sys_texDiffuse, varTex + vec2(0, 10/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 10/mapWidth.y)));
-	c += weight[6] * (texture2D(sys_texDiffuse, varTex + vec2(0, 12/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 12/mapWidth.y)));
-	c += weight[7] * (texture2D(sys_texDiffuse, varTex + vec2(0, 14/mapWidth.y))
-						+ texture2D(sys_texDiffuse, varTex - vec2(0, 14/mapWidth.y)));
+	vec2 diff = vec2(0, 16/mapWidth.y);
+	c = weight[0] * texture2D(sys_texDiffuse, varTex[0]);
+	c += weight[1] * (texture2D(sys_texDiffuse, varTex[1])
+						+ texture2D(sys_texDiffuse, varTex[7] - diff));
+	c += weight[2] * (texture2D(sys_texDiffuse, varTex[2])
+						+ texture2D(sys_texDiffuse, varTex[6] - diff));
+	c += weight[3] * (texture2D(sys_texDiffuse, varTex[3])
+						+ texture2D(sys_texDiffuse, varTex[5] - diff));
+	c += weight[4] * (texture2D(sys_texDiffuse, varTex[4])
+						+ texture2D(sys_texDiffuse, varTex[4] - diff));
+	c += weight[5] * (texture2D(sys_texDiffuse, varTex[5])
+						+ texture2D(sys_texDiffuse, varTex[3] - diff));
+	c += weight[6] * (texture2D(sys_texDiffuse, varTex[6])
+						+ texture2D(sys_texDiffuse, varTex[2] - diff));
+	c += weight[7] * (texture2D(sys_texDiffuse, varTex[7])
+						+ texture2D(sys_texDiffuse, varTex[1] - diff));
 	c.w = 1;
 	gl_FragColor = c;
 }
@@ -198,12 +223,14 @@ technique PostEffect {
 	}
 	pass GaussH {
 		Uniform += GaussUnif;
-		VertexShader = Gauss_VS(0.5, 0.5);
+		Varying = GaussVary;
+		VertexShader = GaussH_VS(0.5, 0.5);
 		FragmentShader = GaussH_FS();
 	}
 	pass GaussV {
 		Uniform += GaussUnif;
-		VertexShader = Gauss_VS(-0.5, -0.5);
+		Varying = GaussVary;
+		VertexShader = GaussV_VS(-0.5, -0.5);
 		FragmentShader = GaussV_FS();
 	}
 }
