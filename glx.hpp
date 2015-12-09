@@ -347,6 +347,7 @@ namespace rs {
 				} index, index_prev;
 				using HLFb_OP = spn::Optional<HLFb>;
 				HLFb_OP				hlFb;			//!< 描画対象のフレームバッファ (無効ならデフォルトターゲット)
+				HLFb				hlFbPrev;		//!< 今現在OpenGLで有効になっているフレームバッファ
 				using VP_OP = spn::Optional<draw::Viewport>;
 				VP_OP				viewport;
 				//! 前回とのバッファの差異
@@ -366,6 +367,7 @@ namespace rs {
 				draw::TokenML		tokenML;
 
 				void reset();
+				//! Tech/Passの切り替えで無効になる変数をリセット
 				void _clean_drawvalue();
 				void setTech(GLint idTech, bool bDefault);
 				void setPass(GLint idPass, TechMap& tmap, TexMap& texMap);
@@ -452,6 +454,7 @@ namespace rs {
 
 			// ----------------- Framebuffer -----------------
 			void setFramebuffer(HFb fb) override;
+			HFb getFramebuffer() const override;
 			//! アプリケーション初期化時のデフォルトフレームバッファに戻す
 			void resetFramebuffer() override;
 			void setViewport(bool bPixel, const spn::RectF& r) override;

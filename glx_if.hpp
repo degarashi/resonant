@@ -23,6 +23,7 @@ namespace rs {
 		virtual void setTechnique(int id, bool bReset) = 0;
 		virtual void setPass(int id) = 0;
 		virtual void setFramebuffer(HFb fb) = 0;
+		virtual HFb getFramebuffer() const = 0;
 		virtual void setViewport(bool bPixel, const spn::RectF& r) = 0;
 		virtual void resetFramebuffer() = 0;
 		virtual void setVDecl(const SPVDecl& decl) = 0;

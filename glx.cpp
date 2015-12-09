@@ -422,6 +422,7 @@ namespace rs {
 				fb->get()->getDrawToken(tokenML);
 			else
 				GLFBufferTmp(0, mgr_info.getScreenSize()).getDrawToken(tokenML);
+			hlFbPrev = fb;
 			hlFb = spn::none;
 
 			// ビューポートはデフォルトでフルスクリーンに初期化
@@ -798,6 +799,11 @@ namespace rs {
 	void GLEffect::setFramebuffer(HFb fb) {
 		_current.hlFb = fb;
 		_current.viewport = spn::none;
+	}
+	HFb GLEffect::getFramebuffer() const {
+		if(_current.hlFb)
+			return *_current.hlFb;
+		return _current.hlFbPrev;
 	}
 	void GLEffect::resetFramebuffer() {
 		setFramebuffer(HLFb());
