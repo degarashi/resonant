@@ -101,6 +101,7 @@ namespace rs {
 
 	// ----------------- ArgChecker -----------------
 	ArgChecker::ArgChecker(std::ostream& ost, const std::string& shName, const std::vector<ArgItem>& args):_shName(shName), _ost(ost) {
+		AssertTArg(Throw, args.size()<countof(_arg), (GLE_InvalidArgument)(const std::string&)(const char*), _shName, "too many arguments")
 		int nA = args.size();
 		for(int i=0 ; i<nA ; i++) {
 			_target[i] = Detect(args[i].type);
