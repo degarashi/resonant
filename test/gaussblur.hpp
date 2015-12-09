@@ -1,29 +1,18 @@
 #pragma once
-#include "../util/screen.hpp"
-#include "spinner/rflag.hpp"
+#include "twophaseblur.hpp"
 
-extern const rs::IdValue U_MapWidth,
-						U_Weight;
-extern const rs::IdValue T_GaussH,
-						T_GaussV;
-class GaussBlur : public rs::DrawableObjT<GaussBlur> {
+class GaussBlur : public rs::ObjectT<GaussBlur, TwoPhaseBlur> {
 	private:
+		static const rs::IdValue U_GaussWeight;
+		static const rs::IdValue T_GaussH,
+								T_GaussV;
 		struct CoeffArray_t {
 			float value[8];
 		};
-		struct Tmp_t {
-			rs::HLTex	tmp;
-			rs::HLRb	rb;
-		};
 		#define SEQ_GAUSS \
-			((Source)(rs::HLTex)) \
-			((Dest)(rs::HLTex)) \
-			((Tmp)(Tmp_t)(Source)(Dest)) \
 			((Dispersion)(float)) \
 			((CoeffArray)(CoeffArray_t)(Dispersion))
 		RFLAG_S(GaussBlur, SEQ_GAUSS)
-		mutable rs::HLFb		_hlFb;
-		rs::util::ScreenRect	_rect;
 
 	public:
 		RFLAG_GETMETHOD_S(SEQ_GAUSS)
@@ -31,7 +20,7 @@ class GaussBlur : public rs::DrawableObjT<GaussBlur> {
 		RFLAG_REFMETHOD_S(SEQ_GAUSS)
 		#undef SEQ_GAUSS
 
-		GaussBlur(rs::Priority p);
+		using ObjectT::ObjectT;
 		void onDraw(rs::IEffect& e) const override;
 };
 DEF_LUAIMPORT(GaussBlur)

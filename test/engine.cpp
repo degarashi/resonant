@@ -1,4 +1,5 @@
 #include "engine.hpp"
+#include "../systeminfo.hpp"
 
 namespace myunif {
 	namespace light {
@@ -90,6 +91,8 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 	private:
 		struct St_Default : StateT<St_Default> {
 			void onDraw(const DrawScene&, rs::IEffect& e) const override {
+				rs::HLFb fb = e.getFramebuffer();
+
 				auto& engine = static_cast<Engine&>(e);
 				e.setFramebuffer(engine.getLightFB());
 				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4(0), 1.f, spn::none});
@@ -110,6 +113,8 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 				engine.ref3D().setCamera(cam);
 				engine._drawType = DrawType::Normal;
 				engine._hlDg->get()->onDraw(e);
+
+				e.setFramebuffer(fb);
 			}
 		};
 	public:
@@ -199,6 +204,9 @@ void Engine::clearScene() {
 void Engine::setDispersion(float d) {
 	_gauss.setDispersion(d);
 }
+void Engine::setOutputFramebuffer(rs::HFb hFb) {
+	_hlFb = hFb;
+}
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	NOTHING,
@@ -213,4 +221,5 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	(getCubeScene)
 	(addSceneObject)
 	(remSceneObject)
+	(setOutputFramebuffer)
 	(clearScene))

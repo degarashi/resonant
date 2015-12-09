@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 		auto& gv = *tls_gvalue;
 
 		rs::LuaImport::RegisterClass<BlurEffect>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<TwoPhaseBlur>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<GaussBlur>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<BoundingSprite>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);

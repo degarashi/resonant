@@ -44,6 +44,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 		RFLAG_S(Engine, SEQ_UNIF)
 
 		mutable GaussBlur	_gauss;
+		rs::HLFb		_hlFb;
 		DrawType::E	_drawType;
 		rs::HLDGroup	_hlDg;
 		class DrawScene;
@@ -66,5 +67,6 @@ class Engine : public rs::util::GLEffect_2D3D {
 		void remSceneObject(rs::HDObj hdObj);
 		void clearScene();
 		void setDispersion(float d);
+		void setOutputFramebuffer(rs::HFb hFb);
 };
 DEF_LUAIMPORT(Engine)
