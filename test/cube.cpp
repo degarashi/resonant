@@ -16,6 +16,8 @@ void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 	if(!(_hlVb = s_wVb[typ][indexI].lock())) {
 		boom::Vec3V tmpPos;
 		boom::IndexV tmpIndex;
+		boom::Vec2V tmpUv;
+		spn::Pose3D pose;
 		switch(typ) {
 			case Type::Cone:
 				boom::geo3d::Geometry::MakeCone(tmpPos, tmpIndex, 16);
@@ -38,9 +40,10 @@ void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 		if(bFlip)
 			boom::FlipFace(tmpIndex.begin(), tmpIndex.end(), tmpIndex.begin(), 0);
 
-		boom::Vec2V tmpUv;
-		spn::Pose3D pose;
-		boom::geo3d::Geometry::UVUnwrapCylinder(tmpUv, pose, tmpPos);
+		if(typ == Type::Cube)
+			boom::geo3d::Geometry::UVUnwrapCylinder(tmpUv, pose, tmpPos);
+		else
+			boom::geo3d::Geometry::UVUnwrapSphere(tmpUv, 2,1, pose, tmpPos);
 
 		boom::Vec3V posv, normalv;
 		boom::Vec2V uvv;
