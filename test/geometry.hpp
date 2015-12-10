@@ -17,9 +17,19 @@ namespace boom {
 			*oitr++ = v1 + offset;
 		}
 	}
+	float Linear(float value, float minv, float maxv);
+	float Bounce(float value, float freq);
 	namespace geo3d {
 		struct Geometry {
 			static void UVUnwrapCylinder(Vec2V& uv,
+									const Pose3D& pose,
+									const Vec3V& srcPos);
+			static void UVUnwrapSphere(Vec2V& uv,
+									float nFreqU,
+									float nFreqV,
+									const Pose3D& pose,
+									const Vec3V& srcPos);
+			static void UVUnwrapPlane(Vec2V& uv,
 									const Pose3D& pose,
 									const Vec3V& srcPos);
 			static void MakeVertexNormal(Vec3V& dstNormal,

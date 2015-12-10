@@ -19,6 +19,17 @@ namespace {
 	}
 }
 namespace boom {
+	float Linear(const float value, const float minv, const float maxv) {
+		return (value - minv) / (maxv - minv);
+	}
+	float Bounce(float value, float freq) {
+		AssertP(Trap, freq>=1 && spn::IsInRange(value, 0.f, 1.f))
+		freq = 1/freq;
+		value = std::fmod(value, freq);
+		if(value > freq/2)
+			return 1.f - Linear(value-freq/2, 0.f, freq/2);
+		return Linear(value, 0.f, freq/2);
+	}
 	namespace geo3d {
 		void Geometry::UVUnwrapCylinder(Vec2V& uv,
 									const Pose3D& pose,
@@ -37,6 +48,56 @@ namespace boom {
 				pUv->y = spn::Saturate(pl.y, 0.f, 1.f);
 				++pUv;
 			}
+			Assert(Trap, pUv==uv.data()+uv.size())
+		}
+		void Geometry::UVUnwrapSphere(Vec2V& uv,
+								const float nFreqU,
+								const float nFreqV,
+								const Pose3D& pose,
+								const Vec3V& srcPos)
+		{
+			uv.resize(srcPos.size());
+			auto* pUv = uv.data();
+			const auto mLocal = pose.getToLocal();
+			for(auto& p : srcPos) {
+				auto pl = p.asVec4(1) * mLocal;
+				Vec2 angDirU(pl.x, pl.y);
+				const auto bU = angDirU.normalize() < 1e-5f;
+				if(bU)
+					pUv->x = 0;
+				else
+					pUv->x = (spn::AngleValue(angDirU) / spn::RadF::OneRotationAng).get();
+				if(std::abs(pl.z) < 1e-5f)
+					pUv->y = 0.5f;
+				else {
+					if(bU)
+						pUv->y = (pl.z >= 0) ? 1.f : 0.f;
+					else {
+						pl.normalize();
+						float d = spn::Saturate(pl.dot(Vec3(angDirU.x, angDirU.y, 0)), 1.f);
+						d = std::acos(d);
+						if(pl.z < 0)
+							d *= -1;
+						pUv->y = (d / spn::PI) + 0.5f;
+					}
+				}
+				if(nFreqU > 0)
+					pUv->x = Bounce(pUv->x, nFreqU);
+				if(nFreqV > 0)
+					pUv->y = Bounce(pUv->y, nFreqV);
+				++pUv;
+			}
+			Assert(Trap, pUv==uv.data()+uv.size())
+		}
+		void Geometry::UVUnwrapPlane(Vec2V& uv,
+									const Pose3D& pose,
+									const Vec3V& srcPos)
+		{
+			auto toLocal = pose.getToLocal();
+			uv.resize(srcPos.size());
+			auto* pUv = uv.data();
+			for(auto& v : srcPos)
+				*pUv++ = (v.asVec4(1) * toLocal).asVec2();
 			Assert(Trap, pUv==uv.data()+uv.size())
 		}
 		void Geometry::MakeVertexNormalFlat(Vec3V& dstPos,
