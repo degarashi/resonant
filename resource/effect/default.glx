@@ -1,4 +1,4 @@
-import cube.glx;
+import primitive.glx;
 
 uniform Text2DUnif {
 	mat3 mText;

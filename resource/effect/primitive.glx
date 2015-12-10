@@ -1,17 +1,17 @@
-attribute CubeAttr {
+attribute PrimAttr {
 	highp vec3 atPos : POSITION;
 	mediump vec2 atTex : TEXCOORD0;
 	mediump vec3 atNormal : NORMAL;
 }
 
-// ------------- CubeDefault -------------
-varying CubeVary {
+// ------------- Primitive -------------
+varying PrimVary {
 	mediump vec2 varTex;
 	mediump vec3 varNormal;
 	mediump vec3 varPos;
 	mediump vec3 varLsPos;
 }
-uniform CubeUnif {
+uniform PrimUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
 	sampler2D sys_texDiffuse;
@@ -22,7 +22,7 @@ uniform CubeUnif {
 	vec2 m_depthRange;
 	highp mat4 m_mLight;
 }
-vertexshader(400) CubeVS() {
+vertexshader(400) PrimVS() {
 	vec4 v = vec4(atPos,1);
 	gl_Position = v * sys_mTrans;
 	v *= sys_mWorld;
@@ -81,7 +81,7 @@ code Light {
 		return smoothstep(0.5, 1, dt);
 	}
 }
-fragmentshader(400, Light) CubeFS() {
+fragmentshader(400, Light) PrimFS() {
 	vec2 lit = CalcLight(varPos, varNormal, sys_vEyePos, m_vLightPos, 32);
 	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit.x + lit.y);
 	float d = Linear(distance(varPos, m_vLightPos), m_depthRange.x, m_depthRange.y);
@@ -99,32 +99,32 @@ fragmentshader(400, Light) CubeFS() {
 	gl_FragColor.w = 1;
 }
 
-// ------------- CubeDepth -------------
-varying CubeDepthVary {
+// ------------- PrimDepth -------------
+varying PrimDepthVary {
 	mediump vec3 varPos;
 }
-uniform CubeDepthUnif {
+uniform PrimDepthUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
 	mediump vec3 m_vLightPos;
 	mediump vec2 m_depthRange;
 }
-vertexshader(400) CubeDepthVS() {
+vertexshader(400) PrimDepthVS() {
 	vec4 v = vec4(atPos,1);
 	gl_Position = v * sys_mTrans;
 	varPos = (v * sys_mWorld).xyz;
 }
-fragmentshader(400, Light) CubeDepthFS() {
+fragmentshader(400, Light) PrimDepthFS() {
 	gl_FragColor = vec4(CalcDepth(varPos, m_vLightPos, m_depthRange), 0,0);
 }
 
-// ------------- CubeCubeDefault -------------
-varying CubeCubeVary {
+// ------------- CubeDefault -------------
+varying CubeVary {
 	mediump vec2 varTex;
 	mediump vec3 varNormal;
 	mediump vec3 varPos;
 }
-uniform CubeCubeUnif {
+uniform CubeUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
 	sampler2D sys_texDiffuse;
@@ -133,7 +133,7 @@ uniform CubeCubeUnif {
 	vec3 sys_vEyePos;
 	vec2 m_depthRange;
 }
-vertexshader(400) CubeCubeVS() {
+vertexshader(400) CubeVS() {
 	vec4 v = vec4(atPos,1);
 	gl_Position = v * sys_mTrans;
 	v *= sys_mWorld;
@@ -142,7 +142,7 @@ vertexshader(400) CubeCubeVS() {
 	varNormal = normalize((vec4(atNormal, 0) * sys_mWorld).xyz);
 	varPos = v.xyz;
 }
-fragmentshader(400, Light) CubeCubeFS() {
+fragmentshader(400, Light) CubeFS() {
 	vec2 lit = CalcLight(varPos, varNormal, sys_vEyePos, m_vLightPos, 32);
 	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit.x + lit.y);
 	float d = ClampLinear(distance(varPos, m_vLightPos), m_depthRange.x, m_depthRange.y);
@@ -159,35 +159,35 @@ fragmentshader(400, Light) CubeCubeFS() {
 	gl_FragColor.w = 1;
 }
 
-technique Cube {
+technique Primitive {
 	CullFace = true;
 	FrontFace = cw;
 	Blend = false;
 	DepthTest = true;
 	DepthMask = true;
-	Attribute = CubeAttr;
+	Attribute = PrimAttr;
 	pass Default {
+		Varying = PrimVary;
+		Uniform = PrimUnif;
+		VertexShader = PrimVS();
+		FragmentShader = PrimFS();
+	}
+	pass Depth {
+		Varying = PrimDepthVary;
+		Uniform = PrimDepthUnif;
+		VertexShader = PrimDepthVS();
+		FragmentShader = PrimDepthFS();
+	}
+	pass CubeDepth {
+		Varying = PrimDepthVary;
+		Uniform = PrimDepthUnif;
+		VertexShader = PrimDepthVS();
+		FragmentShader = PrimDepthFS();
+	}
+	pass CubeDefault {
 		Varying = CubeVary;
 		Uniform = CubeUnif;
 		VertexShader = CubeVS();
 		FragmentShader = CubeFS();
-	}
-	pass Depth {
-		Varying = CubeDepthVary;
-		Uniform = CubeDepthUnif;
-		VertexShader = CubeDepthVS();
-		FragmentShader = CubeDepthFS();
-	}
-	pass CubeDepth {
-		Varying = CubeDepthVary;
-		Uniform = CubeDepthUnif;
-		VertexShader = CubeDepthVS();
-		FragmentShader = CubeDepthFS();
-	}
-	pass CubeDefault {
-		Varying = CubeVary;
-		Uniform = CubeCubeUnif;
-		VertexShader = CubeCubeVS();
-		FragmentShader = CubeCubeFS();
 	}
 }

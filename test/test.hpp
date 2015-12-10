@@ -14,8 +14,8 @@
 #include "../glx_if.hpp"
 #include "../util/dwrapper_calldraw.hpp"
 namespace vertex {
-	//! キューブ描画用頂点
-	struct cube {
+	//! プリミティブ描画用頂点
+	struct prim {
 		spn::Vec3	pos;
 		spn::Vec2	tex;
 		spn::Vec3	normal;
@@ -27,10 +27,10 @@ namespace vertex {
 	};
 }
 namespace vdecl {
-	struct cube {};
+	struct prim {};
 	struct sprite {};
 }
-DefineVDecl(::vdecl::cube)
+DefineVDecl(::vdecl::prim)
 DefineVDecl(::vdecl::sprite)
 
 #include "spinner/random.hpp"

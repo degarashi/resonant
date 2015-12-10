@@ -1,16 +1,16 @@
 #include "test.hpp"
 #include "engine.hpp"
-#include "cube.hpp"
+#include "primitive.hpp"
 #include "geometry.hpp"
 
-// ---------------------- Cube ----------------------
-rs::WVb Cube::s_wVb[Type::Num][2];
-rs::WIb Cube::s_wIb[Type::Num][2];
-const rs::IdValue Cube::T_Cube = GlxId::GenTechId("Cube", "Default"),
-				Cube::T_CubeDepth = GlxId::GenTechId("Cube", "Depth"),
-				Cube::T_CubeCube = GlxId::GenTechId("Cube", "CubeDefault"),
-				Cube::T_CubeCubeDepth = GlxId::GenTechId("Cube", "CubeDepth");
-void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
+// ---------------------- Primitive ----------------------
+rs::WVb Primitive::s_wVb[Type::Num][2];
+rs::WIb Primitive::s_wIb[Type::Num][2];
+const rs::IdValue Primitive::T_Prim = GlxId::GenTechId("Primitive", "Default"),
+				Primitive::T_PrimDepth = GlxId::GenTechId("Primitive", "Depth"),
+				Primitive::T_PrimCube = GlxId::GenTechId("Primitive", "CubeDefault"),
+				Primitive::T_PrimCubeDepth = GlxId::GenTechId("Primitive", "CubeDepth");
+void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 	int indexI = bFlip ? 1 : 0;
 
 	if(!(_hlVb = s_wVb[typ][indexI].lock())) {
@@ -59,7 +59,7 @@ void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 		}
 		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
 		const int nV = posv.size();
-		std::vector<vertex::cube> tmpV(nV);
+		std::vector<vertex::prim> tmpV(nV);
 		for(int i=0 ; i<nV ; i++) {
 			tmpV[i].pos = posv[i];
 			tmpV[i].tex = uvv[i];
@@ -74,41 +74,41 @@ void Cube::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 	} else
 		_hlIb = s_wIb[typ][indexI].lock();
 }
-Cube::Cube(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
+Primitive::Primitive(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
 	_hlTex(hTex)
 {
 	setScale({s,s,s});
 	_initVb(typ, bFlat, bFlip);
 }
-void Cube::advance() {
+void Primitive::advance() {
 	const spn::AQuat& q = this->getRot();
-	auto& self = const_cast<Cube&>(*this);
+	auto& self = const_cast<Primitive&>(*this);
 	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
 }
-void Cube::draw(Engine& e) const {
+void Primitive::draw(Engine& e) const {
 	auto typ = e.getDrawType();
 	if(typ == Engine::DrawType::Normal) {
-		e.setTechPassId(T_Cube);
+		e.setTechPassId(T_Prim);
 		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	} else if(typ == Engine::DrawType::CubeNormal) {
-		e.setTechPassId(T_CubeCube);
+		e.setTechPassId(T_PrimCube);
 		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 	} else if(typ == Engine::DrawType::CubeDepth) {
-		e.setTechPassId(T_CubeCubeDepth);
+		e.setTechPassId(T_PrimCubeDepth);
 	} else
-		e.setTechPassId(T_CubeDepth);
-	e.setVDecl(rs::DrawDecl<vdecl::cube>::GetVDecl());
+		e.setTechPassId(T_PrimDepth);
+	e.setVDecl(rs::DrawDecl<vdecl::prim>::GetVDecl());
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
 	e.setIStream(_hlIb);
 	e.drawIndexed(GL_TRIANGLES, _hlIb->get()->getNElem());
 }
-void Cube::exportDrawTag(rs::DrawTag& d) const {
+void Primitive::exportDrawTag(rs::DrawTag& d) const {
 	d.idTex[0] = _hlTex.get();
 }
 
-// ---------------------- Cube頂点宣言 ----------------------
-const rs::SPVDecl& rs::DrawDecl<vdecl::cube>::GetVDecl() {
+// ---------------------- Primitive頂点宣言 ----------------------
+const rs::SPVDecl& rs::DrawDecl<vdecl::prim>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
 		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0},
@@ -117,20 +117,20 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::cube>::GetVDecl() {
 	return vd;
 }
 
-// ---------------------- CubeObj ----------------------
-struct CubeObj::St_Default : StateT<St_Default> {
-	void onDraw(const CubeObj& self, rs::IEffect& e) const override {
+// ---------------------- PrimitiveObj ----------------------
+struct PrimitiveObj::St_Default : StateT<St_Default> {
+	void onDraw(const PrimitiveObj& self, rs::IEffect& e) const override {
 		self.draw(static_cast<Engine&>(e));
 	}
 };
-CubeObj::CubeObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
-	Cube(size, hTex, typ, bFlat, bFlip)
+PrimitiveObj::PrimitiveObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
+	Primitive(size, hTex, typ, bFlat, bFlip)
 {
 	setStateNew<St_Default>();
 }
 #include "../luaimport.hpp"
 #include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, CubeObj, CubeObj, "DrawableObj", NOTHING,
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, PrimitiveObj, PrimitiveObj, "DrawableObj", NOTHING,
 		(advance)
 		(setOffset),
-		(float)(rs::HTex)(Cube::Type::E)(bool)(bool))
+		(float)(rs::HTex)(Primitive::Type::E)(bool)(bool))

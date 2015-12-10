@@ -7,7 +7,7 @@ namespace rs {
 	struct DrawTag;
 }
 class Engine;
-class Cube : public spn::Pose3D {
+class Primitive : public spn::Pose3D {
 	public:
 		struct Type {
 			enum E {
@@ -27,25 +27,25 @@ class Cube : public spn::Pose3D {
 		rs::HLTex		_hlTex;
 		void _initVb(Type::E typ, bool bFlat, bool bFlip);
 	public:
-		const static rs::IdValue	T_Cube,
-									T_CubeDepth,
-									T_CubeCubeDepth,
-									T_CubeCube;
+		const static rs::IdValue	T_Prim,
+									T_PrimDepth,
+									T_PrimCubeDepth,
+									T_PrimCube;
 		/*! \param s[in]		一辺のサイズ
 			\param hTex[in]		張り付けるテクスチャ
 			\param bFlip[in]	面反転フラグ */
-		Cube(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip);
+		Primitive(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip);
 		void draw(Engine& e) const;
 		void exportDrawTag(rs::DrawTag& d) const;
 		void advance();
 };
 #include "../util/dwrapper.hpp"
-class CubeObj : public rs::DrawableObjT<CubeObj>,
-				public Cube
+class PrimitiveObj : public rs::DrawableObjT<PrimitiveObj>,
+				public Primitive
 {
 	private:
 		struct St_Default;
 	public:
-		CubeObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip);
+		PrimitiveObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip);
 };
-DEF_LUAIMPORT(CubeObj)
+DEF_LUAIMPORT(PrimitiveObj)

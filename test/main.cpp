@@ -15,7 +15,7 @@
 #include "../updater_lua.hpp"
 #include "infoshow.hpp"
 #include "../util/profileshow.hpp"
-#include "cube.hpp"
+#include "primitive.hpp"
 #include "sprite.hpp"
 #include "sprite3d.hpp"
 #include "blureffect.hpp"
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<BoundingSprite>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<PointSprite3D>(*lkb->spLua);
-		rs::LuaImport::RegisterClass<CubeObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<PrimitiveObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<InfoShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<U_ProfileShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<GlobalValue>(*lkb->spLua);

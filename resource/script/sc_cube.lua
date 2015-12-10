@@ -29,7 +29,7 @@ function InitScene(self)
 		self.prevDS = ds
 	end
 	local addObj = function(size, tex, typ, bFlat, bFlip, pos, bRotate)
-		local obj = G.CubeObj.New(size, tex, typ, bFlat, bFlip)
+		local obj = G.PrimitiveObj.New(size, tex, typ, bFlat, bFlip)
 		obj:setOffset(pos)
 		obj:setDrawPriority(0x1000)
 		engine:addSceneObject(obj)
@@ -42,15 +42,15 @@ function InitScene(self)
 	local texFloor = System.glres:loadTexture("floor.jpg", G.GLRes.MipState.MipmapLinear, nil)
 	texBlock:setFilter(true, true)
 	texFloor:setFilter(true, true)
-	addObj(1.0, texBlock, G.CubeObj.Type.Torus, false, false,
+	addObj(1.0, texBlock, G.PrimitiveObj.Type.Torus, false, false,
 			G.Vec3.New(0,0,2), true)
-	addObj(6.0, texFloor, G.CubeObj.Type.Cube, true, true,
+	addObj(6.0, texFloor, G.PrimitiveObj.Type.Cube, true, true,
 			G.Vec3.New(0,0,2), false)
-	addObj(0.5, texBlock, G.CubeObj.Type.Cube, true, false,
+	addObj(0.5, texBlock, G.PrimitiveObj.Type.Cube, true, false,
 			G.Vec3.New(-2,-4,0), true)
-	addObj(1.0, texBlock, G.CubeObj.Type.Sphere, false, false,
+	addObj(1.0, texBlock, G.PrimitiveObj.Type.Sphere, false, false,
 			G.Vec3.New(2,-3,0), true)
-	addObj(2.0, texBlock, G.CubeObj.Type.Cone, false, false,
+	addObj(2.0, texBlock, G.PrimitiveObj.Type.Cone, false, false,
 			G.Vec3.New(-3,3,4), true)
 	do
 		local hTex = System.glres:loadTexture("light.png", G.GLRes.MipState.MipmapLinear, nil)
