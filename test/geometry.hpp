@@ -1,4 +1,5 @@
 #pragma once
+#include "boomstick/geom2D.hpp"
 #include "boomstick/geom3D.hpp"
 
 namespace boom {
@@ -72,6 +73,26 @@ namespace boom {
 								float radius,
 								int divH,
 								int divR);
+		};
+	}
+	namespace geo2d {
+		struct Geometry {
+			// Rect
+			static void MakeRect(Vec2V& dstPos,
+								IndexV& dstIndex);
+			// Circle
+			static void MakeCircle(Vec2V& dstPos,
+									IndexV& dstIndex,
+									int div);
+			// Capsule
+			static void MakeCapsule(Vec2V& dstPos,
+									IndexV& dstIndex,
+									int div);
+			static void MakeArc(Vec2V& dstPos,
+								IndexV& dstIndex,
+								spn::RadF angle,
+								int div,
+								bool bCap);
 		};
 	}
 }

@@ -442,4 +442,76 @@ namespace boom {
 			}
 		}
 	}
+	namespace geo2d {
+		void Geometry::MakeRect(Vec2V& dstPos,
+							IndexV& dstIndex)
+		{
+			dstPos = {Vec2(0,0),
+						Vec2(0,1),
+						Vec2(1,1),
+						Vec2(1,0)};
+			dstIndex = {0,1,2, 2,3,0};
+		}
+		void Geometry::MakeArc(Vec2V& dstPos,
+							IndexV& dstIndex,
+							const spn::RadF angle,
+							const int div,
+							const bool bCap)
+		{
+			AssertT(Trap, div>=2, std::invalid_argument, "Invalid division number")
+			const int nV = 2+div;
+			{
+				dstPos.resize(nV);
+				auto* pV = dstPos.data();
+				*pV++ = Vec2(0,0);
+				const float diff = angle.get()/div;
+				float cur = 0;
+				for(int i=0 ; i<div ; i++) {
+					*pV++ = Vec2(std::sin(cur), std::cos(cur));
+					cur += diff;
+				}
+				Assert(Trap, pV==dstPos.data()+nV)
+			}
+			{
+				const int nI = (nV-2)*3 - ((bCap) ? 0 : 3);
+				dstIndex.resize(nI);
+				auto* pI = dstIndex.data();
+				auto add3 = MakeAdd3(pI);
+				for(int i=0 ; i<div ; i++)
+					add3(0,i,i+1);
+				if(bCap)
+					add3(nV-2, nV-1, 0);
+				Assert(Trap, pI==dstIndex.data()+nI)
+			}
+		}
+		void Geometry::MakeCircle(Vec2V& dstPos,
+								IndexV& dstIndex,
+								const int div)
+		{
+			MakeArc(dstPos, dstIndex, spn::RadF(spn::PI*2/div * (div-1)), div-1, true);
+		}
+		void Geometry::MakeCapsule(Vec2V& dstPos,
+								IndexV& dstIndex,
+								const int div)
+		{
+			// 右半分
+			MakeArc(dstPos, dstIndex, spn::RadF(spn::PI), div, false);
+			const int nI = dstIndex.size();
+			dstIndex.resize(nI*2 + 6);
+
+			// 左半分 = 右半分のX軸反転
+			const int nV = dstPos.size();
+			dstPos.resize(nV*2);
+			for(int i=0 ; i<nV ; i++)
+				dstPos[i+nV] = dstPos[i] * Vec2(-1,1);
+			FlipFace(dstIndex.begin(), dstIndex.begin()+nI, dstIndex.begin()+nI, nV);
+
+			// 中間部分
+			const int baseR[] = {1, 1+div};
+			const int baseL[] = {baseR[1]+2, baseR[1]+2+div};
+			auto* pI = dstIndex.data() + (nI*2);
+			auto add4 = MakeAdd4(pI);
+			add4(baseL[0], baseR[0], baseR[1], baseL[1]);
+		}
+	}
 }
