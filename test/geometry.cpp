@@ -89,7 +89,7 @@ namespace boom {
 				auto normal = plane.getNormal();
 				// 座標とUVが同一なら同じ頂点とみなす
 				for(int j=0 ; j<3 ; j++) {
-					Tmp tmp{*pt[j], normal, srcUv[srcIndex[j]]};
+					Tmp tmp{*pt[j], normal, srcUv[srcIndex[i+j]]};
 					auto itr = vmap.find(tmp);
 					if(itr == vmap.end()) {
 						int idx = dstPos.size();
