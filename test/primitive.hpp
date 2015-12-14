@@ -46,7 +46,7 @@ class Primitive : public spn::Pose3D {
 		Primitive(float s, rs::HTex hTex, rs::HTex hTexNormal, Type::E typ, bool bFlat, bool bFlip);
 		void draw(Engine& e) const;
 		void exportDrawTag(rs::DrawTag& d) const;
-		void advance();
+		void advance(float t);
 		void showNormals(bool b);
 };
 #include "../util/dwrapper.hpp"

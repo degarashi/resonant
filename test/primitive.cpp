@@ -138,10 +138,10 @@ Primitive::Primitive(float s, rs::HTex hTex, rs::HTex hTexNormal, Type::E typ, b
 	setScale({s,s,s});
 	_initVb(typ, bFlat, bFlip);
 }
-void Primitive::advance() {
+void Primitive::advance(float t) {
 	const spn::AQuat& q = this->getRot();
 	auto& self = const_cast<Primitive&>(*this);
-	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(0.01f)));
+	self.setRot(q >> spn::AQuat::Rotation(spn::AVec3(1,1,0).normalization(), spn::RadF(t*0.01f)));
 }
 void Primitive::draw(Engine& e) const {
 	auto typ = e.getDrawType();

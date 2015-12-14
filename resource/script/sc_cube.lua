@@ -115,7 +115,7 @@ st_idle = {
 		engine:setLightDir((G.Vec3.New(0,0,2) - self.litpos):normalization())
 		-- キューブを回転
 		for i=1,#self.rotate do
-			self.rotate[i]:advance()
+			self.rotate[i]:advance(1.1)
 		end
 		scbase.CheckSwitch()
 	end,
