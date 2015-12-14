@@ -93,13 +93,16 @@ st_idle = {
 		elseif Global.cpp.actLightR1:isKeyPressing() then
 			lv = -1
 		end
-		local lscale = {3,4,4}
-		local lfreq = {1,1.5,2}
+		local lscale = {5,0.5,5}
+		local lfreq = {2,1,2}
+		local lorigin = G.Vec3.New(0,-4.5,2)
+		local ldirorigin = G.Vec3.New(0,-4.5,2)
 		self.litangle = self.litangle + G.Degree.New(lv)
 		local angv = self.litangle:toRadian():get()
 		local lp = G.Vec3.New(G.math.sin(angv*lfreq[1])*lscale[1],
 								G.math.cos(angv*lfreq[2])*lscale[2],
-								-G.math.sin(angv*lfreq[3])*lscale[3] + 2)
+								-G.math.sin(angv*lfreq[3]+G.math.pi/2)*lscale[3])
+		lp = lp + lorigin
 		self.litpos = lp
 
 		-- スポットライトと点光源を切り替え
@@ -112,7 +115,7 @@ st_idle = {
 		-- 光源位置のセット
 		self.lit:setOffset(self.litpos)
 		engine:setLightPosition(self.litpos)
-		engine:setLightDir((G.Vec3.New(0,0,2) - self.litpos):normalization())
+		engine:setLightDir((ldirorigin - self.litpos):normalization())
 		-- キューブを回転
 		for i=1,#self.rotate do
 			self.rotate[i]:advance(1.1)
