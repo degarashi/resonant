@@ -67,7 +67,12 @@ spn::RFlagRet Engine::_refresh(rs::HLCam& c, LightCamera*) const {
 	c = mgr_cam.emplace();
 	auto& pose = c->refPose();
 	pose.setOffset(getLightPosition());
-	pose.setRot(spn::AQuat::Rotation({0,0,1}, getLightDir()));
+	spn::AQuat q;
+	if(getLightDir().z < -1.f+1e-4f)
+		q = spn::AQuat::RotationY(spn::DegF(180.f));
+	else
+		q = spn::AQuat::Rotation({0,0,1}, getLightDir());
+	pose.setRot(q);
 	c->setFov(spn::DegF(90));
 	c->setZPlane(0.01f, 500.f);
 	return {true, 0};
