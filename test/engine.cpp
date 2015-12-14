@@ -11,7 +11,8 @@ namespace myunif {
 							Depth = GlxId::GenUnifId("m_texLightDepth"),
 							CubeDepth = GlxId::GenUnifId("m_texCubeDepth"),
 							DepthRange = GlxId::GenUnifId("m_depthRange"),
-							LightMat = GlxId::GenUnifId("m_mLight");
+							LightMat = GlxId::GenUnifId("m_mLight"),
+							LineLength = GlxId::GenUnifId("m_lineLength");
 	}
 }
 DefineDrawGroup(MyDrawGroup)
@@ -48,6 +49,8 @@ void Engine::_prepareUniforms() {
 		setUniform(*idv, getLightColorBuff(), true);
 	if(auto idv = getUnifId(myunif::light::LightMat))
 		setUniform(*idv, getLightMatrix(), true);
+	if(auto idv = getUnifId(myunif::light::LineLength))
+		setUniform(*idv, 1.f, true);
 }
 #include "../camera.hpp"
 spn::RFlagRet Engine::_refresh(rs::HLRb& rb, LightDepth*) const {

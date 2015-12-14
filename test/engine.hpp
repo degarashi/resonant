@@ -12,7 +12,8 @@ namespace myunif {
 									Depth,			// "m_texLightDepth"
 									CubeDepth,		// "m_texCubeDepth"
 									DepthRange,		// "m_depthRange"
-									LightMat;		// "m_mLight"
+									LightMat,		// "m_mLight"
+									LineLength;		// "m_lineLength"
 	}
 }
 extern const rs::IdValue T_PostEffect;

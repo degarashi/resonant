@@ -20,6 +20,12 @@ namespace vertex {
 		spn::Vec2	tex;
 		spn::Vec3	normal;
 	};
+	//! 法線確認用頂点
+	struct line {
+		spn::Vec3	pos,
+					dir;
+		spn::Vec4	color;
+	};
 	//! スプライト描画用頂点
 	struct sprite {
 		spn::Vec3	pos;
@@ -28,9 +34,11 @@ namespace vertex {
 }
 namespace vdecl {
 	struct prim {};
+	struct line {};
 	struct sprite {};
 }
 DefineVDecl(::vdecl::prim)
+DefineVDecl(::vdecl::line)
 DefineVDecl(::vdecl::sprite)
 
 #include "spinner/random.hpp"

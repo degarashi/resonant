@@ -159,6 +159,30 @@ fragmentshader(400, Light) CubeFS() {
 	gl_FragColor.w = 1;
 }
 
+// ------------- Line -------------
+attribute LineAttr {
+	vec3 atPos : POSITION;
+	vec3 atDir : TEXCOORD0;
+	vec4 atColor : COLOR;
+}
+varying LineVary {
+	vec4 varColor;
+}
+uniform LineUnif {
+	highp mat4 sys_mTrans;
+	float m_lineLength;
+}
+vertexshader(400) LineVS() {
+	vec4 v = vec4(atPos,1);
+	v.xyz += atDir * (m_lineLength*0.05f);
+	v *= sys_mTrans;
+	gl_Position = v;
+	varColor = atColor;
+}
+fragmentshader(400) LineFS() {
+	gl_FragColor = varColor;
+}
+
 technique Primitive {
 	CullFace = true;
 	FrontFace = cw;
@@ -166,6 +190,7 @@ technique Primitive {
 	DepthTest = true;
 	DepthMask = true;
 	Attribute = PrimAttr;
+	LineWidth = 1;
 	pass Default {
 		Varying = PrimVary;
 		Uniform = PrimUnif;
@@ -189,5 +214,12 @@ technique Primitive {
 		Uniform = CubeUnif;
 		VertexShader = CubeVS();
 		FragmentShader = CubeFS();
+	}
+	pass Line {
+		Attribute = LineAttr;
+		Varying = LineVary;
+		Uniform = LineUnif;
+		VertexShader = LineVS();
+		FragmentShader = LineFS();
 	}
 }

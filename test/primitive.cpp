@@ -6,10 +6,12 @@
 // ---------------------- Primitive ----------------------
 rs::WVb Primitive::s_wVb[Type::Num][2];
 rs::WIb Primitive::s_wIb[Type::Num][2];
+rs::WVb Primitive::s_wVbLine[Type::Num][2];
 const rs::IdValue Primitive::T_Prim = GlxId::GenTechId("Primitive", "Default"),
 				Primitive::T_PrimDepth = GlxId::GenTechId("Primitive", "Depth"),
 				Primitive::T_PrimCube = GlxId::GenTechId("Primitive", "CubeDefault"),
-				Primitive::T_PrimCubeDepth = GlxId::GenTechId("Primitive", "CubeDepth");
+				Primitive::T_PrimCubeDepth = GlxId::GenTechId("Primitive", "CubeDepth"),
+				Primitive::T_PrimLine = GlxId::GenTechId("Primitive", "Line");
 void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 	int indexI = bFlip ? 1 : 0;
 
@@ -70,12 +72,54 @@ void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 		s_wVb[typ][indexI] = _hlVb.weak();
 		_hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 		_hlIb.ref()->initData(std::move(indexv));
+		_hlVbLine = _MakeVbLine(posv, normalv, tanv);
 		s_wIb[typ][indexI] = _hlIb.weak();
-	} else
+		s_wVbLine[typ][indexI] = _hlVbLine.weak();
+	} else {
 		_hlIb = s_wIb[typ][indexI].lock();
+		_hlVbLine = s_wVbLine[typ][indexI].lock();
+	}
+}
+rs::HLVb Primitive::_MakeVbLine(const Vec3V& srcPos, const Vec3V& srcNormal, const Vec4V& srcTangentC)
+{
+	const spn::Vec4 c_color[3] = {
+		{1,0,0,1},
+		{0,1,0,1},
+		{0,0,1,1}
+	};
+	auto fnAddLine = [](auto* dst, const auto& origin, const auto& dir, const auto& c){
+		dst[0].pos = dst[1].pos = origin;
+		dst[0].dir = spn::Vec3(0);
+		dst[0].color = dst[1].color = c;
+		dst[1].dir = dir;
+	};
+	const int nV = srcPos.size();
+	std::vector<vertex::line> vtx(nV*6);
+	for(int i=0 ; i<nV ; i++) {
+		auto* dst = vtx.data() + i*6;
+		spn::Vec3 dir[3];
+		auto &x = dir[0],
+			&y = dir[1],
+			&z = dir[2];
+		z = srcNormal[i];
+		x = srcTangentC[i].asVec3();
+		x -= z*x.dot(z);
+		x.normalize();
+		y = z.cross(x) * srcTangentC[i].w;
+		y -= z*x.dot(z) + y*x.dot(y);
+		y.normalize();
+
+		// center, axis-x, axis-y, axis-z
+		for(int j=0 ; j<3 ; j++)
+			fnAddLine(dst+j*2, srcPos[i], dir[j], c_color[j]);
+	}
+	rs::HLVb hl = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+	hl.ref()->initData(std::move(vtx));
+	return hl;
 }
 Primitive::Primitive(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
-	_hlTex(hTex)
+	_hlTex(hTex),
+	_bShowNormal(false)
 {
 	setScale({s,s,s});
 	_initVb(typ, bFlat, bFlip);
@@ -102,9 +146,20 @@ void Primitive::draw(Engine& e) const {
 	e.setVStream(_hlVb, 0);
 	e.setIStream(_hlIb);
 	e.drawIndexed(GL_TRIANGLES, _hlIb->get()->getNElem());
+
+	// 法線を表示
+	if(_bShowNormal && typ == Engine::DrawType::Normal) {
+		e.setVDecl(rs::DrawDecl<vdecl::line>::GetVDecl());
+		e.setTechPassId(T_PrimLine);
+		e.setVStream(_hlVbLine, 0);
+		e.draw(GL_LINES, 0, _hlVbLine->get()->getNElem());
+	}
 }
 void Primitive::exportDrawTag(rs::DrawTag& d) const {
 	d.idTex[0] = _hlTex.get();
+}
+void Primitive::showNormals(bool b) {
+	_bShowNormal = b;
 }
 
 // ---------------------- Primitive頂点宣言 ----------------------
@@ -113,6 +168,14 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::prim>::GetVDecl() {
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
 		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0},
 		{0,20, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::NORMAL}
+	});
+	return vd;
+}
+const rs::SPVDecl& rs::DrawDecl<vdecl::line>::GetVDecl() {
+	static rs::SPVDecl vd(new rs::VDecl{
+		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
+		{0, 12, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::TEXCOORD0},
+		{0,24, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::COLOR}
 	});
 	return vd;
 }
@@ -131,6 +194,7 @@ PrimitiveObj::PrimitiveObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, b
 #include "../luaimport.hpp"
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, PrimitiveObj, PrimitiveObj, "DrawableObj", NOTHING,
+		(showNormals)
 		(advance)
 		(setOffset),
 		(float)(rs::HTex)(Primitive::Type::E)(bool)(bool))
