@@ -9,6 +9,7 @@ namespace myunif {
 							Dir =	GlxId::GenUnifId("m_vLightDir"),
 							Power =	GlxId::GenUnifId("m_fLightPower"),
 							Depth = GlxId::GenUnifId("m_texLightDepth"),
+							Normal = GlxId::GenUnifId("m_texNormal"),
 							CubeDepth = GlxId::GenUnifId("m_texCubeDepth"),
 							DepthRange = GlxId::GenUnifId("m_depthRange"),
 							LightMat = GlxId::GenUnifId("m_mLight"),

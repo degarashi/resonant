@@ -1,5 +1,16 @@
 #include "geometry.hpp"
 
+namespace rs {
+	enum class CubeFace {
+		PositiveX,
+		NegativeX,
+		PositiveY,
+		NegativeY,
+		PositiveZ,
+		NegativeZ,
+		Num
+	};
+}
 namespace {
 	template <class I>
 	auto MakeAdd3(I*& dst) {
@@ -30,7 +41,37 @@ namespace boom {
 			return 1.f - Linear(value-freq/2, 0.f, freq/2);
 		return Linear(value, 0.f, freq/2);
 	}
+	spn::RadF CalcAngle(const Vec3& p0, const Vec3& p1, const Vec3& p2) {
+		return spn::RadF(std::acos(spn::Saturate((p1-p0).normalization().dot((p2-p0).normalization()), 1.f)));
+	}
+	namespace {
+		template <int N>
+		struct SumVec {
+			using Vec = spn::VecT<N,false>;
+			Vec		vec{0,0,0};
+			int		count=0;
+			void add(const Vec& v) {
+				vec += v;
+				++count;
+			}
+			Vec getNormal() const {
+				return vec.normalization();
+			}
+			Vec getAverage() const {
+				return vec / count;
+			}
+			Vec get() const {
+				return vec;
+			}
+			int num() const {
+				return count;
+			}
+		};
+		template <int N>
+		using SumVecV = std::vector<SumVec<N>>;
+	}
 	namespace geo3d {
+		using spn::Mat23;
 		void Geometry::UVUnwrapCylinder(Vec2V& uv,
 									const Pose3D& pose,
 									const Vec3V& srcPos)
@@ -40,12 +81,12 @@ namespace boom {
 			auto m = pose.getToLocal();
 			for(auto& p : srcPos) {
 				auto pl = p.asVec4(1) * m;
-				Vec2 angDir(pl.x, pl.z);
+				Vec2 angDir(pl.x, pl.y);
 				if(angDir.normalize() < 1e-5f)
 					pUv->x = 0;
 				else
 					pUv->x = (spn::AngleValue(angDir) / spn::RadF::OneRotationAng).get();
-				pUv->y = spn::Saturate(pl.y, 0.f, 1.f);
+				pUv->y = spn::Saturate(pl.z, 0.f, 1.f);
 				++pUv;
 			}
 			Assert(Trap, pUv==uv.data()+uv.size())
@@ -99,6 +140,114 @@ namespace boom {
 			for(auto& v : srcPos)
 				*pUv++ = (v.asVec4(1) * toLocal).asVec2();
 			Assert(Trap, pUv==uv.data()+uv.size())
+		}
+		namespace {
+			spn::RadF Angle(const Vec2& dir) {
+				const float d = spn::Saturate(dir.dot(Vec2(0,1)), 1.f),
+							ac = std::acos(d);
+				return spn::RadF((dir.x < 0) ? ac : -ac);
+			}
+			rs::CubeFace GetCubeFaceId(const Vec3& dir) {
+				float best = dir.m[0];
+				int bestId = 0;
+				for(int j=1 ; j<6 ; j++) {
+					float p = dir.m[j/2];
+					if((j&1) == 1)
+						p *= -1;
+					if(p > best) {
+						bestId = j;
+						best = p;
+					}
+				}
+				return static_cast<rs::CubeFace>(bestId);
+			}
+			using Func = Vec2 (*)(const Vec3&);
+			const Func Anglefunc[] = {
+				[](auto& v){ return Vec2(Angle({-v.z,v.x}).get(), Angle({v.y,v.x}).get()); },
+				[](auto& v){ return Vec2(Angle({v.z,-v.x}).get(), Angle({v.y,-v.x}).get()); },
+
+				[](auto& v){ return Vec2(Angle({v.x, v.y}).get(), Angle({-v.z,v.y}).get()); },
+				[](auto& v){ return Vec2(Angle({v.x,-v.y}).get(), Angle({v.z,-v.y}).get()); },
+
+				[](auto& v){ return Vec2(Angle({v.x,v.z}).get(), Angle({v.y,v.z}).get()); },
+				[](auto& v){ return Vec2(Angle({-v.x,-v.z}).get(), Angle({v.y,-v.z}).get()); }
+			};
+			std::pair<rs::CubeFace, Vec2> GetCubeUV(const Vec3& dir) {
+				auto id = GetCubeFaceId(dir);
+				return std::make_pair(id,
+							Anglefunc[static_cast<int>(id)](dir) / (spn::RadF::OneRotationAng/4));
+			}
+			Vec3 GetCubeDir(rs::CubeFace face, const Vec2& uv) {
+				const auto tmpUv = Vec2(uv.x*2-1,
+										uv.y*2-1);
+				Vec3 ret;
+				switch(face) {
+					case rs::CubeFace::NegativeX:
+						ret = Vec3(-1, tmpUv.y, tmpUv.x);
+						break;
+					case rs::CubeFace::PositiveX:
+						ret = Vec3(1, tmpUv.y, 1-tmpUv.x);
+						break;
+					case rs::CubeFace::NegativeY:
+						ret = Vec3(tmpUv.x, -1, tmpUv.y);
+						break;
+					case rs::CubeFace::PositiveY:
+						ret = Vec3(tmpUv.x, 1, 1-tmpUv.y);
+						break;
+					case rs::CubeFace::NegativeZ:
+						ret = Vec3(1-tmpUv.x, tmpUv.y, -1);
+						break;
+					case rs::CubeFace::PositiveZ:
+						ret = Vec3(tmpUv.x, tmpUv.y, 1);
+						break;
+					default:
+						AssertF(Trap, "")
+				}
+				return ret.normalization();
+			}
+
+			/*!
+				[  ][Y+][  ][  ]
+				[X-][Z+][X+][Z-]
+				[  ][Y-][  ][  ]
+			*/
+			Vec2 GetCubeUnwrapUV(rs::CubeFace face, const Vec2& uv) {
+				const Vec2 offset[static_cast<int>(rs::CubeFace::Num)] = {
+					{2,1}, {0,1},
+					{1,0}, {1,2},
+					{3,1}, {1,1}
+				};
+				const Vec2 unit(1.f/4,
+								1.f/3);
+				return (offset[static_cast<int>(face)] + uv) * unit;
+			}
+		}
+		void Geometry::UVUnwrapCube(Vec2V& dstUv,
+									const Pose3D& pose,
+									const Vec3V& srcPos,
+									const IndexV& srcIndex)
+		{
+			const int nV = srcPos.size();
+			auto toLocal = pose.getToLocal();
+			SumVecV<3> sv(nV);
+			Vec3V pos(nV);
+			for(int i=0 ; i<nV ; i++) {
+				pos[i] = srcPos[i].asVec4(1) * toLocal;
+				pos[i].normalize();
+			}
+			const int nI = srcIndex.size();
+			for(int i=0 ; i<nI ; i+=3) {
+				auto* idx = srcIndex.data()+i;
+				auto c = (pos[idx[0]] + pos[idx[1]] + pos[idx[2]]) / 3;
+				for(int j=0 ; j<3 ; j++)
+					sv[idx[j]].add(c);
+			}
+			dstUv.resize(nV);
+			for(int i=0 ; i<nV ; i++) {
+				auto nml = sv[i].getNormal();
+				auto& func = Anglefunc[static_cast<int>(GetCubeFaceId(nml))];
+				dstUv[i] = func(pos[i]) * 0.5f + Vec2(0.5f);
+			}
 		}
 		void Geometry::MakeVertexNormalFlat(Vec3V& dstPos,
 											IndexV& dstIndex,
@@ -172,34 +321,25 @@ namespace boom {
 			AssertT(Trap, nI%3==0, std::invalid_argument, "Invalid face count")
 			dstNormal.resize(nV);
 
-			struct Tmp {
-				Vec3	vec{0,0,0};
-				int		count=0;
-				void add(const Vec3& v) {
-					vec += v;
-					++count;
-				}
-				Vec3 get() const {
-					return vec.normalization();
-				}
-			};
-			std::vector<Tmp> vn(nV);
+			SumVecV<3> vn(nV);
 			for(int i=0 ; i<nI ; i+=3) {
 				// 面法線を計算
 				auto i0 = srcIndex[i],
 					i1 = srcIndex[i+1],
 					i2 = srcIndex[i+2];
-				auto p = Plane::FromPts(srcPos[i0],
-										srcPos[i1],
-										srcPos[i2]);
+				auto &p0 = srcPos[i0],
+					&p1 = srcPos[i1],
+					&p2 = srcPos[i2];
+				auto p = Plane::FromPts(p0, p1, p2);
 				auto nml = p.getNormal();
-				vn[i0].add(nml);
-				vn[i1].add(nml);
-				vn[i2].add(nml);
+				// 角度によるウェイト
+				vn[i0].add(nml * CalcAngle(p0, p1, p2).get());
+				vn[i1].add(nml * CalcAngle(p1, p2, p0).get());
+				vn[i2].add(nml * CalcAngle(p2, p0, p1).get());
 			}
 			// 頂点法線を計算
 			for(int i=0 ; i<nV ; i++) {
-				dstNormal[i] = vn[i].get();
+				dstNormal[i] = vn[i].getNormal();
 			}
 		}
 		void Geometry::MakeSphere(Vec3V& dstPos,
@@ -439,6 +579,151 @@ namespace boom {
 				}
 				fnR((divH-1)*divR, 0);
 				Assert(Trap, pI==dstIndex.data()+nI)
+			}
+		}
+		void Geometry::CalcTangent(Vec4V& dstTan,
+									Vec3V& srcPos,
+									IndexV& srcIndex,
+									Vec3V& srcNormal,
+									Vec2V& srcUv)
+		{
+			int nI = srcIndex.size(),
+				nV = srcPos.size();
+			AssertT(Trap, nI%3==0, std::invalid_argument, "Invalid face count")
+			auto fnCalc = [](auto& p, auto& q, auto& uvd0, auto& uvd1) -> Vec3x2_OP {
+				const float s0 = uvd0.x,
+							s1 = uvd1.x,
+							t0 = uvd0.y,
+							t1 = uvd1.y;
+				// UV座標が隣の頂点とほぼ変わらない場合は接空間を計算しない
+				if(std::abs(s0) + std::abs(t0) < 1e-7f)
+					return spn::none;
+				if(std::abs(s1) + std::abs(t1) < 1e-7f)
+					return spn::none;
+				const float c = 1.f/(s0*t1 - s1*t0);
+				Mat22 m(t1, -t0, -s1, s0);
+				m *= c;
+				Mat23 m2;
+				m2.setRow(0, p);
+				m2.setRow(1, q);
+
+				Mat23 m3;
+				m3 = m * m2;
+				auto vt = m3.getRow(0),
+					vb = m3.getRow(1);
+				return Vec3x2(std::make_pair(vt, vb));
+			};
+			struct Vec3x3 {
+				Vec3 vec[3];
+			};
+			using Vec3x3V = std::vector<Vec3x3>;
+			// PolyFace毎のTangentVector
+			Vec3x3V tangent(nI/3);
+			// 頂点毎の使用されているPolyFaceId
+			using Used = std::vector<std::pair<int, float>>;
+			std::vector<Used> usedBy(nV);
+			for(int i=0 ; i<nI ; i+=3) {
+				auto i0 = srcIndex[i],
+					i1 = srcIndex[i+1],
+					i2 = srcIndex[i+2];
+				auto &p0 = srcPos[i0],
+					&p1 = srcPos[i1],
+					&p2 = srcPos[i2];
+				const Vec3 p = p1 - p0,
+							q = p2 - p0;
+				const Vec2 uvd0 = srcUv[i1] - srcUv[i0],
+							uvd1 = srcUv[i2] - srcUv[i0];
+				// 三角形の面積がほぼゼロ場合は接空間を計算しない
+				float area = boom::Area_x2(p, q);
+				if(area < 1e-6f)
+					continue;
+				if(auto ret = fnCalc(p, q, uvd0, uvd1)) {
+					// 面積に応じたウェイト
+					auto vt = ret->first * area,
+						 vb = ret->second * area;
+					auto nml = spn::Plane::FromPts(p0, p1, p2).getNormal();
+					tangent[i/3] = {{vt, vb, nml}};
+
+					// 角度に応じたウェイト
+					usedBy[i0].emplace_back(i/3, CalcAngle(p0,p1,p2).get());
+					usedBy[i1].emplace_back(i/3, CalcAngle(p1,p2,p0).get());
+					usedBy[i2].emplace_back(i/3, CalcAngle(p2,p0,p1).get());
+				} else
+					tangent[i/3] = {};
+			}
+			auto fnClone = [](auto& vec, int id) {
+				auto tmp = vec[id];
+				vec.push_back(std::move(tmp));
+				return vec.size()-1;
+			};
+			auto fnCloneVertex = [&fnClone, &srcPos, &srcUv, &srcNormal](int id) -> int {
+				fnClone(srcPos, id);
+				fnClone(srcUv, id);
+				return fnClone(srcNormal, id);
+			};
+			// 急激にTangentVectorが変わっているような所は頂点を分割する
+			for(int i=0 ; i<nV ; i++) {
+				auto& u = usedBy[i];
+				const int nU = u.size();
+				bool valid = true;
+				for(int j=0 ; j<nU-1 ; j++) {
+					auto& t0 = tangent[u[j].first];
+					for(int k=j+1 ; k<nU ; k++) {
+						auto& t1 = tangent[u[k].first];
+						if(t0.vec[0].dot(t1.vec[0]) <= 0 ||
+							t0.vec[1].dot(t1.vec[1]) <= 0)
+						{
+							valid = false;
+							j=nU;
+							break;
+						}
+					}
+				}
+				if(!valid) {
+					for(int j=1 ; j<nU ; j++) {
+						auto& u2 = usedBy[i][j];
+						// 頂点を複製
+						const int pidx = u2.first * 3;
+						// インデックスの付け替え
+						bool proc = false;
+						for(int k=0 ; k<3 ; k++) {
+							if(srcIndex[pidx+k] == i) {
+								const int newVId = fnCloneVertex(i);
+								srcIndex[pidx+k] = newVId;
+								usedBy.resize(usedBy.size()+1);
+								usedBy.back().push_back(u2);
+								proc = true;
+								break;
+							}
+						}
+						Assert(Trap, proc)
+					}
+					usedBy[i].resize(1);
+				}
+			}
+			auto nV2 = srcPos.size();
+			Assert(Trap, usedBy.size()==nV2 &&
+						srcUv.size()==nV2 &&
+						srcNormal.size()==nV2)
+
+			nV = srcPos.size();
+			dstTan.resize(nV);
+			for(int i=0 ; i<nV ; i++) {
+				auto& u = usedBy[i];
+				Vec3 x(0),
+					 y(0);
+				for(auto& u2 : u) {
+					auto& t = tangent[u2.first];
+					x += t.vec[0] * u2.second;
+					y += t.vec[1] * u2.second;
+				}
+				const Vec3& z = srcNormal[i];
+				x -= z*x.dot(z);
+				y -= z*y.dot(z) + x*y.dot(x);
+// 				x.normalize();
+				// 掌性をw成分にセット
+				auto c = ((y % z).dot(x) > 0.f) ? 1.f : -1.f;
+				dstTan[i] = x.asVec4(c);
 			}
 		}
 	}

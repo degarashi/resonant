@@ -5,6 +5,7 @@
 namespace boom {
 	using Vec2V = std::vector<spn::Vec2>;
 	using Vec3V = std::vector<spn::Vec3>;
+	using Vec4V = std::vector<spn::Vec4>;
 	using IndexV = std::vector<uint16_t>;
 	template <class Itr, class OItr, class Ofs>
 	void FlipFace(Itr itr, Itr itrE, OItr oitr, Ofs offset) {
@@ -33,6 +34,10 @@ namespace boom {
 			static void UVUnwrapPlane(Vec2V& uv,
 									const Pose3D& pose,
 									const Vec3V& srcPos);
+			static void UVUnwrapCube(Vec2V& dstUv,
+									const Pose3D& pose,
+									const Vec3V& srcPos,
+									const IndexV& srcIndex);
 			static void MakeVertexNormal(Vec3V& dstNormal,
 											const Vec3V& srcPos,
 											const IndexV& srcIndex);
@@ -73,6 +78,12 @@ namespace boom {
 								float radius,
 								int divH,
 								int divR);
+			// for bumpmap
+			static void CalcTangent(Vec4V& dstTan,
+									Vec3V& srcPos,
+									IndexV& srcIndex,
+									Vec3V& srcNormal,
+									Vec2V& srcUv);
 		};
 	}
 	namespace geo2d {

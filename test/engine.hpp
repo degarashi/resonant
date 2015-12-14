@@ -10,6 +10,7 @@ namespace myunif {
 									Dir,			// "m_vLightDir"
 									Power,			// "m_fLightPower"
 									Depth,			// "m_texLightDepth"
+									Normal,			// "m_texNormal"
 									CubeDepth,		// "m_texCubeDepth"
 									DepthRange,		// "m_depthRange"
 									LightMat,		// "m_mLight"

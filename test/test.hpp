@@ -20,6 +20,10 @@ namespace vertex {
 		spn::Vec2	tex;
 		spn::Vec3	normal;
 	};
+	//! 頂点座標空間付き頂点
+	struct prim_tan : prim {
+		spn::Vec4	tangent_c;
+	};
 	//! 法線確認用頂点
 	struct line {
 		spn::Vec3	pos,
@@ -34,10 +38,12 @@ namespace vertex {
 }
 namespace vdecl {
 	struct prim {};
+	struct prim_tan {};
 	struct line {};
 	struct sprite {};
 }
 DefineVDecl(::vdecl::prim)
+DefineVDecl(::vdecl::prim_tan)
 DefineVDecl(::vdecl::line)
 DefineVDecl(::vdecl::sprite)
 

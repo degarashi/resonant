@@ -28,7 +28,8 @@ class Primitive : public spn::Pose3D {
 		rs::HLVb		_hlVb,
 						_hlVbLine;
 		rs::HLIb		_hlIb;
-		rs::HLTex		_hlTex;
+		rs::HLTex		_hlTex,
+						_hlTexNormal;
 		bool			_bShowNormal;
 		void _initVb(Type::E typ, bool bFlat, bool bFlip);
 		static rs::HLVb _MakeVbLine(const Vec3V& srcPos, const Vec3V& srcNormal, const Vec4V& srcTangentC);
@@ -40,8 +41,9 @@ class Primitive : public spn::Pose3D {
 									T_PrimLine;
 		/*! \param s[in]		一辺のサイズ
 			\param hTex[in]		張り付けるテクスチャ
+			\param hTexNormal[in] 張り付ける法線テクスチャ
 			\param bFlip[in]	面反転フラグ */
-		Primitive(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip);
+		Primitive(float s, rs::HTex hTex, rs::HTex hTexNormal, Type::E typ, bool bFlat, bool bFlip);
 		void draw(Engine& e) const;
 		void exportDrawTag(rs::DrawTag& d) const;
 		void advance();
@@ -54,6 +56,6 @@ class PrimitiveObj : public rs::DrawableObjT<PrimitiveObj>,
 	private:
 		struct St_Default;
 	public:
-		PrimitiveObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip);
+		PrimitiveObj(float size, rs::HTex hTex, rs::HTex hTexNormal, Type::E typ, bool bFlat, bool bFlip);
 };
 DEF_LUAIMPORT(PrimitiveObj)

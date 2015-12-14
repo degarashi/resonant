@@ -20,6 +20,11 @@ void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 		boom::IndexV tmpIndex;
 		boom::Vec2V tmpUv;
 		spn::Pose3D pose;
+		pose.setRot(spn::Quat::RotationZ(spn::DegF(1.f)));
+		if(typ != Type::Cube) {
+			pose.setScale({1,1,2});
+			pose.setOffset({0, 0, -1});
+		}
 		switch(typ) {
 			case Type::Cone:
 				boom::geo3d::Geometry::MakeCone(tmpPos, tmpIndex, 16);
@@ -31,7 +36,7 @@ void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 				boom::geo3d::Geometry::MakeSphere(tmpPos, tmpIndex, 32, 16);
 				break;
 			case Type::Torus:
-				boom::geo3d::Geometry::MakeTorus(tmpPos, tmpIndex, 0.5f, 16, 12);
+				boom::geo3d::Geometry::MakeTorus(tmpPos, tmpIndex, 0.5f, 64, 32);
 				break;
 			case Type::Capsule:
 				boom::geo3d::Geometry::MakeCapsule(tmpPos, tmpIndex, 1, 8);
@@ -42,10 +47,10 @@ void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 		if(bFlip)
 			boom::FlipFace(tmpIndex.begin(), tmpIndex.end(), tmpIndex.begin(), 0);
 
-		if(typ == Type::Cube)
+		if(typ == Type::Torus)
 			boom::geo3d::Geometry::UVUnwrapCylinder(tmpUv, pose, tmpPos);
 		else
-			boom::geo3d::Geometry::UVUnwrapSphere(tmpUv, 2,1, pose, tmpPos);
+			boom::geo3d::Geometry::UVUnwrapSphere(tmpUv, 2,2, pose, tmpPos);
 
 		boom::Vec3V posv, normalv;
 		boom::Vec2V uvv;
@@ -59,13 +64,21 @@ void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 			uvv = tmpUv;
 			indexv = tmpIndex;
 		}
+		if(typ == Type::Cube)
+			boom::geo3d::Geometry::UVUnwrapCube(uvv, pose, posv, indexv);
+
+		boom::Vec4V tanv;
+		boom::geo3d::Geometry::CalcTangent(tanv, posv, indexv, normalv, uvv);
+
 		// 大きさ1の立方体を定義しておいて後で必要に応じてスケーリングする
 		const int nV = posv.size();
-		std::vector<vertex::prim> tmpV(nV);
+		std::vector<vertex::prim_tan> tmpV(nV);
 		for(int i=0 ; i<nV ; i++) {
-			tmpV[i].pos = posv[i];
-			tmpV[i].tex = uvv[i];
-			tmpV[i].normal = normalv[i];
+			auto& v = tmpV[i];
+			v.pos = posv[i];
+			v.tex = uvv[i];
+			v.normal = normalv[i];
+			v.tangent_c = tanv[i];
 		}
 		_hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
 		_hlVb.ref()->initData(std::move(tmpV));
@@ -117,8 +130,9 @@ rs::HLVb Primitive::_MakeVbLine(const Vec3V& srcPos, const Vec3V& srcNormal, con
 	hl.ref()->initData(std::move(vtx));
 	return hl;
 }
-Primitive::Primitive(float s, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
+Primitive::Primitive(float s, rs::HTex hTex, rs::HTex hTexNormal, Type::E typ, bool bFlat, bool bFlip):
 	_hlTex(hTex),
+	_hlTexNormal(hTexNormal),
 	_bShowNormal(false)
 {
 	setScale({s,s,s});
@@ -134,14 +148,18 @@ void Primitive::draw(Engine& e) const {
 	if(typ == Engine::DrawType::Normal) {
 		e.setTechPassId(T_Prim);
 		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+		if(_hlTexNormal)
+			e.setUniform(myunif::light::Normal, _hlTexNormal);
 	} else if(typ == Engine::DrawType::CubeNormal) {
 		e.setTechPassId(T_PrimCube);
 		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+		if(_hlTexNormal)
+			e.setUniform(myunif::light::Normal, _hlTexNormal);
 	} else if(typ == Engine::DrawType::CubeDepth) {
 		e.setTechPassId(T_PrimCubeDepth);
 	} else
 		e.setTechPassId(T_PrimDepth);
-	e.setVDecl(rs::DrawDecl<vdecl::prim>::GetVDecl());
+	e.setVDecl(rs::DrawDecl<vdecl::prim_tan>::GetVDecl());
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
 	e.setIStream(_hlIb);
@@ -171,6 +189,17 @@ const rs::SPVDecl& rs::DrawDecl<vdecl::prim>::GetVDecl() {
 	});
 	return vd;
 }
+const rs::SPVDecl& rs::DrawDecl<vdecl::prim_tan>::GetVDecl() {
+	static rs::SPVDecl vd(new rs::VDecl{
+		// from vdecl::prim
+		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
+		{0,12, GL_FLOAT, GL_FALSE, 2, (GLuint)rs::VSem::TEXCOORD0},
+		{0,20, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::NORMAL},
+
+		{0,32, GL_FLOAT, GL_FALSE, 4, (GLuint)rs::VSem::TANGENT}
+	});
+	return vd;
+}
 const rs::SPVDecl& rs::DrawDecl<vdecl::line>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION},
@@ -186,8 +215,8 @@ struct PrimitiveObj::St_Default : StateT<St_Default> {
 		self.draw(static_cast<Engine&>(e));
 	}
 };
-PrimitiveObj::PrimitiveObj(float size, rs::HTex hTex, Type::E typ, bool bFlat, bool bFlip):
-	Primitive(size, hTex, typ, bFlat, bFlip)
+PrimitiveObj::PrimitiveObj(float size, rs::HTex hTex, rs::HTex hTexNormal, Type::E typ, bool bFlat, bool bFlip):
+	Primitive(size, hTex, hTexNormal, typ, bFlat, bFlip)
 {
 	setStateNew<St_Default>();
 }
@@ -197,4 +226,4 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, PrimitiveObj, PrimitiveObj, "DrawableObj", NOTH
 		(showNormals)
 		(advance)
 		(setOffset),
-		(float)(rs::HTex)(Primitive::Type::E)(bool)(bool))
+		(float)(rs::HTex)(rs::HTex)(Primitive::Type::E)(bool)(bool))
