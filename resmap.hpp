@@ -110,8 +110,12 @@ namespace rs {
 		T*		_ptr;
 		public:
 			FlagPtr(): _bDelete(false) {}
-			FlagPtr(FlagPtr&& fp): FlagPtr() {
-				swap(fp);
+			FlagPtr(FlagPtr&& p):
+				_bDelete(p._bDelete),
+				_ptr(p._ptr)
+			{
+				p._bDelete = false;
+				p._ptr = nullptr;
 			}
 			FlagPtr(T* p, bool bDel): _bDelete(bDel), _ptr(p) {}
 			~FlagPtr() {
@@ -119,10 +123,6 @@ namespace rs {
 					DEL del;
 					del(_ptr);
 				}
-			}
-			void swap(FlagPtr& fp) noexcept {
-				std::swap(_bDelete, fp._bDelete);
-				std::swap(_ptr, fp._ptr);
 			}
 			void reset(T* p, bool bDel) {
 				this->~FlagPtr();
@@ -133,6 +133,10 @@ namespace rs {
 			}
 			//! コピー禁止
 			void operator = (const FlagPtr& p) const = delete;
+			void operator = (FlagPtr&& p) {
+				this->~FlagPtr();
+				new(this) FlagPtr(std::move(p));
+			}
 			T* operator -> () { return _ptr; }
 			const T* operator -> () const { return _ptr; }
 			T* get() { return _ptr; }

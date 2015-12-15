@@ -549,7 +549,7 @@ namespace rs {
 					if(!st.get() || !_bSwState) {
 						bool bNull = _isNullState();
 						_bSwState = true;
-						_nextState.swap(st);
+						std::swap(_nextState, st);
 						if(bNull)
 							_doSwitchState();
 					} else {
@@ -592,7 +592,7 @@ namespace rs {
 							_state->onExit(getRef(), nextId);
 							prevId = _state->getStateId();
 						}
-						_state.swap(_nextState);
+						std::swap(_state, _nextState);
 						_nextState.reset();
 						// 次のステートのonEnterを呼ぶ
 						if(_state.get())
