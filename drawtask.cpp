@@ -8,25 +8,25 @@ namespace rs {
 		Task::Task(): _curWrite(0), _curRead(0) {}
 		TokenML& Task::refWriteEnt() {
 			UniLock lk(_mutex);
-			return _entry[_curWrite % NUM_ENTRY];
+			return _entry[_curWrite % NUM_TASK];
 		}
 		TokenML& Task::refReadEnt() {
 			UniLock lk(_mutex);
-			return _entry[_curRead % NUM_ENTRY];
+			return _entry[_curRead % NUM_TASK];
 		}
 		void Task::beginTask(HFx hFx) {
 			UniLock lk(_mutex);
 			// 読み込みカーソルが追いついてない時は追いつくまで待つ
 			auto diff = _curWrite - _curRead;
 			Assert(Trap, diff >= 0)
-			while(diff >= NUM_ENTRY) {
+			while(diff >= NUM_TASK) {
 				_cond.wait(lk);
 				diff = _curWrite - _curRead;
 				Assert(Trap, diff >= 0)
 			}
 			auto& we = refWriteEnt();
 			lk.unlock();
-			_hlFx[_curWrite % NUM_ENTRY] = hFx;
+			_hlFx[_curWrite % NUM_TASK] = hFx;
 			we.clear();
 		}
 		void Task::endTask() {

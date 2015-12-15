@@ -9,11 +9,12 @@ namespace rs {
 		/*! PreFuncとして(TPStructR::applySettingsを追加)
 			[Program, FrameBuff, RenderBuff] */
 		class Task : public spn::Singleton<Task> {
+			public:
+				constexpr static int NUM_TASK = 3;
 			private:
-				constexpr static int NUM_ENTRY = 3;
 				//! 描画エントリのリングバッファ
-				draw::TokenML	_entry[NUM_ENTRY];
-				HLFxF			_hlFx[NUM_ENTRY];
+				draw::TokenML	_entry[NUM_TASK];
+				HLFxF			_hlFx[NUM_TASK];
 				//! 読み書きカーソル位置
 				int			_curWrite, _curRead;
 				Mutex		_mutex;
