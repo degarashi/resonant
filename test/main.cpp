@@ -28,7 +28,7 @@ rs::CCoreID GetCID() {
 class U_ProfileShow : public rs::util::ProfileShow {
 	public:
 		U_ProfileShow(rs::HDGroup hDg, rs::Priority uprio, rs::Priority dprio):
-			rs::util::ProfileShow(InfoShow::T_Info, T_Rect,
+			rs::util::ProfileShow(TextShow::T_Text, T_Rect,
 				GetCID(), hDg, uprio, dprio) {}
 };
 DEF_LUAIMPORT(U_ProfileShow)
@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<SpriteObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<PointSprite3D>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<PrimitiveObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<TextShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<InfoShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<U_ProfileShow>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<GlobalValue>(*lkb->spLua);
