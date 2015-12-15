@@ -216,6 +216,15 @@ void Engine::setDispersion(float d) {
 void Engine::setOutputFramebuffer(rs::HFb hFb) {
 	_hlFb = hFb;
 }
+void Engine::moveFrom(rs::IEffect& e) {
+	GLEffect_2D3D::moveFrom(e);
+	auto& pe = static_cast<Engine&>(e);
+	_hlFb = std::move(pe._hlFb);
+	_hlDg = std::move(pe._hlDg);
+	_drawType = pe._drawType;
+	_gauss = std::move(pe._gauss);
+	_rflag = std::move(pe._rflag);
+}
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	NOTHING,

@@ -52,6 +52,9 @@ namespace rs {
 		setWorld(im);
 		setTransform(im);
 	}
+	void SystemUniform2D::moveFrom(SystemUniform2D& prev) {
+		_rflag = prev._rflag;
+	}
 	void SystemUniform2D::outputUniforms(IEffect& e) const {
 		#define DEF_SETUNIF(name, func) \
 			if(auto idv = e.getUnifId(sysunif2d::matrix::name)) \

@@ -30,6 +30,9 @@ namespace rs {
 			}
 		};
 	}
+	void SystemUniform::moveFrom(SystemUniform& prev) {
+		_screenSize = prev._screenSize;
+	}
 	const spn::Size& SystemUniform::getScreenSize() const {
 		return _screenSize;
 	}

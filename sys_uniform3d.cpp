@@ -59,6 +59,9 @@ namespace rs {
 		setWorld(im);
 		setTransform(im);
 	}
+	void SystemUniform3D::moveFrom(SystemUniform3D& prev) {
+		_rflag = prev._rflag;
+	}
 	void SystemUniform3D::outputUniforms(IEffect& e) const {
 		#define DEF_SETUNIF(name, func) \
 			if(auto idv = e.getUnifId(sysunif3d::matrix::name)) \

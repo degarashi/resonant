@@ -100,5 +100,6 @@ namespace rs {
 
 		virtual SystemUniform2D& ref2D() { AssertF(Trap, "this class has no SystemUniform2D interface") }
 		virtual SystemUniform3D& ref3D() { AssertF(Trap, "this class has no SystemUniform3D interface") }
+		virtual void moveFrom(IEffect& /*prev*/) {}
 	};
 }

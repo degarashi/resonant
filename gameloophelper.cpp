@@ -4,6 +4,7 @@
 #include "glresource.hpp"
 #include "glx_if.hpp"
 #include "spinner/watch.hpp"
+#include "drawtask.hpp"
 
 namespace rs {
 	namespace detail {
@@ -42,7 +43,8 @@ namespace rs {
 		GHelper_Main::GHelper_Main(const SPWindow& sp, const CBEngine& cbEngine, const CBMakeSV& cbMakeSV, const GLoopInitializer& init, const CBScene& cbScene):
 			MainProc(sp, true),
 			_cbEngine(cbEngine),
-			_init(init)
+			_init(init),
+			_prevFxCounter(0)
 		{
 			auto lkb = sharedbase.lock();
 
@@ -84,6 +86,10 @@ namespace rs {
 				_init.cbPreTerm();
 		}
 		bool GHelper_Main::userRunU() {
+			if(_prevFxCounter > 0) {
+				if(--_prevFxCounter == 0)
+					_prevFx.reset();
+			}
 			// シェーダーファイルが更新されていたら再読み込みをかける
 			auto lkb = sharedbase.lock();
 			bool bUpdate = false;
@@ -106,7 +112,11 @@ namespace rs {
 					_updatePath.clear();
 					if(bLoad) {
 						// Effectファイルの再構築(読み込みトライ)
-						mgr_gl.replaceEffect(lkb->hlFx, _cbEngine);
+						_prevFx = mgr_gl.replaceEffect(lkb->hlFx, _cbEngine);
+						// ユーザー側で何か移動する変数があればそれをする
+						lkb->hlFx->get()->moveFrom(static_cast<IEffect&>(*_prevFx));
+						// DrawTaskのバッファ数だけ待ってから削除
+						_prevFxCounter = draw::Task::NUM_TASK;
 						if(_init.cbEngineInit)
 							_init.cbEngineInit();
 						mgr_scene.onEffectReset();

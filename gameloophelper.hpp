@@ -46,6 +46,8 @@ namespace rs {
 				GLoopInitializer		_init;
 				using PathSet = std::unordered_set<std::string>;
 				PathSet					_updatePath;
+				UPResource				_prevFx;
+				int						_prevFxCounter;
 			public:
 				GHelper_Main(const SPWindow& sp,
 							const CBEngine& cbEngine,

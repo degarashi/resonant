@@ -149,12 +149,16 @@ namespace rs {
 			_cbInit(ret.first);
 		return Cast<UPEffect>(ret.first);
 	}
-	void GLRes::replaceEffect(HLFx& hlFx, const CBCreateFx& cb) {
+	UPResource GLRes::replaceEffect(HLFx& hlFx, const CBCreateFx& cb) {
 		auto& key = this->base_t::getKey(hlFx.get());
 		UPResource res(cb(key.plain_utf8()));
 		hlFx->get()->onDeviceLost();
+		// 前のエンジン変数をとっておく
+		UPResource prev = std::move(hlFx.ref());
+		// ハンドルの中身(UPResource)を置き換え
 		hlFx = Cast<UPEffect>(this->base_t::replace(key, std::move(res)));
 		_cbInit(hlFx.get());
+		return prev;
 	}
 	HLVb GLRes::makeVBuffer(GLuint dtype) {
 		LHdl lh = base_type::acquire(UPResource(new GLVBuffer(dtype)));

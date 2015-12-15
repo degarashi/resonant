@@ -21,6 +21,13 @@ namespace rs {
 				T& ref() { return std::get<T>(_ts); }
 				template <class T>
 				operator T& () { return ref<T>(); }
+				void moveFrom(IEffect& prev) override {
+					auto& prevE = static_cast<GLEffect_Ts&>(prev);
+					spn::TupleForEach([this,&prevE](auto& t){
+						using T = std::decay_t<decltype(t)>;
+						t.moveFrom(prevE.template ref<T>());
+					}, _ts);
+				}
 		};
 		//! GLEffect + SystemUniform2D
 		class GLEffect_2D : public GLEffect_Ts<SystemUniform, SystemUniform2D> {

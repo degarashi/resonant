@@ -93,6 +93,8 @@ int main(int argc, char **argv) {
 			ps.setOffset({0,0,-3});
 			cd.setFov(spn::DegF(60));
 			cd.setZPlane(0.01f, 500.f);
+			gv.pEngine = static_cast<Engine*>(lkb->hlFx->get());
+			gv.pEngine->ref<rs::SystemUniform3D>().setCamera(gv.hlCam);
 		}
 	};
 	init.cbEngineInit = [](){
@@ -101,7 +103,6 @@ int main(int argc, char **argv) {
 		// init Effect
 		{
 			gv.pEngine = static_cast<Engine*>(lkb->hlFx->get());
-			gv.pEngine->ref<rs::SystemUniform3D>().setCamera(gv.hlCam);
 			rs::LuaImport::ImportClass(*lkb->spLua, "Global", "engine", gv.pEngine);
 		}
 	};

@@ -70,5 +70,6 @@ class Engine : public rs::util::GLEffect_2D3D {
 		void clearScene();
 		void setDispersion(float d);
 		void setOutputFramebuffer(rs::HFb hFb);
+		void moveFrom(rs::IEffect& e) override;
 };
 DEF_LUAIMPORT(Engine)

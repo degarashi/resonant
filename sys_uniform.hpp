@@ -21,6 +21,7 @@ namespace rs {
 			const spn::Size& getScreenSize() const;
 			void setScreenSize(const spn::Size& s);
 			void outputUniforms(IEffect& glx) const;
+			void moveFrom(SystemUniform& prev);
 	};
 	class SystemUniform3D : public spn::CheckAlign<16, SystemUniform3D> {
 		private:
@@ -46,6 +47,7 @@ namespace rs {
 
 			SystemUniform3D();
 			void outputUniforms(IEffect& glx) const;
+			void moveFrom(SystemUniform3D& prev);
 	};
 	//! システムuniform変数をセットする(2D)
 	/*! 変数リスト:
@@ -75,5 +77,6 @@ namespace rs {
 
 			SystemUniform2D();
 			void outputUniforms(IEffect& glx) const;
+			void moveFrom(SystemUniform2D& prev);
 	};
 }
