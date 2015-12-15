@@ -5,13 +5,6 @@
 
 namespace rs {
 	namespace util {
-		#define DEF_SYSUNIF(num) \
-			private: \
-				SystemUniform##num##D _unif##num##d; \
-			public: \
-				SystemUniform##num##D& ref##num##d(); \
-				operator SystemUniform##num##D& ();
-
 		template <class... Ts>
 		class GLEffect_Ts : public GLEffect {
 			private:

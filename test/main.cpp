@@ -85,11 +85,8 @@ int main(int argc, char **argv) {
 			mgr_random.initEngine(RandomId);
 			gv.random = mgr_random.get(RandomId);
 		}
-	};
-	init.cbEngineInit = [](){
-		auto& gv = *tls_gvalue;
 		// init Camera
-		if(!gv.hlCam) {
+		{
 			gv.hlCam = mgr_cam.emplace();
 			auto& cd = gv.hlCam.ref();
 			auto& ps = cd.refPose();
@@ -97,6 +94,9 @@ int main(int argc, char **argv) {
 			cd.setFov(spn::DegF(60));
 			cd.setZPlane(0.01f, 500.f);
 		}
+	};
+	init.cbEngineInit = [](){
+		auto& gv = *tls_gvalue;
 		auto lkb = sharedbase.lockR();
 		// init Effect
 		{

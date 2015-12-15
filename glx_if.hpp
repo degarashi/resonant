@@ -98,7 +98,7 @@ namespace rs {
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const HTex* hTex, int n, bool) const = 0;
 		virtual void _makeUniformToken(draw::TokenDst& dst, GLint id, const HLTex* hlTex, int n, bool) const = 0;
 
-		virtual SystemUniform2D& ref2D() { Assert(Trap, false, "this class has no SystemUniform2D interface") throw 0; }
-		virtual SystemUniform3D& ref3D() { Assert(Trap, false, "this class has no SystemUniform3D interface") throw 0; }
+		virtual SystemUniform2D& ref2D() { AssertF(Trap, "this class has no SystemUniform2D interface") }
+		virtual SystemUniform3D& ref3D() { AssertF(Trap, "this class has no SystemUniform3D interface") }
 	};
 }
