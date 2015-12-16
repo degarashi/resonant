@@ -11,7 +11,7 @@ namespace rs {
 
 	using GlxId = IEffect::GlxId;
 	namespace unif2d {
-		const IdValue	Depth = GlxId::GenUnifId("sys_fDepth");
+		const IdValue	Depth = GlxId::GenUnifId("u_depth");
 	}
 	namespace sysunif2d {
 		namespace matrix {

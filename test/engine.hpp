@@ -4,18 +4,14 @@
 #include "gaussblur.hpp"
 
 namespace myunif {
-	namespace light {
-		extern const rs::IdValue	Position,		// "m_vLightPos"
-									Color,			// "m_vLightColor"
-									Dir,			// "m_vLightDir"
-									Power,			// "m_fLightPower"
-									Depth,			// "m_texLightDepth"
-									Normal,			// "m_texNormal"
-									CubeDepth,		// "m_texCubeDepth"
-									DepthRange,		// "m_depthRange"
-									LightMat,		// "m_mLight"
-									LineLength;		// "m_lineLength"
-	}
+	extern const rs::IdValue	U_Position,		// "u_lightPos"
+								U_Color,		// "u_lightColor"
+								U_Dir,			// "u_lightDir"
+								U_Mat,			// "u_lightMat"
+								U_Depth,		// "u_texLightDepth"
+								U_CubeDepth,	// "u_texCubeDepth"
+								U_DepthRange,	// "u_depthRange"
+								U_LineLength;	// "u_lineLength"
 }
 extern const rs::IdValue T_PostEffect;
 class Engine : public rs::util::GLEffect_2D3D {
@@ -31,8 +27,8 @@ class Engine : public rs::util::GLEffect_2D3D {
 		};
 	private:
 		#define SEQ_UNIF \
+			((LineLength)(float)) \
 			((LightColor)(spn::Vec3)) \
-			((LightPower)(float)) \
 			((DepthRange)(spn::Vec2)) \
 			((LightPosition)(spn::Vec3)) \
 			((LightDir)(spn::Vec3)) \

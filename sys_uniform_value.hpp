@@ -3,23 +3,23 @@
 
 namespace rs {
 	namespace unif {
-		extern const IdValue		Alpha,			// "sys_fAlpha"
-									Color;			// "sys_vColor"
+		extern const IdValue		Alpha,			// "u_alpha"
+									Color;			// "u_color"
 		namespace texture {
-			extern const IdValue Diffuse;		// "sys_texDiffuse"
+			extern const IdValue Diffuse;			// "u_texDiffuse"
 		}
 	}
 	namespace unif2d {
 		using namespace unif;
-		extern const IdValue		Depth;			// "sys_fDepth"
+		extern const IdValue		Depth;			// "u_depth"
 	}
 	namespace unif3d {
 		using namespace unif;
 		namespace texture {
 			using namespace unif::texture;
-			extern const IdValue	Specular,	// "sys_texSpecular"
-									Normal,		// "sys_texNormal"
-									Emissive;	// "sys_texEmissive"
+			extern const IdValue	Specular,	// "u_texSpecular"
+									Normal,		// "u_texNormal"
+									Emissive;	// "u_texEmissive"
 		}
 	}
 	namespace sysunif {

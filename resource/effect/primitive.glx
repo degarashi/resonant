@@ -18,14 +18,14 @@ varying PrimVary {
 uniform PrimUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
-	sampler2D sys_texDiffuse;
-	sampler2D m_texLightDepth;
-	sampler2D m_texNormal;
-	highp vec3 m_vLightPos;
-	mediump vec3 m_vLightDir;
+	sampler2D u_texDiffuse;
+	sampler2D u_texLightDepth;
+	sampler2D u_texNormal;
+	highp vec3 u_lightPos;
+	mediump vec3 u_lightDir;
 	highp vec3 sys_vEyePos;
-	highp vec2 m_depthRange;
-	highp mat4 m_mLight;
+	highp vec2 u_depthRange;
+	highp mat4 u_lightMat;
 }
 vertexshader(400) PrimVS() {
 	vec4 v = vec4(atPos,1);
@@ -35,7 +35,7 @@ vertexshader(400) PrimVS() {
 
 	varNormal = normalize((vec4(atNormal, 0) * sys_mWorld).xyz);
 	varPos = v.xyz;
-	vec4 lv = v * m_mLight;
+	vec4 lv = v * u_lightMat;
 	varLsPos = lv.xyw;
 
 	// 接空間ベクトルを復元
@@ -44,7 +44,7 @@ vertexshader(400) PrimVS() {
 	vec3 binormal = normalize(cross(tanv, varNormal) * atTanC.w);
 	tanv = normalize(cross(varNormal, binormal) * atTanC.w);
 	// ライトを接空間へ移動
-	vec3 lpos = m_vLightPos - varPos;
+	vec3 lpos = u_lightPos - varPos;
 	varLitPos = vec3(dot(lpos, tanv), dot(lpos, binormal), dot(lpos, varNormal));
 	// カメラ位置を接空間へ移動
 	vec3 epos = sys_vEyePos - varPos;
@@ -103,25 +103,25 @@ code Light {
 	}
 }
 fragmentshader(400, Light) PrimFS() {
-	vec3 normal = texture2D(m_texNormal, varTex).xyz;
+	vec3 normal = texture2D(u_texNormal, varTex).xyz;
 	normal = (normal - 0.5) * 2;
 	normal = normalize(normal);
 	vec2 lit = CalcLight(vec3(0), normal, varEyePos, varLitPos, 32);
 	/* vec3 normal = normalize(varNormal);                                 */
-	/* vec2 lit = CalcLight(varPos, normal, sys_vEyePos, m_vLightPos, 32); */
+	/* vec2 lit = CalcLight(varPos, normal, sys_vEyePos, u_lightPos, 32); */
 	/* lit.y = 0;                                                          */
 
-	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit.x + lit.y);
-	float d = Linear(distance(varPos, m_vLightPos), m_depthRange.x, m_depthRange.y);
+	gl_FragColor = texture2D(u_texDiffuse, varTex) * (lit.x + lit.y);
+	float d = Linear(distance(varPos, u_lightPos), u_depthRange.x, u_depthRange.y);
 	vec2 uv;
 	uv.x = (varLsPos.x/varLsPos.z * 0.5) + 0.5;
 	uv.y = (varLsPos.y/varLsPos.z * 0.5) + 0.5;
 	/* d -= 3e-2; */
-	/* float pcf = PCF(d, m_texLightDepth, uv, 1e-3, 0.5, 1.0); */
+	/* float pcf = PCF(d, u_texLightDepth, uv, 1e-3, 0.5, 1.0); */
 	/* gl_FragColor.xyz *= pcf;                                                        */
-	float s = ClipLight(varPos, m_vLightPos, m_vLightDir);
+	float s = ClipLight(varPos, u_lightPos, u_lightDir);
 	if(s > 0.1)
-		s *= VariantShadow(d, texture2D(m_texLightDepth, uv).xy, 0.5);
+		s *= VariantShadow(d, texture2D(u_texLightDepth, uv).xy, 0.5);
 	s = max(0.2, s);
 	gl_FragColor.xyz *= vec3(s);
 	gl_FragColor.w = 1;
@@ -134,8 +134,8 @@ varying PrimDepthVary {
 uniform PrimDepthUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
-	highp vec3 m_vLightPos;
-	highp vec2 m_depthRange;
+	highp vec3 u_lightPos;
+	highp vec2 u_depthRange;
 }
 vertexshader(400) PrimDepthVS() {
 	vec4 v = vec4(atPos,1);
@@ -143,7 +143,7 @@ vertexshader(400) PrimDepthVS() {
 	varPos = (v * sys_mWorld).xyz;
 }
 fragmentshader(400, Light) PrimDepthFS() {
-	gl_FragColor = vec4(CalcDepth(varPos, m_vLightPos, m_depthRange), 0,0);
+	gl_FragColor = vec4(CalcDepth(varPos, u_lightPos, u_depthRange), 0,0);
 }
 
 // ------------- CubeDefault -------------
@@ -155,11 +155,11 @@ varying CubeVary {
 uniform CubeUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
-	sampler2D sys_texDiffuse;
-	samplerCube m_texCubeDepth;
-	highp vec3 m_vLightPos;
+	sampler2D u_texDiffuse;
+	samplerCube u_texCubeDepth;
+	highp vec3 u_lightPos;
 	highp vec3 sys_vEyePos;
-	highp vec2 m_depthRange;
+	highp vec2 u_depthRange;
 }
 vertexshader(400) CubeVS() {
 	vec4 v = vec4(atPos,1);
@@ -171,17 +171,17 @@ vertexshader(400) CubeVS() {
 	varPos = v.xyz;
 }
 fragmentshader(400, Light) CubeFS() {
-	vec2 lit = CalcLight(varPos, normalize(varNormal), sys_vEyePos, m_vLightPos, 32);
-	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit.x + lit.y);
-	float d = ClampLinear(distance(varPos, m_vLightPos), m_depthRange.x, m_depthRange.y);
+	vec2 lit = CalcLight(varPos, normalize(varNormal), sys_vEyePos, u_lightPos, 32);
+	gl_FragColor = texture2D(u_texDiffuse, varTex) * (lit.x + lit.y);
+	float d = ClampLinear(distance(varPos, u_lightPos), u_depthRange.x, u_depthRange.y);
 	/* d -= 3e-3; */
 	/* const float diff = 1e-3;  */
 	/* const float shadow = 0.5; */
-	/* float tdsum = textureCube(m_texCubeDepth, -toLit).x < d ? shadow : 1; */
+	/* float tdsum = textureCube(u_texCubeDepth, -toLit).x < d ? shadow : 1; */
 	/* gl_FragColor.xyz *= tdsum; */
-	vec3 tmp = normalize(varPos - m_vLightPos);
+	vec3 tmp = normalize(varPos - u_lightPos);
 	tmp.y *= -1;
-	float s = VariantShadow(d, textureCube(m_texCubeDepth, tmp).xy, 0.1);
+	float s = VariantShadow(d, textureCube(u_texCubeDepth, tmp).xy, 0.1);
 	s = max(s, 0.2);
 	gl_FragColor.xyz *= vec3(s);
 	gl_FragColor.w = 1;
@@ -198,11 +198,11 @@ varying LineVary {
 }
 uniform LineUnif {
 	highp mat4 sys_mTrans;
-	highp float m_lineLength;
+	highp float u_lineLength;
 }
 vertexshader(400) LineVS() {
 	vec4 v = vec4(atPos,1);
-	v.xyz += atDir * (m_lineLength*0.05f);
+	v.xyz += atDir * (u_lineLength*0.05f);
 	v *= sys_mTrans;
 	gl_Position = v;
 	varColor = atColor;

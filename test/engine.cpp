@@ -1,20 +1,16 @@
 #include "engine.hpp"
 #include "../systeminfo.hpp"
 
+using GlxId = rs::IEffect::GlxId;
 namespace myunif {
-	namespace light {
-		using GlxId = rs::IEffect::GlxId;
-		const rs::IdValue Position = GlxId::GenUnifId("m_vLightPos"),
-							Color = GlxId::GenUnifId("m_vLightColor"),
-							Dir =	GlxId::GenUnifId("m_vLightDir"),
-							Power =	GlxId::GenUnifId("m_fLightPower"),
-							Depth = GlxId::GenUnifId("m_texLightDepth"),
-							Normal = GlxId::GenUnifId("m_texNormal"),
-							CubeDepth = GlxId::GenUnifId("m_texCubeDepth"),
-							DepthRange = GlxId::GenUnifId("m_depthRange"),
-							LightMat = GlxId::GenUnifId("m_mLight"),
-							LineLength = GlxId::GenUnifId("m_lineLength");
-	}
+	const rs::IdValue U_Position = GlxId::GenUnifId("u_lightPos"),
+						U_Color = GlxId::GenUnifId("u_lightColor"),
+						U_Dir =	GlxId::GenUnifId("u_lightDir"),
+						U_Mat = GlxId::GenUnifId("u_lightMat"),
+						U_Depth = GlxId::GenUnifId("u_texLightDepth"),
+						U_CubeDepth = GlxId::GenUnifId("u_texCubeDepth"),
+						U_DepthRange = GlxId::GenUnifId("u_depthRange"),
+						U_LineLength = GlxId::GenUnifId("u_lineLength");
 }
 DefineDrawGroup(MyDrawGroup)
 ImplDrawGroup(MyDrawGroup, 0x0000)
@@ -36,22 +32,17 @@ void Engine::_prepareUniforms() {
 	rs::util::GLEffect_2D3D::_prepareUniforms();
 
 	#define DEF_SETUNIF(name, func) \
-		if(auto idv = getUnifId(myunif::light::name)) \
-			setUniform(*idv, func##name(), true);
-	DEF_SETUNIF(Position, getLight)
-	DEF_SETUNIF(Color, getLight)
-	DEF_SETUNIF(Dir, getLight)
-	DEF_SETUNIF(Power, getLight)
-	DEF_SETUNIF(DepthRange, get)
+		if(auto idv = getUnifId(myunif::name)) \
+			setUniform(*idv, func(), true);
+	DEF_SETUNIF(U_Position, getLightPosition)
+	DEF_SETUNIF(U_Color, getLightColor)
+	DEF_SETUNIF(U_Dir, getLightDir)
+	DEF_SETUNIF(U_DepthRange, getDepthRange)
+	DEF_SETUNIF(U_CubeDepth, getCubeColorBuff)
+	DEF_SETUNIF(U_Depth, getLightColorBuff)
+	DEF_SETUNIF(U_Mat, getLightMatrix)
+	DEF_SETUNIF(U_LineLength , getLineLength)
 	#undef DEF_SETUNIF
-	if(auto idv = getUnifId(myunif::light::CubeDepth))
-		setUniform(*idv, getCubeColorBuff(), true);
-	if(auto idv = getUnifId(myunif::light::Depth))
-		setUniform(*idv, getLightColorBuff(), true);
-	if(auto idv = getUnifId(myunif::light::LightMat))
-		setUniform(*idv, getLightMatrix(), true);
-	if(auto idv = getUnifId(myunif::light::LineLength))
-		setUniform(*idv, 1.f, true);
 }
 #include "../camera.hpp"
 spn::RFlagRet Engine::_refresh(rs::HLRb& rb, LightDepth*) const {
@@ -231,10 +222,10 @@ void Engine::moveFrom(rs::IEffect& e) {
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	NOTHING,
+	(setLineLength<float>)
 	(setLightPosition<const spn::Vec3&>)
 	(setLightColor<const spn::Vec3&>)
 	(setLightDir<const spn::Vec3&>)
-	(setLightPower<float>)
 	(setLightDepthSize<const spn::Size&>)
 	(setDepthRange<const spn::Vec2&>)
 	(setDispersion)

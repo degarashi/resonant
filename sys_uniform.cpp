@@ -4,10 +4,10 @@
 namespace rs {
 	using GlxId = IEffect::GlxId;
 	namespace unif {
-		const IdValue Alpha = GlxId::GenUnifId("sys_fAlpha"),
-					Color = GlxId::GenUnifId("sys_vColor");
+		const IdValue Alpha = GlxId::GenUnifId("u_alpha"),
+					Color = GlxId::GenUnifId("u_color");
 		namespace texture {
-			const IdValue Diffuse = GlxId::GenUnifId("sys_texDiffuse");
+			const IdValue Diffuse = GlxId::GenUnifId("u_texDiffuse");
 		}
 	}
 	namespace sysunif {

@@ -28,9 +28,9 @@ namespace rs {
 	}
 	namespace unif3d {
 		namespace texture {
-			const IdValue	Specular = GlxId::GenUnifId("texSpecular"),
-							Normal = GlxId::GenUnifId("texNormal"),
-							Emissive = GlxId::GenUnifId("texEmissive");
+			const IdValue	Specular = GlxId::GenUnifId("u_texSpecular"),
+							Normal = GlxId::GenUnifId("u_texNormal"),
+							Emissive = GlxId::GenUnifId("u_texEmissive");
 		}
 	}
 

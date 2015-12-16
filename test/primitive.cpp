@@ -145,20 +145,28 @@ void Primitive::advance(float t) {
 }
 void Primitive::draw(Engine& e) const {
 	auto typ = e.getDrawType();
-	if(typ == Engine::DrawType::Normal) {
-		e.setTechPassId(T_Prim);
-		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
-		if(_hlTexNormal)
-			e.setUniform(myunif::light::Normal, _hlTexNormal);
-	} else if(typ == Engine::DrawType::CubeNormal) {
-		e.setTechPassId(T_PrimCube);
-		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
-		if(_hlTexNormal)
-			e.setUniform(myunif::light::Normal, _hlTexNormal);
-	} else if(typ == Engine::DrawType::CubeDepth) {
-		e.setTechPassId(T_PrimCubeDepth);
-	} else
-		e.setTechPassId(T_PrimDepth);
+	switch(typ) {
+		case Engine::DrawType::Normal:
+			e.setTechPassId(T_Prim);
+			e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+			if(_hlTexNormal)
+				e.setUniform(rs::unif3d::texture::Normal, _hlTexNormal);
+			break;
+		case Engine::DrawType::CubeNormal:
+			e.setTechPassId(T_PrimCube);
+			e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+			if(_hlTexNormal)
+				e.setUniform(rs::unif3d::texture::Normal, _hlTexNormal);
+			break;
+		case Engine::DrawType::CubeDepth:
+			e.setTechPassId(T_PrimCubeDepth);
+			break;
+		case Engine::DrawType::Depth:
+			e.setTechPassId(T_PrimDepth);
+			break;
+		default:
+			AssertF(Trap, "")
+	}
 	e.setVDecl(rs::DrawDecl<vdecl::prim_tan>::GetVDecl());
 	e.ref<rs::SystemUniform3D>().setWorld(getToWorld().convertA44());
 	e.setVStream(_hlVb, 0);
