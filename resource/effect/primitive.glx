@@ -9,11 +9,11 @@ attribute PrimAttr {
 varying PrimVary {
 	mediump vec2 varTex;
 	mediump vec3 varNormal;
-	mediump vec3 varPos;
-	mediump vec3 varLsPos;
+	highp vec3 varPos;
+	highp vec3 varLsPos;
 
-	mediump vec3 varLitPos;		// 接空間でのライト位置
-	mediump vec3 varEyePos;		// 接空間でのカメラ位置
+	highp vec3 varLitPos;		// 接空間でのライト位置
+	highp vec3 varEyePos;		// 接空間でのカメラ位置
 }
 uniform PrimUnif {
 	highp mat4 sys_mTrans;
@@ -21,10 +21,10 @@ uniform PrimUnif {
 	sampler2D sys_texDiffuse;
 	sampler2D m_texLightDepth;
 	sampler2D m_texNormal;
-	vec3 m_vLightPos;
-	vec3 m_vLightDir;
-	vec3 sys_vEyePos;
-	vec2 m_depthRange;
+	highp vec3 m_vLightPos;
+	mediump vec3 m_vLightDir;
+	highp vec3 sys_vEyePos;
+	highp vec2 m_depthRange;
 	highp mat4 m_mLight;
 }
 vertexshader(400) PrimVS() {
@@ -41,8 +41,8 @@ vertexshader(400) PrimVS() {
 	// 接空間ベクトルを復元
 	vec3 tanv = atTanC.xyz;
 	tanv = (vec4(tanv,0) * sys_mWorld).xyz;
-	vec3 binormal = normalize(atTanC.w * cross(tanv, varNormal));
-	tanv = normalize(cross(varNormal, binormal));
+	vec3 binormal = normalize(cross(tanv, varNormal) * atTanC.w);
+	tanv = normalize(cross(varNormal, binormal) * atTanC.w);
 	// ライトを接空間へ移動
 	vec3 lpos = m_vLightPos - varPos;
 	varLitPos = vec3(dot(lpos, tanv), dot(lpos, binormal), dot(lpos, varNormal));
@@ -84,14 +84,6 @@ code Light {
 
 		return max(p, p_max);
 	}
-	vec2 CalcLightBump(vec3 vnormal, vec3 eyepos, vec3 litpos, float p) {
-		vec3 fromEye = normalize(-eyepos);
-		vec3 refv = fromEye + vnormal * (-dot(vnormal, fromEye) * 2);
-		vec3 toLit = normalize(litpos);
-		float lit = pow(max(0, dot(toLit, refv)), p);
-		float lit_d = dot(toLit, vnormal);
-		return vec2(lit_d, lit);
-	}
 	vec2 CalcLight(vec3 vpos, vec3 vnormal, vec3 eyepos, vec3 litpos, float p) {
 		vec3 fromEye = normalize(vpos - eyepos);
 		vec3 refv = fromEye + vnormal * (-dot(vnormal, fromEye) * 2);
@@ -105,12 +97,16 @@ code Light {
 		float dt = max(0, dot(-toLit, litdir));
 		return smoothstep(0.5, 1, dt);
 	}
+	vec3 RestoreNormalXY(in float x, in float y) {
+		float len = x*x + y*y;
+		return vec3(x, y, -sqrt(1 - len));
+	}
 }
 fragmentshader(400, Light) PrimFS() {
 	vec3 normal = texture2D(m_texNormal, varTex).xyz;
 	normal = (normal - 0.5) * 2;
 	normal = normalize(normal);
-	vec2 lit = CalcLightBump(normal, varEyePos, varLitPos, 32);
+	vec2 lit = CalcLight(vec3(0), normal, varEyePos, varLitPos, 32);
 	/* vec3 normal = normalize(varNormal);                                 */
 	/* vec2 lit = CalcLight(varPos, normal, sys_vEyePos, m_vLightPos, 32); */
 	/* lit.y = 0;                                                          */
@@ -133,13 +129,13 @@ fragmentshader(400, Light) PrimFS() {
 
 // ------------- PrimDepth -------------
 varying PrimDepthVary {
-	mediump vec3 varPos;
+	highp vec3 varPos;
 }
 uniform PrimDepthUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
-	mediump vec3 m_vLightPos;
-	mediump vec2 m_depthRange;
+	highp vec3 m_vLightPos;
+	highp vec2 m_depthRange;
 }
 vertexshader(400) PrimDepthVS() {
 	vec4 v = vec4(atPos,1);
@@ -154,16 +150,16 @@ fragmentshader(400, Light) PrimDepthFS() {
 varying CubeVary {
 	mediump vec2 varTex;
 	mediump vec3 varNormal;
-	mediump vec3 varPos;
+	highp vec3 varPos;
 }
 uniform CubeUnif {
 	highp mat4 sys_mTrans;
 	highp mat4 sys_mWorld;
 	sampler2D sys_texDiffuse;
 	samplerCube m_texCubeDepth;
-	vec3 m_vLightPos;
-	vec3 sys_vEyePos;
-	vec2 m_depthRange;
+	highp vec3 m_vLightPos;
+	highp vec3 sys_vEyePos;
+	highp vec2 m_depthRange;
 }
 vertexshader(400) CubeVS() {
 	vec4 v = vec4(atPos,1);
@@ -175,7 +171,7 @@ vertexshader(400) CubeVS() {
 	varPos = v.xyz;
 }
 fragmentshader(400, Light) CubeFS() {
-	vec2 lit = CalcLight(varPos, varNormal, sys_vEyePos, m_vLightPos, 32);
+	vec2 lit = CalcLight(varPos, normalize(varNormal), sys_vEyePos, m_vLightPos, 32);
 	gl_FragColor = texture2D(sys_texDiffuse, varTex) * (lit.x + lit.y);
 	float d = ClampLinear(distance(varPos, m_vLightPos), m_depthRange.x, m_depthRange.y);
 	/* d -= 3e-3; */
@@ -193,16 +189,16 @@ fragmentshader(400, Light) CubeFS() {
 
 // ------------- Line -------------
 attribute LineAttr {
-	vec3 atPos : POSITION;
-	vec3 atDir : TEXCOORD0;
-	vec4 atColor : COLOR;
+	highp vec3 atPos : POSITION;
+	mediump vec3 atDir : TEXCOORD0;
+	lowp vec4 atColor : COLOR;
 }
 varying LineVary {
-	vec4 varColor;
+	lowp vec4 varColor;
 }
 uniform LineUnif {
 	highp mat4 sys_mTrans;
-	float m_lineLength;
+	highp float m_lineLength;
 }
 vertexshader(400) LineVS() {
 	vec4 v = vec4(atPos,1);

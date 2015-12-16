@@ -720,9 +720,9 @@ namespace boom {
 				const Vec3& z = srcNormal[i];
 				x -= z*x.dot(z);
 				y -= z*y.dot(z) + x*y.dot(x);
-// 				x.normalize();
+				x.normalize();
 				// 掌性をw成分にセット
-				auto c = ((y % z).dot(x) > 0.f) ? 1.f : -1.f;
+				auto c = ((z % x).dot(y) > 0.f) ? 1.f : -1.f;
 				dstTan[i] = x.asVec4(c);
 			}
 		}
