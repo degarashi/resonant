@@ -1,8 +1,8 @@
 return {
 	Init = function(hUpd, hDg)
 		local ret = {}
-		local pf = U_ProfileShow.New(hDg, 0, 0x1000)
-		local inf = InfoShow.New(hDg, 0x2000)
+		local pf = U_ProfileShow.New(hDg, 0, 0x10000)
+		local inf = InfoShow.New(hDg, 0x11000)
 		hUpd:addObj(inf)
 		ret[#ret+1] = {hUpd, inf}
 		hUpd:addObj(pf)

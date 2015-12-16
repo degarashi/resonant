@@ -1,4 +1,5 @@
 function InitInput()
+	local g = Global.cpp
 	Global.cpp.actQuit = System.input:makeAction("quit")
 	Global.cpp.actReset = System.input:makeAction("reset")
 	Global.cpp.actCube = System.input:makeAction("mode_cube")
@@ -13,6 +14,10 @@ function InitInput()
 	Global.cpp.actLightR0 = System.input:makeAction("light0")
 	Global.cpp.actLightR1 = System.input:makeAction("light1")
 	Global.cpp.actScene = System.input:makeAction("sw_scene")
+	g.actFilterUpB = System.input:makeAction("bfilter_up")
+	g.actFilterDownB = System.input:makeAction("bfilter_down")
+	g.actFilterUpG = System.input:makeAction("gfilter_up")
+	g.actFilterDownG = System.input:makeAction("gfilter_down")
 	local hK = Keyboard.OpenKeyboard(0)
 	local hM = Mouse.OpenMouse(0)
 	Global.cpp.hlIm = hM
@@ -47,6 +52,11 @@ function InitInput()
 	Global.cpp.actPress:addLink(hM, Action.InputFlag.Button, 0)
 	-- [J] シーン切り替え
 	Global.cpp.actScene:addLink(hK, Action.InputFlag.Button, Action.Key.J)
+	-- [I,K,O,L] フィルタ係数
+	g.actFilterUpB:addLink(hK, Action.InputFlag.Button, Action.Key.I)
+	g.actFilterDownB:addLink(hK, Action.InputFlag.Button, Action.Key.K)
+	g.actFilterUpG:addLink(hK, Action.InputFlag.Button, Action.Key.O)
+	g.actFilterDownG:addLink(hK, Action.InputFlag.Button, Action.Key.L)
 end
 function Initialize()
 	System.lsys:loadClass("FPSCameraU")

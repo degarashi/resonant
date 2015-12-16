@@ -147,6 +147,7 @@ class Engine::CubeScene : public rs::DrawableObjT<CubeScene> {
 		struct St_Default : StateT<St_Default> {
 			mutable int count = 0;
 			void onDraw(const CubeScene&, rs::IEffect& e) const override {
+				rs::HLFb fb0 = e.getFramebuffer();
 				auto& engine = static_cast<Engine&>(e);
 
 				rs::HLCam cam = engine.ref3D().getCamera();
@@ -174,12 +175,14 @@ class Engine::CubeScene : public rs::DrawableObjT<CubeScene> {
 					engine._hlDg->get()->onDraw(e);
 				}
 
-				e.setFramebuffer(rs::HFb());
+				e.setFramebuffer(engine._hlFb);
 				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,1,0}, 1.f, spn::none});
 				// カメラ位置を元に戻して通常描画
 				engine.ref3D().setCamera(cam);
 				engine._drawType = DrawType::CubeNormal;
 				engine._hlDg->get()->onDraw(e);
+
+				e.setFramebuffer(fb0);
 			}
 		};
 	public:

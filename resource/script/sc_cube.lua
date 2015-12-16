@@ -49,7 +49,7 @@ function InitScene(self)
 	addObj(6.0, texFloor, nil, G.PrimitiveObj.Type.Cube, true, true,
 			G.Vec3.New(0,0,2), false)
 	addObj(0.5, texBlock, texBlockNml, G.PrimitiveObj.Type.Cube, true, false,
-			G.Vec3.New(-2,-4,0), true)
+			G.Vec3.New(-4,-4,-3), true)
 	addObj(1.0, texBlock, texBlockNml, G.PrimitiveObj.Type.Sphere, false, false,
 			G.Vec3.New(2,-3,0), true)
 	addObj(2.0, texBlock, texBlockNml, G.PrimitiveObj.Type.Cone, true, false,
@@ -73,9 +73,50 @@ st_idle = {
 			local fc = G.FPSCameraU.New()
 			upd:addObj(fc)
 		end
-		local clp = G.ClearParam.New(G.Vec4.New(0,1,0,0), 1.0, nil)
-		local fbc = G.FBClear.New(0x000, clp)
-		dg:addObj(fbc)
+
+		-- バイラテラル係数表示
+		do
+			local t = G.TextShow.New(0x8000)
+			t:setOffset(G.Vec2.New(0, 400))
+			t:setBGDepth(0.1)
+			t:setBGColor(G.Vec3.New(0,0,1))
+			dg:addObj(t)
+			self.text = t
+		end
+		-- FBufferを準備
+		local scrSize = System.info:getScreenSize()
+		self.hFb = System.glres:makeFBuffer()
+		local hDb = System.glres:makeRBuffer(scrSize[1], scrSize[2], G.GLRes.Format.DEPTH_COMPONENT16)
+		self.hFb:attachRBuffer(G.GLFBuffer.Attribute.Depth, hDb)
+		local hTex = System.glres:createTexture(scrSize, G.GLRes.Format.RGB8, false, false)
+		self.hFb:attachTexture(G.GLFBuffer.Attribute.Color0, hTex)
+		local engine = Global.engine
+		engine:setOutputFramebuffer(self.hFb)
+		do
+			local clp = G.ClearParam.New(G.Vec4.New(0,0,0,0), 1.0, nil)
+			local fbc = G.FBClear.New(0x0000, clp)
+			dg:addObj(fbc)
+		end
+
+		do
+			local bl0 = G.BilateralBlur.New(0x6000)
+			self.bl0 = bl0
+			slc.gdisp = 50
+			slc.bdisp = 0.001
+			bl0:setSource(hTex)
+			bl0:setDest(hTex)
+			bl0:setTmpFormat(G.GLRes.Format.RGBA16F)
+			dg:addObj(bl0)
+		end
+		do
+			local blur0 = G.BlurEffect.New(0x7000)
+			blur0:setAlpha(1)
+			blur0:setDiffuse(hTex)
+			dg:addObj(blur0)
+		end
+
+		self.hTex = {}
+
 		self.bCube = false
 		self:InitScene()
 
@@ -104,6 +145,28 @@ st_idle = {
 								-G.math.sin(angv*lfreq[3]+G.math.pi/2)*lscale[3])
 		lp = lp + lorigin
 		self.litpos = lp
+
+		local g = Global.cpp
+		local bdiff,gdiff = 0,0
+		if g.actFilterUpG:isKeyPressing() then
+			gdiff = 0.1
+		elseif g.actFilterDownG:isKeyPressing() then
+			gdiff = -0.1
+		end
+		if g.actFilterUpB:isKeyPressing() then
+			bdiff = 0.01
+		elseif g.actFilterDownB:isKeyPressing() then
+			bdiff = -0.01
+		end
+		if bdiff ~= 0 or gdiff ~= 0 then
+			slc.bdisp = slc.bdisp + bdiff
+			slc.gdisp = slc.gdisp + gdiff
+			self.bl0:setGDispersion(slc.gdisp)
+			self.bl0:setBDispersion(slc.bdisp)
+			local str = "Bilateral Coeff:" .. slc.bdisp .. "\n"
+			str = str .. "Gauss Coeff:" .. slc.gdisp
+			self.text:setText(str)
+		end
 
 		-- スポットライトと点光源を切り替え
 		if Global.cpp.actScene:isKeyPressed() then
