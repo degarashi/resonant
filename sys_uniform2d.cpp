@@ -3,7 +3,7 @@
 #include "camera2d.hpp"
 
 namespace rs {
-	SystemUniform2D::Getter::counter_t SystemUniform2D::Getter::operator()(const HLCam2DF& c, Camera*) const {
+	SystemUniform2D::Getter::counter_t SystemUniform2D::Getter::operator()(const HLCam2DF& c, Camera*, const SystemUniform2D&) const {
 		if(c)
 			return c->getAccum();
 		return 0;

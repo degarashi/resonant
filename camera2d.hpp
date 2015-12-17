@@ -14,7 +14,7 @@ namespace rs {
 			struct Pose;
 			struct Getter : spn::RFlag_Getter<uint32_t> {
 				using RFlag_Getter::operator ();
-				counter_t operator()(const spn::Pose2D& pose, Pose*) const {
+				counter_t operator()(const spn::Pose2D& pose, Pose*, const Camera2D&) const {
 					return pose.getAccum();
 				}
 			};

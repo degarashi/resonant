@@ -3,7 +3,7 @@
 #include "glx_if.hpp"
 
 namespace rs {
-	SystemUniform3D::Getter::counter_t SystemUniform3D::Getter::operator()(const HLCamF& c, Camera*) const {
+	SystemUniform3D::Getter::counter_t SystemUniform3D::Getter::operator()(const HLCamF& c, Camera*, const SystemUniform3D&) const {
 		if(c)
 			return c->getAccum();
 		return 0;

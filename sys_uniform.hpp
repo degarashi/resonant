@@ -28,7 +28,7 @@ namespace rs {
 			struct Camera;
 			struct Getter : spn::RFlag_Getter<uint32_t> {
 				using RFlag_Getter::operator();
-				counter_t operator()(const HLCamF& c, Camera*) const;
+				counter_t operator()(const HLCamF& c, Camera*, const SystemUniform3D&) const;
 			};
 			using Transform_t = spn::AcCheck<spn::AMat44, Getter>;
 			#define SEQ_SYSUNI3D \
@@ -58,7 +58,7 @@ namespace rs {
 			struct Camera;
 			struct Getter : spn::RFlag_Getter<uint32_t> {
 				using RFlag_Getter::operator();
-				counter_t operator()(const HLCam2DF& c, Camera*) const;
+				counter_t operator()(const HLCam2DF& c, Camera*, const SystemUniform2D&) const;
 			};
 			using Transform_t = spn::AcCheck<spn::Mat33, Getter>;
 			#define SEQ_SYSUNI2D \
