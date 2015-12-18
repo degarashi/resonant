@@ -24,6 +24,7 @@ Engine::Engine(const std::string& name):
 	setLightDir(spn::Vec3(0,0,1));
 	setDepthRange(spn::Vec2(0, 10));
 	setLightDepthSize(spn::Size{256,256});
+	setLineLength(1.f);
 }
 Engine::DrawType::E Engine::getDrawType() const {
 	return _drawType;

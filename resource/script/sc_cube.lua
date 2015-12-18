@@ -10,6 +10,7 @@ function InitScene(self)
 	local upd,dg = self:getUpdGroup(), self:getDrawGroup()
 	local engine = Global.engine
 	engine:setDispersion(3.7)
+	engine:setLineLength(0.05)
 	engine:clearScene()
 	-- 深度バッファ範囲指定
 	engine:setDepthRange(G.Vec2.New(0, 20));

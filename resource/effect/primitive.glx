@@ -202,7 +202,7 @@ uniform LineUnif {
 }
 vertexshader(400) LineVS() {
 	vec4 v = vec4(atPos,1);
-	v.xyz += atDir * (u_lineLength*0.05f);
+	v.xyz += atDir * u_lineLength;
 	v *= sys_mTrans;
 	gl_Position = v;
 	varColor = atColor;
