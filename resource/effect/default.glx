@@ -1,4 +1,5 @@
 import primitive.glx;
+import dl_primitive.glx;
 
 uniform Text2DUnif {
 	mat3 mText;
@@ -27,12 +28,11 @@ fragmentshader(130) TextFS() {
 technique Text {
 	CullFace = false;
 	FrontFace = cw;
-	LineWidth = 5;
 	Blend = true;
-	DepthTest = true;
+	DepthTest = false;
+	DepthMask = false;
 	BlendFunc = SrcAlpha InvSrcAlpha;
 	StencilMask = 0x10;
-	DepthMask = true;
 	Attribute = TextAttr;
 	Varying = TextVary;
 	Uniform = Text2DUnif;
@@ -93,6 +93,7 @@ technique Sprite {
 	BlendFunc = SrcAlpha InvSrcAlpha;
 	DepthTest = true;
 	DepthMask = true;
+	DepthFunc = LessEqual;
 	Attribute = SpriteAttr;
 	Varying = CubeVary;
 	Uniform = SpriteUnif;
@@ -101,6 +102,7 @@ technique Sprite {
 		FragmentShader = SpriteFS();
 	}
 	pass Rect {
+		DepthTest = false;
 		Uniform = RectUnif;
 		VertexShader = SpriteVS();
 		FragmentShader = RectFS();

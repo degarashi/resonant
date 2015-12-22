@@ -38,7 +38,8 @@ class Primitive : public spn::Pose3D {
 									T_PrimDepth,
 									T_PrimCubeDepth,
 									T_PrimCube,
-									T_PrimLine;
+									T_PrimLine,
+									T_PrimDLDepth;
 		/*! \param s[in]		一辺のサイズ
 			\param hTex[in]		張り付けるテクスチャ
 			\param hTexNormal[in] 張り付ける法線テクスチャ

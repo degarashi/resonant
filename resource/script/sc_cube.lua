@@ -24,7 +24,7 @@ function InitScene(self)
 		if self.bCube then
 			ds = engine:getCubeScene(0x1000)
 		else
-			ds = engine:getDrawScene(0x1000)
+			ds = engine:getDLScene(0x1000)
 		end
 		dg:addObj(ds)
 		self.prevDS = ds
@@ -55,15 +55,6 @@ function InitScene(self)
 			G.Vec3.New(2,-3,0), true)
 	addObj(2.0, texBlock, texBlockNml, G.PrimitiveObj.Type.Cone, true, false,
 			G.Vec3.New(-3,3,4), true)
-	do
-		local hTex = System.glres:loadTexture("light.png", G.GLRes.MipState.MipmapLinear, nil)
-		hTex:setFilter(true, true)
-		local lit = G.PointSprite3D.New(hTex, G.Vec3.New(0,0,0))
-		lit:setScale(G.Vec3.New(0.4, 0.4, 0.4))
-		lit:setDrawPriority(0x3000)
-		engine:addSceneObject(lit)
-		self.lit = lit
-	end
 end
 st_idle = {
 	OnEnter = function(self, slc, ...)
@@ -93,11 +84,6 @@ st_idle = {
 		self.hFb:attachTexture(G.GLFBuffer.Attribute.Color0, hTex)
 		local engine = Global.engine
 		engine:setOutputFramebuffer(self.hFb)
-		do
-			local clp = G.ClearParam.New(G.Vec4.New(0,0,0,0), 1.0, nil)
-			local fbc = G.FBClear.New(0x0000, clp)
-			dg:addObj(fbc)
-		end
 
 		do
 			local bl0 = G.BilateralBlur.New(0x6000)
@@ -114,6 +100,25 @@ st_idle = {
 			blur0:setAlpha(1)
 			blur0:setDiffuse(hTex)
 			dg:addObj(blur0)
+		end
+		do
+			local clp = G.ClearParam.New(nil, nil, nil)
+			local fbc = G.FBSwitch.New(0x2000, self.hFb, clp)
+			dg:addObj(fbc)
+		end
+		do
+			local clp = G.ClearParam.New(nil, nil, nil)
+			local fbc = G.FBSwitch.New(0x5000, nil, clp)
+			dg:addObj(fbc)
+		end
+		do
+			local hTex = System.glres:loadTexture("light.png", G.GLRes.MipState.MipmapLinear, nil)
+			hTex:setFilter(true, true)
+			local lit = G.PointSprite3D.New(hTex, G.Vec3.New(0,0,0))
+			lit:setScale(G.Vec3.New(0.4, 0.4, 0.4))
+			lit:setDrawPriority(0x3000)
+			dg:addObj(lit)
+			self.lit = lit
 		end
 
 		self.hTex = {}

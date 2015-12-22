@@ -1,0 +1,224 @@
+import primitive.glx;
+
+// -------------------- ZPass --------------------
+attribute ZPassAttr {
+	highp vec3 a_pos : POSITION;
+	highp vec3 a_normal : NORMAL;
+	highp vec4 a_tanC : TANGENT;
+	highp vec2 a_tex: TEXCOORD0;
+}
+uniform ZPassUnif {
+	highp mat4 sys_mWorld;
+	highp mat4 sys_mView;
+	highp mat4 sys_mTrans;
+	sampler2D u_texSpecular;
+	sampler2D u_texNormal;
+}
+varying ZPassVary {
+	mediump vec2 v_tex;
+	highp float v_dist;
+	mediump vec3 v_tangent;
+	mediump vec3 v_binormal;
+	mediump vec3 v_normal;
+}
+vertexshader(400) ZPassVS() {
+	gl_Position = vec4(a_pos, 1) * sys_mTrans;
+	v_tex = a_tex;
+
+	// 接空間ベクトルをビュー座標系へ
+	mat4 mWV = sys_mWorld * sys_mView;
+	vec3 nml = normalize((vec4(a_normal, 0) * mWV).xyz);
+	vec3 tanv = normalize((vec4(a_tanC.xyz, 0) * mWV).xyz);
+	vec3 bnml = normalize(cross(tanv, nml) * a_tanC.w);
+	tanv = normalize(cross(nml, bnml) * a_tanC.w);
+	// 後のために転置しておく
+	mat3 m = mat3(tanv, bnml, nml);
+	m = transpose(m);
+	v_tangent = m[0];
+	v_binormal = m[1];
+	v_normal = m[2];
+
+	v_dist = gl_Position.w;
+}
+fragmentshader(400, Light) ZPassFS() {
+	vec3 normal = normalize(v_normal),
+		binormal = normalize(v_binormal),
+		tanv = normalize(v_tangent);
+	// テクスチャ法線をビュー座標系へ
+	vec3 tnml = texture2D(u_texNormal, v_tex).xyz;
+	tnml = normalize(tnml*2-1);
+	tnml = vec3(dot(tnml, tanv), dot(tnml, binormal), dot(tnml, normal));
+
+	float s = texture2D(u_texSpecular, v_tex).x;
+	// XYZ=Normal, W=Distance
+	gl_FragColor.xyz = tnml;
+	gl_FragColor.w = v_dist;
+}
+
+// -------------------- LightDepth --------------------
+attribute LDepthAttr {
+	highp vec3 a_pos : POSITION;
+}
+uniform LDepthUnif {
+	highp mat4 sys_mTrans;
+	highp vec2 u_depthRange;
+}
+varying LDepthVary {
+	highp float v_dist;
+}
+vertexshader(400, Linear) LDepthVS() {
+	gl_Position = vec4(a_pos, 1) * sys_mTrans;
+	v_dist = Linear(gl_Position.w, u_depthRange.x, u_depthRange.y);
+}
+fragmentshader(400) LDepthFS() {
+	gl_FragColor.x = v_dist;
+	gl_FragColor.yzw = vec3(0);
+}
+// -------------------- LAccumShadow --------------------
+uniform LAccumShadowUnif {
+	sampler2D	u_texLightDepth;	// ライト深度テクスチャ
+	highp mat4  u_lightViewProj;	// EyeView -> LightViewProj
+	highp vec2	u_depthRange;
+	highp vec3	u_scrLightDir;		// ビュー空間でのライト方向
+}
+code Linear {
+	float Linear(float v, float vmin, float vmax) {
+		return (v-vmin) / (vmax-vmin);
+	}
+}
+fragmentshader(400, Light) LAccumShadowFS() {
+	gl_FragColor = vec4(0);
+
+	// スクリーン位置からUVを計算
+	vec2 uv = v_scPos/2 + 0.5;
+	vec4 zp = texture2D(u_texZPass, uv);
+	// 位置を復元
+	vec3 pos = vec3(v_scPos*u_scrSize * zp.w, zp.w);
+	// ライトViewProjection空間へ移動
+	vec4 lspos = vec4(pos, 1) * u_lightViewProj;
+	lspos.xy /= lspos.w;
+	uv = lspos.xy /2 + 0.5;
+	float depth = texture2D(u_texLightDepth, uv).x;
+	float d = Linear(lspos.w, u_depthRange.x, u_depthRange.y);
+	d -= 1e-2f;
+	if(depth >= d) {
+		// 法線を復元
+		vec3 normal = zp.xyz;
+		// 影になってないのでライト計算をする
+		vec2 lit = CalcLight(pos, normal, vec3(0), u_scrLightPos, 32);
+		float ld = ClipLight(pos, u_scrLightPos, u_scrLightDir);
+		gl_FragColor.xyz = u_lightColor * vec3(lit.x + lit.y) * ld;
+	}
+}
+
+// -------------------- LAccum --------------------
+attribute LAccumAttr {
+	highp vec2 a_pos : POSITION;
+}
+uniform LAccumUnif {
+	sampler2D u_texZPass;			// XYZ=Normal, W=Distance
+	highp vec3 u_scrLightPos;		// ビュー空間でのライト位置
+	lowp vec3 u_lightColor;			// ライト色
+	mediump vec2 u_lightCoeff;		// 減衰係数(x=距離の2乗, y=リニア)
+	mediump vec2 u_scrSize;			// 射影平面でのスクリーンサイズ比
+}
+
+varying LAccumVary {
+	mediump vec2 v_scPos;
+}
+vertexshader(400) LAccumVS() {
+	gl_Position = vec4(a_pos, 0, 1);
+	v_scPos = a_pos;
+}
+fragmentshader(400, Light) LAccumFS() {
+	// スクリーン位置からUVを計算
+	vec2 uv = v_scPos/2 + 0.5;
+	// XYZ=Normal, W=Distance
+	vec4 zp = texture2D(u_texZPass, uv);
+	// 法線を復元
+	vec3 normal = zp.xyz;
+	// 位置を復元
+	vec3 pos = vec3(v_scPos*u_scrSize * zp.w, zp.w);
+	// ライト計算
+	vec2 lit = CalcLight(pos, normal, vec3(0), u_scrLightPos, 32);
+	/* gl_FragColor.xyz = u_lightColor * vec3(lit.x + lit.y*zp.z); */
+	gl_FragColor.xyz = u_lightColor * vec3(lit.x + lit.y);
+	gl_FragColor.w = 0;
+}
+// -------------------- Shade --------------------
+attribute ShadeAttr {
+	highp vec3 a_pos : POSITION;
+	highp vec2 a_tex : TEXCOORD0;
+}
+varying ShadeVary {
+	mediump vec2 v_tex;
+	mediump vec3 v_scrPos;
+}
+uniform ShadeUnif {
+	sampler2D u_texDiffuse;
+	sampler2D u_texLAccum;
+	highp mat4 sys_mTrans;
+}
+vertexshader(400) ShadeVS() {
+	gl_Position = vec4(a_pos, 1) * sys_mTrans;
+	v_tex = a_tex;
+	v_scrPos = gl_Position.xyw;
+}
+fragmentshader(400) ShadeFS() {
+	gl_FragColor = texture2D(u_texDiffuse, v_tex);
+	vec2 scpos = v_scrPos.xy / v_scrPos.z;
+	scpos = scpos/2 + 0.5;
+	gl_FragColor.xyz *= texture2D(u_texLAccum, scpos).xyz;
+}
+
+technique DeferredLight {
+	CullFace = true;
+	FrontFace = cw;
+	Blend = false;
+	DepthTest = true;
+	DepthMask = true;
+	DepthFunc = LessEqual;
+	pass ZPass {
+		Attribute = ZPassAttr;
+		Uniform = ZPassUnif;
+		Varying = ZPassVary;
+		VertexShader = ZPassVS();
+		FragmentShader = ZPassFS();
+	}
+	pass LightAccum {
+		Blend = true;
+		BlendFunc = One One;
+		DepthTest = false;
+		DepthMask = false;
+		Attribute = LAccumAttr;
+		Uniform = LAccumUnif;
+		Varying = LAccumVary;
+		VertexShader = LAccumVS();
+		FragmentShader = LAccumFS();
+	}
+	pass LightDepth {
+		Attribute = LDepthAttr;
+		Uniform = LDepthUnif;
+		Varying = LDepthVary;
+		VertexShader = LDepthVS();
+		FragmentShader = LDepthFS();
+	}
+	pass LightAccumShadow {
+		Blend = true;
+		BlendFunc = One One;
+		DepthTest = false;
+		DepthMask = false;
+		Attribute = LAccumAttr;
+		Uniform = LAccumUnif, LAccumShadowUnif;
+		Varying = LAccumVary;
+		VertexShader = LAccumVS();
+		FragmentShader = LAccumShadowFS();
+	}
+	pass Shading {
+		Attribute = ShadeAttr;
+		Uniform = ShadeUnif;
+		Varying = ShadeVary;
+		VertexShader = ShadeVS();
+		FragmentShader = ShadeFS();
+	}
+}

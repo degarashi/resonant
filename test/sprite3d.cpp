@@ -17,26 +17,33 @@ void Sprite3D::setAlpha(float a) {
 }
 void Sprite3D::draw(Engine& e) const {
 	auto typ = e.getDrawType();
-	if(typ == Engine::DrawType::Normal ||
-			typ == Engine::DrawType::CubeNormal)
-	{
-		spn::profiler.beginBlockObj("sprite3D::draw");
-		e.setTechPassId(T_Sprite);
-		e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
-		e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
-		e.setUniform(rs::unif::Alpha, _alpha);
-		// カメラと正対するように回転
-		auto cam = e.ref3D().getCamera();
-		auto& pose = cam->getPose();
-		auto m = spn::Mat44::LookDirLH({0,0,0}, -pose.getDir(), pose.getUp());
-		m.invert();
-		const auto& sc = getScale();
-		m *= spn::Mat44::Scaling(sc.x, sc.y, sc.z, 1);
-		m *= spn::Mat44::Translation(getOffset());
-		e.ref<rs::SystemUniform3D>().setWorld(m);
-		e.setVStream(_hlVb, 0);
-		e.setIStream(_hlIb);
-		e.drawIndexed(GL_TRIANGLES, 6);
+	using DT = Engine::DrawType;
+	switch(typ) {
+		case DT::Normal:
+		case DT::CubeNormal:
+		case DT::DL_Shade:
+			{
+				spn::profiler.beginBlockObj("sprite3D::draw");
+				e.setTechPassId(T_Sprite);
+				e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
+				e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+				e.setUniform(rs::unif::Alpha, _alpha);
+				// カメラと正対するように回転
+				auto cam = e.ref3D().getCamera();
+				auto& pose = cam->getPose();
+				auto m = spn::Mat44::LookDirLH({0,0,0}, -pose.getDir(), pose.getUp());
+				m.invert();
+				const auto& sc = getScale();
+				m *= spn::Mat44::Scaling(sc.x, sc.y, sc.z, 1);
+				m *= spn::Mat44::Translation(getOffset());
+				e.ref<rs::SystemUniform3D>().setWorld(m);
+				e.setVStream(_hlVb, 0);
+				e.setIStream(_hlIb);
+				e.drawIndexed(GL_TRIANGLES, 6);
+			}
+			break;
+		default:
+			break;
 	}
 }
 void Sprite3D::exportDrawTag(rs::DrawTag& d) const {

@@ -11,7 +11,8 @@ const rs::IdValue Primitive::T_Prim = GlxId::GenTechId("Primitive", "Default"),
 				Primitive::T_PrimDepth = GlxId::GenTechId("Primitive", "Depth"),
 				Primitive::T_PrimCube = GlxId::GenTechId("Primitive", "CubeDefault"),
 				Primitive::T_PrimCubeDepth = GlxId::GenTechId("Primitive", "CubeDepth"),
-				Primitive::T_PrimLine = GlxId::GenTechId("Primitive", "Line");
+				Primitive::T_PrimLine = GlxId::GenTechId("Primitive", "Line"),
+				Primitive::T_PrimDLDepth = GlxId::GenTechId("DeferredLight", "LightDepth");
 void Primitive::_initVb(Type::E typ, bool bFlat, bool bFlip) {
 	int indexI = bFlip ? 1 : 0;
 
@@ -145,24 +146,37 @@ void Primitive::advance(float t) {
 }
 void Primitive::draw(Engine& e) const {
 	auto typ = e.getDrawType();
+	using DT = Engine::DrawType;
 	switch(typ) {
-		case Engine::DrawType::Normal:
+		case DT::Normal:
 			e.setTechPassId(T_Prim);
 			e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 			if(_hlTexNormal)
 				e.setUniform(rs::unif3d::texture::Normal, _hlTexNormal);
 			break;
-		case Engine::DrawType::CubeNormal:
+		case DT::CubeNormal:
 			e.setTechPassId(T_PrimCube);
 			e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
 			if(_hlTexNormal)
 				e.setUniform(rs::unif3d::texture::Normal, _hlTexNormal);
 			break;
-		case Engine::DrawType::CubeDepth:
+		case DT::CubeDepth:
 			e.setTechPassId(T_PrimCubeDepth);
 			break;
-		case Engine::DrawType::Depth:
+		case DT::Depth:
 			e.setTechPassId(T_PrimDepth);
+			break;
+		case DT::DL_ZPrePass:
+			e.setTechPassId(T_ZPass);
+			if(_hlTexNormal)
+				e.setUniform(rs::unif3d::texture::Normal, _hlTexNormal);
+			break;
+		case DT::DL_Shade:
+			e.setTechPassId(T_Shading);
+			e.setUniform(rs::unif3d::texture::Diffuse, _hlTex);
+			break;
+		case DT::DL_Depth:
+			e.setTechPassId(T_PrimDLDepth);
 			break;
 		default:
 			AssertF(Trap, "")
@@ -174,7 +188,7 @@ void Primitive::draw(Engine& e) const {
 	e.drawIndexed(GL_TRIANGLES, _hlIb->get()->getNElem());
 
 	// 法線を表示
-	if(_bShowNormal && typ == Engine::DrawType::Normal) {
+	if(_bShowNormal && (typ==DT::Normal || typ==DT::DL_Shade)) {
 		e.setVDecl(rs::DrawDecl<vdecl::line>::GetVDecl());
 		e.setTechPassId(T_PrimLine);
 		e.setVStream(_hlVbLine, 0);

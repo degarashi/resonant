@@ -48,18 +48,25 @@ void Sprite::setZRange(const spn::RangeF& r) {
 }
 void Sprite::draw(Engine& e) const {
 	auto typ = e.getDrawType();
-	if(typ == Engine::DrawType::Normal ||
-		typ == Engine::DrawType::CubeNormal)
-	{
-		spn::profiler.beginBlockObj("sprite::draw");
-		e.setTechPassId(T_Sprite);
-		e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
-		e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
-		e.setUniform(rs::unif::Alpha, _alpha);
-		e.ref<rs::SystemUniform2D>().setWorld(getToWorld().convertA33());
-		e.setVStream(_hlVb, 0);
-		e.setIStream(_hlIb);
-		e.drawIndexed(GL_TRIANGLES, 6);
+	using DT = Engine::DrawType;
+	switch(typ) {
+		case DT::Normal:
+		case DT::CubeNormal:
+		case DT::DL_Shade:
+			{
+				spn::profiler.beginBlockObj("sprite::draw");
+				e.setTechPassId(T_Sprite);
+				e.setVDecl(rs::DrawDecl<vdecl::sprite>::GetVDecl());
+				e.setUniform(rs::unif2d::texture::Diffuse, _hlTex);
+				e.setUniform(rs::unif::Alpha, _alpha);
+				e.ref<rs::SystemUniform2D>().setWorld(getToWorld().convertA33());
+				e.setVStream(_hlVb, 0);
+				e.setIStream(_hlIb);
+				e.drawIndexed(GL_TRIANGLES, 6);
+			}
+			break;
+		default:
+			break;
 	}
 }
 void Sprite::exportDrawTag(rs::DrawTag& d) const {

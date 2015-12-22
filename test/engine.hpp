@@ -2,18 +2,30 @@
 #include "../util/sys_unif.hpp"
 #include "../updater.hpp"
 #include "gaussblur.hpp"
+#include "spinner/structure/wrapper.hpp"
 
 namespace myunif {
 	extern const rs::IdValue	U_Position,		// "u_lightPos"
 								U_Color,		// "u_lightColor"
 								U_Dir,			// "u_lightDir"
 								U_Mat,			// "u_lightMat"
+								U_Coeff,		// "u_lightCoeff"
 								U_Depth,		// "u_texLightDepth"
 								U_CubeDepth,	// "u_texCubeDepth"
+								U_LightIVP,		// "u_lightViewProj"
+								U_TexZPass,		// "u_texZPass"
+								U_TexLAccum,	// "u_texLAccum"
 								U_DepthRange,	// "u_depthRange"
-								U_LineLength;	// "u_lineLength"
+								U_LineLength,	// "u_lineLength"
+								U_ScrLightPos,	// "u_scrLightPos"
+								U_ScrLightDir,	// "u_scrLightDir"
+								U_ScreenSize;	// "u_scrSize"
 }
-extern const rs::IdValue T_PostEffect;
+extern const rs::IdValue T_PostEffect,
+						T_ZPass,
+						T_LAccum,
+						T_Shading,
+						T_LAccumS;
 class Engine : public rs::util::GLEffect_2D3D {
 	public:
 		struct DrawType {
@@ -22,10 +34,32 @@ class Engine : public rs::util::GLEffect_2D3D {
 				Depth,
 				CubeNormal,
 				CubeDepth,
+				DL_ZPrePass,
+				DL_Depth,
+				DL_Shade,
 				_Num
 			};
 		};
 	private:
+		struct ScreenSize;
+		struct Getter : spn::RFlag_Getter<spn::SizeF> {
+			using RFlag_Getter::operator ();
+			counter_t operator()(const spn::SizeF&, ScreenSize*, const Engine&) const;
+		};
+		struct D_Camera;
+		struct GetterC : spn::RFlag_Getter<uint32_t> {
+			using RFlag_Getter::operator ();
+			counter_t operator()(const spn::none_t&, D_Camera*, const Engine&) const;
+		};
+		struct ScLit {
+			spn::Vec3	pos,
+						dir;
+			spn::Vec2	size;
+		};
+		using ScSize_t = spn::AcCheck<rs::HLTex, Getter>;
+		using ScAsp_t = spn::AcCheck<spn::Wrapper<float>, Getter>;
+		using ScLit_t = spn::AcCheck<ScLit, GetterC>;
+		using IVP_t = spn::AcCheck<spn::Mat44, GetterC>;
 		#define SEQ_UNIF \
 			((LineLength)(float)) \
 			((LightColor)(spn::Vec3)) \
@@ -38,7 +72,15 @@ class Engine : public rs::util::GLEffect_2D3D {
 			((LightDepth)(rs::HLRb)(LightDepthSize)) \
 			((LightColorBuff)(rs::HLTex)(LightDepthSize)) \
 			((LightFB)(rs::HLFb)(LightDepth)(LightColorBuff)) \
-			((CubeColorBuff)(rs::HLTex)(LightDepthSize))
+			((CubeColorBuff)(rs::HLTex)(LightDepthSize)) \
+			((ScreenSize)(spn::SizeF)) \
+			((D_Camera)(spn::none_t)) \
+			((ZPrePassBuff)(ScSize_t)(ScreenSize)) \
+			((LightAccumBuff)(ScSize_t)(ScreenSize)) \
+			((ScreenAspect)(ScAsp_t)(ScreenSize)) \
+			((LightScLit)(ScLit_t)(LightPosition)(LightDir)(D_Camera)) \
+			((LightCoeff)(spn::Vec2)) \
+			((LightIVP)(IVP_t)(D_Camera)(LightMatrix))
 		RFLAG_S(Engine, SEQ_UNIF)
 
 		mutable GaussBlur	_gauss;
@@ -47,6 +89,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 		rs::HLDGroup	_hlDg;
 		class DrawScene;
 		class CubeScene;
+		class DLScene;
 	protected:
 		void _prepareUniforms() override;
 	public:
@@ -61,6 +104,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 
 		rs::HLDObj getDrawScene(rs::Priority dprio) const;
 		rs::HLDObj getCubeScene(rs::Priority dprio) const;
+		rs::HLDObj getDLScene(rs::Priority dprio) const;
 		void addSceneObject(rs::HDObj hdObj);
 		void remSceneObject(rs::HDObj hdObj);
 		void clearScene();
