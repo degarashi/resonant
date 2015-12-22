@@ -100,6 +100,10 @@ namespace rs {
 
 		virtual SystemUniform2D& ref2D() { AssertF(Trap, "this class has no SystemUniform2D interface") }
 		virtual SystemUniform3D& ref3D() { AssertF(Trap, "this class has no SystemUniform3D interface") }
+		const SystemUniform2D& ref2D() const {
+			return const_cast<IEffect*>(this)->ref2D(); }
+		const SystemUniform3D& ref3D() const {
+			return const_cast<IEffect*>(this)->ref3D(); }
 		virtual void moveFrom(IEffect& /*prev*/) {}
 	};
 }

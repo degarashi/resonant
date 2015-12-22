@@ -34,12 +34,14 @@ namespace rs {
 			public:
 				using GLEffect_Ts<SystemUniform, SystemUniform2D>::GLEffect_Ts;
 				SystemUniform2D& ref2D() override { return ref<SystemUniform2D>(); }
+				using GLEffect_Ts::ref2D;
 		};
 		//! GLEffect + SystemUniform3D
 		class GLEffect_3D : public GLEffect_Ts<SystemUniform, SystemUniform3D> {
 			public:
 				using GLEffect_Ts<SystemUniform, SystemUniform3D>::GLEffect_Ts;
 				SystemUniform3D& ref3D() override { return ref<SystemUniform3D>(); }
+				using GLEffect_Ts::ref3D;
 		};
 		//! GLEffect + SystemUniform(2D & 3D)
 		class GLEffect_2D3D : public GLEffect_Ts<SystemUniform, SystemUniform2D, SystemUniform3D> {
@@ -47,6 +49,8 @@ namespace rs {
 				using GLEffect_Ts<SystemUniform, SystemUniform2D, SystemUniform3D>::GLEffect_Ts;
 				SystemUniform2D& ref2D() override { return ref<SystemUniform2D>(); }
 				SystemUniform3D& ref3D() override { return ref<SystemUniform3D>(); }
+				using GLEffect_Ts::ref2D;
+				using GLEffect_Ts::ref3D;
 		};
 	}
 }
