@@ -31,21 +31,14 @@ spn::SizeF Engine::Getter::operator()(const spn::SizeF& s, ScreenSize*, const En
 	sr = mgr_info.getScreenSize();
 	return sr;
 }
-uint32_t Engine::GetterC::operator()(const spn::none_t&, D_Camera*, const Engine& e) const {
-	return e.ref3D().getCamera()->getAccum();
-}
 Engine::Engine(const std::string& name):
 	rs::util::GLEffect_2D3D(name),
 	_gauss(0),
 	_drawType(DrawType::Normal)
 {
 	_hlDg = rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_priority_asc}, true). first;
-	setLightPosition(spn::Vec3(0,0,0));
-	setLightDir(spn::Vec3(0,0,1));
-	setDepthRange(spn::Vec2(0, 10));
 	setLightDepthSize(spn::Size{256,256});
 	setLineLength(1.f);
-	setLightColor(spn::Vec3(1,1,1));
 }
 Engine::DrawType::E Engine::getDrawType() const {
 	return _drawType;
@@ -56,29 +49,20 @@ void Engine::_prepareUniforms() {
 	#define DEF_SETUNIF(name, func) \
 		if(auto idv = getUnifId(myunif::name)) \
 			setUniform(*idv, func(), true);
-	DEF_SETUNIF(U_Position, getLightPosition)
-	DEF_SETUNIF(U_Color, getLightColor)
-	DEF_SETUNIF(U_Dir, getLightDir)
-	DEF_SETUNIF(U_DepthRange, getDepthRange)
 	DEF_SETUNIF(U_CubeDepth, getCubeColorBuff)
 	DEF_SETUNIF(U_Depth, getLightColorBuff)
-	DEF_SETUNIF(U_Mat, getLightMatrix)
 
 	DEF_SETUNIF(U_LineLength , getLineLength)
 	DEF_SETUNIF(U_TexLAccum, getLightAccumBuff)
 	DEF_SETUNIF(U_TexZPass, getZPrePassBuff)
-	DEF_SETUNIF(U_Coeff, getLightCoeff)
-	DEF_SETUNIF(U_LightIVP, getLightIVP)
 	#undef DEF_SETUNIF
-	{
-		auto& scl = getLightScLit();
-		if(auto idv = getUnifId(myunif::U_ScrLightPos))
-			setUniform(*idv, scl.pos, true);
-		if(auto idv = getUnifId(myunif::U_ScreenSize))
-			setUniform(*idv, scl.size, true);
-		if(auto idv = getUnifId(myunif::U_ScrLightDir))
-			setUniform(*idv, scl.dir, true);
+
+	if(auto idv = getUnifId(myunif::U_ScreenSize)) {
+		auto& scl = getScreenInfo();
+		setUniform(*idv, scl.size, true);
 	}
+	if(_activeLight)
+		_activeLight->prepareUniforms(*this);
 }
 #include "../camera.hpp"
 spn::RFlagRet Engine::_refresh(rs::HLRb& rb, LightDepth*) const {
@@ -86,12 +70,15 @@ spn::RFlagRet Engine::_refresh(rs::HLRb& rb, LightDepth*) const {
 	rb = mgr_gl.makeRBuffer(sz.width, sz.height, GL_DEPTH_COMPONENT16);
 	return {true, 0};
 }
-spn::RFlagRet Engine::_refresh(typename ScreenAspect::value_type& sc, ScreenAspect*) const {
+spn::RFlagRet Engine::_refresh(typename ScreenInfo::value_type& sc, ScreenInfo*) const {
 	auto ret = _rflag.getWithCheck(this, sc);
 	bool b = ret.second;
 	if(b) {
-		auto sz = getScreenSize();
-		sc = sz.width / sz.height;
+		auto sz = *std::get<0>(ret.first);
+		sc.aspect = sz.width / sz.height;
+		auto& cam = ref3D().getCamera().cref();
+		float t = std::tan(cam.getFov().get()/2);
+		sc.size = spn::Vec2(t * cam.getAspect(), t);
 	}
 	return {b, 0};
 }
@@ -118,50 +105,6 @@ spn::RFlagRet Engine::_refresh(typename LightAccumBuff::value_type& tex, LightAc
 	}
 	return {b, 0};
 }
-spn::RFlagRet Engine::_refresh(typename LightScLit::value_type& sclit, LightScLit*) const {
-	auto ret = _rflag.getWithCheck(this, sclit);
-	bool b = ret.second;
-	if(b) {
-		auto& cam = ref3D().getCamera().cref();
-		auto& mView = cam.getView();
-		sclit.pos = std::get<0>(ret.first)->asVec4(1) * mView;
-		sclit.dir = std::get<1>(ret.first)->asVec4(0) * mView;
-		float t = std::tan(cam.getFov().get()/2);
-		sclit.size = spn::Vec2(t * cam.getAspect(), t);
-	}
-	return {b, 0};
-}
-spn::RFlagRet Engine::_refresh(typename LightIVP::value_type& ivp, LightIVP*) const {
-	auto ret = _rflag.getWithCheck(this, ivp);
-	bool b = ret.second;
-	if(b) {
-		// Invert(View) * Light(ViewProj)
-		auto& cam = ref3D().getCamera().cref();
-		auto mView = cam.getView().convertA44();
-		mView.invert();
-		ivp = mView * *std::get<1>(ret.first);
-	}
-	return {b, 0};
-}
-spn::RFlagRet Engine::_refresh(rs::HLCam& c, LightCamera*) const {
-	c = mgr_cam.emplace();
-	auto& pose = c->refPose();
-	pose.setOffset(getLightPosition());
-	spn::AQuat q;
-	if(getLightDir().z < -1.f+1e-4f)
-		q = spn::AQuat::RotationY(spn::DegF(180.f));
-	else
-		q = spn::AQuat::Rotation({0,0,1}, getLightDir());
-	pose.setRot(q);
-	c->setFov(spn::DegF(90));
-	c->setZPlane(0.01f, 500.f);
-	return {true, 0};
-}
-spn::RFlagRet Engine::_refresh(spn::Mat44& m, LightMatrix*) const {
-	auto& c = getLightCamera().cref();
-	m = c.getViewProj();
-	return {true, 0};
-}
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, LightColorBuff*) const {
 	tex = mgr_gl.createTexture(getLightDepthSize(), GL_RG16, false, false);
 	tex->get()->setFilter(true, true);
@@ -174,6 +117,9 @@ spn::RFlagRet Engine::_refresh(rs::HLFb& fb, LightFB*) const {
 	fb->get()->attachRBuffer(rs::GLFBuffer::Att::DEPTH, getLightDepth());
 	return {true, 0};
 }
+Engine::GetterC::counter_t Engine::GetterC::operator()(const spn::none_t&, D_Camera*, const Engine& e) const {
+	return e.ref3D().getCamera()->getAccum();
+}
 #include "../util/screen.hpp"
 class Engine::DLScene : public rs::DrawableObjT<DLScene> {
 	private:
@@ -182,7 +128,7 @@ class Engine::DLScene : public rs::DrawableObjT<DLScene> {
 				rs::HLFb fb0 = e.getFramebuffer();
 				auto& engine = static_cast<Engine&>(e);
 				rs::HLCam cam = engine.ref3D().getCamera();
-				cam->setAspect(engine.getScreenAspect());
+				cam->setAspect(engine.getScreenInfo().aspect);
 				rs::HLFb fb = mgr_gl.makeFBuffer();
 				using Att = rs::GLFBuffer::Att;
 				// Z-PrePass
@@ -195,7 +141,10 @@ class Engine::DLScene : public rs::DrawableObjT<DLScene> {
 				engine._drawType = DrawType::DL_ZPrePass;
 				engine._hlDg->get()->onDraw(e);
 
-				for(int i=0 ; i<1 ; i++) {
+				int i=0;
+				for(auto& lit : engine._light) {
+					engine._activeLight = lit;
+					lit.setEyeCamera(cam);
 					{	// LightDepth
 						rs::HLFb fbDepth = mgr_gl.makeFBuffer();
 						fbDepth->get()->attachRBuffer(Att::DEPTH, engine.getLightDepth());
@@ -204,7 +153,7 @@ class Engine::DLScene : public rs::DrawableObjT<DLScene> {
 						e.clearFramebuffer(rs::draw::ClearParam{spn::none, 1.f, spn::none});
 						engine._drawType = DrawType::DL_Depth;
 						// ライトの位置にカメラをセット
-						engine.ref3D().setCamera(engine.getLightCamera());
+						engine.ref3D().setCamera(lit.getCamera());
 						engine._hlDg->get()->onDraw(e);
 					}
 					{	// LightAccumulation
@@ -218,7 +167,9 @@ class Engine::DLScene : public rs::DrawableObjT<DLScene> {
 						rs::util::ScreenRect sr;
 						sr.draw(e);
 					}
+					++i;
 				}
+				engine._activeLight = spn::none;
 
 				// Shading
 				e.setFramebuffer(engine._hlFb);
@@ -245,9 +196,14 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 				e.setFramebuffer(engine.getLightFB());
 				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4(0), 1.f, spn::none});
 				engine._drawType = DrawType::Depth;
+
+				auto itr = engine._light.begin();
+				auto& lit = *itr;
+				engine._activeLight = lit;
 				// カメラをライト位置へ
 				rs::HLCam cam = engine.ref3D().getCamera();
-				engine.ref3D().setCamera(engine.getLightCamera());
+				lit.setEyeCamera(cam);
+				engine.ref3D().setCamera(lit.getCamera());
 				engine._hlDg->get()->onDraw(e);
 
 				// ライト深度にブラーをかける
@@ -262,6 +218,7 @@ class Engine::DrawScene : public rs::DrawableObjT<DrawScene> {
 				engine._drawType = DrawType::Normal;
 				engine._hlDg->get()->onDraw(e);
 
+				engine._activeLight = spn::none;
 				e.setFramebuffer(fb);
 			}
 		};
@@ -289,18 +246,24 @@ class Engine::CubeScene : public rs::DrawableObjT<CubeScene> {
 				rs::HLFb fb0 = e.getFramebuffer();
 				auto& engine = static_cast<Engine&>(e);
 
+				auto itr = engine._light.begin();
+				auto& lit = *itr;
+				engine._activeLight = lit;
+
 				rs::HLCam cam = engine.ref3D().getCamera();
+				lit.setEyeCamera(cam);
 				auto hlC = mgr_cam.emplace();
 				hlC->setFov(spn::DegF(90));
 				hlC->setAspect(1.f);
-				hlC->setZPlane(0.01f, 100.0f);
+				auto dr = lit.getDepthRange();
+				hlC->setZPlane(dr.x, dr.y);
 				engine.ref3D().setCamera(hlC);
 
 				rs::HLFb fb = mgr_gl.makeFBuffer();
 				fb->get()->attachRBuffer(rs::GLFBuffer::Att::DEPTH,
 										engine.getLightDepth());
 				auto& pose = hlC->refPose();
-				pose.setOffset(engine.getLightPosition());
+				pose.setOffset(lit.getPosition());
 				engine._drawType = DrawType::CubeDepth;
 				for(int i=0 ; i<6 ; i++) {
 					fb->get()->attachTextureFace(rs::GLFBuffer::Att::COLOR0,
@@ -321,6 +284,7 @@ class Engine::CubeScene : public rs::DrawableObjT<CubeScene> {
 				engine._drawType = DrawType::CubeNormal;
 				engine._hlDg->get()->onDraw(e);
 
+				engine._activeLight = spn::none;
 				e.setFramebuffer(fb0);
 			}
 		};
@@ -372,15 +336,21 @@ void Engine::moveFrom(rs::IEffect& e) {
 	_gauss = std::move(pe._gauss);
 	_rflag = std::move(pe._rflag);
 }
+Engine::LitId Engine::makeLight() {
+	return _light.add(DLight());
+}
+void Engine::remLight(LitId id) {
+	_light.rem(id);
+}
+DLight& Engine::getLight(LitId id) {
+	return _light.get(id);
+}
+
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	NOTHING,
 	(setLineLength<float>)
-	(setLightPosition<const spn::Vec3&>)
-	(setLightColor<const spn::Vec3&>)
-	(setLightDir<const spn::Vec3&>)
 	(setLightDepthSize<const spn::Size&>)
-	(setDepthRange<const spn::Vec2&>)
 	(setDispersion)
 	(getDLScene)
 	(getDrawScene)
@@ -388,4 +358,8 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	(addSceneObject)
 	(remSceneObject)
 	(setOutputFramebuffer)
-	(clearScene))
+	(clearScene)
+	(makeLight)
+	(remLight)
+	(getLight)
+)

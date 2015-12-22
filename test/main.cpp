@@ -21,6 +21,7 @@
 #include "blureffect.hpp"
 #include "gaussblur.hpp"
 #include "bilateralblur.hpp"
+#include "dlight.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -79,6 +80,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<GlobalValue>(*lkb->spLua);
 		rs::LuaImport::ImportClass(*lkb->spLua, "Global", "cpp", &gv);
 		rs::LuaImport::RegisterClass<FPSCamera>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<DLight>(*lkb->spLua);
 
 		// init Random
 		{

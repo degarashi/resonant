@@ -2,7 +2,7 @@
 #include "../util/sys_unif.hpp"
 #include "../updater.hpp"
 #include "gaussblur.hpp"
-#include "spinner/structure/wrapper.hpp"
+#include "dlight.hpp"
 
 namespace myunif {
 	extern const rs::IdValue	U_Position,		// "u_lightPos"
@@ -21,6 +21,7 @@ namespace myunif {
 								U_ScrLightDir,	// "u_scrLightDir"
 								U_ScreenSize;	// "u_scrSize"
 }
+
 extern const rs::IdValue T_PostEffect,
 						T_ZPass,
 						T_LAccum,
@@ -51,38 +52,31 @@ class Engine : public rs::util::GLEffect_2D3D {
 			using RFlag_Getter::operator ();
 			counter_t operator()(const spn::none_t&, D_Camera*, const Engine&) const;
 		};
-		struct ScLit {
-			spn::Vec3	pos,
-						dir;
+		using ScSize_t = spn::AcCheck<rs::HLTex, Getter>;
+		struct ScInfo_t {
+			float		aspect;
 			spn::Vec2	size;
 		};
-		using ScSize_t = spn::AcCheck<rs::HLTex, Getter>;
-		using ScAsp_t = spn::AcCheck<spn::Wrapper<float>, Getter>;
-		using ScLit_t = spn::AcCheck<ScLit, GetterC>;
-		using IVP_t = spn::AcCheck<spn::Mat44, GetterC>;
+		using ScInfo_a = spn::AcCheck<ScInfo_t, GetterC>;
 		#define SEQ_UNIF \
 			((LineLength)(float)) \
-			((LightColor)(spn::Vec3)) \
-			((DepthRange)(spn::Vec2)) \
-			((LightPosition)(spn::Vec3)) \
-			((LightDir)(spn::Vec3)) \
-			((LightCamera)(rs::HLCam)(LightPosition)(LightDir)) \
-			((LightMatrix)(spn::Mat44)(LightPosition)(LightDir)) \
 			((LightDepthSize)(spn::Size)) \
 			((LightDepth)(rs::HLRb)(LightDepthSize)) \
 			((LightColorBuff)(rs::HLTex)(LightDepthSize)) \
 			((LightFB)(rs::HLFb)(LightDepth)(LightColorBuff)) \
 			((CubeColorBuff)(rs::HLTex)(LightDepthSize)) \
 			((ScreenSize)(spn::SizeF)) \
-			((D_Camera)(spn::none_t)) \
 			((ZPrePassBuff)(ScSize_t)(ScreenSize)) \
 			((LightAccumBuff)(ScSize_t)(ScreenSize)) \
-			((ScreenAspect)(ScAsp_t)(ScreenSize)) \
-			((LightScLit)(ScLit_t)(LightPosition)(LightDir)(D_Camera)) \
-			((LightCoeff)(spn::Vec2)) \
-			((LightIVP)(IVP_t)(D_Camera)(LightMatrix))
+			((D_Camera)(spn::none_t)) \
+			((ScreenInfo)(ScInfo_a)(ScreenSize)(D_Camera))
 		RFLAG_S(Engine, SEQ_UNIF)
 
+		using DLightNS = spn::noseq_list<DLight>;
+		using LitId = DLightNS::id_type;
+		DLightNS			_light;
+		using LitOP = spn::Optional<const DLight&>;
+		LitOP				_activeLight;
 		mutable GaussBlur	_gauss;
 		rs::HLFb		_hlFb;
 		DrawType::E	_drawType;
@@ -111,5 +105,9 @@ class Engine : public rs::util::GLEffect_2D3D {
 		void setDispersion(float d);
 		void setOutputFramebuffer(rs::HFb hFb);
 		void moveFrom(rs::IEffect& e) override;
+
+		LitId makeLight();
+		void remLight(LitId id);
+		DLight& getLight(LitId id);
 };
 DEF_LUAIMPORT(Engine)

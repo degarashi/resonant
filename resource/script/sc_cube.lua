@@ -12,8 +12,6 @@ function InitScene(self)
 	engine:setDispersion(3.7)
 	engine:setLineLength(0.05)
 	engine:clearScene()
-	-- 深度バッファ範囲指定
-	engine:setDepthRange(G.Vec2.New(0, 20));
 	-- ライト深度バッファサイズ指定
 	engine:setLightDepthSize({512,512})
 	do
@@ -120,6 +118,10 @@ st_idle = {
 			dg:addObj(lit)
 			self.lit = lit
 		end
+		self.litId = engine:makeLight()
+		-- 深度バッファ範囲指定
+		local lit = engine:getLight(self.litId)
+		lit:setDepthRange(G.Vec2.New(0.01, 100));
 
 		self.hTex = {}
 
@@ -183,8 +185,9 @@ st_idle = {
 		local engine = Global.engine
 		-- 光源位置のセット
 		self.lit:setOffset(self.litpos)
-		engine:setLightPosition(self.litpos)
-		engine:setLightDir((ldirorigin - self.litpos):normalization())
+		local lit = engine:getLight(self.litId)
+		lit:setPosition(self.litpos)
+		lit:setDirection((ldirorigin - self.litpos):normalization())
 		-- キューブを回転
 		for i=1,#self.rotate do
 			self.rotate[i]:advance(1.1)
