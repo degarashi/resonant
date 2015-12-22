@@ -15,6 +15,7 @@
 #include "apppath.hpp"
 #include "tokenmemory.hpp"
 #include "luaimport.hpp"
+#include "spinner/structure/wrapper.hpp"
 
 namespace rs {
 	//! Tech:Pass の組み合わせを表す
@@ -810,10 +811,16 @@ namespace rs {
 			void _attachCubeTexture(Att::Id aId, GLuint faceFlag, GLuint tb);
 			void _attachTexture(Att::Id aId, GLuint tb);
 			using TexRes = std::pair<HLTex, CubeFace>;
+			struct RawTex : spn::Wrapper<GLuint> {
+				using Wrapper::Wrapper;
+			};
+			struct RawRb : spn::Wrapper<GLuint> {
+				using Wrapper::Wrapper;
+			};
 			// attachは受け付けるがハンドルを格納するだけであり、実際OpenGLにセットされるのはDTh
 		protected:
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
-			using Res = boost::variant<boost::none_t, TexRes, HLRb>;
+			using Res = boost::variant<boost::none_t, RawTex, RawRb, TexRes, HLRb>;
 			GLuint	_idFbo;
 			static void _SetCurrentFBSize(const spn::Size& s);
 
@@ -864,6 +871,8 @@ namespace rs {
 	class GLFBuffer : public GLFBufferCore, public IGLResource {
 		// GLuintは内部処理用 = RenderbufferのID
 		Res	_attachment[Att::NUM_ATTACHMENT];
+		template <class T>
+		void _attachIt(Att::Id att, const T& arg);
 
 		public:
 			static Size_OP GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id);
@@ -873,6 +882,9 @@ namespace rs {
 			void attachRBuffer(Att::Id att, HRb hRb);
 			void attachTexture(Att::Id att, HTex hTex);
 			void attachTextureFace(Att::Id att, HTex hTex, CubeFace face);
+			void attachRawRBuffer(Att::Id att, GLuint idRb);
+			void attachRawTexture(Att::Id att, GLuint idTex);
+			void attachOther(Att::Id attDst, Att::Id attSrc, HFb hFb);
 			void detach(Att::Id att);
 
 			void onDeviceReset() override;

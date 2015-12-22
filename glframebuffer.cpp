@@ -189,6 +189,15 @@ namespace rs {
 			draw::FrameBuff::Pair& _dst;
 			Visitor(draw::FrameBuff::Pair& dst): _dst(dst) {}
 
+			void operator()(const RawRb& r) const {
+				_dst.bTex = false;
+				_dst.idRes = r;
+			}
+			void operator()(const RawTex& t) const {
+				_dst.bTex = true;
+				_dst.faceFlag = GL_TEXTURE_2D;
+				_dst.idRes = t;
+			}
 			void operator()(const TexRes& t) const {
 				auto* tr = t.first.cref().get();
 				_dst.bTex = true;
@@ -266,6 +275,12 @@ namespace rs {
 			F _f;
 			HdlVisitor(F f): _f(f) {}
 			void operator()(boost::none_t) const {}
+			void operator()(GLFBufferCore::RawTex& t) const {
+				// 生のTextureIdは無効になる
+				t = 0; }
+			void operator()(GLFBufferCore::RawRb& r) const {
+				// 生のRenderBufferIdは無効になる
+				r = 0; }
 			void operator()(GLFBufferCore::TexRes& t) const {
 				(*this)(t.first);
 			}
@@ -324,24 +339,32 @@ namespace rs {
 			// Attachmentの解放は各ハンドルに任せる
 		}
 	}
-	void GLFBuffer::attachRBuffer(Att::Id att, HRb hRb) {
-		if(att == Att::DEPTH_STENCIL) {
-			// DepthとStencilそれぞれにhRbをセットする
-			attachRBuffer(Att::DEPTH, hRb);
-			attachRBuffer(Att::STENCIL, hRb);
-		} else
-			_attachment[att] = HLRb(hRb);
-	}
-	void GLFBuffer::attachTextureFace(Att::Id att, HTex hTex, CubeFace face) {
+	template <class T>
+	void GLFBuffer::_attachIt(Att::Id att, const T& arg) {
 		if(att == Att::DEPTH_STENCIL) {
 			// DepthとStencilそれぞれにhTexをセットする
-			attachTextureFace(Att::DEPTH, hTex, face);
-			attachTextureFace(Att::STENCIL, hTex, face);
+			_attachIt(Att::DEPTH, arg);
+			_attachIt(Att::STENCIL, arg);
 		} else
-			_attachment[att] = TexRes(hTex, face);
+			_attachment[att] = arg;
+	}
+	void GLFBuffer::attachRBuffer(Att::Id att, HRb hRb) {
+		_attachIt(att, HLRb(hRb));
+	}
+	void GLFBuffer::attachTextureFace(Att::Id att, HTex hTex, CubeFace face) {
+		_attachIt(att, TexRes(hTex, face));
 	}
 	void GLFBuffer::attachTexture(Att::Id att, HTex hTex) {
 		attachTextureFace(att, hTex, CubeFace::PositiveX);
+	}
+	void GLFBuffer::attachRawRBuffer(Att::Id att, GLuint idRb) {
+		_attachIt(att, RawRb(idRb));
+	}
+	void GLFBuffer::attachRawTexture(Att::Id att, GLuint idTex) {
+		_attachIt(att, RawTex(idTex));
+	}
+	void GLFBuffer::attachOther(Att::Id attDst, Att::Id attSrc, HFb hFb) {
+		_attachment[attDst] = hFb->get()->getAttachment(attSrc);
 	}
 	void GLFBuffer::detach(Att::Id att) {
 		_attachment[att] = boost::none;
@@ -364,6 +387,24 @@ namespace rs {
 			template <class T>
 			Size_OP operator()(const T& t) const {
 				return t->get()->getSize();
+			}
+			Size_OP operator()(const GLFBufferCore::RawTex& t) const {
+				GLint id, w, h;
+				GL.glGetIntegerv(GL_TEXTURE_BINDING_2D, &id);
+				GL.glBindTexture(GL_TEXTURE_2D, t._value);
+				GL.glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WIDTH, &w);
+				GL.glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_HEIGHT, &h);
+				GL.glBindTexture(GL_TEXTURE_2D, id);
+				return spn::Size(w,h);
+			}
+			Size_OP operator()(const GLFBufferCore::RawRb& t) const {
+				GLint id, w, h;
+				GL.glGetIntegerv(GL_RENDERBUFFER_BINDING, &id);
+				GL.glBindRenderbuffer(GL_RENDERBUFFER, t._value);
+				GL.glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &w);
+				GL.glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &h);
+				GL.glBindRenderbuffer(GL_RENDERBUFFER, id);
+				return spn::Size(w,h);
 			}
 		};
 	}
