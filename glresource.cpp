@@ -48,6 +48,12 @@ namespace rs {
 		_bInDtor = true;
 		onDeviceLost();
 	}
+	const FBInfo_OP& GLRes::getDefaultDepth() const {
+		return _defaultDepth;
+	}
+	const FBInfo_OP& GLRes::getDefaultColor() const {
+		return _defaultColor;
+	}
 	const std::string& GLRes::getResourceName(spn::SHandle sh) const {
 		if(sh) {
 			IGLResource* gr = HRes::FromHandle(sh)->get();
@@ -203,13 +209,25 @@ namespace rs {
 			_tmpFb.reset(nullptr);
 
 			_upFb->onDeviceLost();
+			_clearDefaultInfo();
 		}
+	}
+	void GLRes::_initDefaultInfo() {
+		GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		using Att = GLFBufferCore::Att;
+		_defaultColor = GLFBufferCore::GetCurrentInfo(Att::COLOR0);
+		_defaultDepth = GLFBufferCore::GetCurrentInfo(Att::DEPTH);
+	}
+	void GLRes::_clearDefaultInfo() {
+		_defaultDepth = spn::none;
+		_defaultColor = spn::none;
 	}
 	void GLRes::onDeviceReset() {
 		if(!_bInit) {
 			_bInit = true;
 			_upFb->onDeviceReset();
 			_tmpFb.reset(new GLFBufferTmp(_upFb->getBufferID(), mgr_info.getScreenSize()));
+			_initDefaultInfo();
 			for(auto& r : *this)
 				r->onDeviceReset();
 		}

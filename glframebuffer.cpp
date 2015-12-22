@@ -310,6 +310,41 @@ namespace rs {
 			}
 		}
 	}
+	namespace {
+		using DstP = GLint (FBInfo::*);
+		const std::pair<DstP, GLenum> c_dstp[] = {
+			{&FBInfo::redSize, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE},
+			{&FBInfo::greenSize, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE},
+			{&FBInfo::blueSize, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE},
+			{&FBInfo::alphaSize, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE},
+			{&FBInfo::depthSize, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE},
+			{&FBInfo::stencilSize, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE}
+		};
+	}
+	FBInfo GLFBufferCore::GetCurrentInfo(Att::Id att) {
+		FBInfo res;
+		auto att_id = _AttIDtoGL(att);
+		GLint ret;
+		GL.glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, att, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &ret);
+		if(ret == GL_FRAMEBUFFER_DEFAULT) {
+			if(att < Att::DEPTH) {
+				att_id = GL_BACK_LEFT;
+			} else {
+				Assert(Trap, att==Att::DEPTH)
+				att_id = GL_DEPTH;
+			}
+		}
+		for(auto& p : c_dstp) {
+			GL.glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, att_id, p.second, &ret);
+			res.*p.first = ret;
+		}
+		GL.glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, att_id, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &ret);
+		res.id = ret;
+		GL.glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, att_id, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &ret);
+		res.bTex = ret == GL_TEXTURE;
+
+		return res;
+	}
 	GLenum GLFBufferCore::_AttIDtoGL(Att::Id att) {
 		const GLenum c_num[Att::NUM_ATTACHMENT] = {
 			GL_COLOR_ATTACHMENT0,

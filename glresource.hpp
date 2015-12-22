@@ -120,12 +120,26 @@ namespace rs {
 	class GLFBufferTmp;
 	struct AdaptSDL;
 	#define mgr_gl (::rs::GLRes::_ref())
+	struct FBInfo {
+		GLint		redSize,
+					greenSize,
+					blueSize,
+					alphaSize,
+					depthSize,
+					stencilSize,
+					id;
+		bool		bTex;
+	};
+	using FBInfo_OP = spn::Optional<FBInfo>;
 	//! OpenGL関連のリソースマネージャ
 	class GLRes : public ResMgrApp<UPResource, GLRes> {
 		private:
 			using base_type = ResMgrApp<UPResource, GLRes>;
+
 			UPFBuffer						_upFb;
 			std::unique_ptr<GLFBufferTmp>	_tmpFb;
+			FBInfo_OP						_defaultDepth,
+											_defaultColor;
 			//! 空のテクスチャ (何もテクスチャをセットしない事を示す)
 			/*! デバッグで色を変えたりしてチェックできる */
 			std::unique_ptr<HLTex>			_hlEmptyTex;
@@ -145,6 +159,8 @@ namespace rs {
 			//! キューブマップの区別のためのポストフィックス
 			spn::Optional<char>	_chPostfix;
 			spn::URI _modifyResourceName(spn::URI& key) const override;
+			void _initDefaultInfo();
+			void _clearDefaultInfo();
 
 		public:
 			GLRes();
@@ -222,6 +238,9 @@ namespace rs {
 			HLFb makeFBuffer();
 			// ------------ RenderBuffer ------------
 			HLRb makeRBuffer(int w, int h, GLInRenderFmt fmt);
+
+			const FBInfo_OP& getDefaultDepth() const;
+			const FBInfo_OP& getDefaultColor() const;
 	};
 
 	using Priority = uint32_t;
@@ -806,6 +825,7 @@ namespace rs {
 					DEPTH_STENCIL = 0xffff
 				};
 			};
+			static FBInfo GetCurrentInfo(Att::Id att);
 			static GLenum _AttIDtoGL(Att::Id att);
 			void _attachRenderbuffer(Att::Id aId, GLuint rb);
 			void _attachCubeTexture(Att::Id aId, GLuint faceFlag, GLuint tb);
