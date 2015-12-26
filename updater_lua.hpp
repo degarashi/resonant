@@ -34,7 +34,7 @@ namespace rs {
 	}
 	template <class... Ts>
 	int MakeHandle_Fake(lua_State* /*ls*/) {
-		Assert(Trap, false, "not constructor defined.(can't construct this type of object)")
+		Assert(Trap, false, "no constructor defined.(can't construct this type of object)")
 		return 0;
 	}
 	template <class T, class... Ts>

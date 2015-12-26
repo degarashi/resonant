@@ -102,6 +102,18 @@ namespace rs {
 	void Object::onStop() {}
 	void Object::onResume() {}
 	void Object::onReStart() {}
+	// -------------------- U_Object --------------------
+	bool U_Object::isNode() const {
+		return false;
+	}
+	ObjTypeId U_Object::getTypeId() const {
+		return IdT::Id;
+	}
+	// -------------------- U_ObjectUpd --------------------
+	struct U_ObjectUpd::St_None : StateT<St_None> {};
+	U_ObjectUpd::U_ObjectUpd() {
+		setStateNew<St_None>();
+	}
 	// -------------------- IScene --------------------
 	HGroup IScene::getUpdGroup() const {
 		AssertP(Warn, false, "invalid function call")

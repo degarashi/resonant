@@ -92,6 +92,10 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::LSysFunc, LSysFunc, NOTHING, (loadResource)(load
 
 DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::ObjMgr, Object, Object, NOTHING,
 		(destroy)(getName))
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_Object, U_Object, "FSMachine",
+		NOTHING, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_ObjectUpd, U_ObjectUpd, "FSMachine",
+		NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawableObj, DrawableObj, "Object", NOTHING,
 		(setDrawPriority))
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_Scene, U_Scene, "FSMachine", NOTHING,
@@ -149,6 +153,8 @@ namespace rs {
 		LuaImport::RegisterClass<DrawGroupProxy>(lsc);
 		LuaImport::RegisterClass<U_DrawGroup>(lsc);
 		LuaImport::RegisterClass<U_DrawGroupProxy>(lsc);
+		LuaImport::RegisterClass<U_Object>(lsc);
+		LuaImport::RegisterClass<U_ObjectUpd>(lsc);
 		LuaImport::RegisterClass<detail::Action>(lsc);
 		LuaImport::RegisterClass<GLRBuffer>(lsc);
 		LuaImport::RegisterClass<GLFBuffer>(lsc);

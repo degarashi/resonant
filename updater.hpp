@@ -66,7 +66,6 @@ namespace rs {
 	class UpdGroup;
 	using UpdProc = std::function<void (HObj)>;
 	using CBFindGroup = std::function<bool (HGroup)>;
-	class ObjMgr;
 	//! ゲームオブジェクト基底インタフェース
 	class Object : public spn::EnableFromThis<HObj> {
 		private:
@@ -115,12 +114,20 @@ namespace rs {
 			virtual void onResume();
 			virtual void onReStart();
 	};
+	class U_Object : public Object, public ::rs::ObjectIdT<spn::none_t, ::rs::idtag::Object> {
+		private:
+			using IdT = ::rs::ObjectIdT<spn::none_t, ::rs::idtag::Object>;
+		public:
+			bool isNode() const override;
+			ObjTypeId getTypeId() const override;
+	};
 	class IScene : public Object {
 		public:
 			virtual HGroup getUpdGroup() const;
 			virtual HDGroup getDrawGroup() const;
 	};
 
+	class ObjMgr;
 	//! アクティブゲームオブジェクトの管理
 	class ObjMgr : public spn::ResMgrA<ObjectUP, ObjMgr> {
 		using base = spn::ResMgrA<ObjectUP, ObjMgr>;
@@ -723,6 +730,12 @@ namespace rs {
 				return detail::ObjectT_LuaBase::CallRecvMsg(rs_mgr_obj.getLua(), _getHandle(), msg, arg);
 			}
 	};
+	class U_ObjectUpd : public ObjectT_Lua<U_ObjectUpd> {
+		private:
+			struct St_None;
+		public:
+			U_ObjectUpd();
+	};
 	DefineUpdGroup(U_UpdGroup)
 	DefineDrawGroup(U_DrawGroup)
 	DefineDrawGroupProxy(U_DrawGroupProxy)
@@ -733,6 +746,8 @@ DEF_LUAIMPORT(rs::DrawableObj)
 DEF_LUAIMPORT(rs::UpdGroup)
 DEF_LUAIMPORT(rs::DrawGroup)
 DEF_LUAIMPORT(rs::DrawGroupProxy)
+DEF_LUAIMPORT(rs::U_Object)
+DEF_LUAIMPORT(rs::U_ObjectUpd)
 DEF_LUAIMPORT(rs::U_UpdGroup)
 DEF_LUAIMPORT(rs::U_DrawGroup)
 DEF_LUAIMPORT(rs::U_DrawGroupProxy)
