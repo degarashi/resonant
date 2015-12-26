@@ -109,51 +109,37 @@ st_idle = {
 			local fbc = G.FBSwitch.New(0x5000, nil, clp)
 			dg:addObj(fbc)
 		end
-		do
-			local hTex = System.glres:loadTexture("light.png", G.GLRes.MipState.MipmapLinear, nil)
-			hTex:setFilter(true, true)
-			local lit = G.PointSprite3D.New(hTex, G.Vec3.New(0,0,0))
-			lit:setScale(G.Vec3.New(0.4, 0.4, 0.4))
-			lit:setDrawPriority(0x3000)
-			dg:addObj(lit)
-			self.lit = lit
+		self.makeLight = function(self, h, a, color)
+			local lorigin = G.Vec3.New(0,h, 2)
+			local ldirorigin = G.Vec3.New(0,h, 2)
+			local radius = G.Vec3.New(5, 0.5, 5)
+			local freq = G.Vec3.New(2,1,2)
+			local angle = G.Degree.New(a)
+			local lit = G.RotLight.New(lorigin,
+										ldirorigin,
+										radius,
+										freq,
+										angle,
+										color,
+										dg)
+			upd:addObj(lit)
 		end
-		self.litId = engine:makeLight()
-		-- 深度バッファ範囲指定
-		local lit = engine:getLight(self.litId)
-		lit:setDepthRange(G.Vec2.New(0.01, 100));
-
+		self:makeLight(-4.5, 0, G.Vec3.New(1,0,0))
+		self:makeLight(-3.5, 15, G.Vec3.New(0,1,0))
+		self:makeLight(-2.5, 30, G.Vec3.New(0,0,1))
+		self:makeLight(-1.5, 45, G.Vec3.New(1,0,1))
+		self:makeLight(-0.5, 60, G.Vec3.New(0,1,1))
+		self:makeLight(0.5, 75, G.Vec3.New(1,1,1))
 		self.hTex = {}
 
 		self.bCube = false
 		self:InitScene()
-
-		self.litpos = G.Vec3.New(0,0,0)
-		self.litangle = G.Degree.New(0)
 	end,
 	OnEffectReset = function(self, slc, ...)
 		self:InitScene()
 	end,
 	OnUpdate = function(self, slc, ...)
-		-- ボタン操作で光源を回転
-		local lv = 0
-		if Global.cpp.actLightR0:isKeyPressing() then
-			lv = 1
-		elseif Global.cpp.actLightR1:isKeyPressing() then
-			lv = -1
-		end
-		local lscale = {5,0.5,5}
-		local lfreq = {2,1,2}
-		local lorigin = G.Vec3.New(0,-4.5,2)
-		local ldirorigin = G.Vec3.New(0,-4.5,2)
-		self.litangle = self.litangle + G.Degree.New(lv)
-		local angv = self.litangle:toRadian():get()
-		local lp = G.Vec3.New(G.math.sin(angv*lfreq[1])*lscale[1],
-								G.math.cos(angv*lfreq[2])*lscale[2],
-								-G.math.sin(angv*lfreq[3]+G.math.pi/2)*lscale[3])
-		lp = lp + lorigin
-		self.litpos = lp
-
+		-- フィルタ係数変化 --
 		local g = Global.cpp
 		local bdiff,gdiff = 0,0
 		if g.actFilterUpG:isKeyPressing() then
@@ -182,12 +168,6 @@ st_idle = {
 			self:InitScene()
 		end
 
-		local engine = Global.engine
-		-- 光源位置のセット
-		self.lit:setOffset(self.litpos)
-		local lit = engine:getLight(self.litId)
-		lit:setPosition(self.litpos)
-		lit:setDirection((ldirorigin - self.litpos):normalization())
 		-- キューブを回転
 		for i=1,#self.rotate do
 			self.rotate[i]:advance(1.1)
