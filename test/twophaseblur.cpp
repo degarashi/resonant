@@ -2,7 +2,7 @@
 #include "../glx_if.hpp"
 #include "../sys_uniform_value.hpp"
 
-const rs::IdValue TwoPhaseBlur::U_MapWidth = rs::IEffect::GlxId::GenUnifId("mapWidth");
+const rs::IdValue U_MapWidth = rs::IEffect::GlxId::GenUnifId("mapWidth");
 TwoPhaseBlur::TwoPhaseBlur(rs::Priority p) {
 	setDrawPriority(p);
 }

@@ -2,9 +2,9 @@
 #include "../util/screen.hpp"
 #include "spinner/rflag.hpp"
 
+extern const rs::IdValue U_MapWidth;
 class TwoPhaseBlur : public rs::DrawableObjT<TwoPhaseBlur> {
 	private:
-		static const rs::IdValue U_MapWidth;
 		struct Tmp_t {
 			rs::HLTex	tmp;
 			rs::HLRb	rb;

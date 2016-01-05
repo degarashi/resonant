@@ -258,6 +258,61 @@ fragmentshader(400, Bilateral) BilateralV_FS() {
 	gl_FragColor = c / c.a;
 }
 
+uniform ReductionUnif {
+	sampler2D u_texDiffuse;
+	vec2 mapWidth;
+}
+varying Reduction2Vary {
+	mediump vec2 v_tex;
+}
+vertexshader(400) Reduction2VS() {
+	gl_Position.xy = atPos;
+	gl_Position.z = 0;
+	gl_Position.w = 1;
+	vec2 hd = 0.5/mapWidth;
+	v_tex = atTex + hd;
+}
+fragmentshader(400) Reduction2FS() {
+	gl_FragColor = texture2D(u_texDiffuse, v_tex);
+}
+
+varying Reduction4Vary {
+	mediump vec2 v_tex;
+}
+vertexshader(400) Reduction4VS() {
+	gl_Position.xy = atPos;
+	gl_Position.z = 0;
+	gl_Position.w = 1;
+	vec2 diff = 1/mapWidth;
+	v_tex = atTex;
+}
+code Reduction {
+	vec4 SumH4(in sampler2D tex, in vec2 uv, in float d) {
+		return texture2D(u_texDiffuse, uv) +
+				texture2D(u_texDiffuse, uv + vec2(d,0)) +
+				texture2D(u_texDiffuse, uv + vec2(d*2,0)) +
+				texture2D(u_texDiffuse, uv + vec2(d*3,0));
+	}
+	vec4 SumV4(in sampler2D tex, in vec2 uv, in vec2 d) {
+		return SumH4(tex, uv, d.x) +
+				SumH4(tex, uv + vec2(0,d), d.x) +
+				SumH4(tex, uv + vec2(0,d*2), d.x) +
+				SumH4(tex, uv + vec2(0,d*3), d.x);
+	}
+	vec4 Avg4x4(in sampler2D tex, in vec2 uv, in vec2 d) {
+		return SumV4(tex, uv, d) * (1.0/16);
+	}
+}
+fragmentshader(400, Reduction) Reduction4FS() {
+	vec2 base = v_tex + 0.5/mapWidth;
+	vec2 p2 = 2/mapWidth;
+	vec4 sum = texture2D(u_texDiffuse, base) +
+				texture2D(u_texDiffuse, base + vec2(p2.x, 0)) +
+				texture2D(u_texDiffuse, base + vec2(0, p2.y)) +
+				texture2D(u_texDiffuse, base + p2);
+	sum *= 0.25;
+	gl_FragColor = sum;
+}
 technique PostEffect {
 	CullFace = true;
 	FrontFace = cw;
@@ -297,5 +352,19 @@ technique PostEffect {
 		Varying = GaussVary;
 		VertexShader = Gauss_VS([0 0], [0 1.5], [0 2]);
 		FragmentShader = BilateralV_FS();
+	}
+	pass Reduction2 {
+		Blend = false;
+		Uniform = ReductionUnif;
+		Varying = Reduction2Vary;
+		VertexShader = Reduction2VS();
+		FragmentShader = Reduction2FS();
+	}
+	pass Reduction4 {
+		Blend = false;
+		Uniform = ReductionUnif;
+		Varying = Reduction4Vary;
+		VertexShader = Reduction4VS();
+		FragmentShader = Reduction4FS();
 	}
 }
