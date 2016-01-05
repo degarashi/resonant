@@ -442,6 +442,16 @@ namespace rs {
 				return spn::Size(w,h);
 			}
 		};
+		struct GetTex_Visitor : boost::static_visitor<HTex> {
+			template <class T>
+			HTex operator()(const T&) const { return HTex(); }
+			HTex operator()(const GLFBufferCore::TexRes& t) const { return t.first; }
+		};
+		struct GetRb_Visitor : boost::static_visitor<HRb> {
+			template <class T>
+			HRb operator()(const T&) const { return HRb(); }
+			HRb operator()(const HLRb& r) const { return r; }
+		};
 	}
 	Size_OP GLFBuffer::GetAttachmentSize(const Res (&att)[Att::NUM_ATTACHMENT], Att::Id id) {
 		return boost::apply_visitor(GetSize_Visitor(), att[id]);
@@ -453,7 +463,12 @@ namespace rs {
 		static std::string str("GLFBuffer");
 		return str;
 	}
-
+	HTex GLFBuffer::getAttachmentAsTexture(Att::Id id) const {
+		return boost::apply_visitor(GetTex_Visitor(), _attachment[id]);
+	}
+	HRb GLFBuffer::getAttachmentAsRBuffer(Att::Id id) const {
+		return boost::apply_visitor(GetRb_Visitor(), _attachment[id]);
+	}
 	thread_local spn::Size GLFBufferCore::s_fbSize;
 	void GLFBufferCore::_SetCurrentFBSize(const spn::Size& s) {
 		s_fbSize = s;

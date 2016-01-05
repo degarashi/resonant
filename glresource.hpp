@@ -911,6 +911,8 @@ namespace rs {
 			void onDeviceLost() override;
 			void getDrawToken(draw::TokenDst& dst) const;
 			const Res& getAttachment(Att::Id att) const;
+			HTex getAttachmentAsTexture(Att::Id id) const;
+			HRb getAttachmentAsRBuffer(Att::Id id) const;
 			Size_OP getAttachmentSize(Att::Id att) const;
 			const std::string& getResourceName() const override;
 	};
