@@ -655,7 +655,9 @@ namespace rs {
 
 	template <class T, class Base=Object>
 	class ObjectT : public detail::ObjectT<T, Base> {
-		using detail::ObjectT<T, Base>::ObjectT;
+		using base = detail::ObjectT<T, Base>;
+		public:
+			using base::base;
 	};
 	// PriorityはUpdateObjと兼用の場合に使われる
 	template <class T>
