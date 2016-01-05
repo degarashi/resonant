@@ -80,6 +80,7 @@ st_idle = {
 		self.hFb:attachRBuffer(G.GLFBuffer.Attribute.Depth, hDb)
 		local hTex = System.glres:createTexture(scrSize, G.GLRes.Format.RGB8, false, false)
 		self.hFb:attachTexture(G.GLFBuffer.Attribute.Color0, hTex)
+		hTex:setFilter(true, true)
 		local engine = Global.engine
 		engine:setOutputFramebuffer(self.hFb)
 
@@ -161,6 +162,8 @@ st_idle = {
 			str = str .. "Gauss Coeff:" .. slc.gdisp
 			self.text:setText(str)
 		end
+		Global.engine:setDispersion(400)
+		Global.engine:setOffset(0.1)
 
 		-- スポットライトと点光源を切り替え
 		if Global.cpp.actScene:isKeyPressed() then

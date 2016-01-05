@@ -2,7 +2,9 @@
 #include "../util/sys_unif.hpp"
 #include "../updater.hpp"
 #include "gaussblur.hpp"
+#include "reduction.hpp"
 #include "dlight.hpp"
+#include "offsetadd.hpp"
 
 namespace myunif {
 	extern const rs::IdValue	U_Position,		// "u_lightPos"
@@ -77,7 +79,10 @@ class Engine : public rs::util::GLEffect_2D3D {
 		DLightNS			_light;
 		using LitOP = spn::Optional<const DLight&>;
 		LitOP				_activeLight;
-		mutable GaussBlur	_gauss;
+		GaussBlur			_gauss;
+		Reduction			_reduction;
+		OffsetAdd			_ofs;
+
 		rs::HLFb		_hlFb;
 		DrawType::E	_drawType;
 		rs::HLDGroup	_hlDg;
@@ -103,6 +108,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 		void remSceneObject(rs::HDObj hdObj);
 		void clearScene();
 		void setDispersion(float d);
+		void setOffset(float ofs);
 		void setOutputFramebuffer(rs::HFb hFb);
 		void moveFrom(rs::IEffect& e) override;
 

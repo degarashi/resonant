@@ -34,6 +34,8 @@ spn::SizeF Engine::Getter::operator()(const spn::SizeF& s, ScreenSize*, const En
 Engine::Engine(const std::string& name):
 	rs::util::GLEffect_2D3D(name),
 	_gauss(0),
+	_reduction(0, true),
+	_ofs(0),
 	_drawType(DrawType::Normal)
 {
 	_hlDg = rs_mgr_obj.makeDrawGroup<MyDrawGroup>(rs::DSortV{rs::cs_dsort_priority_asc}, true). first;
@@ -173,10 +175,21 @@ class Engine::DLScene : public rs::DrawableObjT<DLScene> {
 
 				// Shading
 				e.setFramebuffer(engine._hlFb);
-				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,0.5f,1}, spn::none, spn::none});
+				e.clearFramebuffer(rs::draw::ClearParam{spn::Vec4{0,0,0,1}, spn::none, spn::none});
 				engine._drawType = DrawType::DL_Shade;
 				engine.ref3D().setCamera(cam);
 				engine._hlDg->get()->onDraw(e);
+
+				engine._reduction.setSource(engine._hlFb->get()->getAttachmentAsTexture(Att::COLOR0));
+				engine._reduction.onDraw(e);
+				auto h = engine._reduction.getResult();
+
+				engine._gauss.setSource(h);
+				engine._gauss.setDest(h);
+				engine._gauss.onDraw(e);
+
+				engine._ofs.setAdd1(h);
+				engine._ofs.onDraw(e);
 
 				e.setFramebuffer(fb0);
 			}
@@ -335,12 +348,18 @@ void Engine::moveFrom(rs::IEffect& e) {
 	_drawType = pe._drawType;
 	_gauss = std::move(pe._gauss);
 	_rflag = std::move(pe._rflag);
+	_light = std::move(pe._light);
+	_activeLight = std::move(pe._activeLight);
+	_reduction = std::move(pe._reduction);
 }
 Engine::LitId Engine::makeLight() {
 	return _light.add(DLight());
 }
 void Engine::remLight(LitId id) {
 	_light.rem(id);
+}
+void Engine::setOffset(float ofs) {
+	_ofs.setOffset(ofs);
 }
 DLight& Engine::getLight(LitId id) {
 	return _light.get(id);
@@ -362,4 +381,5 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	(makeLight)
 	(remLight)
 	(getLight)
+	(setOffset)
 )
