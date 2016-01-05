@@ -167,7 +167,7 @@ vertexshader(400) Gauss_VS(vec2 ofs, vec2 initDiff, vec2 diff) {
 }
 fragmentshader(400) GaussH_FS() {
 	vec4 c;
-	vec2 diff = vec2(16/mapWidth.x, 0);
+	vec2 diff = vec2(15/mapWidth.x, 0);
 	c = weight[0] * texture2D(u_texDiffuse, varTex[0]);
 	c += weight[1] * (texture2D(u_texDiffuse, varTex[1])
 						+ texture2D(u_texDiffuse, varTex[7] - diff));
@@ -180,15 +180,15 @@ fragmentshader(400) GaussH_FS() {
 	c += weight[5] * (texture2D(u_texDiffuse, varTex[5])
 						+ texture2D(u_texDiffuse, varTex[3] - diff));
 	c += weight[6] * (texture2D(u_texDiffuse, varTex[6])
-						+ texture2D(u_texDiffuse, varTex[2]));
+						+ texture2D(u_texDiffuse, varTex[2] - diff));
 	c += weight[7] * (texture2D(u_texDiffuse, varTex[7])
-						+ texture2D(u_texDiffuse, varTex[1]));
+						+ texture2D(u_texDiffuse, varTex[1] - diff));
 	c.w = 1;
 	gl_FragColor = c;
 }
 fragmentshader(400) GaussV_FS() {
 	vec4 c;
-	vec2 diff = vec2(0, 16/mapWidth.y);
+	vec2 diff = vec2(0, 15/mapWidth.y);
 	c = weight[0] * texture2D(u_texDiffuse, varTex[0]);
 	c += weight[1] * (texture2D(u_texDiffuse, varTex[1])
 						+ texture2D(u_texDiffuse, varTex[7] - diff));
@@ -275,13 +275,13 @@ technique PostEffect {
 	pass GaussH {
 		Uniform += GaussUnif;
 		Varying = GaussVary;
-		VertexShader = Gauss_VS([0.5 0.5], [0 0], [2 0]);
+		VertexShader = Gauss_VS([0 0], [1.5 0], [2 0]);
 		FragmentShader = GaussH_FS();
 	}
 	pass GaussV {
 		Uniform += GaussUnif;
 		Varying = GaussVary;
-		VertexShader = Gauss_VS([-0.5 -0.5], [0 0], [0 2]);
+		VertexShader = Gauss_VS([0 0], [0 1.5], [0 2]);
 		FragmentShader = GaussV_FS();
 	}
 	pass BilateralH {
