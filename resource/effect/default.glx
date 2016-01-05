@@ -313,6 +313,26 @@ fragmentshader(400, Reduction) Reduction4FS() {
 	sum *= 0.25;
 	gl_FragColor = sum;
 }
+
+uniform OffsetUnif {
+	sampler2D	u_texAdd[3];
+	float		u_alpha;
+	float		u_offset;
+	float		u_ratio;
+}
+vertexshader(400) OffsetVS() {
+	gl_Position = vec4(atPos, 0, 1);
+	varTex = atTex;
+}
+fragmentshader(400) OffsetFS(int nArray) {
+	vec4 c = vec4(0);
+	for(int i=0 ; i<nArray ; i++)
+		c += max(vec4(0), texture2D(u_texAdd[i], varTex)-vec4(u_offset));
+	c *= vec4(u_ratio);
+	gl_FragColor.xyz = c.xyz;
+	gl_FragColor.w = u_alpha;
+}
+
 technique PostEffect {
 	CullFace = true;
 	FrontFace = cw;
@@ -366,5 +386,23 @@ technique PostEffect {
 		Varying = Reduction4Vary;
 		VertexShader = Reduction4VS();
 		FragmentShader = Reduction4FS();
+	}
+	pass OffsetAdd {
+		Uniform = OffsetUnif;
+		BlendFunc = One One;
+		VertexShader = OffsetVS();
+		FragmentShader = OffsetFS(1);
+	}
+	pass OffsetAdd2 {
+		Uniform = OffsetUnif;
+		BlendFunc = One One;
+		VertexShader = OffsetVS();
+		FragmentShader = OffsetFS(2);
+	}
+	pass OffsetAdd3 {
+		Uniform = OffsetUnif;
+		BlendFunc = One One;
+		VertexShader = OffsetVS();
+		FragmentShader = OffsetFS(3);
 	}
 }
