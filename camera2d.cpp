@@ -7,7 +7,6 @@ namespace rs {
 	}
 	spn::RFlagRet Camera2D::_refresh(typename Accum::value_type& acc, Accum*) const {
 		auto ret = _rflag.getWithCheck(this, acc);
-		auto& ps = *std::get<0>(ret.first);
 		bool b = ret.second;
 		if(b) {
 			// カウンタをインクリメント
