@@ -38,9 +38,9 @@ namespace vertex {
 	struct tile_0 {
 		spn::Vec2	pos,
 					tex;
-		spn::Vec3	normal;
 	};
 	struct tile_1 {
+		spn::Vec3	normal;
 		float		height;
 	};
 }

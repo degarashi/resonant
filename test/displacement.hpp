@@ -56,45 +56,7 @@ struct Displacement {
 	using IndexBuffV = std::vector<IndexBuff>;
 
 	static IndexBuffV MakeBuffer(const TileV& tile);
+	static rs::HLVb MakeTileVertex0(spn::PowInt size);
+	using Vec3V = std::vector<spn::Vec3>;
+	static Vec3V MakeTileVertexNormal(const HeightL& h, int ox, int oy, spn::PowInt size, int stride);
 };
-class Tile {
-	private:
-		rs::HLVb		_vertex[2];
-	public:
-		Tile(const Displacement::HeightL& h, int ox, int oy, spn::PowInt size, int stride);
-		void draw(rs::IEffect& e, const Displacement::IndexBuffV& idxv, int center, int left, int top, int right, int bottom) const;
-};
-class TileField : public rs::DrawableObjT<TileField> {
-	private:
-		Displacement::IndexBuffV	_index;
-
-		using Tile_OP = spn::Optional<Tile>;
-		using TileV = std::vector<Tile_OP>;
-		TileV		_tile;
-		struct St_Default;
-
-		spn::Vec3	_center,
-					_scale;
-		float		_dMin, _dMax,
-					_width,			// 1タイル辺りのサイズ
-					_repeat;
-		int			_tileWidth,		// タイル列幅
-					_nLevel;
-		rs::HLTex	_hlTex;
-
-	public:
-		/*!
-			\param[in]	rd		乱数生成器
-			\param[in]	n		全体のタイル分割数
-			\param[in]	vn		1つのタイルサイズ
-			\param[in]	scale	マップ全体のサイズ
-			\param[in]	height	マップ最大高
-			\param[in]	height_att	マップディスプレースメント減衰係数
-		*/
-		TileField(spn::MTRandom& rd, spn::PowInt n, spn::PowInt vn, float scale, float height, float height_att, float th, float mv);
-		void setViewPos(const spn::Vec3& p);
-		void setViewDistanceCoeff(float dMin, float dMax);
-		void setTexture(rs::HTex hTex);
-		void setTextureRepeat(float r);
-};
-DEF_LUAIMPORT(TileField)

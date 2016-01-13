@@ -1,45 +1,23 @@
-#include "displacement.hpp"
+#include "tile.hpp"
 #include "test.hpp"
 
 // -------------------- Tile --------------------
-template <class T>
-T LoopValue(const T& t, const T& range) {
-	if(t > range)
-		return t-range;
-	if(t < 0)
-		return t+range;
-	return t;
-}
 Tile::Tile(const Displacement::HeightL& h, const int ox, const int oy, const spn::PowInt size, const int stride) {
-	using Vec2 = spn::Vec2;
-	std::vector<vertex::tile_0> vtx((size+1)*(size+1));
-	std::vector<vertex::tile_1> vtx2(vtx.size());
+	_vertex[0] = Displacement::MakeTileVertex0(size);
+
+	const int s = size+1;
+	auto nml = Displacement::MakeTileVertexNormal(h, ox, oy, size, stride);
+	std::vector<vertex::tile_1> vtx2(s*s);
 	auto fnAt = [&h, stride](int x, int y){
 		return h[y*stride + x];
 	};
-	auto fnAtL = [&h, stride](int x, int y){
-		return h[LoopValue<int>(y, stride)*stride + LoopValue<int>(x, stride)];
-	};
-	for(int i=0 ; i<=int(size) ; i++) {
-		for(int j=0 ; j<=int(size) ; j++) {
-			auto& v = vtx[i*(size+1)+j];
-			auto& v2 = vtx2[i*(size+1)+j];
-			v.pos.x = float(j)/(stride-1);
-			v.pos.y = -float(i)/(stride-1);
+	for(int i=0 ; i<s ; i++) {
+		for(int j=0 ; j<s ; j++) {
+			auto& v2 = vtx2[i*s+j];
 			v2.height = fnAt(j+ox, i+oy);
-			v.tex = Vec2(float(j+ox) / stride,
-								float(i+oy) / stride);
-			auto vL = fnAtL(ox+j-1,oy+i),
-				 vR = fnAtL(ox+j+1,oy+i),
-				 vT = fnAtL(ox+j,oy+i-1),
-				 vB = fnAtL(ox+j,oy+i+1);
-			spn::Vec3 xa(float(0.2f)/size, vR-vL, 0),
-					za(0, vB-vT, float(0.2f)/size);
-			v.normal = -xa.cross(za).normalization();
+			v2.normal = nml[i*s+j];
 		}
 	}
-	_vertex[0] = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-	_vertex[0].ref()->initData(std::move(vtx));
 	_vertex[1] = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
 	_vertex[1].ref()->initData(std::move(vtx2));
 }

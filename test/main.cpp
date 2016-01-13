@@ -22,7 +22,7 @@
 #include "gaussblur.hpp"
 #include "bilateralblur.hpp"
 #include "dlight.hpp"
-#include "displacement.hpp"
+#include "tile.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -56,7 +56,6 @@ namespace {
 				RESOLUTION_Y = 768;
 	constexpr char APP_NAME[] = "rse_test";
 }
-#include "displacement.hpp"
 int main(int argc, char **argv) {
 	// 第一引数にpathlistファイルの指定が必須
 	if(argc <= 1) {
@@ -84,6 +83,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::ImportClass(*lkb->spLua, "Global", "cpp", &gv);
 		rs::LuaImport::RegisterClass<FPSCamera>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<DLight>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<TileFieldBase>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<TileField>(*lkb->spLua);
 
 		// init Random

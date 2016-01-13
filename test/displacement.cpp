@@ -1,5 +1,6 @@
 #include "displacement.hpp"
 #include "spinner/random.hpp"
+#include "test.hpp"
 
 void Displacement::Smooth(HeightL& h, const spn::PowInt n, const float th, const float mv) {
 	const int s = n+1;
@@ -226,6 +227,51 @@ Displacement::TileV Displacement::MakeIndex(const spn::PowInt w) {
 		}
 	}
 	return tile;
+}
+rs::HLVb Displacement::MakeTileVertex0(const spn::PowInt size) {
+	const int s = size+1;
+	std::vector<vertex::tile_0> vtx(s*s);
+	for(int i=0 ; i<s ; i++) {
+		for(int j=0 ; j<s ; j++) {
+			auto& v = vtx[i*s+j];
+			v.pos = v.tex = spn::Vec2(float(j)/(s-1), float(i)/(s-1));
+			v.pos.y *= -1;
+		}
+	}
+	rs::HLVb vb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+	vb.ref()->initData(std::move(vtx));
+	return vb;
+}
+namespace {
+	template <class T>
+	T LoopValue(const T& t, const T& range) {
+		if(t > range)
+			return t-range;
+		if(t < 0)
+			return t+range;
+		return t;
+	}
+}
+Displacement::Vec3V Displacement::MakeTileVertexNormal(const HeightL& h, const int ox, const int oy,
+												const spn::PowInt size, const int stride)
+{
+	auto fnAtL = [&h, stride](int x, int y){
+		return h[LoopValue<int>(y, stride)*stride + LoopValue<int>(x, stride)];
+	};
+	const int s = size+1;
+	Vec3V nml(s*s);
+	for(int i=0 ; i<s ; i++) {
+		for(int j=0 ; j<s ; j++) {
+			auto vL = fnAtL(ox+j-1,oy+i),
+				 vR = fnAtL(ox+j+1,oy+i),
+				 vT = fnAtL(ox+j,oy+i-1),
+				 vB = fnAtL(ox+j,oy+i+1);
+			spn::Vec3 xa(float(0.2f)/size, vR-vL, 0),
+					za(0, vB-vT, float(0.2f)/size);
+			nml[i*s+j] = -xa.cross(za).normalization();
+		}
+	}
+	return nml;
 }
 
 #include "../glresource.hpp"

@@ -21,7 +21,7 @@ st_idle = {
 		tf:setViewPos(G.Vec3.New(0,0,0))
 		tf:setViewDistanceCoeff(0.1, 1.0)
 		tf:setTexture(tex)
-		tf:setTextureRepeat(32)
+		tf:setTextureRepeat(1)
 -- 		tf:setViewDir(G.Vec3.New(1,0,0))
 		self.tf = tf
 		dg:addObj(tf)
