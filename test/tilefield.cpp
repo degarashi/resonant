@@ -16,6 +16,7 @@ TileField::TileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt v
 			_tile[i*tw+j] = spn::construct(_heightL, j*vn, i*vn, vn, n+1);
 		}
 	}
+	setViewDistanceCoeff(0.1f, 1.f);
 	setStateNew<St_Default>();
 }
 #include "engine.hpp"
@@ -50,9 +51,24 @@ struct TileField::St_Default : StateT<St_Default> {
 		}
 	}
 };
+int TileField::_calcLevel(float x, float y) const {
+	x *= _width;
+	y *= -_width;
+	float d = _center.distance(spn::Vec3(x,0,y));
+	if(d <= _dMin)
+		return 0;
+	if(_nLevel<=2 || d>=_dMax)
+		return _nLevel-1;
+	d = (d-_dMin) / (_dMax-_dMin);
+	return (d * (_nLevel-2))+1;
+}
+void TileField::setViewDistanceCoeff(float dMin, float dMax) {
+	_dMin = dMin * _width * _tileWidth;
+	_dMax = dMax * _width * _tileWidth;
+}
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, TileField, TileField, "TileFieldBase", NOTHING,
-		NOTHING,
+		(setViewDistanceCoeff),
 		(spn::MTRandom&)(int)(int)(float)(float)(float)(float)(float))
 
 // ---------------------- Tile頂点宣言 ----------------------

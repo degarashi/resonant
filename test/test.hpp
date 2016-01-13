@@ -14,6 +14,11 @@
 #include "../glx_if.hpp"
 #include "../util/dwrapper_calldraw.hpp"
 namespace vertex {
+	//! 当たり判定確認用頂点
+	struct collision {
+		spn::Vec3	pos;
+		spn::Vec4	color;
+	};
 	//! プリミティブ描画用頂点
 	struct prim {
 		spn::Vec3	pos;
@@ -43,19 +48,28 @@ namespace vertex {
 		spn::Vec3	normal;
 		float		height;
 	};
+	struct stile_1 {
+		spn::Vec3	height;	// x=1Level低い高さ, y=本来の高さ, z=補間対象レベル
+		spn::Vec3	normalX;
+		spn::Vec3	normalY;
+	};
 }
 namespace vdecl {
+	struct collision {};
 	struct prim {};
 	struct prim_tan {};
 	struct line {};
 	struct sprite {};
 	struct tile {};
+	struct stile {};
 }
+DefineVDecl(::vdecl::collision)
 DefineVDecl(::vdecl::prim)
 DefineVDecl(::vdecl::prim_tan)
 DefineVDecl(::vdecl::line)
 DefineVDecl(::vdecl::sprite)
 DefineVDecl(::vdecl::tile)
+DefineVDecl(::vdecl::stile)
 
 #include "spinner/random.hpp"
 class Engine;

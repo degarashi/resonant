@@ -12,8 +12,7 @@ class TileFieldBase : public rs::DrawableObjT<TileFieldBase> {
 		Displacement::HeightL	_heightL;
 		spn::Vec3	_center,
 					_scale;
-		float		_dMin, _dMax,
-					_width,			// 1タイル辺りのサイズ
+		float		_width,			// 1タイル辺りのサイズ
 					_repeat;
 		int			_tileWidth,		// タイル列幅
 					_nLevel;
@@ -28,10 +27,8 @@ class TileFieldBase : public rs::DrawableObjT<TileFieldBase> {
 		*/
 		TileFieldBase(spn::MTRandom& rd, spn::PowInt n, spn::PowInt vn, float scale, float height, float height_att, float th, float mv);
 		void _prepareValues(rs::IEffect& e) const;
-		int _calcLevel(float x, float y) const;
 	public:
 		void setViewPos(const spn::Vec3& p);
-		void setViewDistanceCoeff(float dMin, float dMax);
 		void setTexture(rs::HTex hTex);
 		void setTextureRepeat(float r);
 };

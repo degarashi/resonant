@@ -12,14 +12,14 @@ st_idle = {
 
 		local tex = System.glres:loadTexture("floor.jpg", G.GLRes.MipState.MipmapLinear, nil)
 		tex:setFilter(true, true)
-		local tf = G.TileField.New(Global.cpp.random,
-									512, 32,
-									128, 64,
-									0.45,
+		local tf = G.STileField.New(Global.cpp.random,
+									64, 16,
+									128, 32,
+									0.50,
 									0, 1)
 		tf:setDrawPriority(0x1000)
 		tf:setViewPos(G.Vec3.New(0,0,0))
-		tf:setViewDistanceCoeff(0.1, 1.0)
+		tf:setViewDistanceCoeff(0, 1)
 		tf:setTexture(tex)
 		tf:setTextureRepeat(1)
 -- 		tf:setViewDir(G.Vec3.New(1,0,0))

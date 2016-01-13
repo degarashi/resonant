@@ -16,6 +16,7 @@ struct Displacement {
 	using IndexV2 = std::vector<IndexV>;
 	using OIndex = spn::OffsetIndex<uint16_t>;
 	using OIndexV = std::vector<OIndex>;
+	using HLIbV = std::vector<rs::HLIb>;
 	//! 中点変位によるランダム地形作製
 	/*!
 		\param[in] rd			ランダム生成器
@@ -43,6 +44,8 @@ struct Displacement {
 	using TileV = std::vector<Tile>;
 	// 指定されたタイルサイズを元に頂点&インデックス出力
 	static TileV MakeIndex(spn::PowInt w);
+	static rs::HLIb MakeIndexSingle(spn::PowInt w, int res);
+	static HLIbV MakeIndexArray(spn::PowInt w);
 
 	struct DipBuff {
 		rs::HLIb	ib;

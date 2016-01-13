@@ -262,16 +262,56 @@ Displacement::Vec3V Displacement::MakeTileVertexNormal(const HeightL& h, const i
 	Vec3V nml(s*s);
 	for(int i=0 ; i<s ; i++) {
 		for(int j=0 ; j<s ; j++) {
-			auto vL = fnAtL(ox+j-1,oy+i),
-				 vR = fnAtL(ox+j+1,oy+i),
-				 vT = fnAtL(ox+j,oy+i-1),
-				 vB = fnAtL(ox+j,oy+i+1);
-			spn::Vec3 xa(float(0.2f)/size, vR-vL, 0),
-					za(0, vB-vT, float(0.2f)/size);
-			nml[i*s+j] = -xa.cross(za).normalization();
+			auto hL = fnAtL(ox+j-1,oy+i),
+				 hR = fnAtL(ox+j+1,oy+i),
+				 hT = fnAtL(ox+j,oy+i-1),
+				 hB = fnAtL(ox+j,oy+i+1);
+			spn::Vec3 vL(-1,hL,0),
+						vR(1,hR,0),
+						vT(0,hT,-1),
+						vB(0,hB,1);
+			auto nm = (vL % vT) +
+						(vT % vR) +
+						(vR % vB) +
+						(vB % vL);
+			nm = nm.normalization();
+			if(nm.isOutstanding())
+				nm = spn::Vec3(0,1,0);
+			else
+				nm *= -1;
+			nml[i*s+j] = nm;
 		}
 	}
 	return nml;
+}
+Displacement::HLIbV Displacement::MakeIndexArray(const spn::PowInt size) {
+	const int nLevel = spn::Bit::MSB_N(size)+1;
+	HLIbV ret(nLevel);
+	for(int i=0 ; i<nLevel ; i++)
+		ret[i] = MakeIndexSingle(size, i);
+	return ret;
+}
+rs::HLIb Displacement::MakeIndexSingle(const spn::PowInt size, const int res) {
+	const int idx[6] = {0,1,3, 3,2,0};
+	const int s = size+1;
+	const int w = 1 << res;
+	const int s2 = (s-1) >> res;
+	IndexV ia(s2*s2*6);
+	auto* pDst = ia.data();
+	for(int i=0 ; i<s-w ; i+=w) {
+		for(int j=0 ; j<s-w ; j+=w) {
+			const int base[4] = {
+				i*s+j, i*s+j+w,
+				(i+w)*s+j, (i+w)*s+j+w
+			};
+			for(auto& id : idx)
+				*pDst++ = base[id];
+		}
+	}
+	AssertP(Trap, ia.data()+s2*s2*6==pDst)
+	rs::HLIb ib = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+	ib->get()->initData(std::move(ia));
+	return ib;
 }
 
 #include "../glresource.hpp"

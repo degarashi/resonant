@@ -14,9 +14,13 @@ class TileField : public rs::ObjectT<TileField, TileFieldBase> {
 		using Tile_OP = spn::Optional<Tile>;
 		using TileV = std::vector<Tile_OP>;
 		TileV		_tile;
+		float		_dMin, _dMax;
 		struct St_Default;
+
+		int _calcLevel(float x, float y) const;
 	public:
 		TileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt vn,
 							float scale, float height, float height_att, float th, float mv);
+		void setViewDistanceCoeff(float dMin, float dMax);
 };
 DEF_LUAIMPORT(TileField)

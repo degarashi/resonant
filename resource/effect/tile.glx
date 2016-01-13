@@ -16,6 +16,7 @@ attribute TileAttr : TileAttrB {
 varying TileVary {
 	mediump vec3 v_normal;
 	mediump vec2 v_tex;
+	float v_weight;
 }
 vertexshader(400) TileVS() {
 	vec3 pos = (vec3(a_pos.x, a_height, a_pos.y) + u_tileoffset) * u_scale;
@@ -25,32 +26,62 @@ vertexshader(400) TileVS() {
 }
 fragmentshader(400) TileFS() {
 	gl_FragColor = texture2D(u_texDiffuse, v_tex);
-	gl_FragColor *= vec4(vec3(v_normal.y), 1);
+	vec3 nml = normalize(v_normal);
+	gl_FragColor *= vec4(vec3(nml.y), 1);
 }
 
-attribute STileAttr : TileAttrB {
-	vec2 a_height : TEXCOORD1;
+attribute STileAttr {
+	highp vec2 a_pos : POSITION;
+	mediump vec2 a_tex : TEXCOORD0;
+	vec3 a_height : TEXCOORD1;
+	vec3 a_normalX : TEXCOORD2;
+	vec3 a_normalY : TEXCOORD3;
 }
 uniform STileUnif : TileUnif {
-	vec3 sys_vEyePos;
+	vec3 u_viewCenter;
 	vec2 u_distRange;
+	float u_interpolateLevel;
 }
 code Lerp {
 	float Lerp(float from, float to, float t) {
 		return (to-from) * t + from;
 	}
+	vec3 Lerp(vec3 from, vec3 to, float t) {
+		return (to-from) * t + from;
+	}
+	float Sigmoid(float val, float gain) {
+		return 1.0 / (1.0 + exp(-gain*val));
+	}
 }
 vertexshader(400, Lerp) STileVS() {
 	vec3 wpos = (vec3(a_pos.x, 0, a_pos.y) + u_tileoffset) * u_scale;
-	float dist = distance(sys_vEyePos.xz, wpos.xz);
-	dist = clamp(dist-u_distRange.x, 0, u_distRange.y);
-	float t = dist/(u_distRange.y-u_distRange.x);
-
-	wpos = (vec3(a_pos.x, Lerp(a_height.x, a_height.y, t), a_pos.y) + u_tileoffset) * u_scale;
+	float dist = distance(u_viewCenter.xz, wpos.xz);
+	float range = u_distRange.y - u_distRange.x;
+	float t = clamp((dist-(u_distRange.x + range/2))/(range/2), 0, 1);
+	float r = (a_height.z == u_interpolateLevel) ? 1 : 0;
+	wpos = (vec3(a_pos.x, Lerp(a_height.y, a_height.x, t*r), a_pos.y) + u_tileoffset) * u_scale;
 
 	gl_Position = vec4(wpos, 1) * sys_mViewProj;
-	v_normal = a_normal;
+	v_normal = normalize(Lerp(a_normalY, a_normalX, t*r));
 	v_tex = a_tex * u_repeat;
+	v_weight = t*r;
+}
+attribute SViewAttr {
+	vec3 a_pos : POSITION;
+	vec4 a_color : COLOR;
+}
+uniform SViewUnif {
+	mat4 sys_mTrans;
+}
+varying SViewVary {
+	vec4 v_color;
+}
+vertexshader(400) SViewVS() {
+	gl_Position = vec4(a_pos, 1) * sys_mTrans;
+	v_color = a_color;
+}
+fragmentshader(400) SViewFS() {
+	gl_FragColor = vec4(1,1,1,0.2);
 }
 
 technique Tile {
@@ -59,6 +90,7 @@ technique Tile {
 	FrontFace = cw;
 	Blend = false;
 	DepthTest = true;
+	DepthMask = true;
 	DepthFunc = LessEqual;
 	Varying = TileVary;
 
@@ -73,5 +105,18 @@ technique Tile {
 		Uniform = STileUnif;
 		VertexShader = STileVS();
 		FragmentShader = TileFS();
+	}
+	pass ShaderView {
+		PolygonMode = Line;
+		DepthMask = false;
+		CullFace = true;
+		Blend = true;
+		BlendFunc = SrcAlpha InvSrcAlpha;
+
+		Attribute = SViewAttr;
+		Uniform = SViewUnif;
+		Varying = SViewVary;
+		VertexShader = SViewVS();
+		FragmentShader = SViewFS();
 	}
 }
