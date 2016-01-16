@@ -19,6 +19,11 @@ class STileField : public rs::ObjectT<STileField, TileFieldBase> {
 		rs::HLIb			_ibSphere;
 		float				_viewMin,
 							_viewCoeff;
+		spn::Vec3			_sunDir,
+							_sunColor;
+		float				_rayleigh,
+							_mie,
+							_mieGain;
 		struct St_Default;
 
 		std::pair<int,spn::Vec2> _calcLevel(float x, float y) const;
@@ -26,5 +31,9 @@ class STileField : public rs::ObjectT<STileField, TileFieldBase> {
 		STileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt vn,
 							float scale, float height, float height_att, float th, float mv);
 		void setViewDistanceCoeff(float dMin, float dCoeff);
+		void setRayleighCoeff(float c);
+		void setMieCoeff(float gain, float c);
+		void setSunDir(const spn::Vec3& d);
+		void setSunColor(const spn::Vec3& c);
 };
 DEF_LUAIMPORT(STileField)

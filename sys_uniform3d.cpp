@@ -34,6 +34,26 @@ namespace rs {
 		}
 	}
 
+	spn::RFlagRet SystemUniform3D::_refresh(typename ViewInv::value_type& m, ViewInv*) const {
+		auto ret = _rflag.getWithCheck(this, m);
+		auto& cam = *std::get<0>(ret.first);
+		bool b = ret.second;
+		if(b) {
+			m = cam->getView().convertA44();
+			m.invert();
+		}
+		return {true, 0};
+	}
+	spn::RFlagRet SystemUniform3D::_refresh(typename ProjInv::value_type& m, ProjInv*) const {
+		auto ret = _rflag.getWithCheck(this, m);
+		auto& cam = *std::get<0>(ret.first);
+		bool b = ret.second;
+		if(b) {
+			m = cam->getProj().convertA44();
+			m.invert();
+		}
+		return {true, 0};
+	}
 	spn::RFlagRet SystemUniform3D::_refresh(typename Transform::value_type& m, Transform*) const {
 		auto ret = _rflag.getWithCheck(this, m);
 		auto& cam = *std::get<1>(ret.first);
@@ -71,7 +91,9 @@ namespace rs {
 		if(auto& hc = getCamera()) {
 			auto& cd = hc.cref();
 			DEF_SETUNIF(View, cd.get)
+			DEF_SETUNIF(ViewInv, get)
 			DEF_SETUNIF(Proj, cd.get)
+			DEF_SETUNIF(ProjInv, get)
 			DEF_SETUNIF(ViewProj, cd.get)
 			DEF_SETUNIF(ViewProjInv, cd.get)
 

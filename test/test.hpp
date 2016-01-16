@@ -40,6 +40,13 @@ namespace vertex {
 		spn::Vec3	pos;
 		spn::Vec2	tex;
 	};
+	//! スカイドーム
+// 	struct skydome {
+// 		spn::Vec3	pos;
+// 	};
+	struct skydome {
+		spn::Vec2	pos;
+	};
 	struct tile_0 {
 		spn::Vec2	pos,
 					tex;
@@ -55,6 +62,7 @@ namespace vertex {
 	};
 }
 namespace vdecl {
+	struct skydome {};
 	struct collision {};
 	struct prim {};
 	struct prim_tan {};
@@ -63,6 +71,7 @@ namespace vdecl {
 	struct tile {};
 	struct stile {};
 }
+DefineVDecl(::vdecl::skydome)
 DefineVDecl(::vdecl::collision)
 DefineVDecl(::vdecl::prim)
 DefineVDecl(::vdecl::prim_tan)

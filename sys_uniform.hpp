@@ -35,6 +35,8 @@ namespace rs {
 				((World)(spn::AMat44)) \
 				((WorldInv)(spn::AMat44)(World)) \
 				((Camera)(HLCamF)) \
+				((ViewInv)(Transform_t)(Camera)) \
+				((ProjInv)(Transform_t)(Camera)) \
 				((Transform)(Transform_t)(World)(Camera)) \
 				((TransformInv)(spn::AMat44)(Transform))
 			RFLAG_S(SystemUniform3D, SEQ_SYSUNI3D)

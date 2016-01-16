@@ -12,6 +12,13 @@ st_idle = {
 
 		local tex = System.glres:loadTexture("floor.jpg", G.GLRes.MipState.MipmapLinear, nil)
 		tex:setFilter(true, true)
+-- 		local sk = G.SkyDome.New(64,64)
+-- 		sk:setDrawPriority(0x0800)
+-- 		sk:setWidth(100)
+-- 		sk:setHeight(10)
+		local sk = G.SkyDome.New(0x0800)
+		dg:addObj(sk)
+		self.sky = sk
 		local tf = G.STileField.New(Global.cpp.random,
 									64, 16,
 									128, 32,
@@ -31,10 +38,15 @@ st_idle = {
 
 		local fc = G.FPSCameraU.New()
 		upd:addObj(fc)
+		-- RayleighCoeff, MieCoeff
 	end,
 	OnUpdate = function(self, slc, ...)
 		local pose = Global.cpp.hlCam:refPose()
 		self.tf:setViewPos(pose:getOffset())
+		self.tf:setRayleighCoeff(1)
+		self.tf:setMieCoeff(0.76, 1)
+		self.tf:setSunDir(G.Vec3.New(0,0.707,-0.707))
+		self.tf:setSunColor(G.Vec3.New(1,1,1))
 		scbase.CheckSwitch()
 	end,
 	OnExit = function(self, slc, ...)
