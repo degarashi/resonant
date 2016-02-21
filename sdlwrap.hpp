@@ -1151,7 +1151,7 @@ namespace rs {
 			struct { uint8_t r,g,b; };
 		};
 		RGB() = default;
-		RGB(int r, int g, int b): ar{uint8_t(r), uint8_t(g), uint8_t(b)} {}
+		RGB(int r, int g, int b);
 	};
 	struct RGBA {
 		union {
@@ -1159,7 +1159,8 @@ namespace rs {
 			struct { uint8_t r,g,b,a; };
 		};
 		RGBA() = default;
-		RGBA(RGB rgb, int a): ar{rgb.r, rgb.g, rgb.b, static_cast<uint8_t>(a)} {}
+		RGBA(RGB rgb, int a);
+		RGBA(const std::initializer_list<int>& il);
 	};
 
 	using UPSDLFormat = std::unique_ptr<SDL_PixelFormat, decltype(&SDL_FreeFormat)>;
