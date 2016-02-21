@@ -148,6 +148,7 @@ namespace rs {
 	void Texture_Mem::onDeviceReset() {
 		if(_onDeviceReset()) {
 			auto u = use();
+			GL.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			if(_bRestore && _buff) {
 				// バッファの内容から復元
 				GLenum baseFormat = GLFormat::QueryInfo(_format.get())->baseType;
@@ -176,6 +177,7 @@ namespace rs {
 			auto& tfm = getFormat();
 			auto& sz = getSize();
 			auto u = use();
+			GL.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			GL.glTexImage2D(getFaceFlag(face), 0, tfm.get(), sz.width, sz.height,
 							0, tfm.get(), srcFmt.get(), buff.getPtr());
 			GLEC_Chk_D(Trap);
@@ -313,6 +315,7 @@ namespace rs {
 		size = tsfc->getSize();
 		int layer = 0;
 		auto make = [tflag, &layer, &desc, &size](const void* data) {
+			GL.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			GL.glTexImage2D(tflag, layer++, desc.format, size.width, size.height, 0, desc.baseType, desc.elementType, data);
 		};
 		if(!bMip)
