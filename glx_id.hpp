@@ -4,6 +4,7 @@
 #include <vector>
 #include <boost/format.hpp>
 #include "wrapper.hpp"
+#include "spinner/error.hpp"
 
 namespace rs {
 	inline std::string ConvertToStr(const std::string& s) { return s; }
@@ -28,9 +29,9 @@ namespace rs {
 		public:
 			IdValue genId(const Key& key) {
 				auto itr = std::find(_entry.begin(), _entry.end(), key);
-				if(itr != _entry.end())
-					throw std::logic_error((boost::format("Idの重複生成 %1%") % ConvertToStr(key)).str());
-				_entry.emplace_back(key);
+				AssertP(Warn, itr==_entry.end(), "Idの重複生成 %1%", ConvertToStr(key))
+				if(itr == _entry.end())
+					_entry.emplace_back(key);
 				return IdValue(_entry.size()-1);
 			}
 			const EntryV& getList() {
