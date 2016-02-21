@@ -29,12 +29,14 @@ namespace rs {
 			public:
 				static HLVb MakeVertex();
 				static HLIb MakeIndex();
+				void draw(rs::IEffect& e) const;
 		};
 		//! [-1, 1]の正方形ジオメトリ
 		class Rect11 : public SharedGeometry<Rect11> {
 			public:
 				static HLVb MakeVertex();
 				static HLIb MakeIndex();
+				void draw(rs::IEffect& e) const;
 		};
 		//! 任意サイズの四角ポリゴン (デバッグ用)
 		/*! サイズはスクリーン座標系で指定 */

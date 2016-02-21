@@ -18,6 +18,13 @@ namespace rs {
 				hlVb->get()->initData(c_vertex, countof(c_vertex), sizeof(c_vertex[0]));
 				return hlVb;
 			}
+			void DrawRect(rs::IEffect& e, rs::HVb hVb, rs::HIb hIb) {
+				e.setVDecl(rs::DrawDecl<rs::vdecl::screen>::GetVDecl());
+				e.setVStream(hVb, 0);
+				e.setIStream(hIb);
+				const int nElem = hIb->get()->getNElem();
+				e.drawIndexed(GL_TRIANGLES, nElem, 0);
+			}
 		}
 		// ---------------------- Rect01 ----------------------
 		HLVb Rect01::MakeVertex() {
@@ -31,12 +38,18 @@ namespace rs {
 			hlIb->get()->initData(c_index, countof(c_index));
 			return hlIb;
 		}
+		void Rect01::draw(rs::IEffect& e) const {
+			DrawRect(e, getVertex(), getIndex());
+		}
 		// ---------------------- Rect11 ----------------------
 		HLVb Rect11::MakeVertex() {
 			return MakeVertex_Base(-1.f, 1.f);
 		}
 		HLIb Rect11::MakeIndex() {
 			return Rect01::MakeIndex();
+		}
+		void Rect11::draw(rs::IEffect& e) const {
+			DrawRect(e, getVertex(), getIndex());
 		}
 		// ---------------------- WindowRect ----------------------
 		WindowRect::WindowRect():
