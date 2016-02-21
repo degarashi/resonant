@@ -644,6 +644,7 @@ namespace rs {
 	void GLEffect::clearFramebuffer(const draw::ClearParam& param) {
 		_current.outputFramebuffer();
 		_current.tokenML.allocate<draw::Clear>(param);
+		mgr_drawtask.refWriteEnt().append(std::move(_current.tokenML));
 	}
 	void GLEffect::draw(GLenum mode, GLint first, GLsizei count) {
 		_prepareUniforms();
