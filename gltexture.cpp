@@ -68,23 +68,66 @@ namespace rs {
 		return level >= MipmapNear;
 	}
 	void IGLTexture::save(const std::string& path, CubeFace face) {
-		auto saveFmt = GL_RGBA;
-		size_t sz = _size.width * _size.height * GLFormat::QueryByteSize(saveFmt, GL_UNSIGNED_BYTE);
-		spn::ByteBuff buff(sz);
-		#ifndef USE_OPENGLES2
-			{
-				// OpenGL ES2では無効
-				auto u = use();
-				GL.glGetTexImage(getFaceFlag(face), 0, GL_BGRA, GL_UNSIGNED_BYTE, &buff[0]);
-			}
-		#else
-			Assert(Trap, false, "not implemented yet");
-		#endif
+		auto buff = readData(GL_BGRA, GL_UNSIGNED_BYTE, 0, face);
 		auto sfc = rs::Surface::Create(buff, sizeof(uint32_t)*_size.width, _size.width, _size.height, SDL_PIXELFORMAT_ARGB8888);
 		// OpenGLテクスチャは左下が原点なので…
 		auto sfcVf = sfc->flipVertical();
 		auto hlRW = mgr_rw.fromFile(path, RWops::Write);
 		sfcVf->saveAsPNG(hlRW);
+	}
+	spn::ByteBuff IGLTexture::readData(GLInFmt internalFmt, GLTypeFmt elem, int level, CubeFace face) const {
+		auto size = getSize();
+		const size_t sz = size.width * size.height * GLFormat::QueryByteSize(internalFmt, elem);
+		spn::ByteBuff buff(sz);
+		#ifndef USE_OPENGLES2
+		{
+			auto u = use();
+			GL.glGetTexImage(getFaceFlag(face), level, internalFmt, elem, buff.data());
+		}
+		#elif
+		{
+			//	OpenGL ES2ではglGetTexImageが実装されていないのでFramebufferにセットしてglReadPixelsで取得
+			auto lcgl = mgr_gl.lockGL();
+			GLint id;
+			GL.glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &id);
+			GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
+			auto u = tmp.use();
+			if(isCubemap())
+				tmp.attachCubeTexture(GLFBuffer::Att::COLOR0, getTextureID(), getFaceFlag(face));
+			else
+				tmp.attachTexture(GLFBuffer::Att::COLOR0, getTextureID());
+			GL.glReadPixels(0, 0, size.width, size.height, internalFmt, elem, buff.data());
+			tmp.attachTexture(GLFBuffer::Att::COLOR0, 0);
+			GL.glBindFramebuffer(GL_READ_FRAMEBUFFER_BINDING, id);
+		}
+		#endif
+		return buff;
+	}
+	spn::ByteBuff IGLTexture::readRect(GLInFmt internalFmt, GLTypeFmt elem, const spn::Rect& rect, CubeFace face) const {
+		const size_t sz = rect.width() * rect.height() * GLFormat::QueryByteSize(internalFmt, elem);
+
+		auto lcgl = mgr_gl.lockGL();
+		GLint id;
+		GLenum flag;
+		#ifndef USE_OPENGLES2
+			flag = GL_READ_FRAMEBUFFER_BINDING;
+		#elif
+			flag = GL_FRAMEBUFFER_BINDING;
+		#endif
+		GL.glGetIntegerv(flag, &id);
+
+		GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
+		spn::ByteBuff buff(sz);
+		auto u = tmp.use();
+		if(isCubemap())
+			tmp.attachCubeTexture(GLFBuffer::Att::COLOR0, getTextureID(), getFaceFlag(face));
+		else
+			tmp.attachTexture(GLFBuffer::Att::COLOR0, getTextureID());
+		GL.glReadPixels(rect.x0, rect.y0, rect.width(), rect.height(), internalFmt, elem, buff.data());
+		tmp.attachTexture(GLFBuffer::Att::COLOR0, 0);
+
+		GL.glBindFramebuffer(flag, id);
+		return buff;
 	}
 	void IGLTexture::setAnisotropicCoeff(float coeff) {
 		_coeff = coeff;
@@ -130,17 +173,7 @@ namespace rs {
 		if(_idTex != 0) {
 			if(!mgr_gl.isInDtor() && _bRestore) {
 				auto& info = _prepareBuffer();
-	#ifdef USE_OPENGLES2
-				//	OpenGL ES2ではglGetTexImageが実装されていないのでFramebufferにセットしてglReadPixelsで取得
-				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
-				auto u = tmp.use();
-				tmp.attach(GLFBuffer::Att::COLOR0, _idTex);
-				GLEC(Trap, glReadPixels, 0, 0, _size.width, _size.height, info.baseType, info.elementType, &_buff->operator[](0));
-				tmp.attach(GLFBuffer::Att::COLOR0, 0);
-	#else
-				auto u = use();
-				GLEC(Warn, glGetTexImage, getFaceFlag(), 0, info.baseType, info.elementType, &_buff->operator[](0));
-	#endif
+				_buff = readData(info.baseType, info.elementType, 0);
 			}
 			IGLTexture::onDeviceLost();
 		}
@@ -179,7 +212,7 @@ namespace rs {
 			auto u = use();
 			GL.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			GL.glTexImage2D(getFaceFlag(face), 0, tfm.get(), sz.width, sz.height,
-							0, tfm.get(), srcFmt.get(), buff.getPtr());
+							0, GLFormat::QueryInfo(*tfm)->baseType, srcFmt.get(), buff.getPtr());
 			GLEC_Chk_D(Trap);
 		} else {
 			if(_bRestore) {
@@ -189,16 +222,16 @@ namespace rs {
 			}
 		}
 	}
-	void Texture_Mem::writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace face) {
-		size_t bs = GLFormat::QueryByteSize(_format.get(), GL_UNSIGNED_BYTE);
-		auto sz = buff.getLength();
-		int height = sz / (width * bs);
+	void Texture_Mem::writeRect(spn::AB_Byte buff, const spn::Rect& rect, const GLTypeFmt srcFmt, const CubeFace face) {
+		const size_t bs = GLFormat::QueryByteSize(_format.get(), srcFmt);
+		const auto sz = buff.getLength();
+		AssertP(Trap, sz >= bs*rect.width()*rect.height())
 		if(_idTex != 0) {
 			auto& fmt = getFormat();
 			auto u = use();
 			// GLテクスチャに転送
-			GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;
-			GL.glTexSubImage2D(getFaceFlag(face), 0, ofsX, ofsY, width, height, baseFormat, srcFmt.get(), buff.getPtr());
+			const GLenum baseFormat = GLFormat::QueryInfo(fmt.get())->baseType;
+			GL.glTexSubImage2D(getFaceFlag(face), 0, rect.x0, rect.y0, rect.width(), rect.height(), baseFormat, srcFmt.get(), buff.getPtr());
 		} else {
 			// 内部バッファが存在すればそこに書き込んでおく
 			if(_buff) {
@@ -207,12 +240,12 @@ namespace rs {
 					Assert(Warn, false, "テクスチャのフォーマットが違うので部分的に書き込めない")
 				else {
 					auto& b = *_buff;
-					auto* dst = &b[_size.width * ofsY + ofsX];
+					auto* dst = &b[_size.width * rect.y0 + rect.x0];
 					auto* src = buff.getPtr();
 					// 1画素のバイト数
-					size_t sz = GLFormat::QueryByteSize(_format.get(), _typeFormat.get());
-					for(int i=0 ; i<height ; i++) {
-						std::memcpy(dst, src, width);
+					const size_t sz = GLFormat::QueryByteSize(_format.get(), _typeFormat.get());
+					for(int i=0 ; i<rect.height() ; i++) {
+						std::memcpy(dst, src, rect.width());
 						dst += _size.width;
 						src += sz;
 					}

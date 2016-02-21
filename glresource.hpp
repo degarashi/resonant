@@ -601,6 +601,8 @@ namespace rs {
 
 			bool isCubemap() const;
 			bool operator == (const IGLTexture& t) const;
+			spn::ByteBuff readData(GLInFmt internalFmt, GLTypeFmt elem, int level=0, CubeFace face=CubeFace::PositiveX) const;
+			spn::ByteBuff readRect(GLInFmt internalFmt, GLTypeFmt elem, const spn::Rect& rect, CubeFace face=CubeFace::PositiveX) const;
 			/*! \param[in] uniform変数の番号
 				\param[in] index idで示されるuniform変数配列のインデックス(デフォルト=0)
 				\param[in] hRes 自身のリソースハンドル */
@@ -667,7 +669,6 @@ namespace rs {
 			uint32_t getID() const override { return spn::MakeChunk('P','a','c','k'); }
 	};
 	using SPPackURI = std::shared_ptr<IOPArray<spn::URI>>;
-
 	//! ユーザー定義の空テクスチャ
 	/*! DeviceLost時の復元は任意
 		内部バッファはDeviceLost用であり、DeviceがActiveな時はnone
@@ -698,7 +699,7 @@ namespace rs {
 				\param[in] ofsY 書き込み先オフセット Y
 				\param[in] srcFmt 入力フォーマット(Type)
 				\param[in] face Cubemapにおける面 */
-			void writeRect(spn::AB_Byte buff, int width, int ofsX, int ofsY, GLTypeFmt srcFmt, CubeFace face=CubeFace::PositiveX);
+			void writeRect(spn::AB_Byte buff, const spn::Rect& rect, GLTypeFmt srcFmt, CubeFace face=CubeFace::PositiveX);
 	};
 	//! 画像ファイルから2Dテクスチャを読む
 	/*! DeviceReset時:
@@ -892,7 +893,9 @@ namespace rs {
 			const spn::Size	_size;
 		public:
 			GLFBufferTmp(GLuint idFb, const spn::Size& s);
-			void attach(Att::Id att, GLuint rb);
+			void attachRBuffer(Att::Id att, GLuint rb);
+			void attachTexture(Att::Id att, GLuint id);
+			void attachCubeTexture(Att::Id att, GLuint id, GLuint face);
 			void use_end() const;
 
 			void getDrawToken(draw::TokenDst& dst) const;

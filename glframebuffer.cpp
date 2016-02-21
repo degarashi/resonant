@@ -47,7 +47,7 @@ namespace rs {
 #ifndef USE_OPENGLES2
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto fbi = fb.use();
-			fb.attach(GLFBufferTmp::Att::Id::COLOR0, rb._idRbo);
+			fb.attachRBuffer(GLFBufferTmp::Att::Id::COLOR0, rb._idRbo);
 			GLFormat::OPInfo op = GLFormat::QueryInfo(rb._fmt.get());
 			int texSize;
 			if(op) {
@@ -94,7 +94,7 @@ namespace rs {
 			const spn::Vec4& c = boost::get<spn::Vec4>(rb._restoreInfo);
 			GL.glClearColor(c.x, c.y, c.z, c.w);
 			auto fbi = fb.use();
-			fb.attach(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
+			fb.attachRBuffer(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
 			GL.glClear(GL_COLOR_BUFFER_BIT);
 		},
 // OpenGL ES2ではglDrawPixelsが使えないので、ひとまず無効化
@@ -102,7 +102,7 @@ namespace rs {
 		[](GLFBufferTmp& fb, GLRBuffer& rb) {		// RESTORE
 			auto& buff = boost::get<spn::ByteBuff>(rb._restoreInfo);
 			auto fbi = fb.use();
-			fb.attach(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
+			fb.attachRBuffer(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
 			GL.glDrawPixels(0,0, rb._fmt.get(), rb._buffFmt, &buff[0]);
 			rb._restoreInfo = boost::none;
 		}
@@ -150,11 +150,23 @@ namespace rs {
 		for(int i=0 ; i<Att::NUM_ATTACHMENT ; i++)
 			const_cast<GLFBufferTmp*>(this)->_attachRenderbuffer(Att::Id(i), 0);
 	}
-	void GLFBufferTmp::attach(Att::Id att, GLuint rb) {
-#ifdef USE_OPENGLES2
-		AssertP(Trap, att != Att::DEPTH_STENCIL)
-#endif
+	void GLFBufferTmp::attachRBuffer(Att::Id att, GLuint rb) {
+		#ifdef USE_OPENGLES2
+			AssertP(Trap, att != Att::DEPTH_STENCIL)
+		#endif
 		_attachRenderbuffer(att, rb);
+	}
+	void GLFBufferTmp::attachTexture(Att::Id att, GLuint id) {
+		#ifdef USE_OPENGLES2
+			AssertP(Trap, att != Att::DEPTH_STENCIL)
+		#endif
+		_attachTexture(att, id);
+	}
+	void GLFBufferTmp::attachCubeTexture(Att::Id att, GLuint id, GLuint face) {
+		#ifdef USE_OPENGLES2
+			AssertP(Trap, att != Att::DEPTH_STENCIL)
+		#endif
+		_attachCubeTexture(att, face, id);
 	}
 	void GLFBufferTmp::getDrawToken(draw::TokenDst& dst) const {
 		using UT = draw::FrameBuff;
