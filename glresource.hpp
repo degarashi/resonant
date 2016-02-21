@@ -143,6 +143,8 @@ namespace rs {
 	class GLRes : public ResMgrApp<UPResource, GLRes> {
 		private:
 			using base_type = ResMgrApp<UPResource, GLRes>;
+			using Shared_t = GLSharedData<spn::none_t, 0x7fff0000>;
+			Shared_t						_sharedObj;
 
 			UPFBuffer						_upFb;
 			std::unique_ptr<GLFBufferTmp>	_tmpFb;
@@ -249,6 +251,8 @@ namespace rs {
 
 			const FBInfo_OP& getDefaultDepth() const;
 			const FBInfo_OP& getDefaultColor() const;
+
+			decltype(std::declval<Shared_t>().lock()) lockGL();
 	};
 
 	using Priority = uint32_t;

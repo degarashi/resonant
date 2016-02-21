@@ -290,4 +290,7 @@ namespace rs {
 			GL.glDepthMask(b);
 		}
 	}
+	decltype(std::declval<GLRes::Shared_t>().lock()) GLRes::lockGL() {
+		return _sharedObj.lock();
+	}
 }
