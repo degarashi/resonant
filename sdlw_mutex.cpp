@@ -11,7 +11,7 @@ namespace rs {
 			SDLEC_D(Warn, SDL_DestroyMutex, _mutex);
 	}
 	bool Mutex::lock() {
-		return SDLEC_D(Trap, SDL_LockMutex, _mutex) == 0;
+		return SDLEC_D(Warn, SDL_LockMutex, _mutex) == 0;
 	}
 	bool Mutex::try_lock() {
 		// 単に他がロックしている時もTryLockが失敗するのでSDL_GetErrorによるエラーチェックはしない
