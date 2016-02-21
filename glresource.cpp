@@ -135,9 +135,9 @@ namespace rs {
 	}
 	HLTex GLRes::createTextureInit(const spn::Size& size, GLInSizedFmt fmt, bool bStream, bool bRestore, GLTypeFmt srcFmt, spn::AB_Byte data) {
 		auto ptr = std::make_unique<Texture_Mem>(false, fmt, size, bStream, bRestore);
-		ptr->writeData(data, srcFmt);
 		LHdl lh = base_type::acquire(std::move(ptr));
 		_cbInit(lh);
+		static_cast<Texture_Mem*>(lh->get())->writeData(data, srcFmt);
 		return Cast<UPTexture>(std::move(lh));
 	}
 	HLSh GLRes::makeShader(ShType type, const std::string& src) {
