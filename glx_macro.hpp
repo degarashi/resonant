@@ -18,7 +18,8 @@
 		((depthfunc,glDepthFunc,unsigned))((blendeq,glBlendEquation,unsigned))((blendeqca,glBlendEquationSeparate,unsigned,unsigned))((blendfunc,glBlendFunc,unsigned,unsigned))\
 		((blendfuncca,glBlendFuncSeparate,unsigned,unsigned,unsigned,unsigned))((blendcolor,glBlendColor,float,float,float,float))\
 		((colormask,glColorMask,bool,bool,bool,bool))((depthmask,glDepthMask,bool))\
-		((stencilmask,glStencilMask,unsigned))((stencilmaskfront,stencilMaskFront,unsigned))((stencilmaskback,stencilMaskBack,unsigned))
+		((stencilmask,glStencilMask,unsigned))((stencilmaskfront,stencilMaskFront,unsigned))((stencilmaskback,stencilMaskBack,unsigned))\
+		((polygonmode,polygonMode,unsigned))
 
 #define NUM_TEXCOORD 8
 #define PPFUNC_ADDNUM(z,n,data) (BOOST_PP_CAT(data,n))

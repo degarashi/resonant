@@ -47,6 +47,7 @@ namespace rs {
 		virtual void stencilOpBack(int sfail, int dpfail, int dppass) = 0;
 		virtual void stencilMaskFront(int mask) = 0;
 		virtual void stencilMaskBack(int mask) = 0;
+		virtual void polygonMode(int mode) = 0;
 		virtual ~IGL() {}
 	};
 	//! 直でOpenGL関数を呼ぶ
@@ -77,6 +78,7 @@ namespace rs {
 		void stencilOpBack(int sfail, int dpfail, int dppass)  override;
 		void stencilMaskFront(int mask)  override;
 		void stencilMaskBack(int mask)  override;
+		void polygonMode(int mode) override;
 	};
 	//! DrawThreadにOpenGL関数呼び出しを委託
 	struct IGL_OtherSingle : IGL {
@@ -101,6 +103,7 @@ namespace rs {
 		void stencilOpBack(int sfail, int dpfail, int dppass)  override;
 		void stencilMaskFront(int mask)  override;
 		void stencilMaskBack(int mask)  override;
+		void polygonMode(int mode) override;
 	};
 	extern TLS<IGL*>	tls_GL;
 	#define GL	(*(*::rs::tls_GL))

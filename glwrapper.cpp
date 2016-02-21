@@ -21,6 +21,9 @@ namespace rs {
 	void IGL_Draw::stencilMaskBack(int mask) {
 		GLWrap::glStencilMaskSeparate(GL_BACK, mask);
 	}
+	void IGL_Draw::polygonMode(int mode) {
+		GLWrap::glPolygonMode(GL_FRONT_AND_BACK, mode);
+	}
 
 	void IGL_OtherSingle::stencilFuncFront(int func, int ref, int mask) {
 		auto p = GLW.putShared();
@@ -56,6 +59,12 @@ namespace rs {
 		auto p = GLW.putShared();
 		GLW.getDrawHandler().postExec([=](){
 			IGL_Draw().stencilMaskBack(mask);
+		});
+	}
+	void IGL_OtherSingle::polygonMode(int mode) {
+		auto p = GLW.putShared();
+		GLW.getDrawHandler().postExec([=](){
+			IGL_Draw().polygonMode(mode);
 		});
 	}
 	namespace {

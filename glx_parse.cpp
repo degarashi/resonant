@@ -144,7 +144,7 @@ namespace rs {
 		// ValueSet: GLSetting = (0xUint|GLFunc|GLStencilop|GLEq|GLBlend|GLFace|GLFacedir|GLColormask){1,4} | Float | Bool;
 		const auto ValueSet_def = no_case[GLSetting] > '=' >
 			repeat(1,4)[(lit("0x") > uint_) |
-			no_case[GLFunc | GLStencilop | GLEq | GLBlend | GLFace | GLFacedir | GLColormask]
+			no_case[GLFunc | GLStencilop | GLEq | GLBlend | GLFace | GLFacedir | GLColormask | GLFillMode]
 			| float_ | bool_] > ';';
 		// BlockUse: GLBlocktype (= | +=) NameToken (, NameToken)*;
 		DEF_SETVAL(Bu_fnSetName, name)

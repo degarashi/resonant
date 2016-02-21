@@ -25,6 +25,7 @@ namespace rs {
 	const GLSem_ GLSem;
 	const GLPrecision_ GLPrecision;
 	const GLBoolsetting_ GLBoolsetting;
+	const GLFillMode_ GLFillMode;
 	const GLSetting_ GLSetting;
 	const GLStencilop_ GLStencilop;
 	const GLFunc_ GLFunc;

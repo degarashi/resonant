@@ -52,6 +52,13 @@ namespace rs {
 				("dither", GL_DITHER);
 		}
 	};
+	struct GLFillMode_ : x3::symbols<unsigned> {
+		GLFillMode_(): x3::symbols<unsigned>(std::string("FillMode")) {
+			add("point", GL_POINT)
+				("line", GL_LINE)
+				("fill", GL_FILL);
+		}
+	};
 	//! 数値指定するタイプの設定項目フラグ
 	struct GLSetting_ : x3::symbols<unsigned> {
 		enum TYPE : unsigned { BOOST_PP_SEQ_FOR_EACH(PPFUNC_GLSET_ENUM, T, SEQ_GLSETTING) };
@@ -143,6 +150,7 @@ namespace rs {
 
 	extern const GLSetting_ GLSetting;
 	extern const GLBoolsetting_ GLBoolsetting;
+	extern const GLFillMode_ GLFillMode;
 	extern const GLStencilop_ GLStencilop;
 	extern const GLFunc_ GLFunc;
 	extern const GLEq_ GLEq;
