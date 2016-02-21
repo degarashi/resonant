@@ -41,7 +41,7 @@ namespace rs {
 
 		// EmptyTexture = 1x1の単色テクスチャ
 		uint32_t buff1 = 0xffffffff;
-		_hlEmptyTex.reset(new HLTex(createTextureInit(spn::Size(1,1), GL_RGBA, false, true, GL_UNSIGNED_BYTE, spn::AB_Byte(&buff1, 1))));
+		_hlEmptyTex.reset(new HLTex(createTextureInit(spn::Size(1,1), GL_RGBA, false, true, GL_UNSIGNED_BYTE, spn::AB_Byte(&buff1, sizeof(buff1)))));
 	}
 	GLRes::~GLRes() {
 		// 破棄フラグを立ててからOnDeviceLost関数を呼ぶ
