@@ -75,7 +75,7 @@ namespace rs {
 					try {
 						key = _uriFromResourceName(key.path().plain_utf8());
 					} catch(const std::invalid_argument& e) {
-						LogOutput("resource name not matched %1%", key.plain_utf8());
+						::spn::Log::Output("resource name not matched %1%", key.plain_utf8());
 					}
 				}
 				return key;

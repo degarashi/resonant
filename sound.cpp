@@ -435,7 +435,7 @@ namespace rs {
 	// --------------------- ASource::S_Empty ---------------------
 	ASource::S_Empty::S_Empty(ASource& /*s*/) {}
 	void ASource::S_Empty::onEnter(ASource& self, AState /*prev*/) {
-		LogOutput("S_Empty");
+		::spn::Log::Output("S_Empty");
 		self._pcmPos = 0;
 		self._timePos = std::chrono::seconds(0);
 	}
@@ -450,7 +450,7 @@ namespace rs {
 	ASource::S_Initial::S_Initial(ASource& /*s*/, HAb hAb, uint32_t nLoop): _hlAb(hAb), _nLoop(nLoop) {}
 	ASource::S_Initial::S_Initial(ASource& /*s*/) {}
 	void ASource::S_Initial::onEnter(ASource& self, AState /*prev*/) {
-		LogOutput("S_Initial");
+		::spn::Log::Output("S_Initial");
 		self._dep.reset();
 		self._dep.clearBlock();
 
@@ -499,7 +499,7 @@ namespace rs {
 	// --------------------- ASource::S_Playing ---------------------
 	ASource::S_Playing::S_Playing(ASource& /*s*/, Duration fadeIn): _fadeIn(fadeIn), _bSysPause(false) {}
 	void ASource::S_Playing::onEnter(ASource& self, AState /*prev*/) {
-		LogOutput("S_Playing");
+		::spn::Log::Output("S_Playing");
 
 		self._tmUpdate = Clock::now();
 		auto& fd = self._fade[FADE_CHANGE];
@@ -600,7 +600,7 @@ namespace rs {
 	// --------------------- ASource::S_Paused ---------------------
 	ASource::S_Paused::S_Paused(ASource& /*s*/) {}
 	void ASource::S_Paused::onEnter(ASource& self, AState /*prev*/) {
-		LogOutput("S_Paused");
+		::spn::Log::Output("S_Paused");
 		self._dep.pause();
 	}
 	void ASource::S_Paused::play(ASource& self, Duration fadeIn) {

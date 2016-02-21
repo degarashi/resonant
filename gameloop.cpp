@@ -120,7 +120,7 @@ namespace rs {
 					}
 				}
 			} while(bLoop && !isInterrupted());
-			LogOutput("DrawThread destructor begun");
+			::spn::Log::Output("DrawThread destructor begun");
 
 			up.reset();
 			// 後片付けフェーズ
@@ -135,9 +135,9 @@ namespace rs {
 			}
 			fnDestroyContext();
 			GLW.terminateDrawThread();
-			LogOutput("DrawThread destructor ended");
+			::spn::Log::Output("DrawThread destructor ended");
 		} catch(const std::exception& e) {
-			LogOutput("exception throwed at DrawThread\ntype: %1%\nwhat: %2%", typeid(e).name(), e.what());
+			::spn::Log::Output("exception throwed at DrawThread\ntype: %1%\nwhat: %2%", typeid(e).name(), e.what());
 			throw;
 		}
 	}
@@ -386,10 +386,10 @@ PrintLog;
 					GL.glFlush();
 					drawHandler->postArgs(msg::DrawReq(++getInfo()->accumDraw, bSkip));
 				} catch(const std::exception& e) {
-					LogOutput("MainThread::runU() exception\n%s", e.what());
+					::spn::Log::Output("MainThread::runU() exception\n%s", e.what());
 					throw;
 				} catch(...) {
-					LogOutput("MainThread::runU() unknown exception");
+					::spn::Log::Output("MainThread::runU() unknown exception");
 					throw;
 				}
 			} while(bLoop && !isInterrupted());
@@ -411,9 +411,9 @@ PrintLog;
 			if(MULTICONTEXT)
 				opDth->getInfo()->ctxMainThread->makeCurrent();
 		} catch (const std::exception& e) {
-			LogOutput("MainThread: exception\n%s", e.what());
+			::spn::Log::Output("MainThread: exception\n%s", e.what());
 		} catch (...) {
-			LogOutput("MainThread: unknown exception");
+			::spn::Log::Output("MainThread: unknown exception");
 		}
 		// 描画スレッドの終了を待つ
 		if(opDth) {
@@ -422,7 +422,7 @@ PrintLog;
 			opDth->join();
 			guiLooper->pushEvent(Message(Seconds(0), msg::QuitReq()));
 		}
-		LogOutput("MainThread ended");
+		::spn::Log::Output("MainThread ended");
 	}
 
 	void GameLoop::_procWindowEvent(SDL_Event& e) {
@@ -492,17 +492,16 @@ PrintLog;
 		SDLInitializer	sdlI(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		IMGInitializer imgI(IMG_INIT_JPG | IMG_INIT_PNG);
 
-		auto logOld = g_logOut;
-		g_logOut = [logOld](const std::string& s) {
+		spn::Log::SetOutputF([logOld=std::make_shared<spn::Log::OutF>(*spn::Log::GetOutputF())](const std::string& s) {
 			// スレッド番号を出力
 			boost::format msg("thread=%1%, %2%");
 			if(tls_threadName.initialized())
-				logOld((msg % *tls_threadName % s).str());
+				(*logOld)((msg % *tls_threadName % s).str());
 			else {
 				auto thId = SDL_GetThreadID(nullptr);
-				logOld((msg % thId % s).str());
+				(*logOld)((msg % thId % s).str());
 			}
-		};
+		});
 		tls_threadID = SDL_GetThreadID(nullptr);
 		tls_threadName = "GuiThread";
 		#ifdef ANDROID

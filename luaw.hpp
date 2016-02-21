@@ -56,7 +56,7 @@ namespace std {
 namespace spn {
 	template <class T>
 	struct _Size;
-	using Size = _Size<uint32_t>;
+	using Size = _Size<int32_t>;
 	using SizeF = _Size<float>;
 }
 

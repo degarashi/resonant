@@ -9,37 +9,37 @@ namespace rs {
 	bool PrintEvent::Window(const SDL_Event& e) {
 		switch(e.window.event) {
 			case SDL_WINDOWEVENT_HIDDEN:
-				LogOutput("Window %d hidden", e.window.windowID); break;
+				::spn::Log::Output("Window %d hidden", e.window.windowID); break;
 			case SDL_WINDOWEVENT_EXPOSED:
-				LogOutput("Window %d exposed", e.window.windowID); break;
+				::spn::Log::Output("Window %d exposed", e.window.windowID); break;
 			case SDL_WINDOWEVENT_MOVED:
-				LogOutput("Window %d moved to %d,%d",
+				::spn::Log::Output("Window %d moved to %d,%d",
                     e.window.windowID, e.window.data1,
                     e.window.data2); break;
 			case SDL_WINDOWEVENT_RESIZED:
-				LogOutput("Window %d resized to %dx%d",
+				::spn::Log::Output("Window %d resized to %dx%d",
                     e.window.windowID, e.window.data1,
                     e.window.data2); break;
 			case SDL_WINDOWEVENT_MINIMIZED:
-				LogOutput("Window %d minimized", e.window.windowID); break;
+				::spn::Log::Output("Window %d minimized", e.window.windowID); break;
 			case SDL_WINDOWEVENT_MAXIMIZED:
-				LogOutput("Window %d maximized", e.window.windowID); break;
+				::spn::Log::Output("Window %d maximized", e.window.windowID); break;
 			case SDL_WINDOWEVENT_RESTORED:
-				LogOutput("Window %d restored", e.window.windowID); break;
+				::spn::Log::Output("Window %d restored", e.window.windowID); break;
 			case SDL_WINDOWEVENT_ENTER:
-				LogOutput("Mouse entered window %d", e.window.windowID); break;
+				::spn::Log::Output("Mouse entered window %d", e.window.windowID); break;
 			case SDL_WINDOWEVENT_LEAVE:
-				LogOutput("Mouse left window %d", e.window.windowID); break;
+				::spn::Log::Output("Mouse left window %d", e.window.windowID); break;
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
-				LogOutput("Window %d gained keyboard focus",
+				::spn::Log::Output("Window %d gained keyboard focus",
                     e.window.windowID); break;
 			case SDL_WINDOWEVENT_FOCUS_LOST:
-				LogOutput("Window %d lost keyboard focus",
+				::spn::Log::Output("Window %d lost keyboard focus",
                     e.window.windowID); break;
 			case SDL_WINDOWEVENT_CLOSE:
-				LogOutput("Window %d shown", e.window.windowID); break;
+				::spn::Log::Output("Window %d shown", e.window.windowID); break;
 			default:
-				LogOutput("Window %d got unknown event %d",
+				::spn::Log::Output("Window %d got unknown event %d",
                     e.window.windowID, e.window.event);
 				return false;
 		}
@@ -48,8 +48,8 @@ namespace rs {
 	bool PrintEvent::Touch(const SDL_Event& e) {
 		auto printCoord = [](const SDL_Event& e, const char* act) {
 			auto& tf = e.tfinger;
-			LogOutput("Touch %d  finger %s %d", tf.touchId, act, tf.fingerId);
-			LogOutput("x=%f y=%f dx=%f dy=%f pressure=%f", tf.x, tf.y, tf.dx, tf.dy, tf.pressure);
+			::spn::Log::Output("Touch %d  finger %s %d", tf.touchId, act, tf.fingerId);
+			::spn::Log::Output("x=%f y=%f dx=%f dy=%f pressure=%f", tf.x, tf.y, tf.dx, tf.dy, tf.pressure);
 		};
 		switch(e.type) {
 			case SDL_FINGERDOWN:

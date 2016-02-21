@@ -57,7 +57,7 @@ namespace {
 int main(int argc, char **argv) {
 	// 第一引数にpathlistファイルの指定が必須
 	if(argc <= 1) {
-		LogOutput("usage: rse_demo pathlist_file");
+		::spn::Log::Output("usage: rse_demo pathlist_file");
 		return 0;
 	}
 	rs::GLoopInitializer init;

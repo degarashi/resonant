@@ -224,15 +224,15 @@ namespace rs {
 		try {
 			bool bS = x3::phrase_parse(itr, str.cend(), glx_rule::Glx, x3::standard::space, result);
 			#ifdef DEBUG
-				LogOutput((bS) ? "------- analysis succeeded! -------"
+				::spn::Log::Output((bS) ? "------- analysis succeeded! -------"
 							: "------- analysis failed! -------");
 				if(itr != str.cend()) {
-					LogOutput("<but not reached to end>\nremains: %1%", std::string(itr, str.cend()));
+					::spn::Log::Output("<but not reached to end>\nremains: %1%", std::string(itr, str.cend()));
 				} else {
 					// 解析結果の表示
 					std::stringstream ss;
 					ss << result;
-					LogOutput(ss.str());
+					::spn::Log::Output(ss.str());
 				}
 			#endif
 			if(!bS || itr!=str.cend()) {
@@ -243,7 +243,7 @@ namespace rs {
 				throw std::runtime_error(ss.str());
 			}
 		} catch(const x3::expectation_failure<std::string::const_iterator>& e) {
-			LogOutput((boost::format("expectation_failure: \nat: %1%\nwhich: %2%\nwhat: %3%")
+			::spn::Log::Output((boost::format("expectation_failure: \nat: %1%\nwhich: %2%\nwhat: %3%")
 						% std::string(e.where(), str.cend())
 						% e.which()
 						% e.what()).str());

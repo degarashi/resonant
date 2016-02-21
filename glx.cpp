@@ -284,7 +284,7 @@ namespace rs {
 				}
 			}
 		} catch(const std::exception& e) {
-			LogOutput("GLEffect exception: %1%", e.what());
+			::spn::Log::Output("GLEffect exception: %1%", e.what());
 			throw;
 		}
 		GLEC_Chk_D(Trap)
