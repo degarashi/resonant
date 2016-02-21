@@ -116,6 +116,14 @@ namespace rs {
 		MipmapNear,
 		MipmapLinear
 	};
+	enum WrapState {
+		ClampToEdge,
+		ClampToBorder,
+		MirroredRepeat,
+		Repeat,
+		MirrorClampToEdge,
+		_Num
+	};
 	// ------------------ GLリソース管理 ------------------
 	class GLFBufferTmp;
 	struct AdaptSDL;
@@ -545,9 +553,9 @@ namespace rs {
 		protected:
 			GLuint		_idTex;
 			int			_iLinearMag,	//!< Linearの場合は1, Nearestは0
-						_iLinearMin,
-						_iWrapS,
-						_iWrapT;
+						_iLinearMin;
+			WrapState	_wrapS,
+						_wrapT;
 			GLuint		_actID;		//!< セットしようとしているActiveTextureID (for Use())
 			//! [mipLevel][Nearest / Linear]
 			const static GLuint cs_Filter[3][2];
@@ -568,7 +576,7 @@ namespace rs {
 
 			void setFilter(bool bLinearMag, bool bLinearMin);
 			void setAnisotropicCoeff(float coeff);
-			void setUVWrap(GLuint s, GLuint t);
+			void setUVWrap(WrapState s, WrapState t);
 			const std::string& getResourceName() const override;
 
 			RUser<IGLTexture> use() const;

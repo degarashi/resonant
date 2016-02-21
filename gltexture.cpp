@@ -8,11 +8,11 @@ namespace rs {
 	// ------------------------- IGLTexture -------------------------
 	const GLuint IGLTexture::cs_Filter[3][2] = {
 		{GL_NEAREST, GL_LINEAR},
-		{GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR},
-		{GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR}
+		{GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_NEAREST},
+		{GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR}
 	};
 	IGLTexture::IGLTexture(MipState miplevel, OPInCompressedFmt fmt, const spn::Size& sz, bool bCube):
-		_idTex(0), _iLinearMag(0), _iLinearMin(0), _iWrapS(GL_CLAMP_TO_EDGE), _iWrapT(GL_CLAMP_TO_EDGE),
+		_idTex(0), _iLinearMag(0), _iLinearMin(0), _wrapS(ClampToEdge), _wrapT(ClampToEdge),
 		_actID(0), _mipLevel(miplevel), _texFlag(bCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D),
 		_faceFlag(bCube ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D), _coeff(0), _size(sz), _format(fmt)
 	{
@@ -20,7 +20,7 @@ namespace rs {
 	}
 	#define FUNC_COPY(z, data, elem)	(elem(data.elem))
 	#define FUNC_MOVE(z, data, elem)	(elem(std::move(data.elem)))
-	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_iWrapS)(_iWrapT)(_actID)\
+	#define SEQ_TEXTURE (_idTex)(_iLinearMag)(_iLinearMin)(_wrapS)(_wrapT)(_actID)\
 						(_mipLevel)(_texFlag)(_faceFlag)(_coeff)(_size)(_format)
 	IGLTexture::IGLTexture(IGLTexture&& t): BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(FUNC_MOVE, t, SEQ_TEXTURE)) {
 		t._idTex = 0;
@@ -103,9 +103,9 @@ namespace rs {
 			GLEC_Chk_D(Warn);
 		}
 	}
-	void IGLTexture::setUVWrap(GLuint s, GLuint t) {
-		_iWrapS = s;
-		_iWrapT = t;
+	void IGLTexture::setUVWrap(WrapState s, WrapState t) {
+		_wrapS = s;
+		_wrapT = t;
 	}
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
@@ -131,7 +131,7 @@ namespace rs {
 			if(!mgr_gl.isInDtor() && _bRestore) {
 				auto& info = _prepareBuffer();
 	#ifdef USE_OPENGLES2
-				//	OpenGL ES2ではglTexImage2Dが実装されていないのでFramebufferにセットしてglReadPixelsで取得
+				//	OpenGL ES2ではglGetTexImageが実装されていないのでFramebufferにセットしてglReadPixelsで取得
 				GLFBufferTmp& tmp = mgr_gl.getTmpFramebuffer();
 				auto u = tmp.use();
 				tmp.attach(GLFBuffer::Att::COLOR0, _idTex);
@@ -221,6 +221,15 @@ namespace rs {
 		}
 	}
 
+	namespace {
+		const GLenum cs_wrap[WrapState::_Num] = {
+			GL_CLAMP_TO_EDGE,
+			GL_CLAMP_TO_BORDER,
+			GL_MIRRORED_REPEAT,
+			GL_REPEAT,
+			GL_MIRROR_CLAMP_TO_EDGE
+		};
+	}
 	// ------------------------- draw::Texture -------------------------
 	namespace draw {
 		// --------------- Texture ---------------
@@ -241,8 +250,8 @@ namespace rs {
 				GL.glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aMax);
 				GL.glTexParameteri(_texFlag, GL_TEXTURE_MAX_ANISOTROPY_EXT, aMax*_coeff);
 				// setUVWrap
-				GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_S, _iWrapS);
-				GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, _iWrapT);
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_S, cs_wrap[_wrapS]);
+				GL.glTexParameteri(_texFlag, GL_TEXTURE_WRAP_T, cs_wrap[_wrapT]);
 				// setFilter
 				GL.glTexParameteri(_texFlag, GL_TEXTURE_MAG_FILTER, cs_Filter[0][_iLinearMag]);
 				GL.glTexParameteri(_texFlag, GL_TEXTURE_MIN_FILTER, cs_Filter[_mipLevel][_iLinearMin]);
