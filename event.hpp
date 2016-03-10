@@ -140,6 +140,7 @@ namespace rs {
 		public:
 			Handler(Handler&& h);
 			Handler(const WPLooper& loop, Callback cb=Callback());
+			virtual ~Handler() {}
 			const WPLooper& getLooper() const;
 			//! コールバック関数を渡し、それの実行が終わるまで待機
 			void postExec(const Exec& f);
