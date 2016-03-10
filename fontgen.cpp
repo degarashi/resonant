@@ -62,6 +62,8 @@ namespace rs {
 
 			// ビットデータをglTexSubImage2Dで書き込む
 			auto* u = reinterpret_cast<Texture_Mem*>(lraw.hTex.ref().get());
+			lraw.rect.x1 = lraw.rect.x0 + res.second.width();
+			lraw.rect.y1 = lraw.rect.y0 + res.second.height();
 			u->writeRect(spn::AB_Byte(std::move(res.first)), lraw.rect, GL_UNSIGNED_BYTE);
 
 			// UVオフセットを計算
