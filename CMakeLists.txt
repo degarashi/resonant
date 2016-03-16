@@ -27,18 +27,39 @@ else()
 	message(FATAL_ERROR, "unknown sound API")
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/spinner
-					${PROJECT_SOURCE_DIR}/boomstick
-					${CMAKE_INSTALL_PREFIX}/include
-					${CMAKE_INSTALL_PREFIX}/include/SDL)
+find_package(Boost 1.55 REQUIRED system regex serialization thread)
+find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(Lua 5.3.1 REQUIRED)
+find_package(OpenGL 3 REQUIRED)
+include_directories(
+	${PROJECT_SOURCE_DIR}/spinner
+	${PROJECT_SOURCE_DIR}/boomstick
+	${CMAKE_INSTALL_PREFIX}/include
+	${CMAKE_INSTALL_PREFIX}/include/SDL
+	${Boost_INCLUDE_DIRS}
+	${LUA_INCLUDE_DIRS}
+	${ZLIB_INCLUDE_DIRS}
+)
+if(NOT DEFINED ARCHITECTURE)
+	find_package(OpenAL REQUIRED)
+	find_package(Freetype 2.0 REQUIRED)
+	include_directories(
+		${OPENAL_INCLUDE_DIRS}
+		${FREETYPE_INCLUDE_DIRS}
+	)
+endif()
+
 link_directories(${CMAKE_INSTALL_PREFIX}/lib_${TOOL_PREFIX})
 if(DEFINED ARCHITECTURE)
 	# Android環境
 	add_definitions(-DINCLUDE_OPENGL_ANDROID
 					-DGL_GLEXT_PROTOTYPES
 					-DUSE_OPENGLES2)
-	include_directories(${ANDROID_NDK_ROOT}/sources/android/support/include
-						${CMAKE_INSTALL_PREFIX}/include/SDL2)
+	include_directories(
+		${ANDROID_NDK_ROOT}/sources/android/support/include
+		${CMAKE_INSTALL_PREFIX}/include/SDL2
+	)
 elseif(${WIN32})
 	# Windows環境
 	#TODO OpenGL関数インクルードの定義
@@ -46,8 +67,9 @@ elseif(${WIN32})
 	execute_process(COMMAND ${PROJECT_SOURCE_DIR}/getbasepath.sh ${CompilerPath} OUTPUT_VARIABLE CompilerPath)
 	execute_process(COMMAND ${PROJECT_SOURCE_DIR}/getbasepath.sh ${CompilerPath} OUTPUT_VARIABLE CompilerPath)
 	set(CompilerBasePath ${CompilerPath}/i686-w64-mingw32)
-	include_directories(${CompilerBasePath}/include/SDL2
-						${CompilerBasePath}/include/freetype2)
+	include_directories(
+		${CompilerBasePath}/include/SDL2
+	)
 else()
 	# Linux環境
 	add_definitions(-DINCLUDE_OPENGL_1_X
@@ -56,8 +78,9 @@ else()
 					-DINCLUDE_OPENGL_FRAMEBUFFER
 					-DINCLUDE_OPENGL_SYNC
 					-DINCLUDE_OPENGL_TIMER_QUERY)
-	include_directories(/usr/local/include/SDL2
-						/usr/local/include/freetype2)
+	include_directories(
+		/usr/local/include/SDL2
+	)
 endif()
 add_library(resonant STATIC ${LIBSRC_FILE} ${DEPSRC_FILE})
 install(TARGETS resonant ARCHIVE DESTINATION lib_${TOOL_PREFIX})
@@ -76,28 +99,47 @@ install(FILES ${INCLUDES} DESTINATION include/resonant/opengl_define)
 if(NOT DEFINED ARCHITECTURE)
 	if(${WIN32})
 		add_definitions(-Dmain=SDL_main)
-		set(LINK_LIBS resonant boomstick spinner mingw32 SDL2_image SDL2main SDL2
-			freetype opengl32 OpenAL32 vorbisfile vorbis ogg boost_system boost_regex boost_serialization png z lua)
+		set(LINK_LIBS
+			resonant
+			boomstick
+			spinner
+			mingw32
+			SDL2_image
+			SDL2main
+			SDL2
+			${FREETYPE_LIBRARIES}
+			${OPENGL_LIBRARIES}
+			OpenAL32
+			vorbisfile
+			vorbis
+			ogg
+			${Boost_LIBRARIES}
+			png
+			${ZLIB_LIBRARIES}
+			${LUA_LIBRARIES}
+		)
 	else()
+		find_package(GTest REQUIRED)
+		include_directories(${GTEST_INCLUDE_DIRS})
 		set(LINK_LIBS
 			resonant
 			boomstick
 			spinner
 			SDL2_image
 			SDL2
-			freetype
+			${FREETYPE_LIBRARIES}
+			${Boost_LIBRARIES}
+			${GTEST_LIBRARIES}
+			${CMAKE_THREAD_LIBS_INIT}
+			${LUA_LIBRARIES}
+			${GTEST_LIBRARIES}
 			vorbisfile
 			ogg
-			boost_system
-			boost_regex
-			boost_serialization
-			boost_thread
-			pthread
-			GL
+			${OPENGL_LIBRARIES}
 			openal
-			lua
 			dl
-			z)
+			${ZLIB_LIBRARIES}
+		)
 	endif()
 
 	# -------- 動作テスト --------
