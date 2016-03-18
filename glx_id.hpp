@@ -30,9 +30,11 @@ namespace rs {
 			IdValue genId(const Key& key) {
 				auto itr = std::find(_entry.begin(), _entry.end(), key);
 				AssertP(Warn, itr==_entry.end(), "Idの重複生成 %1%", ConvertToStr(key))
-				if(itr == _entry.end())
+				if(itr == _entry.end()) {
 					_entry.emplace_back(key);
-				return IdValue(_entry.size()-1);
+					return IdValue(_entry.size()-1);
+				}
+				return IdValue(itr - _entry.begin());
 			}
 			const EntryV& getList() {
 				return _entry;
