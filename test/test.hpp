@@ -35,17 +35,27 @@ namespace vertex {
 		spn::Vec3	pos;
 		spn::Vec2	tex;
 	};
+	struct tile_0 {
+		spn::Vec2	pos,
+					tex;
+		spn::Vec3	normal;
+	};
+	struct tile_1 {
+		float		height;
+	};
 }
 namespace vdecl {
 	struct prim {};
 	struct prim_tan {};
 	struct line {};
 	struct sprite {};
+	struct tile {};
 }
 DefineVDecl(::vdecl::prim)
 DefineVDecl(::vdecl::prim_tan)
 DefineVDecl(::vdecl::line)
 DefineVDecl(::vdecl::sprite)
+DefineVDecl(::vdecl::tile)
 
 #include "spinner/random.hpp"
 class Engine;

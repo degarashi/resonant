@@ -64,9 +64,10 @@ function Initialize()
 	System.lsys:loadClass("sc_sound")
 	System.lsys:loadClass("sc_sprite")
 	System.lsys:loadClass("sc_sprited")
+	System.lsys:loadClass("sc_field")
 	System.lsys:loadClass("RotLight")
 	InitInput()
 	-- ここでSceneハンドルを返すとそれが初期Sceneとなり、
 	-- nilを返すとC++での指定となる
-	return sc_cube.New()
+	return sc_field.New()
 end

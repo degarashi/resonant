@@ -1,0 +1,77 @@
+uniform TileUnif {
+	vec3 u_scale;
+	vec3 u_tileoffset;
+	highp mat4 sys_mViewProj;
+	sampler2D u_texDiffuse;
+	float u_repeat;
+}
+attribute TileAttrB {
+	highp vec2 a_pos : POSITION;
+	mediump vec2 a_tex : TEXCOORD0;
+	mediump vec3 a_normal : NORMAL;
+}
+attribute TileAttr : TileAttrB {
+	float a_height : TEXCOORD1;
+}
+varying TileVary {
+	mediump vec3 v_normal;
+	mediump vec2 v_tex;
+}
+vertexshader(400) TileVS() {
+	vec3 pos = (vec3(a_pos.x, a_height, a_pos.y) + u_tileoffset) * u_scale;
+	gl_Position = vec4(pos, 1) * sys_mViewProj;
+	v_normal = a_normal;
+	v_tex = a_tex * u_repeat;
+}
+fragmentshader(400) TileFS() {
+	gl_FragColor = texture2D(u_texDiffuse, v_tex);
+	gl_FragColor *= vec4(vec3(v_normal.y), 1);
+}
+
+attribute STileAttr : TileAttrB {
+	vec2 a_height : TEXCOORD1;
+}
+uniform STileUnif : TileUnif {
+	vec3 sys_vEyePos;
+	vec2 u_distRange;
+}
+code Lerp {
+	float Lerp(float from, float to, float t) {
+		return (to-from) * t + from;
+	}
+}
+vertexshader(400, Lerp) STileVS() {
+	vec3 wpos = (vec3(a_pos.x, 0, a_pos.y) + u_tileoffset) * u_scale;
+	float dist = distance(sys_vEyePos.xz, wpos.xz);
+	dist = clamp(dist-u_distRange.x, 0, u_distRange.y);
+	float t = dist/(u_distRange.y-u_distRange.x);
+
+	wpos = (vec3(a_pos.x, Lerp(a_height.x, a_height.y, t), a_pos.y) + u_tileoffset) * u_scale;
+
+	gl_Position = vec4(wpos, 1) * sys_mViewProj;
+	v_normal = a_normal;
+	v_tex = a_tex * u_repeat;
+}
+
+technique Tile {
+	PolygonMode = Fill;
+	CullFace = true;
+	FrontFace = cw;
+	Blend = false;
+	DepthTest = true;
+	DepthFunc = LessEqual;
+	Varying = TileVary;
+
+	pass Default {
+		Attribute = TileAttr;
+		Uniform = TileUnif;
+		VertexShader = TileVS();
+		FragmentShader = TileFS();
+	}
+	pass Shader {
+		Attribute = STileAttr;
+		Uniform = STileUnif;
+		VertexShader = STileVS();
+		FragmentShader = TileFS();
+	}
+}
