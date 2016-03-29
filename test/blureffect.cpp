@@ -13,4 +13,4 @@ void BlurEffect::setDiffuse(rs::HTex ht) {
 
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, BlurEffect, BlurEffect, "Object", NOTHING,
-		(setAlpha)(setDiffuse), (rs::Priority))
+		(setAlpha)(setDiffuse)(setRect), (rs::Priority))
