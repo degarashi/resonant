@@ -1,0 +1,350 @@
+code Pack {
+	float Pack2Value(float v0, float v1, float range) {
+		return (v0+range) + (v1+range)/(range*2);
+	}
+	vec2 Unpack2Value(float v, float range) {
+		return vec2(floor(v) - range,
+					fract(v)*range*2 - range);
+	}
+	float Pack2ValueS(float v0, float v1, float range) {
+		return (v0+range/2) + (v1+range/2)/range;
+	}
+	vec2 Unpack2ValueS(float v, float range) {
+		return vec2(floor(v) - range/2,
+					fract(v) * range - range/2);
+	}
+	vec2 Unpack2ValueU(float v, float range, float d_range) {
+		vec2 tmp = vec2(floor(v) - range/2,
+						fract(v) * d_range - d_range/2);
+		tmp.y += tmp.x;
+		return tmp;
+	}
+}
+code TLerp {
+	vec4 TLerp(sampler2D s, vec2 uv, vec2 duv0, vec2 duv1) {
+		return (texture2D(s, uv+duv0) + texture2D(s, uv+duv1)) / 2;
+	}
+}
+code Upsample {
+	vec4 UpsampleA(sampler2D s, vec2 uv, vec2 duv) {
+		const float a = -1.0/16,
+					b = float(8+1)/16;
+		return texture2D(s, uv - duv/2) * b +
+				texture2D(s, uv + duv/2) * b +
+				texture2D(s, uv - duv*1.5) * a +
+				texture2D(s, uv + duv*1.5) * a;
+	}
+	vec4 UpsampleB(sampler2D s, vec2 uv, vec2 duv) {
+		const float a = -1.0/16,
+					b = float(8+1)/16;
+		const float sigma = a*a,
+					micro = a*b,
+					nu = b*b;
+		vec4 v0 = texture2D(s, uv + duv*0.5) +
+					texture2D(s, uv + duv*-0.5) +
+					texture2D(s, uv + duv*vec2(0.5, -0.5)) +
+					texture2D(s, uv + duv*vec2(-0.5, 0.5));
+		vec4 v1 = texture2D(s, uv + duv*1.5) +
+				texture2D(s, uv + duv*-1.5) +
+				texture2D(s, uv + duv*vec2(1.5, -1.5)) +
+				texture2D(s, uv + duv*vec2(-1.5, 1.5));
+		vec4 v2 = texture2D(s, uv + duv*vec2(-0.5, 1.5)) +
+					texture2D(s, uv + duv*vec2(0.5, 1.5)) +
+					texture2D(s, uv + duv*vec2(-0.5, -1.5)) +
+					texture2D(s, uv + duv*vec2(0.5, -1.5)) +
+					texture2D(s, uv + duv*vec2(-1.5, 0.5)) +
+					texture2D(s, uv + duv*vec2(1.5, 0.5)) +
+					texture2D(s, uv + duv*vec2(-1.5, -0.5)) +
+					texture2D(s, uv + duv*vec2(1.5, -0.5));
+		return v0 * nu + v1 * sigma + v2 * micro;
+	}
+}
+// ------------- Sampling -------------
+attribute SamplingAttr {
+	vec2		a_pos : POSITION;	// Rect01座標
+}
+varying SamplingVary {
+	vec2		v_hUv;				// キャッシュテクスチャのUV
+	vec2		v_texelpos;			// 書き込み先テクスチャのテクセル座標
+}
+uniform SamplingUnif {
+	sampler2D	u_elevation;		// キャッシュテクスチャ: 高さ(packed)
+	vec4		u_srcUVRect;		// xy=UVScale, zw=UVOffset
+	vec2		u_srcUVUnit;		// キャッシュテクスチャ: 1テクセルサイズ
+	vec4		u_destTexelRect;	// Rect01 -> 書き込み先テクスチャのテクセル座標
+}
+vertexshader(400) SamplingVS() {
+	vec2 scpos = a_pos * 2 - 1;
+	scpos += 0.5 / u_destTexelRect.xy;
+	v_hUv = a_pos * u_srcUVRect.xy + u_srcUVRect.zw + u_srcUVUnit*0.5;
+	v_texelpos = (a_pos * u_destTexelRect.xy + u_destTexelRect.zw) + vec2(0.5);
+	gl_Position = vec4(scpos, 0, 1);
+}
+code Elev {
+	float ElevLerp0(sampler2D s, vec2 uv, vec2 duv, vec2 dflag) {
+		return (texture2D(s, uv+duv*-dflag).x + texture2D(s, uv+duv*dflag).x) /2;
+	}
+}
+fragmentshader(400, Elev) SamplingFS() {
+	float e0 = texture2D(u_elevation, v_hUv).x;
+	float elev[4] = {
+		// just on
+		e0,
+		// x-link
+		ElevLerp0(u_elevation, v_hUv, u_srcUVUnit, vec2(1,0)),
+		// y-link
+		ElevLerp0(u_elevation, v_hUv, u_srcUVUnit, vec2(0,1)),
+		// cross-link
+		ElevLerp0(u_elevation, v_hUv, u_srcUVUnit, vec2(1,-1))
+	};
+	int id = int(v_texelpos.x)%2 + (int(v_texelpos.y)%2)*2;
+	float eC = elev[id];
+	gl_FragColor = vec4(e0, eC, 0, 0);
+	/* gl_FragColor *= 0.00001; */
+}
+
+// ------------- Upsampling -------------
+// 2x2のアップサンプリング
+fragmentshader(400, Elev, Upsample) UpsamplingFS() {
+	// 4パターン全ての結果を出しておいて後でフィルタリング
+	float tC = texture2D(u_elevation, v_hUv).x;
+	vec2 duv = u_srcUVUnit;
+	vec2 elev[4] = {
+		// Coarser頂点ジャスト
+		vec2(tC),
+		// Xリンク間
+		vec2(UpsampleA(u_elevation, v_hUv, vec2(duv.x, 0)).x,
+				ElevLerp0(u_elevation, v_hUv, u_srcUVUnit/2, vec2(1,0))),
+		// Yリンク間
+		vec2(UpsampleA(u_elevation, v_hUv, vec2(0, duv.y)).x,
+				ElevLerp0(u_elevation, v_hUv, u_srcUVUnit/2, vec2(0,1))),
+		// 中央
+		vec2(UpsampleB(u_elevation, v_hUv, duv).x,
+				ElevLerp0(u_elevation, v_hUv, u_srcUVUnit/2, vec2(1,-1)))
+	};
+	int id = int(v_texelpos.x)%2 + (int(v_texelpos.y)%2)*2;
+	vec2 e = elev[id];
+	// x=fine value, y=coarser difference value
+	/* gl_FragColor = vec4(Pack2Value(fc.x, fc.y-fc.x, 512), 0,0,0); */
+	gl_FragColor = vec4(e.xy, 0, 0);
+	/* gl_FragColor *= 0.00001; */
+}
+
+// ------------------- MakeNormal -------------------
+uniform MakeNormalUnif : SamplingUnif {
+	float		u_ratio;
+}
+code Normal {
+	vec3 CalcNormal0(sampler2D s, vec2 uv, vec2 duv, float diff) {
+		float hC = texture2D(s, uv).x,
+				hR = texture2D(s, uv+duv*vec2(diff,0)).x,
+				hU = texture2D(s, uv+duv*vec2(0,diff)).x;
+		vec3 vH = vec3(u_ratio*diff,0,hR-hC),
+			vV = vec3(0,u_ratio*diff,hU-hC);
+		vH.z /= 16;
+		vV.z /= 16;
+		vH = normalize(vH);
+		vV = normalize(vV);
+		return normalize(cross(vH, vV));
+	}
+	vec3 NormalLerp0(sampler2D s, vec2 uv, vec2 duv, vec2 dflag) {
+		return normalize(
+					CalcNormal0(s, uv+duv*-dflag, duv, 2) +
+					CalcNormal0(s, uv+duv*dflag, duv, 2)
+				);
+	}
+}
+fragmentshader(400, Pack, Normal) MakeNormalFS() {
+	// Fine normal value
+	vec3 f_n = CalcNormal0(u_elevation, v_hUv, u_srcUVUnit, 1);
+	// Coarser normal value
+	vec3 c_nl[4] = {
+		// Just on
+		CalcNormal0(u_elevation, v_hUv, u_srcUVUnit, 2),
+		// X-link
+		NormalLerp0(u_elevation, v_hUv, u_srcUVUnit, vec2(1,0)),
+		// Y-link
+		NormalLerp0(u_elevation, v_hUv, u_srcUVUnit, vec2(0,1)),
+		// Cross-link
+		NormalLerp0(u_elevation, v_hUv, u_srcUVUnit, vec2(-1,1))
+	};
+	int id = int(v_texelpos.x)%2 + (int(v_texelpos.y)%2)*2;
+	vec3 c_n = c_nl[id];
+	f_n = f_n/2+0.5;
+	c_n = c_n/2+0.5;
+	gl_FragColor = vec4(f_n.xy, c_n.xy);
+}
+
+// ------------------- ClipDrawAttr -------------------
+attribute ClipDrawAttr {
+	vec2		a_pos : POSITION;	// タイルローカル座標
+}
+varying ClipDrawVary {
+	vec2		v_hUv;				// キャッシュテクスチャのUV
+	vec2		v_dUv;				// 表示用テクスチャのUV
+	float		v_alpha;			// fine->coarser blend value
+}
+uniform ClipDrawUnif {
+	sampler2D	u_texDiffuse;		// 見た目テクスチャ
+	vec4		u_diffUVRect;		// 表示用マップに関するタイル座標 -> UV
+
+	sampler2D	u_elevation;		// キャッシュテクスチャ: 高さ(packed)
+	sampler2D	u_normal;			// キャッシュテクスチャ: 法線(xy=fine, zw=coarser)
+	vec4		u_srcUVRect;		// 高さマップに関するタイル座標 -> UV
+
+	vec2		u_viewPos;			// 平面上の視点位置(レイヤー)
+	vec2		u_alphaBlend;		// FCブレンド係数(x=Fineにする範囲, y=1レイヤーの半径)
+	vec3		u_lightDir;			// 平行光源のライト
+	mat4		sys_mWorld;
+	mat4		sys_mTrans;
+}
+vertexshader(400, Pack) ClipDrawVS() {
+	// ブレンド値を計算
+	vec4 wpos = vec4(a_pos, 0, 1) * sys_mWorld;
+	vec2 alpha = clamp((abs(wpos.xz - u_viewPos) - u_alphaBlend.x) / (u_alphaBlend.y-u_alphaBlend.x), 0, 1);
+	float alphav = max(alpha.x, alpha.y);
+	// Elevationブレンド
+	vec2 uv = a_pos * u_srcUVRect.xy + u_srcUVRect.zw;
+	vec2 zf_zd = Unpack2Value(texture2DLod(u_elevation, uv, 0).x, 512);
+	float h = mix(zf_zd.x, zf_zd.y, alphav);
+	gl_Position = vec4(a_pos, h, 1) * sys_mTrans;
+
+	v_hUv = a_pos * u_srcUVRect.xy + u_srcUVRect.zw;
+	v_dUv = a_pos * u_diffUVRect.xy + u_diffUVRect.zw;
+	v_alpha = alphav;
+}
+fragmentshader(400) ClipDrawFS() {
+	// Normalブレンド
+	vec4 normal_fc = texture2D(u_normal, v_hUv);
+	vec3 nml = vec3(mix(normal_fc.xy, normal_fc.zw, v_alpha), 1);
+	nml = normalize(nml * 2 - 1);
+	float lit = clamp(dot(nml, u_lightDir), 0, 1);
+	gl_FragColor = lit * texture2D(u_texDiffuse, v_dUv);
+}
+uniform TestUnif {
+	sampler2D	u_elevation;		// キャッシュテクスチャ: 高さ(packed)
+	sampler2D	u_texDiffuse;		// 見た目テクスチャ
+//	sampler2D	u_texNormal;		// 見た目法線テクスチャ
+	vec4		u_viewUVRect;		// 見た目テクスチャUV (xy=scale, zw=offset)
+
+	sampler2D	u_normal;			// 頂点単位の法線テクスチャ
+	vec2		u_srcUVOffset;		// 高さマップに関するタイル座標 -> UV
+	vec2		u_srcUVUnit;
+	mat3		u_toLayer;
+	vec3		u_color;
+	vec2		u_viewPos;			// 平面上の視点位置(レイヤー座標系)
+	vec2		u_alphaRange;		// FCブレンド係数
+	mat4		sys_mWorld;
+	mat4		sys_mViewProj;
+}
+varying TestVary {
+	vec2 v_uv;
+	vec3 v_color;
+	vec3 v_normal;
+}
+vertexshader(400, Pack) TestVS() {
+	vec3 lpos = vec3(a_pos, 1) * u_toLayer;
+	lpos = floor(lpos+vec3(0.5));
+	vec2 alpha = abs(lpos.xy - u_viewPos + vec2(1));
+	alpha = (alpha - vec2(u_alphaRange.x)) / (u_alphaRange.y - u_alphaRange.x);
+	alpha = clamp(alpha, vec2(0), vec2(1));
+	float alphav = max(alpha.x, alpha.y);
+
+	// Elevationブレンド
+	vec2 uv = (lpos.xy + u_srcUVOffset + vec2(0.5)) * u_srcUVUnit;
+	/* vec2 zf_zd = Unpack2ValueU(texture2DLod(u_elevation, uv, 0).x, 256, 16); */
+	/* float h = mix(zf_zd.x, zf_zd.y, alphav);                                 */
+	/* float h = mix(zf_zd.x, zf_zd.x+zf_zd.y, alphav); */
+	vec2 zf_zc = texture2DLod(u_elevation, uv, 0).xy;
+	float h = mix(zf_zc.x, zf_zc.y, alphav);
+
+	lpos.z = 0;
+	vec4 wpos = vec4(lpos, 1) * sys_mWorld;
+	wpos.y = h/8;
+	gl_Position = wpos * sys_mViewProj;
+
+	vec4 nml = texture2DLod(u_normal, uv, 0);
+	vec3 nmlf = vec3(nml.x*2-1, nml.y*2-1, 0);
+	nmlf.z = sqrt(clamp(1.0 - nmlf.x*nmlf.x - nmlf.y*nmlf.y, 0, 1));
+	vec3 nmlc = vec3(nml.z*2-1, nml.w*2-1, 0);
+	nmlc.z = sqrt(clamp(1.0 - nmlc.x*nmlc.x - nmlc.y*nmlc.y, 0, 1));
+	v_normal.xzy = normalize(mix(nmlf, nmlc, alphav));
+	v_color = u_color;
+	v_uv = (lpos.xy + vec2(1)) * u_viewUVRect.xy + u_viewUVRect.zw;
+}
+fragmentshader(400) TestFS() {
+	vec3 nml = normalize(v_normal);
+	float lit = dot(normalize(vec3(0.5,1,0.5)), nml);
+	vec4 dif = texture2D(u_texDiffuse, v_uv);
+	gl_FragColor = vec4(v_color, 1) * lit;
+	gl_FragColor = dif * lit;
+}
+
+// ------------------- SamplingD -------------------
+fragmentshader(400) SamplingFS_D() {
+	gl_FragColor.xyz = texture2D(u_elevation, v_hUv).xyz;
+	gl_FragColor.w = 1;
+}
+
+technique Clipmap {
+	PolygonMode = Fill;
+	CullFace = false;
+	Blend = false;
+	DepthTest = false;
+	DepthMask = false;
+
+	pass TestPolygon {
+		/* PolygonMode = Line; */
+		CullFace = true;
+		DepthTest = true;
+		DepthMask = true;
+		attribute = SamplingAttr;
+		uniform = TestUnif;
+		varying = TestVary;
+		VertexShader = TestVS();
+		FragmentShader = TestFS();
+	}
+	pass SamplingD {
+		attribute = SamplingAttr;
+		uniform = SamplingUnif;
+		varying = SamplingVary;
+		VertexShader = SamplingVS();
+		FragmentShader = SamplingFS_D();
+	}
+	// キャッシュデータの焼付け(等倍 or 縮小)
+	pass Sampling {
+		attribute = SamplingAttr;
+		uniform = SamplingUnif;
+		varying = SamplingVary;
+		VertexShader = SamplingVS();
+		FragmentShader = SamplingFS();
+	}
+	// キャッシュデータの焼付け(アップサンプリング)
+	pass Upsampling {
+		attribute = SamplingAttr;
+		uniform = SamplingUnif;
+		varying = SamplingVary;
+		VertexShader = SamplingVS();
+		FragmentShader = UpsamplingFS();
+	}
+	// Normal: Fine=上下左右の高さから法線を計算, Coarser=2つ分離れた頂点の高さから計算
+	pass MakeNormal {
+		attribute = SamplingAttr;
+		uniform = MakeNormalUnif;
+		varying = SamplingVary;
+		VertexShader = SamplingVS();
+		FragmentShader = MakeNormalFS();
+	}
+	pass Draw {
+		CullFace = true;
+		FrontFace = cw;
+		DepthTest = true;
+		DepthMask = true;
+
+		uniform = ClipDrawUnif;
+		attribute = ClipDrawAttr;
+		varying = ClipDrawVary;
+		VertexShader = ClipDrawVS();
+		FragmentShader = ClipDrawFS();
+	}
+}

@@ -19,6 +19,9 @@ namespace vertex {
 		spn::Vec3	pos;
 		spn::Vec4	color;
 	};
+	struct colview {
+		spn::Vec3	pos;
+	};
 	//! プリミティブ描画用頂点
 	struct prim {
 		spn::Vec3	pos;
@@ -56,6 +59,7 @@ namespace vertex {
 }
 namespace vdecl {
 	struct collision {};
+	struct colview {};
 	struct prim {};
 	struct prim_tan {};
 	struct line {};
@@ -64,6 +68,7 @@ namespace vdecl {
 	struct stile {};
 }
 DefineVDecl(::vdecl::collision)
+DefineVDecl(::vdecl::colview)
 DefineVDecl(::vdecl::prim)
 DefineVDecl(::vdecl::prim_tan)
 DefineVDecl(::vdecl::line)

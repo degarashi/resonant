@@ -24,6 +24,10 @@ return {
 			sc:setPushScene(sc_sprited.New(), false)
 		elseif cp.actQuit:isKeyPressed() then
 			sc:setPopScene(1)
+		elseif cp.actRayleigh:isKeyPressed() then
+			sc:setPushScene(sc_rayleigh.New(), false)
+		elseif cp.actClipmap:isKeyPressed() then
+			sc:setPushScene(sc_clipmap.New(), false)
 		end
 	end,
 	Terminate = function(objlist)

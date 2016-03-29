@@ -19,7 +19,7 @@ void Reduction::onDraw(rs::IEffect& e) const {
 		_hlResult->get()->getFormat() != fmt)
 	{
 		_hlResult = mgr_gl.createTexture(szt, fmt->get(), false, false);
-		_hlResult->get()->setFilter(true,true);
+		_hlResult->get()->setLinear(true);
 	}
 	e.setTechPassId(_getTechId());
 	e.setUniform(U_MapWidth, spn::Vec2(sz.width, sz.height));

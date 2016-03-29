@@ -6,6 +6,8 @@ function InitInput()
 	Global.cpp.actSound = System.input:makeAction("mode_sound")
 	Global.cpp.actSprite = System.input:makeAction("mode_sprite")
 	Global.cpp.actSpriteD = System.input:makeAction("mode_spriteD")
+	Global.cpp.actRayleigh = System.input:makeAction("mode_rayleigh")
+	Global.cpp.actClipmap = System.input:makeAction("mode_clipmap")
 	Global.cpp.actAx = System.input:makeAction("axisX")
 	Global.cpp.actAy = System.input:makeAction("axisY")
 	Global.cpp.actMoveX = System.input:makeAction("moveX")
@@ -40,6 +42,10 @@ function InitInput()
 	Global.cpp.actSprite:addLink(hK, Action.InputFlag.Button, Action.Key.C)
 	-- mode: spriteD[V]
 	Global.cpp.actSpriteD:addLink(hK, Action.InputFlag.Button, Action.Key.V)
+	-- mode: rayleigh[B]
+	Global.cpp.actRayleigh:addLink(hK, Action.InputFlag.Button, Action.Key.B)
+	-- mode: clipmap[N]
+	Global.cpp.actClipmap:addLink(hK, Action.InputFlag.Button, Action.Key.N)
 	-- left, right, up, down [A,D,W,S]		カメラ移動
 	Global.cpp.actAx:linkButtonAsAxis(hK, Action.Key.A, Action.Key.D)
 	Global.cpp.actAy:linkButtonAsAxis(hK, Action.Key.S, Action.Key.W)
@@ -64,10 +70,11 @@ function Initialize()
 	System.lsys:loadClass("sc_sound")
 	System.lsys:loadClass("sc_sprite")
 	System.lsys:loadClass("sc_sprited")
-	System.lsys:loadClass("sc_field")
+	System.lsys:loadClass("sc_rayleigh")
+	System.lsys:loadClass("sc_clipmap")
 	System.lsys:loadClass("RotLight")
 	InitInput()
 	-- ここでSceneハンドルを返すとそれが初期Sceneとなり、
 	-- nilを返すとC++での指定となる
-	return sc_field.New()
+	return sc_clipmap.New()
 end

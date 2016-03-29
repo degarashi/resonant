@@ -20,7 +20,7 @@ spn::RFlagRet TwoPhaseBlur::_refresh(Tmp_t& dst, Tmp*) const {
 		fmt = fmt0;
 	}
 	dst.tmp = mgr_gl.createTexture(sz0, fmt->get(), false, false);
-	dst.tmp->get()->setFilter(true, true);
+	dst.tmp->get()->setLinear(true);
 	_hlFb = mgr_gl.makeFBuffer();
 	dst.rb = mgr_gl.makeRBuffer(sz0.width, sz0.height, GL_DEPTH_COMPONENT16);
 	_hlFb->get()->attachRBuffer(rs::GLFBuffer::Att::DEPTH, dst.rb);

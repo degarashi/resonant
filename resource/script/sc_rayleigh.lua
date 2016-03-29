@@ -18,7 +18,7 @@ st_idle = {
 		self.hFb:attachTexture(G.GLFBuffer.Attribute.Color0, cbuff)
 		local hDb = System.glres:makeRBuffer(scrSize[1], scrSize[2], G.GLRes.Format.DEPTH_COMPONENT16)
 		self.hFb:attachRBuffer(G.GLFBuffer.Attribute.Depth, hDb)
-		
+
 		do
 			local clp = G.ClearParam.New(G.Vec4.New(0,0,0,0), 1, nil)
 			local fbc = G.FBSwitch.New(0x00000, self.hFb, clp)
@@ -109,18 +109,18 @@ st_idle = {
 			self.tf = tf
 			dg:addObj(tf)
 		end
+		-- カメラの初期化
 		do
 			local fc = G.FPSCameraU.New()
 			upd:addObj(fc)
 		end
 
-		local tm2
+		local tm
 		do
-			local tm = G.ToneMap.New(0x02000)
+			tm = G.ToneMap.New(0x02000)
 			tm:setSource(cbuff)
 			dg:addObj(tm)
 			self.hdrResult = tm:getResult()
-			tm2 = tm
 		end
 		do
 			local clp = G.ClearParam.New(G.Vec4.New(0,0,0,0), 1, nil)
@@ -136,21 +136,19 @@ st_idle = {
 		do
 			local blur0 = G.BlurEffect.New(0x05000)
 			blur0:setAlpha(1)
-			blur0:setDiffuse(tm2:getShrink0())
+			blur0:setDiffuse(tm:getShrink0())
 			blur0:setRect({-1,-0.5,-1,-0.5})
 			dg:addObj(blur0)
 		end
 		do
 			local blur0 = G.BlurEffect.New(0x05000)
 			blur0:setAlpha(1)
-			blur0:setDiffuse(tm2:getShrinkA()[2])
+			blur0:setDiffuse(tm:getShrinkA()[2])
 			blur0:setRect({-0.5,0,-1,-0.5})
 			dg:addObj(blur0)
 		end
 	end,
 	OnUpdate = function(self, slc, ...)
-		local pose = Global.cpp.hlCam:refPose()
-		self.tf:setViewPos(pose:getOffset())
 		scbase.CheckSwitch()
 	end,
 	OnExit = function(self, slc, ...)

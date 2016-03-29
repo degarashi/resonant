@@ -1,0 +1,34 @@
+// ------------- CollisionView -------------
+attribute ColAttr {
+	vec3	a_pos : POSITION;
+}
+varying ColVary {}
+uniform ColUnif {
+	mat4	sys_mTrans;
+	vec4	u_color;
+}
+vertexshader(400) ColVS() {
+	gl_Position = vec4(a_pos, 1) * sys_mTrans;
+}
+fragmentshader(400) ColFS() {
+	gl_FragColor = u_color;
+}
+technique Collision {
+	CullFace = false;
+	Blend = true;
+	DepthTest = true;
+	DepthMask = false;
+
+	attribute = ColAttr;
+	varying = ColVary;
+	uniform = ColUnif;
+	VertexShader = ColVS();
+	FragmentShader = ColFS();
+
+	pass Fill {
+		PolygonMode = Fill;
+	}
+	pass Line {
+		PolygonMode = Line;
+	}
+}

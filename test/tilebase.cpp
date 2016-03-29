@@ -33,7 +33,7 @@ void TileFieldBase::setViewPos(const spn::Vec3& p) {
 }
 void TileFieldBase::setTexture(rs::HTex hTex) {
 	_hlTex = hTex;
-	_hlTex->get()->setUVWrap(rs::WrapState::MirroredRepeat, rs::WrapState::MirroredRepeat);
+	_hlTex->get()->setWrap(rs::WrapState::MirroredRepeat);
 }
 void TileFieldBase::setTextureRepeat(float r) {
 	_repeat = r;

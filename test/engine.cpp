@@ -86,7 +86,7 @@ spn::RFlagRet Engine::_refresh(typename ScreenInfo::value_type& sc, ScreenInfo*)
 }
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, CubeColorBuff*) const {
 	tex = mgr_gl.createCubeTexture(getLightDepthSize(), GL_RG16, false, false);
-	tex->get()->setFilter(true, true);
+	tex->get()->setLinear(true);
 	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(typename ZPrePassBuff::value_type& tex, ZPrePassBuff*) const {
@@ -94,7 +94,7 @@ spn::RFlagRet Engine::_refresh(typename ZPrePassBuff::value_type& tex, ZPrePassB
 	bool b = ret.second;
 	if(b) {
 		tex = mgr_gl.createTexture(*std::get<0>(ret.first), GL_RGBA16F, false, false);
-		tex->get()->setFilter(true, true);
+		tex->get()->setLinear(true);
 	}
 	return {b, 0};
 }
@@ -103,13 +103,13 @@ spn::RFlagRet Engine::_refresh(typename LightAccumBuff::value_type& tex, LightAc
 	bool b = ret.second;
 	if(b) {
 		tex = mgr_gl.createTexture(*std::get<0>(ret.first), GL_RGB16F, false, false);
-		tex->get()->setFilter(true, true);
+		tex->get()->setLinear(true);
 	}
 	return {b, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLTex& tex, LightColorBuff*) const {
 	tex = mgr_gl.createTexture(getLightDepthSize(), GL_RG16, false, false);
-	tex->get()->setFilter(true, true);
+	tex->get()->setLinear(true);
 	return {true, 0};
 }
 spn::RFlagRet Engine::_refresh(rs::HLFb& fb, LightFB*) const {

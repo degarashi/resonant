@@ -2,6 +2,8 @@ import primitive.glx;
 import dl_primitive.glx;
 import tile.glx;
 import tone.glx;
+import clipmap.glx;
+import test.glx;
 
 uniform Text2DUnif {
 	mat3 mText;

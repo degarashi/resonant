@@ -26,6 +26,8 @@
 #include "stile.hpp"
 #include "skydome.hpp"
 #include "tonemap.hpp"
+#include "clipmap.hpp"
+#include "colview.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -91,6 +93,8 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<STileField>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SkyDome>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<ToneMap>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<ClipmapObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<ColBoxObj>(*lkb->spLua);
 
 		// init Random
 		{
@@ -102,7 +106,8 @@ int main(int argc, char **argv) {
 			gv.hlCam = mgr_cam.emplace();
 			auto& cd = gv.hlCam.ref();
 			auto& ps = cd.refPose();
-			ps.setOffset({0,0,-3});
+			ps.setOffset({0,0,0});
+			ps.setRot(spn::AQuat::LookAt({0,0,1}, {0,1,0}));
 			cd.setFov(spn::DegF(60));
 			cd.setZPlane(0.01f, 500.f);
 			gv.pEngine = static_cast<Engine*>(lkb->hlFx->get());
