@@ -117,6 +117,7 @@ technique Sprite {
 }
 uniform PFxUnif {
 	sampler2D u_texDiffuse;
+	vec4 u_rectScale;
 	float u_depth;
 	float u_alpha;
 }
@@ -124,9 +125,7 @@ varying PFxVary {
 	mediump vec2 varTex;
 }
 vertexshader(400) PFxVS() {
-	gl_Position.xy = atPos;
-	gl_Position.z = u_depth;
-	gl_Position.w = 1;
+	gl_Position = vec4(atPos*u_rectScale.zw + u_rectScale.xy, u_depth, 1);
 	varTex = atTex;
 }
 fragmentshader(400) PFxFS() {

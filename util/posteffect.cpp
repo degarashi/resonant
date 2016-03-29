@@ -2,14 +2,17 @@
 #include "screen.hpp"
 #include "../glx_if.hpp"
 #include "../systeminfo.hpp"
+#include "../sys_uniform.hpp"
 
 namespace rs {
 	namespace util {
+		const IdValue PostEffect::U_RectScale = IEffect::GlxId::GenUnifId("u_rectScale");
 		// --------------------- PostEffect ---------------------
 		PostEffect::PostEffect(IdValue idTech, rs::Priority dprio):
 			_idTech(idTech)
 		{
 			_dtag.priority = dprio;
+			setRect({-1,1,-1,1});
 		}
 		void PostEffect::setTechPassId(IdValue idTech) {
 			_idTech = idTech;
@@ -30,11 +33,23 @@ namespace rs {
 		void PostEffect::clearParam() {
 			_param.clear();
 		}
+		void PostEffect::setRect(const spn::RectF& r) {
+			_drawRect = r;
+		}
 		void PostEffect::onDraw(IEffect& e) const {
 			e.setTechPassId(_idTech);
 			_applyParam(e);
+			e.setVDecl(DrawDecl<vdecl::screen>::GetVDecl());
+			e.setVStream(_rect11.getVertex(), 0);
+			auto ib = _rect11.getIndex();
+			e.setIStream(ib);
+			e.setUniform(U_RectScale, spn::Vec4{
+					(_drawRect.x0+_drawRect.x1)/2,
+					(_drawRect.y0+_drawRect.y1)/2,
+					_drawRect.width()/2,
+					_drawRect.height()/2});
 			// 重ねて描画
-			_rect.draw(e);
+			e.drawIndexed(GL_TRIANGLES, ib->get()->getNElem(), 0);
 		}
 
 		// --------------------- Viewport ---------------------

@@ -12,10 +12,12 @@ namespace rs {
 				using ParamFV = std::vector<std::pair<IdValue, ParamF>>;
 				IdValue			_idTech;
 				ParamFV			_param;
-				ScreenRect		_rect;
+				Rect11			_rect11;
+				spn::RectF		_drawRect;
 
 				void _applyParam(IEffect& e) const;
 			public:
+				const static IdValue U_RectScale;
 				PostEffect(IdValue idTech, Priority dprio);
 				void setTechPassId(IdValue idTech);
 				template <class T>
@@ -23,6 +25,7 @@ namespace rs {
 					setParamFunc(id, [id,tv=t](auto& e){ e.setUniform(id, tv); });
 				}
 				void setParamFunc(IdValue id, const ParamF& f);
+				void setRect(const spn::RectF& r);
 				void clearParam();
 				void onDraw(IEffect& e) const override;
 		};
