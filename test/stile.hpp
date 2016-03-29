@@ -19,11 +19,13 @@ class STileField : public rs::ObjectT<STileField, TileFieldBase> {
 		rs::HLIb			_ibSphere;
 		float				_viewMin,
 							_viewCoeff;
-		spn::Vec3			_sunDir,
-							_sunColor;
-		float				_rayleigh,
+		spn::Vec3			_lDir,
+							_lColor,
+							_rayleigh;
+		float				_sdDivide,
 							_mie,
-							_mieGain;
+							_mieGain,
+							_lPower;
 		struct St_Default;
 
 		std::pair<int,spn::Vec2> _calcLevel(float x, float y) const;
@@ -31,9 +33,11 @@ class STileField : public rs::ObjectT<STileField, TileFieldBase> {
 		STileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt vn,
 							float scale, float height, float height_att, float th, float mv);
 		void setViewDistanceCoeff(float dMin, float dCoeff);
-		void setRayleighCoeff(float c);
+		void setRayleighCoeff(const spn::Vec3& r);
 		void setMieCoeff(float gain, float c);
-		void setSunDir(const spn::Vec3& d);
-		void setSunColor(const spn::Vec3& c);
+		void setLightDir(const spn::Vec3& d);
+		void setLightColor(const spn::Vec3& c);
+		void setLightPower(float p);
+		void setDivide(float d);
 };
 DEF_LUAIMPORT(STileField)

@@ -43,11 +43,13 @@ uniform STileUnif : TileUnif {
 	float u_interpolateLevel;
 
 	vec3 sys_vEyePos;
-	highp float u_rayleigh;
-	highp float u_mie;
-	highp float u_mieGain;
-	highp vec3 u_sunColor;
-	highp vec3 u_sunDir;
+	vec2 u_sdScale;
+	float u_sdDivide;
+	vec3 u_rayleigh;
+	vec2 u_mie;
+	float u_lPower;
+	vec3 u_lDir;
+	vec3 u_lColor;
 }
 code Lerp {
 	float Lerp(float from, float to, float t) {
@@ -118,49 +120,22 @@ vertexshader(400, Lerp, Scatter) STileVS() {
 	gl_Position = vec4(wpos, 1) * sys_mViewProj;
 
 	// --------- Scattering ---------
-	/* float cos_theta = dot(normalize(sys_vEyePos - wpos), vec3(0,0,-1));//u_sunDir); */
-	/* float eyedist = distance(sys_vEyePos, wpos);                                    */
-	/* float tmp0 = 1;                                                                 */
-	/* float tmp1A = 0.1;                                                              */
-	/* vec3 tmp1 = vec3(680*1e-3, 550*1e-3, 480*1e-3);                                 */
-	/* tmp1 = 1/P4(tmp1);                                                              */
-	/* vec3 exs = exp(-(vec3(tmp1)+tmp0/50) * (eyedist/2e3));                          */
-	/* v_fex = exs;                                                                    */
-	/* v_lin = (Rayleigh(u_rayleigh, cos_theta) + Mie(u_mieGain, u_mie, cos_theta)) / (u_rayleigh + u_mie) * u_sunColor * (1 - exs); */
-	/* v_lin = (Rayleigh(tmp1, cos_theta)*tmp1A + Mie(u_mieGain, tmp0, cos_theta)) / (tmp1A+tmp0/50) * u_sunColor * (vec3(1)-exs); */
-
-	// --------- Scattering ---------
-	// float cos_theta = dot(normalize(sys_vEyePos - wpos), normalize(vec3(0,0,-1))); // Dawn
-	// float cos_theta = dot(normalize(sys_vEyePos - wpos), normalize(vec3(0,-1,0)));
-	float cos_theta = dot(normalize(sys_vEyePos - wpos), normalize(vec3(0,-0.1,-1))); // Dawn
-	// float cos_theta = dot(normalize(sys_vEyePos - wpos), normalize(vec3(0,-1,-1))); // Hazy
+	// 太陽との角度
+	float cos_theta = dot(normalize(sys_vEyePos - wpos), u_lDir);
 	float eyedist = distance(sys_vEyePos, wpos);
-	// float mie_c = 0.9; // Dawn
-	// float mie_c = 0.1; // Daylight
-	float mie_c = 0.1; // Twilight
-	// float mie_c = 26.1; // Hazy
-	vec3 ray_c = vec3(680*1e-3, 550*1e-3, 440*1e-3);
-	ray_c = 1/P4(ray_c);
-	// vec3 exs = exp(-(ray_c + mie_c) * (eyedist/5e2)); // Dawn
-	// vec3 exs = exp(-(ray_c + mie_c) * (eyedist/5e2)); // Daylight
-	vec3 exs = exp(-(ray_c + mie_c) * (eyedist/1e2)); // Twilight
-	// vec3 exs = exp(-(ray_c + mie_c) * (eyedist/7e2)); // Hazy
+	// 波長の4乗に反比例
+	vec3 ray_c = 1 / P4(u_rayleigh);
+	// 視点に入ってくるまでに減衰する光の量
+	vec3 exs = exp(-(ray_c + u_mie.y) * (eyedist/u_sdDivide)); // Twilight
 	v_fex = exs;
-	// v_lin = (Rayleigh(ray_c, cos_theta) + Mie(0.75, mie_c, cos_theta)) / (ray_c + mie_c) * 3 * (vec3(1)-exs); // Dawn
-	// v_lin = (Rayleigh(ray_c, cos_theta) + Mie(0.75, mie_c, cos_theta)) / (ray_c + mie_c) * 10 * (vec3(1)-exs); // Daylight
-	v_lin = (Rayleigh(ray_c, cos_theta) + Mie(0.75, mie_c, cos_theta)) / (ray_c + mie_c) * 0.2 * (vec3(1)-exs); // Twilght
-	// v_lin = (Rayleigh(ray_c, cos_theta) + Mie(0.50, mie_c, cos_theta)) / (ray_c + mie_c) * 3 * (vec3(1)-exs); // Hazy
+	// 散乱した光が視界に入ってくる量
+	v_lin = (Rayleigh(ray_c, cos_theta) + Mie(u_mie.x, u_mie.y, cos_theta)) / (ray_c + u_mie.y) * (u_lColor * u_lPower) * (vec3(1)-exs);
 }
 fragmentshader(400) STileFS() {
 	vec3 l0 = texture2D(u_texDiffuse, v_tex).rgb;
-	gl_FragColor.xyz = l0 * dot(v_normal, normalize(vec3(0,0.1,1)));
+	gl_FragColor.xyz = l0 * dot(v_normal, -u_lDir);
 	gl_FragColor.xyz *= v_fex;
 	gl_FragColor.xyz += v_lin;
-	// gl_FragColor.xyz = l0*v_fex*0.25+v_lin; // Daylight
-	// gl_FragColor.xyz = l0*v_fex*0.5+v_lin; // Twilight
-	// gl_FragColor.xyz *= dot(v_normal, normalize(vec3(0,0.3,1)));
-	/* gl_FragColor.xyz = v_lin; */
-	/* gl_FragColor.xyz = l0*v_fex + v_lin; */
 	gl_FragColor.w = 1;
 }
 
@@ -189,67 +164,44 @@ attribute SkyAttr {
 uniform SkyUnif {
 	mat4 sys_mViewProj;
 	mat4 sys_mViewInv;
-	vec2 u_skyScale;	// X=高さ Y=横幅
 	vec2 u_scrSize;		// 射影平面でのスクリーンサイズ比
+	vec2 u_sdScale;
+	float u_sdDivide;
+	vec3 u_rayleigh;
+	vec2 u_mie;
+	float u_lPower;
+	vec3 u_lDir;
+	vec3 u_lColor;
 }
 varying SkyVary {
 	vec2 v_scpos;
 }
 vertexshader(400, Scatter) SkyVS() {
-	/* // 描画用の座標                                                                                 */
-	/* vec3 wpos = (vec4(a_pos,1) * sys_mWorld).xyz;                                                         */
-	/* vec3 wdir = normalize(wpos);                                                                          */
-	/* wpos += sys_vEyePos;                                                                                  */
-	/* gl_Position = vec4(wpos, 1) * sys_mViewProj;                                                          */
-	/* // 実際のスカイドーム座標                                                                  */
-	/* vec2 sca = vec2(10, 6000);                                                                            */
-	/* wpos = wdir * sca.yxy;                                                                                */
-	/* // --------- Scattering ---------                                                                     */
-	/* float cos_theta = dot(-wdir, vec3(0,0,-1));                                                           */
-	/* float eyedist = length(wpos);                                                                         */
-	/* float tmp0 = 0.5;                                                                                     */
-	/* vec3 tmp1 = vec3(680*1e-3, 550*1e-3, 440*1e-3)*1.6;                                                   */
-	/* tmp1 = 1/P4(tmp1);                                                                                    */
-	/* vec3 exs = exp(-(tmp1+tmp0) * (eyedist/1e3));                                                         */
-	/* v_fex = exs;                                                                                          */
-	/* v_lin = (Rayleigh(tmp1, cos_theta) + Mie(0.75, tmp0, cos_theta)) / (tmp1 + tmp0) * 1 * (vec3(1)-exs); */
-
 	v_scpos = a_pos;
 	gl_Position = vec4(a_pos, 0, 1);
 }
-code Proc {
-	vec3 Proc(in vec3 p) {
-		// float t = 8/abs(p.y); // Dawn
-		float t = 1/p.y; // Daylight
-		// float t = 1/abs(p.y); // Hazy
-		return vec3(p.x*t, p.y*1, p.z*t);
+code SkyCP {
+	vec3 SkyCP(in vec3 p) {
+		float t = u_sdScale.x / p.y;
+		return vec3(p.x*t, p.y*u_sdScale.y, p.z*t);
 	}
 }
-fragmentshader(400, Scatter, Proc) SkyFS() {
+fragmentshader(400, Scatter, SkyCP) SkyFS() {
 	// スクリーン位置からワールド空間での向きを計算
 	vec3 vdir = normalize(vec3(v_scpos * u_scrSize, 1));
 	vec3 wdir = normalize((vec4(vdir, 0) * sys_mViewInv).xyz);
-	// スカイドームとの交点を算出
-	vec3 cp = Proc(wdir);//u_skyScale.yxy;
-	float eyedist = length(cp);
-	// --------- Scattering ---------
-	// float cos_theta = dot(-wdir, normalize(vec3(0,0,-1))); // Dawn
-	float cos_theta = dot(-wdir, normalize(vec3(0,0,-1))); // Daylight
-	// float cos_theta = dot(-normalize(cp), normalize(vec3(0,-1,-1))); // Hazy
-	// float cos_theta = dot(-wdir, normalize(vec3(0,0,-1))); // Twilight
-	float mie_c = 20.6;
-	// float mie_c = 80.0; // Hazy
-	vec3 ray_c = vec3(680*1e-3, 550*1e-3, 450*1e-3);
-	ray_c = 1/P4(ray_c);
-	// vec3 exs = exp(-(ray_c + mie_c) * (eyedist/2e3)); // Dawn
-	vec3 exs = exp(-(ray_c + mie_c) * (eyedist/2e2)); // Daylight
-	// vec3 exs = exp(-(ray_c + mie_c) * (eyedist)); // Twilight
-	// vec3 exs = exp(-(ray_c + mie_c) * (eyedist/1e1)); // Hazy
-	// vec3 lin = (Rayleigh(ray_c, cos_theta) + Mie(0.75, mie_c, cos_theta)) / (ray_c + mie_c) * 4.8 * (vec3(1)-exs); // Dawn
-	vec3 lin = (Rayleigh(ray_c, cos_theta) + Mie(0.3, mie_c, cos_theta)) / (ray_c + mie_c) * 20.4 * (vec3(1)-exs); // Daylight
-	// vec3 lin = (Rayleigh(ray_c, cos_theta) + Mie(0.8, mie_c, cos_theta)) / (ray_c + mie_c) * 5.0 * (vec3(1)-exs); // Hazy
-	// vec3 lin = (Rayleigh(ray_c, cos_theta) + Mie(0.75, mie_c, cos_theta))/(ray_c + mie_c) * 1 * (vec3(1)-exs); // Twilight
-	gl_FragColor.xyz = lin;
+	// スカイドームとの交点(視点から伸ばした直線が大気層を抜けるまでの距離)を算出
+	vec3 cp = SkyCP(wdir);
+	float skydist = length(cp);
+	// 太陽との角度
+	float cos_theta = dot(-wdir, u_lDir);
+	// 波長の4乗に反比例
+	vec3 ray_c = 1 / P4(u_rayleigh);
+	// 視点に入ってくるまでに減衰する光の量
+	vec3 exs = exp(-(ray_c + u_mie.y) * (skydist/u_sdDivide));
+	// 散乱した光が視界に入ってくる量
+	vec3 l_in = (Rayleigh(ray_c, cos_theta) + Mie(u_mie.x, u_mie.y, cos_theta))/(ray_c + u_mie.y) * (u_lColor * u_lPower) * (vec3(1)-exs);
+	gl_FragColor.xyz = l_in;
 	gl_FragColor.w = 1;
 }
 

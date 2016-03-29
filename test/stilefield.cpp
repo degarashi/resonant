@@ -2,15 +2,8 @@
 #include "test.hpp"
 #include "../glresource.hpp"
 #include "geometry.hpp"
+#include "diffusion_u.hpp"
 
-namespace {
-	using GId = rs::IEffect::GlxId;
-	const rs::IdValue U_Rayleigh = GId::GenUnifId("u_rayleigh"),
-					U_Mie = GId::GenUnifId("u_mie"),
-					U_SunColor = GId::GenUnifId("u_sunColor"),
-					U_SunDir = GId::GenUnifId("u_sunDir"),
-					U_MieGain = GId::GenUnifId("u_mieGain");
-}
 STileField::STileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt vn,
 							const float scale, const float height, const float height_att, const float th, const float mv)
 	:base_t(rd, n, vn, scale, height, height_att, th, mv)
@@ -37,10 +30,12 @@ STileField::STileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt
 	_ibSphere = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 	_ibSphere->get()->initData(std::move(idx));
 	setViewDistanceCoeff(0.2f, 1.f);
-	setRayleighCoeff(0);
-	setMieCoeff(0, 0);
-	setSunDir({0,1,0});
-	setSunColor({1,1,1});
+	setRayleighCoeff({});
+	setMieCoeff(0.8f, 0.1f);
+	setLightDir({0,1,0});
+	setLightColor({1,1,1});
+	setLightPower(1.f);
+	setDivide(1e1f);
 
 	setStateNew<St_Default>();
 }
@@ -61,10 +56,11 @@ struct STileField::St_Default : StateT<St_Default> {
 		e.setVDecl(rs::DrawDecl<vdecl::stile>::GetVDecl());
 		e.setUniform(U_ViewCenter, self._center);
 		e.setUniform(U_Rayleigh, self._rayleigh);
-		e.setUniform(U_Mie, self._mie);
-		e.setUniform(U_SunColor, self._sunColor);
-		e.setUniform(U_SunDir, self._sunDir);
-		e.setUniform(U_MieGain, self._mieGain);
+		e.setUniform(U_Mie, spn::Vec2{self._mieGain, self._mie});
+		e.setUniform(U_LDir, self._lDir);
+		e.setUniform(U_LColor, self._lColor);
+		e.setUniform(U_LPower, self._lPower);
+		e.setUniform(U_SdDivide, self._sdDivide);
 
 		self._prepareValues(e);
 		const int s = self._tileWidth;
@@ -114,25 +110,33 @@ std::pair<int,spn::Vec2> STileField::_calcLevel(float x, float y) const {
 	const int div = std::min(_nLevel-1, static_cast<int>(std::floor((d-_viewMin*_width) / dd)));
 	return {div, {dd*div+_viewMin*_width, dd*(div+1)+_viewMin*_width}};
 }
-void STileField::setRayleighCoeff(float c) {
+void STileField::setRayleighCoeff(const spn::Vec3& c) {
 	_rayleigh = c;
 }
-void STileField::setMieCoeff(float gain, float c) {
+void STileField::setMieCoeff(const float gain, const float c) {
 	_mieGain = gain;
 	_mie = c;
 }
-void STileField::setSunDir(const spn::Vec3& d) {
-	_sunDir = d;
+void STileField::setLightDir(const spn::Vec3& d) {
+	_lDir = d;
 }
-void STileField::setSunColor(const spn::Vec3& c) {
-	_sunColor = c;
+void STileField::setLightColor(const spn::Vec3& c) {
+	_lColor = c;
+}
+void STileField::setLightPower(const float p) {
+	_lPower = p;
+}
+void STileField::setDivide(const float d) {
+	_sdDivide = d;
 }
 
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, STileField, STileField, "TileFieldBase", NOTHING,
 		(setRayleighCoeff)
 		(setMieCoeff)
-		(setSunDir)
-		(setSunColor)
+		(setLightDir)
+		(setLightColor)
+		(setLightPower)
+		(setDivide)
 		(setViewDistanceCoeff),
 		(spn::MTRandom&)(int)(int)(float)(float)(float)(float)(float))
