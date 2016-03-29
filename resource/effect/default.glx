@@ -26,6 +26,7 @@ fragmentshader(130) TextFS() {
 	gl_FragColor.w *= u_alpha;
 }
 technique Text {
+	PolygonMode = Fill;
 	CullFace = false;
 	FrontFace = cw;
 	Blend = true;
@@ -87,6 +88,7 @@ fragmentshader(400) RectFS() {
 	gl_FragColor = c;
 }
 technique Sprite {
+	PolygonMode = Fill;
 	CullFace = false;
 	FrontFace = cw;
 	Blend = true;
@@ -334,6 +336,7 @@ fragmentshader(400) OffsetFS(int nArray) {
 }
 
 technique PostEffect {
+	PolygonMode = Fill;
 	CullFace = true;
 	FrontFace = cw;
 	Blend = true;
