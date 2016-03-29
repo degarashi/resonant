@@ -43,7 +43,7 @@ namespace rs {
 			e.setVStream(_rect11.getVertex(), 0);
 			auto ib = _rect11.getIndex();
 			e.setIStream(ib);
-			e.setUniform(U_RectScale, spn::Vec4{
+			e.setUniform<false>(U_RectScale, spn::Vec4{
 					(_drawRect.x0+_drawRect.x1)/2,
 					(_drawRect.y0+_drawRect.y1)/2,
 					_drawRect.width()/2,
