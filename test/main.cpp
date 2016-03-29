@@ -25,6 +25,7 @@
 #include "tile.hpp"
 #include "stile.hpp"
 #include "skydome.hpp"
+#include "tonemap.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -89,6 +90,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<TileField>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<STileField>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<SkyDome>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<ToneMap>(*lkb->spLua);
 
 		// init Random
 		{

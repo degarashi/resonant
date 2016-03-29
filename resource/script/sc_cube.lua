@@ -73,6 +73,7 @@ st_idle = {
 			dg:addObj(t)
 			self.text = t
 		end
+		dg:addObj(tm)
 		-- FBufferを準備
 		local scrSize = System.info:getScreenSize()
 		self.hFb = System.glres:makeFBuffer()

@@ -1,0 +1,164 @@
+// --------------------- YAverage ---------------------
+attribute YAvgAttr {
+	vec2 a_pos : POSITION;
+	vec2 a_tex : TEXCOORD0;
+}
+uniform YAvgUnif {
+	sampler2D	u_texDiffuse;
+	vec2		u_mapWidth;
+}
+varying YAvgVary {
+	vec2 v_uv[4];
+}
+vertexshader(400) YAvgVS() {
+	vec2 mw = 1 / u_mapWidth;
+	vec2 uv = a_pos / 2 + 0.5;
+	uv -= mw*0.5;
+	v_uv[0] = uv;
+	v_uv[1] = uv+vec2(mw.x, 0);
+	v_uv[2] = uv+vec2(0, mw.y);
+	v_uv[3] = uv+mw;
+	gl_Position = vec4(a_pos, 0,1);
+}
+code Center {
+	float CenterG(in vec2 uv) {
+		return 1;
+		vec2 center = vec2(0.5);
+		float d = distance(center, uv);
+		return max(0, 1-d);
+	}
+}
+fragmentshader(400, Center) YAvgFS() {
+	vec3 Rgb2Y = vec3(+0.29900, +0.58700, +0.11400);
+	float Epsilon = 0.00001;
+
+	vec4 lum = vec4(dot(Rgb2Y, texture2D(u_texDiffuse, v_uv[0]).rgb) * CenterG(v_uv[0]),
+					dot(Rgb2Y, texture2D(u_texDiffuse, v_uv[1]).rgb) * CenterG(v_uv[1]),
+					dot(Rgb2Y, texture2D(u_texDiffuse, v_uv[2]).rgb) * CenterG(v_uv[2]),
+					dot(Rgb2Y, texture2D(u_texDiffuse, v_uv[3]).rgb) * CenterG(v_uv[3]));
+	float lum_m = max(max(lum.r, lum.g), max(lum.b, lum.a));
+
+	lum += vec4(Epsilon);
+	lum = log(lum);
+	float total = lum.x + lum.y + lum.z + lum.w;
+	gl_FragColor = vec4(lum_m, total*0.25, 0, 0);
+}
+
+// --------------------- YShrink ---------------------
+varying YShrinkVary {
+	vec2 v_uv[8];
+}
+vertexshader(400) YShrinkVS() {
+	vec2 mw = 1 / u_mapWidth;
+	vec2 uv = a_pos/2+0.5;
+	uv -= mw * 1.5;
+	v_uv[0] = uv;
+	v_uv[1] = uv+vec2(mw.x, 0);
+	v_uv[2] = uv+vec2(mw.x*2, 0);
+	v_uv[3] = uv+vec2(mw.x*3, 0);
+	v_uv[4] = uv+vec2(0, mw.y);
+	v_uv[5] = uv+vec2(mw.x, mw.y);
+	v_uv[6] = uv+vec2(mw.x*2, mw.y);
+	v_uv[7] = uv+vec2(mw.x*3, mw.y);
+	gl_Position = vec4(a_pos, 0,1);
+}
+fragmentshader(400) YShrinkFS() {
+	vec2 duv = 1/u_mapWidth;
+	float dy = duv.y;
+	vec4 t[16] = {
+		texture2D(u_texDiffuse, v_uv[0]),
+		texture2D(u_texDiffuse, v_uv[1]),
+		texture2D(u_texDiffuse, v_uv[2]),
+		texture2D(u_texDiffuse, v_uv[3]),
+		texture2D(u_texDiffuse, v_uv[4]),
+		texture2D(u_texDiffuse, v_uv[5]),
+		texture2D(u_texDiffuse, v_uv[6]),
+		texture2D(u_texDiffuse, v_uv[7]),
+		texture2D(u_texDiffuse, v_uv[0] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[1] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[2] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[3] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[4] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[5] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[6] + vec2(0, dy*2)),
+		texture2D(u_texDiffuse, v_uv[7] + vec2(0, dy*2))
+	};
+	float l_max = max(max(max(max(t[0].r, t[1].r), max(t[2].r, t[3].r)),
+						max(max(t[4].r, t[5].r), max(t[6].r, t[7].r))),
+						max(max(max(t[8].r, t[9].r), max(t[10].r, t[11].r)),
+						max(max(t[12].r, t[13].r), max(t[14].r, t[15].r))));
+	gl_FragColor.r = l_max;
+	gl_FragColor.g = (1/16.0) * (t[0].g + t[1].g + t[2].g + t[3].g +
+								t[4].g + t[5].g + t[6].g + t[7].g +
+								t[8].g + t[9].g + t[10].g + t[11].g +
+								t[12].g + t[13].g + t[14].g + t[15].g);
+	gl_FragColor.ba = vec2(0);
+}
+
+// --------------------- YTone ---------------------
+uniform YToneUnif {
+	sampler2D	u_texInfo;
+	sampler2D	u_texDiffuse;
+}
+varying YToneVary {
+	vec2 v_uv;
+}
+vertexshader(400) YToneVS() {
+	v_uv = a_pos/2+0.5;
+	gl_Position = vec4(a_pos, 0,1);
+}
+fragmentshader(400) YToneFS() {
+	const vec3 Rgb2Y	= vec3( +0.29900, +0.58700, +0.11400);
+	const vec3 Rgb2Cb	= vec3( -0.16874, -0.33126, +0.50000);
+	const vec3 Rgb2Cr	= vec3( +0.50000, -0.41869, -0.08131);
+	const vec3 YCbCr2R	= vec3( +1.00000, +0.00000, +1.40200);
+	const vec3 YCbCr2G	= vec3( +1.00000, -0.34414, -0.71414);
+	const vec3 YCbCr2B	= vec3( +1.00000, +1.77200, +0.00000);
+
+	vec4 info		= texture2D(u_texInfo, vec2(0.5, 0.5));
+	vec3 texel		= texture2D(u_texDiffuse, v_uv).rgb;
+
+	float coeff		= 0.05 * exp(-info.g);
+	float l_max		= coeff * max(0.3, info.r);
+
+	// YCbCr系に変換
+	vec3 YCbCr;
+	YCbCr.y = dot(Rgb2Cb, texel);
+	YCbCr.z = dot(Rgb2Cr, texel);
+
+	// 色の強さは補正
+	float lum = coeff * dot(Rgb2Y, texel);
+	YCbCr.x = lum * (1.0+lum/(l_max*l_max)) / (1.0+lum);
+
+	// RGB系にして出力
+	gl_FragColor.r = dot(YCbCr2R, YCbCr);
+	gl_FragColor.g = dot(YCbCr2G, YCbCr);
+	gl_FragColor.b = dot(YCbCr2B, YCbCr);
+	gl_FragColor.a = 1;
+}
+
+technique Tone {
+	PolygonMode = Fill;
+	CullFace = false;
+	Blend = false;
+	DepthTest = false;
+	DepthMask = false;
+	Attribute = YAvgAttr;
+	Uniform = YAvgUnif;
+	pass YAverage {
+		Varying = YAvgVary;
+		VertexShader = YAvgVS();
+		FragmentShader = YAvgFS();
+	}
+	pass YShrink {
+		Varying = YShrinkVary;
+		VertexShader = YShrinkVS();
+		FragmentShader = YShrinkFS();
+	}
+	pass Tone {
+		Uniform = YToneUnif;
+		Varying = YToneVary;
+		VertexShader = YToneVS();
+		FragmentShader = YToneFS();
+	}
+}

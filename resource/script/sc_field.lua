@@ -114,12 +114,39 @@ st_idle = {
 			upd:addObj(fc)
 		end
 
-		local clp = G.ClearParam.New(G.Vec4.New(0,0,0,0), 1, nil)
-		dg:addObj(G.FBClear.New(0x0000, clp))
-
-		local fc = G.FPSCameraU.New()
-		upd:addObj(fc)
-		-- RayleighCoeff, MieCoeff
+		local tm2
+		do
+			local tm = G.ToneMap.New(0x02000)
+			tm:setSource(cbuff)
+			dg:addObj(tm)
+			self.hdrResult = tm:getResult()
+			tm2 = tm
+		end
+		do
+			local clp = G.ClearParam.New(G.Vec4.New(0,0,0,0), 1, nil)
+			local fbc = G.FBSwitch.New(0x03000, nil, clp)
+			dg:addObj(fbc)
+		end
+		do
+			local blur0 = G.BlurEffect.New(0x04000)
+			blur0:setAlpha(1)
+			blur0:setDiffuse(self.hdrResult)
+			dg:addObj(blur0)
+		end
+		do
+			local blur0 = G.BlurEffect.New(0x05000)
+			blur0:setAlpha(1)
+			blur0:setDiffuse(tm2:getShrink0())
+			blur0:setRect({-1,-0.5,-1,-0.5})
+			dg:addObj(blur0)
+		end
+		do
+			local blur0 = G.BlurEffect.New(0x05000)
+			blur0:setAlpha(1)
+			blur0:setDiffuse(tm2:getShrinkA()[2])
+			blur0:setRect({-0.5,0,-1,-0.5})
+			dg:addObj(blur0)
+		end
 	end,
 	OnUpdate = function(self, slc, ...)
 		local pose = Global.cpp.hlCam:refPose()
