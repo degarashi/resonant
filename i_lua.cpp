@@ -101,7 +101,7 @@ DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawableObj, DrawableObj, "Object", 
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_Scene, U_Scene, "FSMachine", NOTHING,
 		(getUpdGroup)(getDrawGroup), NOTHING)
 DEF_LUAIMPLEMENT_PTR_NOCTOR(rs::SceneMgr, SceneMgr, NOTHING, (isEmpty)(getTop)(getScene)(setPushScene)(setPopScene))
-DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::IGLTexture, IGLTexture, NOTHING, (getResourceName)(getTextureID)(setFilter)(setAnisotropicCoeff)(setUVWrap)(getSize)(getTextureID)(getTexFlag)(getFaceFlag)(isMipmap)(save)(isCubemap))
+DEF_LUAIMPLEMENT_HDL_NOBASE_NOCTOR(rs::GLRes, rs::IGLTexture, IGLTexture, NOTHING, (getResourceName)(getTextureID)(setFilter)(setLinear)(setAnisotropicCoeff)(setUVWrap)(setWrap)(getSize)(getTextureID)(getTexFlag)(getFaceFlag)(isMipmap)(save)(isCubemap))
 DEF_LUAIMPLEMENT_HDL_NOCTOR(ObjMgr, rs::UpdGroup, UpdGroup, "Object", NOTHING, (addObj)(addObjPriority)(remObj)(getName)(getPriority)(clear))
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, rs::U_UpdGroup, U_UpdGroup, "UpdGroup", NOTHING, NOTHING, NOTHING)
 DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, rs::DrawGroup, DrawGroup, "DrawableObj", NOTHING, (addObj)(remObj)(setSortAlgorithmId)(getName))

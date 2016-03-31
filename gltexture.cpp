@@ -136,6 +136,9 @@ namespace rs {
 		_iLinearMag = bLinearMag ? 1 : 0;
 		_iLinearMin = bLinearMin ? 1 : 0;
 	}
+	void IGLTexture::setLinear(bool bLinear) {
+		setFilter(bLinear, bLinear);
+	}
 	void IGLTexture::onDeviceLost() {
 		if(_idTex != 0) {
 			GLW.getDrawHandler().postExecNoWait([buffId=getTextureID()](){
@@ -149,6 +152,9 @@ namespace rs {
 	void IGLTexture::setUVWrap(WrapState s, WrapState t) {
 		_wrapS = s;
 		_wrapT = t;
+	}
+	void IGLTexture::setWrap(WrapState st) {
+		setUVWrap(st, st);
 	}
 	bool IGLTexture::operator == (const IGLTexture& t) const {
 		return getTextureID() == t.getTextureID();
