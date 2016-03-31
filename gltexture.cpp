@@ -360,7 +360,8 @@ namespace rs {
 			};
 		}
 		// ミップマップの場合はサイズを縮小しながらテクスチャを書き込む
-		size = tsfc->getSize();
+		const auto tsize = tsfc->getSize();
+		size = tsize;
 		int layer = 0;
 		auto make = [tflag, &layer, &desc, &size](const void* data) {
 			GL.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -377,7 +378,7 @@ namespace rs {
 				tsfc = tsfc->resize(size);
 			}
 		}
-		return std::make_pair(size, desc.format);
+		return std::make_pair(tsize, desc.format);
 	}
 	auto MakeMip(GLenum tflag, GLenum format, const spn::Size& size, const spn::ByteBuff& buff, bool bP2, bool bMip) {
 		// 簡単の為に一旦SDL_Surfaceに変換
