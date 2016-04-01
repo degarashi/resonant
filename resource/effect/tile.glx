@@ -1,3 +1,6 @@
+import scatter.glx;
+import lerp.glx;
+
 uniform TileUnif {
 	vec3 u_scale;
 	vec3 u_tileoffset;
@@ -37,69 +40,12 @@ attribute STileAttr {
 	vec3 a_normalX : TEXCOORD2;
 	vec3 a_normalY : TEXCOORD3;
 }
-uniform STileUnif : TileUnif {
+uniform STileUnif : TileUnif, ScatterUnif {
 	vec3 u_viewCenter;
 	vec2 u_distRange;
 	float u_interpolateLevel;
 
 	vec3 sys_vEyePos;
-	vec2 u_sdScale;
-	float u_sdDivide;
-	vec3 u_rayleigh;
-	vec2 u_mie;
-	float u_lPower;
-	vec3 u_lDir;
-	vec3 u_lColor;
-}
-code Lerp {
-	float Lerp(float from, float to, float t) {
-		return (to-from) * t + from;
-	}
-	vec3 Lerp(vec3 from, vec3 to, float t) {
-		return (to-from) * t + from;
-	}
-	float Sigmoid(float val, float gain) {
-		return 1.0 / (1.0 + exp(-gain*val));
-	}
-}
-code Scatter {
-	float Square(float t) {
-		return t*t;
-	}
-	float Cube(float t) {
-		return t*t*t;
-	}
-	vec3 Cube(vec3 t) {
-		return t*t*t;
-	}
-	float P4(float t) {
-		return t*t*t*t;
-	}
-	vec3 P4(vec3 t) {
-		return vec3(P4(t.x), P4(t.y), P4(t.z));
-	}
-	float Pow2_3(float t) {
-		return sqrt(Cube(t));
-	}
-	float Rayleigh(in float r, in float cos_theta) {
-		float pi = 3.141592;
-		return 3 / (16*pi) * r * (1 + Square(cos_theta));
-	}
-	vec3 Rayleigh(in vec3 r, in float cos_theta) {
-		return vec3(Rayleigh(r.r, cos_theta),
-					Rayleigh(r.g, cos_theta),
-					Rayleigh(r.b, cos_theta));
-	}
-	float _Mie(in float g, in float m_coeff, in float cos_theta) {
-		float pi = 3.141592;
-		/* return 1 / (4*pi) * m_coeff * Square(1-g)/Pow2_3(1+Square(g)-2*g*cos_theta); */
-		return 3 / (8*pi) * m_coeff * (((1-Square(g)) * (1+Square(cos_theta))) / ((2+Square(g))*Pow2_3(1+Square(g)-2*g*cos_theta)));
-	}
-	vec3 Mie(in float g, in float m_coeff, in float cos_theta) {
-		return vec3(_Mie(g, m_coeff, cos_theta),
-					_Mie(g, m_coeff, cos_theta),
-					_Mie(g, m_coeff, cos_theta));
-	}
 }
 varying STileVary {
 	mediump vec3 v_normal;
@@ -161,17 +107,10 @@ attribute SkyAttr {
 	vec2 a_pos : POSITION;
 	vec2 a_tex : TEXCOORD0;
 }
-uniform SkyUnif {
+uniform SkyUnif : ScatterUnif {
 	mat4 sys_mViewProj;
 	mat4 sys_mViewInv;
 	vec2 u_scrSize;		// 射影平面でのスクリーンサイズ比
-	vec2 u_sdScale;
-	float u_sdDivide;
-	vec3 u_rayleigh;
-	vec2 u_mie;
-	float u_lPower;
-	vec3 u_lDir;
-	vec3 u_lColor;
 }
 varying SkyVary {
 	vec2 v_scpos;

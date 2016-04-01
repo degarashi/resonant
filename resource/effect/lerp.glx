@@ -1,0 +1,11 @@
+code Lerp {
+	float Lerp(float from, float to, float t) {
+		return (to-from) * t + from;
+	}
+	vec3 Lerp(vec3 from, vec3 to, float t) {
+		return (to-from) * t + from;
+	}
+	float Sigmoid(float val, float gain) {
+		return 1.0 / (1.0 + exp(-gain*val));
+	}
+}

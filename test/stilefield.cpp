@@ -101,11 +101,6 @@ std::pair<int,spn::Vec2> STileField::_calcLevel(float x, float y) const {
 
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, STileField, STileField, "TileFieldBase", NOTHING,
-		(setRayleighCoeff)
-		(setMieCoeff)
-		(setLightDir)
-		(setLightColor)
-		(setLightPower)
-		(setDivide)
+		(setRayleighCoeff)(setMieCoeff)(setLightDir)(setLightColor)(setLightPower)(setDivide)
 		(setViewDistanceCoeff),
 		(spn::MTRandom&)(int)(int)(float)(float)(float)(float)(float))

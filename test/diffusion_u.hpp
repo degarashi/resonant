@@ -30,4 +30,3 @@ class RayleighMie {
 		void setLightPower(float p);
 		void outputParams(rs::IEffect& e) const;
 };
-DEF_LUAIMPORT(RayleighMie)
