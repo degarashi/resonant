@@ -1,5 +1,6 @@
 #pragma once
 #include "tilebase.hpp"
+#include "diffusion_u.hpp"
 
 class STile {
 	private:
@@ -8,7 +9,7 @@ class STile {
 		STile(const Displacement::HeightL& h, int ox, int oy, spn::PowInt size, int stride);
 		void draw(rs::IEffect& e, rs::HIb idx, const spn::Vec2& distRange) const;
 };
-class STileField : public rs::ObjectT<STileField, TileFieldBase> {
+class STileField : public rs::ObjectT<STileField, TileFieldBase>, public RayleighMie {
 	private:
 		using base_t = rs::ObjectT<STileField, TileFieldBase>;
 		using STile_OP = spn::Optional<STile>;
@@ -19,13 +20,6 @@ class STileField : public rs::ObjectT<STileField, TileFieldBase> {
 		rs::HLIb			_ibSphere;
 		float				_viewMin,
 							_viewCoeff;
-		spn::Vec3			_lDir,
-							_lColor,
-							_rayleigh;
-		float				_sdDivide,
-							_mie,
-							_mieGain,
-							_lPower;
 		struct St_Default;
 
 		std::pair<int,spn::Vec2> _calcLevel(float x, float y) const;
@@ -33,11 +27,5 @@ class STileField : public rs::ObjectT<STileField, TileFieldBase> {
 		STileField(spn::MTRandom& rd, const spn::PowInt n, const spn::PowInt vn,
 							float scale, float height, float height_att, float th, float mv);
 		void setViewDistanceCoeff(float dMin, float dCoeff);
-		void setRayleighCoeff(const spn::Vec3& r);
-		void setMieCoeff(float gain, float c);
-		void setLightDir(const spn::Vec3& d);
-		void setLightColor(const spn::Vec3& c);
-		void setLightPower(float p);
-		void setDivide(float d);
 };
 DEF_LUAIMPORT(STileField)

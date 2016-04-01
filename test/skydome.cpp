@@ -7,14 +7,6 @@ namespace {
 	using GId = rs::IEffect::GlxId;
 	const rs::IdValue T_Skydome =	GId::GenTechId("Tile", "Skydome");
 }
-const rs::IdValue
-		U_SdScale =		GId::GenUnifId("u_sdScale"),
-		U_SdDivide =	GId::GenUnifId("u_sdDivide"),
-		U_Rayleigh =	GId::GenUnifId("u_rayleigh"),
-		U_Mie =			GId::GenUnifId("u_mie"),
-		U_LPower =		GId::GenUnifId("u_lPower"),
-		U_LDir =		GId::GenUnifId("u_lDir"),
-		U_LColor =		GId::GenUnifId("u_lColor");
 
 SkyDome::SkyDome(rs::Priority p): PostEffect(T_Skydome, p) {
 	setScale(1, 1);
