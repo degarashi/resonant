@@ -28,13 +28,9 @@ namespace {
 		return (x+range/2) + (d+d_range/2)/d_range;
 	}
 	auto elevLerp(int w, float ratio, float x, float y, int dx, int dy) {
-		return (Clipmap::Layer::TestElev(w, ratio, x-dx, y-dy) +
-				Clipmap::Layer::TestElev(w, ratio, x+dx, y+dy)) /2;
+		return (ClipTestSource::TestElev(w, ratio, x-dx, y-dy) +
+				ClipTestSource::TestElev(w, ratio, x+dx, y+dy)) /2;
 	};
-}
-float Clipmap::Layer::TestElev(int w, float ratio, float x, float y) {
-	return std::round(std::sin(x * ratio*2 * 2*spn::PI / w) * 63) +
-			std::round(std::sin(y * ratio*2 * 2*spn::PI / w) * 63);
 }
 void Clipmap::save(const spn::PathBlock& pb) const {
 	auto pbt = pb;
@@ -190,7 +186,7 @@ std::vector<spn::Vec2> Clipmap::Layer::MakeTestHeight(const spn::PowSize ps, con
 		const int rel_y = i-(ps.height/2);
 		for(int j=0 ; j<int(ps.width) ; j++) {
 			const int rel_x = j-(ps.width/2);
-			const float e0 = TestElev(ps.width, ratio, rel_x, rel_y);
+			const float e0 = ClipTestSource::TestElev(ps.width, ratio, rel_x, rel_y);
 			float d_c;
 			switch((j&1) | ((i&1)<<1)) {
 				case 0b00:

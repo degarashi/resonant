@@ -1,4 +1,4 @@
-#include "clipmap.hpp"
+#include "clipsource.hpp"
 #include "../glresource.hpp"
 #include "spinner/rectdiff.hpp"
 
@@ -61,7 +61,7 @@ IClipSource::Data ClipTestSource::getDataRect(const spn::Rect& r) {
 			auto* p = data.data();
 			for(int i=r.y0 ; i<r.y1 ; i++) {
 				for(int j=r.x0 ; j<r.x1 ; j++) {
-					*p++ = Clipmap::Layer::TestElev(
+					*p++ = TestElev(
 								1, 1,
 								(j+_aux) * _freqH,
 								(i+_aux) * _freqV
@@ -73,4 +73,8 @@ IClipSource::Data ClipTestSource::getDataRect(const spn::Rect& r) {
 		}
 	);
 	return Data(_hTex, r, sz);
+}
+float ClipTestSource::TestElev(int w, float ratio, float x, float y) {
+	return std::round(std::sin(x * ratio*2 * 2*spn::PI / w) * 63) +
+			std::round(std::sin(y * ratio*2 * 2*spn::PI / w) * 63);
 }
