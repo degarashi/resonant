@@ -10,7 +10,7 @@ st_idle = {
 		slc.objlist = scbase.Init(self:getUpdGroup(), self:getDrawGroup())
 		local upd,dg = self:getUpdGroup(), self:getDrawGroup()
 
-		Global.cpp.hlCam:setFarZ(1000)
+		Global.cpp.hlCam:setFarZ(3000)
 		Global.cpp.hlCam:setNearZ(2)
 
 		-- FBufferを準備
@@ -35,7 +35,7 @@ st_idle = {
 		end
 
 		-- Clipmapの初期化
-		local clip = G.ClipmapObj.New(64, 7, 0)
+		local clip = G.ClipmapObj.New(64, 5, 0)
 		clip:setDrawPriority(0x6000)
 		clip:setCamera(Global.cpp.hlCam)
 		dg:addObj(clip)
@@ -44,11 +44,11 @@ st_idle = {
 		-- Daylight --
 		param = {
 			scale = {1,1},
-			divide = 2e1,
+			divide = 4e3,
 			rayleigh = G.Vec3.New(680*1e-3, 550*1e-3, 450*1e-3),
-			mie_gain = 0.9,
-			mie = 0.1,
-			lpower = 24.4,
+			mie_gain = 0.8,
+			mie = 0.5,
+			lpower = 15.4,
 			ldir = G.Vec3.New(0, -1, 0)
 		}
 		-- -- Dawn --

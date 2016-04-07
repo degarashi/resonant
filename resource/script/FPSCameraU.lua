@@ -23,7 +23,7 @@ st_idle = {
 			Global.cpp.hlIm:setMouseMode(flag)
 			self.bPress = btn
 		end
-		local speed = 0.25
+		local speed = 2.15
 		local mvF = speed * Global.cpp.actAy:getKeyValueSimplified()
 		local mvS = speed * Global.cpp.actAx:getKeyValueSimplified()
 		local pose = Global.cpp.hlCam:refPose()
