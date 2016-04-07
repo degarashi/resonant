@@ -1,6 +1,7 @@
 #include "clipsource.hpp"
 #include "../glresource.hpp"
 #include "spinner/rectdiff.hpp"
+#include "spinner/random.hpp"
 
 // -------- IClipSource --------
 IClipSource::Data::Data(rs::HTex t, const spn::RectF& r, const spn::SizeF& s):
@@ -22,11 +23,48 @@ ClipTexSource::ClipTexSource(rs::HTex t):
 {
 	t->get()->setWrap(rs::WrapState::Repeat);
 }
-spn::Size ClipTexSource::getSize() const {
-	return _texture->get()->getSize();
+spn::RangeF ClipTexSource::getRange() const {
+	return {0, 1.f};
 }
 IClipSource::Data ClipTexSource::getDataRect(const spn::Rect& r) {
-	return Data(_texture, r, getSize());
+	return Data(_texture, r, _texture->get()->getSize());
+}
+
+// -------- ClipPNSource --------
+ClipPNSource::ClipPNSource(const HashVec_SP& sp,
+							const spn::PowInt tsize,
+							const int freq):
+	_hash(sp),
+	_freq(freq)
+{
+	_hTex = mgr_gl.createTexture({tsize, tsize}, GL_R16F, false, false);
+	_hTex->get()->setWrap(rs::WrapState::Repeat);
+}
+spn::RangeF ClipPNSource::getRange() const {
+	return _hash->getRange();
+}
+IClipSource::Data ClipPNSource::getDataRect(const spn::Rect& r) {
+	// 書き込むデータ範囲の分割
+	auto* ptex = static_cast<rs::Texture_Mem*>(_hTex->get());
+	const auto sz = _hTex->get()->getSize();
+	spn::rect::DivideRect(
+		spn::Size(sz.width, sz.height),
+		r,
+		[ptex, this](const auto& r, const auto& rc) {
+			// 書き込むデータの生成
+			std::vector<float>	data(r.width() * r.height());
+			auto* p = data.data();
+			for(int i=r.y0 ; i<r.y1 ; i++) {
+				for(int j=r.x0 ; j<r.x1 ; j++) {
+					const float val = _hash->getElev((j+1)*_freq, (i+1)*_freq);
+					*p++ = val;
+				}
+			}
+			AssertP(Trap, p==data.data()+data.size())
+			ptex->writeRect({data.data(), data.size()*sizeof(float)}, rc, GL_FLOAT);
+		}
+	);
+	return Data(_hTex, r, sz);
 }
 
 // -------- ClipTestSource --------
@@ -42,8 +80,9 @@ ClipTestSource::ClipTestSource(const float fH, const float fV, const spn::PowSiz
 		h = 0;
 	((rs::Texture_Mem*)_hTex->get())->writeData({data.data(), data.size()*sizeof(float)}, GL_FLOAT);
 }
-spn::Size ClipTestSource::getSize() const {
-	return {0,0};
+spn::RangeF ClipTestSource::getRange() const {
+	const float r = 63;
+	return {-r, r};
 }
 void ClipTestSource::save(const std::string& path) const {
 	_hTex->get()->save(path);

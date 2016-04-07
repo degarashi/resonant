@@ -1,3 +1,5 @@
+import scatter.glx;
+
 code Pack {
 	float Pack2Value(float v0, float v1, float range) {
 		return (v0+range) + (v1+range)/(range*2);
@@ -234,6 +236,7 @@ uniform TestUnif {
 	vec3		u_color;
 	vec2		u_viewPos;			// 平面上の視点位置(レイヤー座標系)
 	vec2		u_alphaRange;		// FCブレンド係数
+	float		u_heightRatio;
 	mat4		sys_mWorld;
 	mat4		sys_mViewProj;
 }
@@ -260,7 +263,7 @@ vertexshader(400, Pack) TestVS() {
 
 	lpos.z = 0;
 	vec4 wpos = vec4(lpos, 1) * sys_mWorld;
-	wpos.y = h/8;
+	wpos.y = h*u_heightRatio;
 	gl_Position = wpos * sys_mViewProj;
 
 	vec4 nml = texture2DLod(u_normal, uv, 0);
@@ -279,10 +282,68 @@ fragmentshader(400) TestFS() {
 	gl_FragColor = vec4(v_color, 1) * lit;
 	gl_FragColor = dif * lit;
 }
-
 // ------------------- SamplingD -------------------
 fragmentshader(400) SamplingFS_D() {
 	gl_FragColor.xyz = texture2D(u_elevation, v_hUv).xyz;
+	gl_FragColor.w = 1;
+}
+
+// ------------------- RMPolygon -------------------
+uniform RMUnif : ScatterUnif, TestUnif {
+	vec3 sys_vEyePos;
+}
+varying ScatterVary {
+	vec3 v_fex;
+	vec3 v_lin;
+}
+vertexshader(400, Scatter, Pack) RM_VS() {
+	vec3 lpos = vec3(a_pos, 1) * u_toLayer;
+	lpos = floor(lpos+vec3(0.5));
+	vec2 alpha = abs(lpos.xy - u_viewPos + vec2(1));
+	alpha = (alpha - vec2(u_alphaRange.x)) / (u_alphaRange.y - u_alphaRange.x);
+	alpha = clamp(alpha, vec2(0), vec2(1));
+	float alphav = max(alpha.x, alpha.y);
+
+	// Elevationブレンド
+	vec2 uv = (lpos.xy + u_srcUVOffset + vec2(0.5)) * u_srcUVUnit;
+	/* vec2 zf_zd = Unpack2ValueU(texture2DLod(u_elevation, uv, 0).x, 256, 16); */
+	/* float h = mix(zf_zd.x, zf_zd.y, alphav);                                 */
+	/* float h = mix(zf_zd.x, zf_zd.x+zf_zd.y, alphav); */
+	vec2 zf_zc = texture2DLod(u_elevation, uv, 0).xy;
+	float h = mix(zf_zc.x, zf_zc.y, alphav);
+
+	lpos.z = 0;
+	vec4 wpos = vec4(lpos, 1) * sys_mWorld;
+	wpos.y = h*u_heightRatio;
+	gl_Position = wpos * sys_mViewProj;
+
+	vec4 nml = texture2DLod(u_normal, uv, 0);
+	vec3 nmlf = vec3(nml.x*2-1, nml.y*2-1, 0);
+	nmlf.z = sqrt(clamp(1.0 - nmlf.x*nmlf.x - nmlf.y*nmlf.y, 0, 1));
+	vec3 nmlc = vec3(nml.z*2-1, nml.w*2-1, 0);
+	nmlc.z = sqrt(clamp(1.0 - nmlc.x*nmlc.x - nmlc.y*nmlc.y, 0, 1));
+	v_normal.xzy = normalize(mix(nmlf, nmlc, alphav));
+	v_color = u_color;
+	v_uv = (lpos.xy + vec2(1)) * u_viewUVRect.xy + u_viewUVRect.zw;
+
+	// --------- Scattering ---------
+	// 太陽との角度
+	float cos_theta = dot(normalize(sys_vEyePos - wpos.xyz), u_lDir);
+	float eyedist = distance(sys_vEyePos, wpos.xyz);
+	// 波長の4乗に反比例
+	vec3 ray_c = 1 / P4(u_rayleigh);
+	// 視点に入ってくるまでに減衰する光の量
+	vec3 exs = exp(-(ray_c + u_mie.y) * (eyedist/u_sdDivide));
+	v_fex = exs;
+	// 散乱した光が視界に入ってくる量
+	v_lin = (Rayleigh(ray_c, cos_theta) + Mie(u_mie.x, u_mie.y, cos_theta)) / (ray_c + u_mie.y) * (u_lColor * u_lPower) * (vec3(1)-exs);
+}
+fragmentshader(400) RM_FS() {
+	vec4 dif = texture2D(u_texDiffuse, v_uv);
+	gl_FragColor.xyz = dif.xyz * dot(v_normal, u_lDir);
+	gl_FragColor.xyz *= v_fex;
+	gl_FragColor.xyz += v_lin;
+	gl_FragColor.xyz += v_color*0.0001;
 	gl_FragColor.w = 1;
 }
 
@@ -303,6 +364,17 @@ technique Clipmap {
 		varying = TestVary;
 		VertexShader = TestVS();
 		FragmentShader = TestFS();
+	}
+	pass RMPolygon {
+		/* PolygonMode = Line; */
+		CullFace = true;
+		DepthTest = true;
+		DepthMask = true;
+		attribute = SamplingAttr;
+		uniform = RMUnif;
+		varying = TestVary, ScatterVary;
+		VertexShader = RM_VS();
+		FragmentShader = RM_FS();
 	}
 	pass SamplingD {
 		attribute = SamplingAttr;

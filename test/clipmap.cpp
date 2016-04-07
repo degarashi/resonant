@@ -9,6 +9,7 @@ namespace boom {
 #define U_Def(str)			rs::IEffect::GlxId::GenUnifId(str)
 #define T_Def(tstr, pstr)	rs::IEffect::GlxId::GenTechId(tstr, pstr)
 const rs::IdValue
+	U_HeightRatio	= U_Def("u_heightRatio"),
 	U_ViewPos		= U_Def("u_viewPos"),
 	U_AlphaRange	= U_Def("u_alphaRange"),
 	U_ViewUVRect	= U_Def("u_viewUVRect"),
@@ -26,10 +27,14 @@ const rs::IdValue
 	T_Sampling		= T_Def("Clipmap", "Sampling"),
 	T_MakeNormal	= T_Def("Clipmap", "MakeNormal"),
 	T_Draw			= T_Def("Clipmap", "Draw"),
-	T_TestPoly		= T_Def("Clipmap", "TestPolygon");
+	T_TestPoly		= T_Def("Clipmap", "TestPolygon"),
+	T_RMPoly		= T_Def("Clipmap", "RMPolygon");
 
+#include "spinner/random.hpp"
 // --------------------- Clipmap ---------------------
 Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
+	_scale{1.f, 1.f},
+	_dscale{1.f, 1.f},
 	_tileWidth(n-1),
 	_upsamp_n(upsamp_n),
 	_bRefresh(true)
@@ -44,16 +49,35 @@ Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
 	const PowSize cs{w, w};
 	float sc = 1.f;
 	float hsc = 1.f/133;
+	mgr_random.initEngine(12321);
+	auto mt = mgr_random.get(12321);
 	auto hlTex = mgr_gl.loadTexture("block.jpg", rs::MipState::MipmapLinear);
 	hlTex->get()->setLinear(true);
 	auto dsrc = std::make_shared<ClipTexSource>(hlTex);
+	auto hashv = std::make_shared<ClipHashV>();
+	auto h2 = std::make_shared<Hash2D>(mt, 8);
+	constexpr float Scale = 64;
+	auto fn = [&hashv, &h2, Scale](float rx, float ry, float e) {
+		auto hash = std::make_shared<ClipHash>(h2, Scale);
+		auto hashm = std::make_shared<ClipHashMod>(hash);
+		hashm->setRatio(rx, ry);
+		hashm->setElevRatio(e);
+		hashv->addHash(hashm);
+	};
+	fn(1.8, 1.6, 1.3);
+	fn(1, 1, 1);
+	fn(0.13f, 0.13f, 10);
+	fn(0.36f, 0.36f, 4);
+	int ratio = 1;
 	for(int i=upsamp_n ; i<l ; i++) {
-		auto& l = _layer[i];
-		l = std::make_shared<Layer>(cs, sc);
-		l->setElevSource(std::make_shared<ClipTestSource>(hsc, hsc, cs, 1.f));
-		l->setDiffuseSource(dsrc);
+		auto& pl = _layer[i];
+		pl = std::make_shared<Layer>(cs, sc);
+		// l->setElevSource(std::make_shared<ClipTestSource>(hsc, hsc, cs, 1.f));
+		pl->setElevSource(std::make_shared<ClipPNSource>(hashv, 256, ratio));
+		pl->setDiffuseSource(dsrc);
 		hsc *= 2;
 		sc *= 2;
+		ratio *= 2;
 	}
 	sc = .5f;
 	for(int i=upsamp_n-1 ; i>=0 ; i--) {
@@ -257,8 +281,8 @@ void Clipmap::_initGLBuffer() {
 		const int ofs = nW*2;
 		for(int i=0 ; i<nW-2 ; i++) {
 			const int idx[4] = {
-				ofs+(nW-1)+i, ofs+(nW-1)+i+1,
-				ofs+i, ofs+i+1
+				ofs+(nW-1)+i+1,
+				ofs+i+1, ofs+(nW-1)+i, ofs+i
 			};
 			fnTri(pIa, idx);
 		}
@@ -310,16 +334,19 @@ void Clipmap::_initGLBuffer() {
 		for(int i=0 ; i<nWI_1 ; i++)
 			*pV++ = Vec2(i, 0);
 		for(int i=0 ; i<nWI_1i/3 ; i++)
-			fnTri(0, 2, 1, i*2+nWI_1*3);
+			fnTri(0, 1, 2, i*2+nWI_1*3);
 		Assert(Trap, pV == va.data()+nWI_1*4)
 		Assert(Trap, pI == ia.data()+nWI_1i*4)
 		fnMakeVI(_vb.degeneration, _ib.degeneration[0], va, ia);
 		_ib.degeneration[1] = _ib.degeneration[0];
 	}
 }
-void Clipmap::setGridSize(const spn::SizeF& s, float h) {
-	_scale = {s.width, h, s.height};
+void Clipmap::setGridSize(const float w, const float h) {
+	_scale = {w, h};
 	_bRefresh = true;
+}
+void Clipmap::setDiffuseSize(const float w, const float h) {
+	_dscale = {w, h};
 }
 void Clipmap::setCamera(rs::HCam hCam) {
 	_camera = hCam;
@@ -354,13 +381,14 @@ const spn::RectF& Clipmap::_getGeometryRect(Shape shape) const {
 void Clipmap::_checkCache(rs::IEffect& e) const {
 	Assert(Throw, _camera)
 	auto cofs = e.ref3D().getCamera()->getPose().getOffset();
-	auto fnL = [this, cofs](auto&& cb){
-		const Vec2 cofs2(cofs.x, cofs.z);
+	const Vec2 cofs2(cofs.x, cofs.z);
+	const float scw = _scale.width;
+	auto fnL = [this, cofs2, scw](auto&& cb){
 		const int nL = _layer.size();
 		auto sc = float(1 << (nL-_upsamp_n-1));
 		for(int i=nL-1 ; i>=0 ; i--) {
-			auto ofs = Vec2(std::floor(cofs2.x/(sc*2)),
-							std::floor(cofs2.y/(sc*2))) * 2;
+			auto ofs = Vec2(std::floor(cofs2.x/(sc*scw*2)),
+							std::floor(cofs2.y/(sc*scw*2))) * 2;
 			sc /= 2;
 			cb(*_layer[i], ofs);
 		}
@@ -409,12 +437,15 @@ namespace {
 #include "colview.hpp"
 #include "spinner/misc.hpp"
 void Clipmap::_testDrawPolygon(Engine& e) const {
+	const auto ds = _dscale / _tileWidth;
 	const Vec2 aR(_getBlockSize()+1 +1,
 					(_tileWidth-1)/2-1 -1);
 	auto c = e.ref3D().getCamera();
 	auto cofs = c->getPose().getOffset();
 	const Vec2 cofs2(cofs.x, cofs.z);
-	const auto lowscale = _layer[0]->getScale();
+	const auto scw = _scale.width,
+				sch = _scale.height;
+	const auto lowscale = _layer[0]->getScale() * scw;
 	const auto iofs0 = Layer::GetDrawOffsetLocal(cofs2, lowscale);
 	const Vec2 cmod2(iofs0.mx, iofs0.my);
 	_drawCount.draw = _drawCount.not_draw = 0;
@@ -422,17 +453,16 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 	const auto vf = boom::geo3d::FrustumM(c->getVFrustum());
 	const auto vp = vf.getPoints(true);
 	boom::geo3d::ConvexPM vfp(vp.point, countof(vp.point));
-	auto fnDraw = [aR, &e, &cmod2, &cofs2, lowscale, this, &vfp](rs::HTex hElev, rs::HTex hNml, const auto& srcDiffuse,  Shape shape, const bool bFlip, const M3& toLayer, const float sc) {
+	auto fnDraw = [ds, scw, sch, aR, &e, &cmod2, &cofs2, lowscale, this, &vfp](rs::HTex hElev, rs::HTex hNml, const auto& srcDiffuse,  Shape shape, const bool bFlip, const M3& toLayer, const float sc, const spn::RangeF& scRange) {
 		using spn::rect::LoopValueD;
 		using spn::rect::LoopValue;
 		const auto ls2 = lowscale*2;
-		const int r = int(std::round(sc/lowscale));
+		const int r = int(std::round(sc*scw/lowscale));
 		auto ix = LoopValue(int(LoopValueD(cofs2.x, ls2)), r),
 				iy = LoopValue(int(LoopValueD(cofs2.y, ls2)), r);
-
 		const Vec2 mofs(-ix*ls2 - cmod2.x,
 						-iy*ls2 - cmod2.y);
-		auto mW = M4::Scaling(sc,sc,0,1) * M4::Translation( Vec3(sc,sc,0)+cofs2.asVec3(0)+mofs.asVec3(0) ) * M4::RotationX(spn::DegF(90));
+		auto mW = M4::Scaling(sc*scw,sc*scw,0,1) * M4::Translation( Vec3(sc*scw,sc*scw,0)+cofs2.asVec3(0)+mofs.asVec3(0) ) * M4::RotationX(spn::DegF(90));
 		Zeromat(mW.data);
 		{
 			auto rect = _getGeometryRect(shape);
@@ -441,8 +471,8 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 			// LayerSpace -> WorldSpace
 			auto v0 = (l0.asVec4(1) * mW).asVec3(),
 				v1 = (l1.asVec4(1) * mW).asVec3();
-			v0.y = -64/4;
-			v1.y = 64/4;
+			v0.y = -sch * scRange.from;
+			v1.y = sch * scRange.to;
 			boom::geo3d::AABBM ab;
 			ab.vmin = ab.vmax = v0;
 			ab.vmin.selectMin(v1);
@@ -474,26 +504,31 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 		++_drawCount.draw;
 		auto toL = toLayer;
 		Zeromat(toL.data);
-		e.setTechPassId(T_TestPoly);
+		e.setTechPassId(T_RMPoly);
 		e.setVDecl(rs::DrawDecl<rs::vdecl::screen>::GetVDecl());
 		e.ref3D().setWorld(mW);
 		e.setUniform(U_LtoLayer, toL, true);
 		e.setUniform(U_Elevation, hElev);
 		e.setUniform(U_Normal, hNml);
+		outputParams(e);
 		{
 			auto srcuv = Vec2(
-							std::floor(cofs2.x/(sc*2)),
-							std::floor(cofs2.y/(sc*2))
+							std::floor(cofs2.x/(sc*scw*2)),
+							std::floor(cofs2.y/(sc*scw*2))
 						)*2;
 			e.setUniform(U_SrcUVOffset, srcuv);
 
 			const int isc = sc;
 			const int x = int(srcuv.x) * isc * _tileWidth,
 						y = int(srcuv.y) * isc * _tileWidth;
-			auto dif = srcDiffuse->getDataRect({x,
+			spn::Rect dr(
+					x,
 					x + _tileWidth*isc,
 					y,
-					y + _tileWidth*isc});
+					y + _tileWidth*isc
+			);
+			dr *= ds;
+			auto dif = srcDiffuse->getDataRect(dr.toRect<int>());
 			e.setUniform(rs::unif::texture::Diffuse, dif.tex);
 			e.setUniform(U_ViewUVRect, dif.uvrect);
 		}
@@ -503,8 +538,9 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 			e.setUniform(U_SrcUVUnit, uvunit);
 		}
 		e.setUniform(rs::unif::Color, c_color[shape]);
-		e.setUniform(U_ViewPos, -mofs/sc);
+		e.setUniform(U_ViewPos, -mofs/(sc*scw));
 		e.setUniform(U_AlphaRange, aR);
+		e.setUniform(U_HeightRatio, sch);
 		auto buff = _getVIBuffer(shape, bFlip ? 1 : 0);
 		e.setVStream(buff.first, 0);
 		e.setIStream(buff.second);
@@ -514,7 +550,7 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 	_layer[0]->drawLayer0(bs, fnDraw);
 	const int nL = _layer.size();
 	for(int i=1 ; i<nL ; i++)
-		_layer[i]->drawLayerN(cofs2, bs, fnDraw);
+		_layer[i]->drawLayerN(cofs2, bs, scw, fnDraw);
 }
 Clipmap::HLTexV Clipmap::getCache() const {
 	const int nL = _layer.size();

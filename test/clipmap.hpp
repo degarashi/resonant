@@ -2,8 +2,10 @@
 #include "../updater.hpp"
 #include "../util/screenrect.hpp"
 #include "clipsource.hpp"
+#include "diffusion_u.hpp"
 
 extern const rs::IdValue
+	U_HeightRatio,
 	U_ViewPos,
 	U_AlphaRange,
 	U_DiffUVRect,
@@ -25,17 +27,8 @@ extern const rs::IdValue
 	T_Sampling,
 	T_MakeNormal;
 
-// namespace vertex {
-// 	struct clip_cache {
-// 		spn::Vec2	pos,
-// 					uv;
-// 	};
-// 	struct clip {
-// 		spn::Vec2	pos;
-// 	};
-// }
 class Engine;
-class Clipmap {
+class Clipmap : public RayleighMie {
 	public:
 		using M4 = spn::AMat44;
 		using M3 = spn::Mat33;
@@ -82,7 +75,8 @@ class Clipmap {
 		using VIBuff = std::pair<rs::HVb, rs::HIb>;
 
 		rs::HLCam			_camera;
-		spn::Vec3			_scale;
+		spn::SizeF			_scale,
+							_dscale;
 		const int			_tileWidth,		//!< 1レイヤーの頂点幅(2^n -1)
 							_upsamp_n;
 		rs::util::Rect01	_rect01;
@@ -118,7 +112,7 @@ class Clipmap {
 				void setElevSource(const IClipSource_SP& srcElev);
 				void setDiffuseSource(const IClipSource_SP& srcDiffuse);
 				float getScale() const;
-				Size getSize() const override;
+				spn::RangeF getRange() const override;
 				IClipSource::Data getDataRect(const spn::Rect& r) override;
 				bool isUpsamp() const;
 
@@ -138,11 +132,11 @@ class Clipmap {
 								rs::IEffect& e,
 								const rs::util::Rect01& rect01);
 
-				using CBf = std::function<void (rs::HTex, rs::HTex, const IClipSource_SP&, Shape, bool, const M3&, float)>;
+				using CBf = std::function<void (rs::HTex, rs::HTex, const IClipSource_SP&, Shape, bool, const M3&, float, spn::RangeF)>;
 				using IOfsP = std::pair<int,int>;
 				// レイヤー左上のオフセットを指定する
 				void drawLayer0(int bs, const CBf& cb) const;
-				void drawLayerN(const spn::Vec2& center, int bs, const CBf& cb) const;
+				void drawLayerN(const spn::Vec2& center, int bs, float scale, const CBf& cb) const;
 				void drawBlock12(int bs, const CBf& cb) const;
 				void drawLShape(int bs, const IOfsP& inner, const CBf& cb) const;
 				void save(const std::string& path) const;
@@ -185,10 +179,11 @@ class Clipmap {
 		*/
 		Clipmap(spn::PowInt n, int l, int upsamp_n);
 		// グリッド全体のサイズ
-		void setGridSize(const spn::SizeF& s, float h);
+		void setGridSize(float w, float h);
 		void setCamera(rs::HCam hCam);
 		void draw(rs::IEffect& e) const;
 		void save(const spn::PathBlock& pb) const;
+		void setDiffuseSize(float w, float h);
 
 		using HLTexV = std::vector<rs::HLTex>;
 		HLTexV getCache() const;

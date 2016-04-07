@@ -40,22 +40,6 @@ st_idle = {
 		clip:setCamera(Global.cpp.hlCam)
 		dg:addObj(clip)
 
-		-- バッファ内容を表示
-		do
-			local blur0 = G.BlurEffect.New(0x50000)
-			blur0:setAlpha(1)
-			blur0:setDiffuse(clip:getCache()[2])
-			blur0:setRect({-0.5,0,-1,-0.5})
-			dg:addObj(blur0)
-		end
-		do
-			local blur0 = G.BlurEffect.New(0x50001)
-			blur0:setAlpha(1)
-			blur0:setDiffuse(clip:getCache()[1])
-			blur0:setRect({-1,-0.5,-1,-0.5})
-			dg:addObj(blur0)
-		end
-
 		local param
 		-- Daylight --
 		param = {
@@ -67,6 +51,60 @@ st_idle = {
 			lpower = 24.4,
 			ldir = G.Vec3.New(0, -1, 0)
 		}
+		-- -- Dawn --
+		-- param = {
+		-- 	scale = {8,1},
+		-- 	divide = 1e3,
+		-- 	rayleigh = G.Vec3.New(680*1e-3, 550*1e-3, 450*1e-3),
+		-- 	mie_gain = 0.75,
+		-- 	mie = 0.3,
+		-- 	lpower = 4.8,
+		-- 	ldir = G.Vec3.New(0, 0, -1)
+		-- }
+		-- -- -- Twilight --
+		-- param = {
+		-- 	scale = {1,1},
+		-- 	divide = 9e3,
+		-- 	rayleigh = G.Vec3.New(680*1e-3, 550*1e-3, 450*1e-3),
+		-- 	mie_gain = 0.8,
+		-- 	mie = 0.5,
+		-- 	lpower = 2,
+		-- 	ldir = G.Vec3.New(0, 0, -1)
+		-- }
+		clip:setDivide(param.divide)
+		clip:setRayleighCoeff(param.rayleigh)
+		clip:setMieCoeff(param.mie_gain, param.mie)
+		clip:setLightPower(param.lpower)
+		clip:setLightDir(param.ldir)
+		clip:setGridSize(4,64)
+		clip:setDiffuseSize(2,2)
+
+		-- バッファ内容を表示
+		-- do
+		-- 	local blur0 = G.BlurEffect.New(0x50000)
+		-- 	blur0:setAlpha(1)
+		-- 	blur0:setDiffuse(clip:getCache()[2])
+		-- 	blur0:setRect({-0.5,0,-1,-0.5})
+		-- 	dg:addObj(blur0)
+		-- end
+		-- do
+		-- 	local blur0 = G.BlurEffect.New(0x50001)
+		-- 	blur0:setAlpha(1)
+		-- 	blur0:setDiffuse(clip:getCache()[1])
+		-- 	blur0:setRect({-1,-0.5,-1,-0.5})
+		-- 	dg:addObj(blur0)
+		-- end
+
+		-- Daylight --
+		do
+			param.divide = 2e1
+		end
+		-- -- -- Twilight --
+		-- do
+		-- 	param.divide = 8e1
+		-- 	param.lpower = 5
+		-- end
+
 		do
 			local sk = G.SkyDome.New(0x0800)
 			dg:addObj(sk)

@@ -47,11 +47,11 @@ void Clipmap::Layer::setDiffuseSource(const IClipSource_SP& s) {
 float Clipmap::Layer::getScale() const {
 	return _scale;
 }
-spn::Size Clipmap::Layer::getSize() const {
-	return getCacheSize();
+spn::RangeF Clipmap::Layer::getRange() const {
+	return _srcElev->getRange();
 }
 IClipSource::Data Clipmap::Layer::getDataRect(const spn::Rect& r) {
-	return Data(_elevation, r, getSize());
+	return Data(_elevation, r, getCacheSize());
 }
 
 Clipmap::Layer::IOfs Clipmap::Layer::GetDrawOffsetLocal(const spn::Vec2& center, const float ratio) {
@@ -170,9 +170,10 @@ namespace {
 }
 void Clipmap::Layer::drawBlock12(const int bs, const CBf& cb) const {
 	const Vec2 lb_ofs(-bs*2-1);
-	auto fnBlock = [lb_ofs, &cb, this](float x, float y){
+	const auto scr = _srcElev->getRange();
+	auto fnBlock = [scr, lb_ofs, &cb, this](float x, float y){
 		const auto bofs = Vec2(x,y)+lb_ofs;
-		cb(_elevation, _normal, _srcDiffuse, EBlock, false, M3::Translation(bofs), _scale);
+		cb(_elevation, _normal, _srcDiffuse, EBlock, false, M3::Translation(bofs), _scale, scr);
 	};
 	const int outer_abs = bs*2+2;
 	// 左下
@@ -192,9 +193,9 @@ void Clipmap::Layer::drawBlock12(const int bs, const CBf& cb) const {
 	fnBlock(outer_abs+bs, outer_abs+bs);
 	fnBlock(outer_abs+bs, outer_abs);
 
-	auto fnSide = [lb_ofs, &cb, this](float x, float y, const bool bFlip, const int angId){
+	auto fnSide = [scr, lb_ofs, &cb, this](float x, float y, const bool bFlip, const int angId){
 		const auto bofs = lb_ofs+Vec2(x,y);
-		cb(_elevation, _normal, _srcDiffuse, ESide, bFlip, c_mR[angId] * M3::Translation(bofs), _scale);
+		cb(_elevation, _normal, _srcDiffuse, ESide, bFlip, c_mR[angId] * M3::Translation(bofs), _scale, scr);
 	};
 	// サイド上
 	fnSide(outer_abs, outer_abs+bs, true, Rot_90);
@@ -240,7 +241,8 @@ void Clipmap::Layer::drawLShape(const int bs, const IOfsP& inner, const CBf& cb)
 	}
 	const Vec2 bs_ofs(-bs-1);
 	const Vec2 bofs(bs_ofs + ofs);
-	cb(_elevation, _normal, _srcDiffuse, ELShape, bFlip, c_mR[rot] * M3::Translation(bofs), _scale);
+	const auto scr = _srcElev->getRange();
+	cb(_elevation, _normal, _srcDiffuse, ELShape, bFlip, c_mR[rot] * M3::Translation(bofs), _scale, scr);
 }
 // Layer0 = Block*4 + LShape*2 + Block*12 + Side*4
 void Clipmap::Layer::drawLayer0(const int bs, const CBf& cb) const {
@@ -251,9 +253,10 @@ void Clipmap::Layer::drawLayer0(const int bs, const CBf& cb) const {
 	drawLShape(bs, {0,0}, cb);
 	drawLShape(bs, {1,1}, cb);
 
+	const auto scr = _srcElev->getRange();
 	// Block*4 [ 常に描画 ]
-	auto fnBlock = [&cb, this](float x, float y){
-		cb(_elevation, _normal, _srcDiffuse, EBlock, false, M3::Translation({x,y}), _scale);
+	auto fnBlock = [scr, &cb, this](float x, float y){
+		cb(_elevation, _normal, _srcDiffuse, EBlock, false, M3::Translation({x,y}), _scale, scr);
 	};
 	fnBlock(-bs, -bs);
 	fnBlock(-bs, 0);
@@ -262,18 +265,19 @@ void Clipmap::Layer::drawLayer0(const int bs, const CBf& cb) const {
 
 	// Degeneration [ 常に描画 ]
 	const Vec2 diff(-bs*2-1, -bs*2-1);
-	cb(_elevation, _normal, _srcDiffuse, EDegeneration, false, M3::Translation(diff), _scale);
+	cb(_elevation, _normal, _srcDiffuse, EDegeneration, false, M3::Translation(diff), _scale, scr);
 }
 // Layer = Block*12 + Side*4 + LShape*1 + Inner-Degeneration
-void Clipmap::Layer::drawLayerN(const Vec2& center, const int bs, const CBf& cb) const {
-	auto iofs = GetDrawOffsetLocal(center, _scale);
+void Clipmap::Layer::drawLayerN(const Vec2& center, const int bs, const float scale, const CBf& cb) const {
+	auto iofs = GetDrawOffsetLocal(center, _scale * scale);
 	// Block*12 + Side*4 [ AABB ]
 	drawBlock12(bs, cb);
 	// LShape [ AABB ]
 	drawLShape(bs, {iofs.ix, iofs.iy}, cb);
 	// Degeneration [ 常に描画 ]
 	const Vec2 diff(-bs*2-1, -bs*2-1);
-	cb(_elevation, _normal, _srcDiffuse, EDegeneration, false, M3::Translation(diff), _scale);
+	const auto scr = _srcElev->getRange();
+	cb(_elevation, _normal, _srcDiffuse, EDegeneration, false, M3::Translation(diff), _scale, scr);
 }
 
 namespace {

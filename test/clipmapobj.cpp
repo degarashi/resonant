@@ -18,6 +18,7 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Clipmap::DrawCount, DrawCount,
 		(draw)(not_draw),
 		NOTHING)
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, ClipmapObj, ClipmapObj, "DrawableObj", NOTHING,
-		(setGridSize) (setCamera)(getCache)(getNormalCache)(getDrawCount),
+		(setRayleighCoeff)(setMieCoeff)(setLightDir)(setLightColor)(setLightPower)(setDivide)
+		(setGridSize) (setCamera)(getCache)(getNormalCache)(getDrawCount)(setGridSize)(setDiffuseSize),
 		(int)(int)(int)
 )
