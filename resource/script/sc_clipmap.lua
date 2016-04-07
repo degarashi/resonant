@@ -77,7 +77,9 @@ st_idle = {
 		clip:setLightPower(param.lpower)
 		clip:setLightDir(param.ldir)
 		clip:setGridSize(4,64)
-		clip:setDiffuseSize(2,2)
+		clip:setDiffuseSize(8,8)
+		self.clip = clip
+		self.ang = 0
 
 		-- バッファ内容を表示
 		-- do
@@ -138,6 +140,16 @@ st_idle = {
 		end
 	end,
 	OnUpdate = function(self, slc, ...)
+		local pose = Global.cpp.hlCam:refPose()
+		-- G.print(pose:getDir())
+
+		self.ang = self.ang + 0.01
+		local dir = G.Vec3.New(G.math.sin(self.ang), 0.7, G.math.cos(self.ang)):normalization()
+		dir = -dir
+		-- G.print(dir)
+		self.clip:setLightDir(dir)
+		self.sky:setLightDir(dir)
+
 		scbase.CheckSwitch()
 	end,
 	OnExit = function(self, slc, ...)

@@ -9,6 +9,7 @@ extern const rs::IdValue
 	U_ViewPos,
 	U_AlphaRange,
 	U_DiffUVRect,
+	U_NormalUVRect,
 	U_Elevation,
 	U_Normal,
 	U_SrcUVOffset,
@@ -90,7 +91,8 @@ class Clipmap : public RayleighMie {
 				int					_cx, _cy;		//!< インクリメンタル更新用。直前に更新されキャッシュに収まっている範囲
 				float				_scale;
 				IClipSource_SP		_srcElev,
-									_srcDiffuse;
+									_srcDiffuse,
+									_srcNormal;
 
 				void _drawCache(rs::IEffect& e,
 								const rs::util::Rect01& rect01,
@@ -110,7 +112,8 @@ class Clipmap : public RayleighMie {
 				*/
 				Layer(spn::PowSize s, float sc);
 				void setElevSource(const IClipSource_SP& srcElev);
-				void setDiffuseSource(const IClipSource_SP& srcDiffuse);
+				void setDiffuseSource(const IClipSource_SP& s);
+				void setNormalSource(const IClipSource_SP& s);
 				float getScale() const;
 				spn::RangeF getRange() const override;
 				IClipSource::Data getDataRect(const spn::Rect& r) override;
@@ -132,7 +135,7 @@ class Clipmap : public RayleighMie {
 								rs::IEffect& e,
 								const rs::util::Rect01& rect01);
 
-				using CBf = std::function<void (rs::HTex, rs::HTex, const IClipSource_SP&, Shape, bool, const M3&, float, spn::RangeF)>;
+				using CBf = std::function<void (rs::HTex, rs::HTex, const IClipSource_SP&, const IClipSource_SP&, Shape, bool, const M3&, float, spn::RangeF)>;
 				using IOfsP = std::pair<int,int>;
 				// レイヤー左上のオフセットを指定する
 				void drawLayer0(int bs, const CBf& cb) const;

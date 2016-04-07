@@ -12,7 +12,8 @@ const rs::IdValue
 	U_HeightRatio	= U_Def("u_heightRatio"),
 	U_ViewPos		= U_Def("u_viewPos"),
 	U_AlphaRange	= U_Def("u_alphaRange"),
-	U_ViewUVRect	= U_Def("u_viewUVRect"),
+	U_DiffUVRect	= U_Def("u_diffUVRect"),
+	U_NormalUVRect	= U_Def("u_normalUVRect"),
 	U_Elevation		= U_Def("u_elevation"),
 	U_Normal		= U_Def("u_normal"),
 	U_SrcUVOffset	= U_Def("u_srcUVOffset"),
@@ -53,7 +54,10 @@ Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
 	auto mt = mgr_random.get(12321);
 	auto hlTex = mgr_gl.loadTexture("block.jpg", rs::MipState::MipmapLinear);
 	hlTex->get()->setLinear(true);
+	auto hlTexNml = mgr_gl.loadTexture("block_normal.png", rs::MipState::MipmapLinear);
+	hlTexNml->get()->setLinear(true);
 	auto dsrc = std::make_shared<ClipTexSource>(hlTex);
+	auto nmlsrc = std::make_shared<ClipTexSource>(hlTexNml);
 	auto hashv = std::make_shared<ClipHashV>();
 	auto h2 = std::make_shared<Hash2D>(mt, 8);
 	constexpr float Scale = 64;
@@ -75,6 +79,7 @@ Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
 		// l->setElevSource(std::make_shared<ClipTestSource>(hsc, hsc, cs, 1.f));
 		pl->setElevSource(std::make_shared<ClipPNSource>(hashv, 256, ratio));
 		pl->setDiffuseSource(dsrc);
+		pl->setNormalSource(nmlsrc);
 		hsc *= 2;
 		sc *= 2;
 		ratio *= 2;
@@ -85,6 +90,7 @@ Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
 		l = std::make_shared<Layer>(cs, sc);
 		l->setElevSource(_layer[i+1]);
 		l->setDiffuseSource(dsrc);
+		l->setNormalSource(nmlsrc);
 		sc /= 2;
 	}
 	_initGLBuffer();
@@ -453,7 +459,17 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 	const auto vf = boom::geo3d::FrustumM(c->getVFrustum());
 	const auto vp = vf.getPoints(true);
 	boom::geo3d::ConvexPM vfp(vp.point, countof(vp.point));
-	auto fnDraw = [ds, scw, sch, aR, &e, &cmod2, &cofs2, lowscale, this, &vfp](rs::HTex hElev, rs::HTex hNml, const auto& srcDiffuse,  Shape shape, const bool bFlip, const M3& toLayer, const float sc, const spn::RangeF& scRange) {
+	auto fnDraw = [ds, scw, sch, aR, &e, &cmod2, &cofs2, lowscale, this, &vfp](
+			rs::HTex hElev,
+			rs::HTex hNml,
+			const auto& srcDiffuse,
+			const auto& srcNormal,
+			Shape shape,
+			const bool bFlip,
+			const M3& toLayer,
+			const float sc,
+			const spn::RangeF& scRange
+	) {
 		using spn::rect::LoopValueD;
 		using spn::rect::LoopValue;
 		const auto ls2 = lowscale*2;
@@ -528,9 +544,17 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 					y + _tileWidth*isc
 			);
 			dr *= ds;
-			auto dif = srcDiffuse->getDataRect(dr.toRect<int>());
-			e.setUniform(rs::unif::texture::Diffuse, dif.tex);
-			e.setUniform(U_ViewUVRect, dif.uvrect);
+			const auto dri = dr.toRect<int>();
+			if(srcDiffuse) {
+				auto dif = srcDiffuse->getDataRect(dri);
+				e.setUniform(rs::unif3d::texture::Diffuse, dif.tex);
+				e.setUniform(U_DiffUVRect, dif.uvrect);
+			}
+			if(srcNormal) {
+				auto nml = srcNormal->getDataRect(dri);
+				e.setUniform(rs::unif3d::texture::Normal, nml.tex);
+				e.setUniform(U_NormalUVRect, nml.uvrect);
+			}
 		}
 		{
 			const auto sz = hElev->get()->getSize();

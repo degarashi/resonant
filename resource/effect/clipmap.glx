@@ -226,8 +226,9 @@ fragmentshader(400) ClipDrawFS() {
 uniform TestUnif {
 	sampler2D	u_elevation;		// キャッシュテクスチャ: 高さ(packed)
 	sampler2D	u_texDiffuse;		// 見た目テクスチャ
-//	sampler2D	u_texNormal;		// 見た目法線テクスチャ
-	vec4		u_viewUVRect;		// 見た目テクスチャUV (xy=scale, zw=offset)
+	sampler2D	u_texNormal;		// 見た目法線テクスチャ
+	vec4		u_diffUVRect;		// 見た目テクスチャUV (xy=scale, zw=offset)
+	vec4		u_normalUVRect;		// 見た目法線テクスチャUV (xy=scale, zw=offset)
 
 	sampler2D	u_normal;			// 頂点単位の法線テクスチャ
 	vec2		u_srcUVOffset;		// 高さマップに関するタイル座標 -> UV
@@ -242,6 +243,7 @@ uniform TestUnif {
 }
 varying TestVary {
 	vec2 v_uv;
+	vec2 v_normalUv;
 	vec3 v_color;
 	vec3 v_normal;
 }
@@ -273,7 +275,8 @@ vertexshader(400, Pack) TestVS() {
 	nmlc.z = sqrt(clamp(1.0 - nmlc.x*nmlc.x - nmlc.y*nmlc.y, 0, 1));
 	v_normal.xzy = normalize(mix(nmlf, nmlc, alphav));
 	v_color = u_color;
-	v_uv = (lpos.xy + vec2(1)) * u_viewUVRect.xy + u_viewUVRect.zw;
+	v_uv = (lpos.xy + vec2(1)) * u_diffUVRect.xy + u_diffUVRect.zw;
+	v_normalUv = (lpos.xy + vec2(1)) * u_normalUVRect.xy + u_normalUVRect.zw;
 }
 fragmentshader(400) TestFS() {
 	vec3 nml = normalize(v_normal);
@@ -295,6 +298,8 @@ uniform RMUnif : ScatterUnif, TestUnif {
 varying ScatterVary {
 	vec3 v_fex;
 	vec3 v_lin;
+	vec3 v_toLight;
+	vec3 v_eyedir;
 }
 vertexshader(400, Scatter, Pack) RM_VS() {
 	vec3 lpos = vec3(a_pos, 1) * u_toLayer;
@@ -324,7 +329,26 @@ vertexshader(400, Scatter, Pack) RM_VS() {
 	nmlc.z = sqrt(clamp(1.0 - nmlc.x*nmlc.x - nmlc.y*nmlc.y, 0, 1));
 	v_normal.xzy = normalize(mix(nmlf, nmlc, alphav));
 	v_color = u_color;
-	v_uv = (lpos.xy + vec2(1)) * u_viewUVRect.xy + u_viewUVRect.zw;
+	v_uv = (lpos.xy + vec2(1)) * u_diffUVRect.xy + u_diffUVRect.zw;
+	v_normalUv = (lpos.xy + vec2(1)) * u_normalUVRect.xy + u_normalUVRect.zw;
+
+	// 法線ベクトルからTangentを計算
+	// タイルは必ずXZ平面に平行な形で配置される
+	vec3 tanv = normalize(cross(v_normal, vec3(0,0,1)));
+	vec3 bnmlv = normalize(cross(tanv, v_normal));
+	v_toLight = vec3(
+					dot(tanv, -u_lDir),
+					dot(bnmlv, -u_lDir),
+					dot(v_normal, -u_lDir)
+				);
+	vec3 toEye = sys_vEyePos - wpos.xyz;
+	v_eyedir = (
+					vec3(
+						dot(tanv, toEye),
+						dot(bnmlv, toEye),
+						dot(v_normal, toEye)
+					)
+				);
 
 	// --------- Scattering ---------
 	// 太陽との角度
@@ -340,7 +364,14 @@ vertexshader(400, Scatter, Pack) RM_VS() {
 }
 fragmentshader(400) RM_FS() {
 	vec4 dif = texture2D(u_texDiffuse, v_uv);
-	gl_FragColor.xyz = dif.xyz * dot(v_normal, u_lDir);
+	vec3 nml = texture2D(u_texNormal, v_normalUv).xyz;
+	nml = nml * 2 - 1;
+	vec3 eyedir = normalize(v_eyedir);
+	vec3 refl = normalize(-v_toLight + nml * dot(v_toLight, nml)*2);
+	float litS = pow(clamp(dot(refl, eyedir), 0, 1), 64);
+	/* float lit = dot(v_normal, u_lDir); */
+	float litD = clamp(dot(nml, v_toLight), 0, 1);
+	gl_FragColor.xyz = (dif.xyz+0.9) * (litD/2 + litS);
 	gl_FragColor.xyz *= v_fex;
 	gl_FragColor.xyz += v_lin;
 	gl_FragColor.xyz += v_color*0.0001;
