@@ -129,6 +129,8 @@ fragmentshader(400, Scatter, SkyCP) SkyFS() {
 	// スクリーン位置からワールド空間での向きを計算
 	vec3 vdir = normalize(vec3(v_scpos * u_scrSize, 1));
 	vec3 wdir = normalize((vec4(vdir, 0) * sys_mViewInv).xyz);
+	wdir.y = max(0, wdir.y);
+	wdir = normalize(wdir);
 	// スカイドームとの交点(視点から伸ばした直線が大気層を抜けるまでの距離)を算出
 	vec3 cp = SkyCP(wdir);
 	float skydist = length(cp);
