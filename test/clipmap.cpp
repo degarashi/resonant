@@ -533,14 +533,13 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 						)*2;
 			e.setUniform(U_SrcUVOffset, srcuv);
 
-			const int isc = sc;
-			const int x = int(srcuv.x) * isc * _tileWidth,
-						y = int(srcuv.y) * isc * _tileWidth;
+			const auto x = srcuv.x * scw*sc * _tileWidth,
+						y = srcuv.y * scw*sc * _tileWidth;
 			spn::Rect dr(
 					x,
-					x + _tileWidth*isc,
+					x + _tileWidth*scw*sc,
 					y,
-					y + _tileWidth*isc
+					y + _tileWidth*scw*sc
 			);
 			dr *= ds;
 			const auto dri = dr.toRect<int>();
