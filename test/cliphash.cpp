@@ -110,8 +110,8 @@ spn::RangeF ClipHashV::getRange() const {
 	spn::RangeF r{0,0};
 	for(auto& h : _hashV) {
 		const auto r2 = h->getRange();
-		r.from -= r2.from;
-		r.to += r2.to;
+		r.from += std::min(0.f, r2.from);
+		r.to += std::max(0.f, r2.to);
 	}
 	return r;
 }

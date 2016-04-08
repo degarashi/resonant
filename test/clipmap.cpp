@@ -487,7 +487,7 @@ void Clipmap::_testDrawPolygon(Engine& e) const {
 			// LayerSpace -> WorldSpace
 			auto v0 = (l0.asVec4(1) * mW).asVec3(),
 				v1 = (l1.asVec4(1) * mW).asVec3();
-			v0.y = -sch * scRange.from;
+			v0.y = sch * scRange.from;
 			v1.y = sch * scRange.to;
 			boom::geo3d::AABBM ab;
 			ab.vmin = ab.vmax = v0;
