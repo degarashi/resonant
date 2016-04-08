@@ -14,6 +14,13 @@ Hash2D::Hash2D(spn::MTRandom& mt, const spn::PowInt size):
 	// 同じのを2回繰り返す
 	std::copy(itr, itrE, itrE);
 }
+Hash_SP Hash2D::Create(uint32_t seed, const int size) {
+	constexpr uint32_t Id = 0x10002000;
+	mgr_random.initEngine(Id);
+	auto rd = mgr_random.get(Id);
+	rd.refMt().seed(seed);
+	return std::make_shared<Hash2D>(rd, size);
+}
 void Hash2D::_initVectors(const spn::PowInt size) {
 	const int isize = static_cast<int>(size);
 	_vectors.resize(isize);
@@ -37,6 +44,9 @@ ClipHash::ClipHash(const Hash_SP& h, const spn::PowInt scale):
 	_hash(h),
 	_scale(scale)
 {}
+HashVec_SP ClipHash::Create(const Hash_SP& h, const int scale) {
+	return std::make_shared<ClipHash>(h, scale);
+}
 
 namespace {
 	float F(const float t) {
@@ -78,6 +88,17 @@ ClipHashMod::ClipHashMod(const HashVec_SP& h):
 	_rx(1), _ry(1),
 	_er(1)
 {}
+HashVec_SP ClipHashMod::Create(const HashVec_SP& h,
+								const float ox, const float oy,
+								const float rx, const float ry,
+								const float e)
+{
+	auto sp = std::make_shared<ClipHashMod>(h);
+	sp->setOffset(ox, oy);
+	sp->setRatio(rx, ry);
+	sp->setElevRatio(e);
+	return sp;
+}
 void ClipHashMod::setOffset(const float x, const float y) {
 	_ox = x;
 	_oy = y;
@@ -97,6 +118,12 @@ spn::RangeF ClipHashMod::getRange() const {
 }
 
 // -------- ClipHashV --------
+HashVec_SP ClipHashV::Create(const HashV& v) {
+	auto sp = std::make_shared<ClipHashV>();
+	for(auto& vt : v)
+		sp->addHash(vt);
+	return sp;
+}
 void ClipHashV::addHash(const HashVec_SP& h) {
 	_hashV.emplace_back(h);
 }

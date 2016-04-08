@@ -18,6 +18,13 @@ struct IClipSource {
 	// type=(R16 texture) 512 levels
 	virtual Data getDataRect(const spn::Rect& r) = 0;
 };
+using IClipSource_SP = std::shared_ptr<IClipSource>;
+DEF_LUAIMPORT(IClipSource_SP)
+DEF_LUAIMPORT(Hash_SP)
+DEF_LUAIMPORT(HashVec_SP)
+DEF_LUAIMPORT(IHash)
+DEF_LUAIMPORT(IHashVec)
+
 class ClipPNSource : public IClipSource {
 	private:
 		HashVec_SP			_hash;
@@ -27,16 +34,19 @@ class ClipPNSource : public IClipSource {
 		ClipPNSource(const HashVec_SP& sp,
 					spn::PowInt tsize,
 					int freq);
+		static IClipSource_SP Create(const HashVec_SP& sp,
+									int tsize,
+									int freq);
 
 		spn::RangeF getRange() const override;
 		Data getDataRect(const spn::Rect& r) override;
 };
-
 class ClipTexSource : public IClipSource {
 	private:
 		rs::HLTex	_texture;
 	public:
 		ClipTexSource(rs::HTex t);
+		static IClipSource_SP Create(rs::HTex t);
 
 		spn::RangeF getRange() const override;
 		Data getDataRect(const spn::Rect& r) override;
@@ -55,4 +65,3 @@ class ClipTestSource : public IClipSource {
 		Data getDataRect(const spn::Rect& r) override;
 		static float TestElev(int w, float ratio, float x, float y);
 };
-using IClipSource_SP = std::shared_ptr<IClipSource>;

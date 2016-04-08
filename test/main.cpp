@@ -95,6 +95,15 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<ToneMap>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<ClipmapObj>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<ColBoxObj>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<Hash_SP>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<HashVec_SP>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<IClipSource_SP>(*lkb->spLua);
+		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeCS_PN", &ClipPNSource::Create);
+		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeCS_Tex", &ClipTexSource::Create);
+		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeHash2D", &Hash2D::Create);
+		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeHash", &ClipHash::Create);
+		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeHash_Mod", &ClipHashMod::Create);
+		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeHash_Vec", &ClipHashV::Create);
 
 		// init Random
 		{

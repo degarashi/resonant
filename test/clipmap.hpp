@@ -181,6 +181,8 @@ class Clipmap : public RayleighMie {
 			\param[in] upsamp_n		アップサンプリングレイヤ数
 		*/
 		Clipmap(spn::PowInt n, int l, int upsamp_n);
+		void setPNElevation(const HashVec_SP& s);
+		void setWaveElevation(float freq);
 		// グリッド全体のサイズ
 		void setGridSize(float w, float h);
 		void setCamera(rs::HCam hCam);

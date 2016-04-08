@@ -18,6 +18,9 @@ IClipSource::Data::Data(rs::HTex t, const spn::Rect& r, const spn::Size& s):
 {}
 
 // -------- ClipTexSource --------
+IClipSource_SP ClipTexSource::Create(rs::HTex t) {
+	return std::make_shared<ClipTexSource>(t);
+}
 ClipTexSource::ClipTexSource(rs::HTex t):
 	_texture(t)
 {
@@ -31,6 +34,12 @@ IClipSource::Data ClipTexSource::getDataRect(const spn::Rect& r) {
 }
 
 // -------- ClipPNSource --------
+IClipSource_SP ClipPNSource::Create(const HashVec_SP& sp,
+							const int tsize,
+							const int freq)
+{
+	return std::make_shared<ClipPNSource>(sp, tsize, freq);
+}
 ClipPNSource::ClipPNSource(const HashVec_SP& sp,
 							const spn::PowInt tsize,
 							const int freq):
@@ -81,8 +90,7 @@ ClipTestSource::ClipTestSource(const float fH, const float fV, const spn::PowSiz
 	((rs::Texture_Mem*)_hTex->get())->writeData({data.data(), data.size()*sizeof(float)}, GL_FLOAT);
 }
 spn::RangeF ClipTestSource::getRange() const {
-	const float r = 63;
-	return {-r, r};
+	return {-1.f, 1.f};
 }
 void ClipTestSource::save(const std::string& path) const {
 	_hTex->get()->save(path);
@@ -113,7 +121,7 @@ IClipSource::Data ClipTestSource::getDataRect(const spn::Rect& r) {
 	);
 	return Data(_hTex, r, sz);
 }
-float ClipTestSource::TestElev(int w, float ratio, float x, float y) {
-	return std::round(std::sin(x * ratio*2 * 2*spn::PI / w) * 63) +
-			std::round(std::sin(y * ratio*2 * 2*spn::PI / w) * 63);
+float ClipTestSource::TestElev(const int w, const float ratio, const float x, const float y) {
+	return std::sin(x * ratio*2 * 2*spn::PI / w)/2 +
+			std::sin(y * ratio*2 * 2*spn::PI / w)/2;
 }

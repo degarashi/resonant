@@ -48,41 +48,19 @@ Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
 	// タイルサイズ*1.5の値を2の乗数で切り上げたサイズをキャッシュとする
 	const int w = _tileWidth*2 - (_tileWidth>>1);
 	const PowSize cs{w, w};
-	float sc = 1.f;
-	float hsc = 1.f/133;
-	mgr_random.initEngine(12321);
-	auto mt = mgr_random.get(12321);
 	auto hlTex = mgr_gl.loadTexture("block.jpg", rs::MipState::MipmapLinear);
 	hlTex->get()->setLinear(true);
 	auto hlTexNml = mgr_gl.loadTexture("block_normal.png", rs::MipState::MipmapLinear);
 	hlTexNml->get()->setLinear(true);
 	auto dsrc = std::make_shared<ClipTexSource>(hlTex);
 	auto nmlsrc = std::make_shared<ClipTexSource>(hlTexNml);
-	auto hashv = std::make_shared<ClipHashV>();
-	auto h2 = std::make_shared<Hash2D>(mt, 8);
-	constexpr float Scale = 64;
-	auto fn = [&hashv, &h2, Scale](float rx, float ry, float e) {
-		auto hash = std::make_shared<ClipHash>(h2, Scale);
-		auto hashm = std::make_shared<ClipHashMod>(hash);
-		hashm->setRatio(rx, ry);
-		hashm->setElevRatio(e);
-		hashv->addHash(hashm);
-	};
-	fn(1.8, 1.6, 1.3);
-	fn(1, 1, 1);
-	fn(0.13f, 0.13f, 10);
-	fn(0.36f, 0.36f, 4);
-	int ratio = 1;
+	float sc = 1.f;
 	for(int i=upsamp_n ; i<l ; i++) {
 		auto& pl = _layer[i];
 		pl = std::make_shared<Layer>(cs, sc);
-		// l->setElevSource(std::make_shared<ClipTestSource>(hsc, hsc, cs, 1.f));
-		pl->setElevSource(std::make_shared<ClipPNSource>(hashv, 256, ratio));
 		pl->setDiffuseSource(dsrc);
 		pl->setNormalSource(nmlsrc);
-		hsc *= 2;
 		sc *= 2;
-		ratio *= 2;
 	}
 	sc = .5f;
 	for(int i=upsamp_n-1 ; i>=0 ; i--) {
@@ -95,6 +73,27 @@ Clipmap::Clipmap(const PowInt n, const int l, const int upsamp_n):
 	}
 	_initGLBuffer();
 	_initGSize();
+}
+void Clipmap::setPNElevation(const HashVec_SP& s) {
+	const Size cs = _layer[0]->getCacheSize()*2;
+	const int ls = _layer.size();
+	int ratio = 1;
+	for(int i=_upsamp_n ; i<ls ; i++) {
+		auto& pl = _layer[i];
+		pl->setElevSource(std::make_shared<ClipPNSource>(s, cs.width, ratio));
+		ratio *= 2;
+	}
+	_bRefresh = true;
+}
+void Clipmap::setWaveElevation(float freq) {
+	const Size cs = _layer[0]->getCacheSize();
+	const int ls = _layer.size();
+	for(int i=_upsamp_n ; i<ls ; i++) {
+		auto& pl = _layer[i];
+		pl->setElevSource(std::make_shared<ClipTestSource>(freq, freq, cs, 1.f));
+		freq *= 2;
+	}
+	_bRefresh = true;
 }
 int Clipmap::_getBlockSize() const {
 	return (_tileWidth+1)/4;

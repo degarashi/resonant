@@ -19,6 +19,10 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Clipmap::DrawCount, DrawCount,
 		NOTHING)
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, ClipmapObj, ClipmapObj, "DrawableObj", NOTHING,
 		(setRayleighCoeff)(setMieCoeff)(setLightDir)(setLightColor)(setLightPower)(setDivide)
-		(setGridSize) (setCamera)(getCache)(getNormalCache)(getDrawCount)(setGridSize)(setDiffuseSize),
+		(setGridSize)(setCamera)(getCache)(getNormalCache)(getDrawCount)(setGridSize)(setDiffuseSize)
+		(setPNElevation)(setWaveElevation),
 		(int)(int)(int)
 )
+DEF_LUAIMPLEMENT_PTR_NOCTOR(IClipSource_SP, IClipSource_SP, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_PTR_NOCTOR(HashVec_SP, HashVec_SP, NOTHING, NOTHING)
+DEF_LUAIMPLEMENT_PTR_NOCTOR(Hash_SP, Hash_SP, NOTHING, NOTHING)

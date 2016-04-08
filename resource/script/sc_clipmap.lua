@@ -40,6 +40,21 @@ st_idle = {
 		clip:setCamera(Global.cpp.hlCam)
 		dg:addObj(clip)
 
+		local h2 = G.MakeHash2D(0x1234, 8)
+		local hash = G.MakeHash(h2, 64)
+		local hashvl = {}
+		local fn = function(ox, oy, rx, ry, e)
+			local hashm = G.MakeHash_Mod(hash, ox, oy, rx, ry, e)
+			hashvl[#hashvl+1] = hashm
+		end
+		fn(0, 0, 0.01, 0.01, 50)
+		fn(0, 0, 1.8, 1.6, 1.3)
+		fn(0, 0, 1, 1, 1)
+		fn(0, 0, 0.13, 0.13, 10)
+		fn(0, 0, 0.36, 0.36, 4)
+		local hashv = G.MakeHash_Vec(hashvl)
+		clip:setPNElevation(hashv)
+
 		local param
 		-- Daylight --
 		param = {
