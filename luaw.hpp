@@ -1272,7 +1272,8 @@ namespace rs {
 									_Pointer,
 									_New;
 			namespace valueR {
-				extern const std::string HandleId,
+				extern const std::string HandleName,
+										HandleId,
 										NumRef;
 			}
 		}
@@ -1341,6 +1342,7 @@ namespace rs {
 		static LogMap				s_logMap;
 
 		//! ハンドルオブジェクトの基本メソッド
+		static const std::string& HandleName(spn::SHandle sh);
 		static lua_Unsigned HandleId(spn::SHandle sh);
 		static lua_Integer NumRef(spn::SHandle sh);
 

@@ -53,7 +53,8 @@ namespace rs {
 								_Pointer("_pointer"),
 								_New("_New");
 			namespace valueR {
-				const std::string HandleId("handleId"),
+				const std::string HandleName("handleName"),
+									HandleId("handleId"),
 									NumRef("numRef");
 			}
 		}
@@ -83,6 +84,8 @@ namespace rs {
 			return 0;
 		}
 	}
+	const std::string& LuaImport::HandleName(SHandle sh) {
+		return sh.getResourceName(); }
 	lua_Unsigned LuaImport::HandleId(SHandle sh) {
 		return sh.getValue(); }
 	lua_Integer LuaImport::NumRef(SHandle sh) {
@@ -153,13 +156,23 @@ namespace rs {
 
 		lsc.newTable();
 		// ValueRの初期化
-		// ValueR = { HandleId=(HandleId), NumRef=(NumRef) }
+		// ValueR = { HandleName=(HandleName), HandleId=(HandleId), NumRef=(NumRef) }
 		lsc.push(luaNS::objBase::ValueR);
 		lsc.newTable();
-		LuaImport::RegisterMember<LI_GetHandle<SHandle>, SHandle>(lsc, luaNS::objBase::valueR::HandleId.c_str(), &SHandle::getValue);
+
+		// HandleName
+		lsc.push(luaNS::objBase::valueR::HandleName);
+		LuaImport::PushFunction(lsc, &HandleName);
+		lsc.setTable(-3);
+		// HandleId
+		lsc.push(luaNS::objBase::valueR::HandleId);
+		LuaImport::PushFunction(lsc, &HandleId);
+		lsc.setTable(-3);
+		// NumRef
 		lsc.push(luaNS::objBase::valueR::NumRef);
 		LuaImport::PushFunction(lsc, &NumRef);
 		lsc.setTable(-3);
+
 		lsc.setTable(-3);
 		// ValueWの初期化
 		// ValueW = {}
