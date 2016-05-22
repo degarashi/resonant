@@ -230,11 +230,11 @@ namespace rs {
 	using OPInSizedFmt = spn::Optional<GLInSizedFmt>;
 	using OPInCompressedFmt = spn::Optional<GLInCompressedFmt>;
 
-	using tagGLFormatV = boost::variant<boost::none_t, GLDepthFmt, GLStencilFmt, GLDSFmt, GLInFmt, GLInSizedFmt, GLInCompressedFmt, GLInRenderFmt, GLInReadFmt, GLTypeFmt>;
+	using tagGLFormatV = boost::variant<boost::blank, GLDepthFmt, GLStencilFmt, GLDSFmt, GLInFmt, GLInSizedFmt, GLInCompressedFmt, GLInRenderFmt, GLInReadFmt, GLTypeFmt>;
 	class GLFormatV : public tagGLFormatV {
 		using base_type = tagGLFormatV;
 		public:
-			GLFormatV(): tagGLFormatV(boost::none) {}
+			GLFormatV(): tagGLFormatV(boost::blank()) {}
 			GLFormatV(const GLFormatV& v): tagGLFormatV(static_cast<const tagGLFormatV&>(v)) {}
 			GLFormatV(GLFormatV&& v): tagGLFormatV(static_cast<tagGLFormatV&&>(v)) {}
 			template <class T>

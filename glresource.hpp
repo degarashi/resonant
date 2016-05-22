@@ -796,7 +796,7 @@ namespace rs {
 			GLuint		_idRbo;
 			OnLost		_behLost;
 
-			using Res = boost::variant<boost::none_t, spn::Vec4, spn::ByteBuff>;
+			using Res = boost::variant<boost::blank, spn::Vec4, spn::ByteBuff>;
 			Res				_restoreInfo;
 			GLTypeFmt		_buffFmt;
 			GLFormatV		_fmt;
@@ -855,7 +855,7 @@ namespace rs {
 			// attachは受け付けるがハンドルを格納するだけであり、実際OpenGLにセットされるのはDTh
 		protected:
 			// 内部がTextureかRenderBufferなので、それらを格納できる型を定義
-			using Res = boost::variant<boost::none_t, RawTex, RawRb, TexRes, HLRb>;
+			using Res = boost::variant<boost::blank, RawTex, RawRb, TexRes, HLRb>;
 			GLuint	_idFbo;
 			static void _SetCurrentFBSize(const spn::Size& s);
 

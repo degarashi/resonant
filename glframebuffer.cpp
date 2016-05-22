@@ -5,7 +5,7 @@
 namespace rs {
 	// ------------------------- GLRBuffer -------------------------
 	GLRBuffer::GLRBuffer(int w, int h, GLInRenderFmt fmt):
-		_idRbo(0), _behLost(NONE), _restoreInfo(boost::none), _buffFmt(GLFormat::QueryInfo(fmt)->elementType), _fmt(fmt), _size(w,h)
+		_idRbo(0), _behLost(NONE), _restoreInfo(boost::blank()), _buffFmt(GLFormat::QueryInfo(fmt)->elementType), _fmt(fmt), _size(w,h)
 	{}
 	GLRBuffer::~GLRBuffer() {
 		onDeviceLost();
@@ -104,7 +104,7 @@ namespace rs {
 			auto fbi = fb.use();
 			fb.attachRBuffer(GLFBuffer::Att::Id::COLOR0, rb._idRbo);
 			GL.glDrawPixels(0,0, rb._fmt.get(), rb._buffFmt, &buff[0]);
-			rb._restoreInfo = boost::none;
+			rb._restoreInfo = boost::blank();
 		}
 #else
 		Nothing
@@ -223,7 +223,7 @@ namespace rs {
 				_dst.faceFlag = 0;
 				_dst.idRes = hlRb.cref()->getBufferID();
 			}
-			void operator()(boost::none_t) const {
+			void operator()(boost::blank) const {
 				_dst.idRes = 0;
 			}
 		};
@@ -286,7 +286,7 @@ namespace rs {
 		struct HdlVisitor : boost::static_visitor<> {
 			F _f;
 			HdlVisitor(F f): _f(f) {}
-			void operator()(boost::none_t) const {}
+			void operator()(boost::blank) const {}
 			void operator()(GLFBufferCore::RawTex& t) const {
 				// 生のTextureIdは無効になる
 				t = 0; }
@@ -414,7 +414,7 @@ namespace rs {
 		_attachment[attDst] = hFb->get()->getAttachment(attSrc);
 	}
 	void GLFBuffer::detach(Att::Id att) {
-		_attachment[att] = boost::none;
+		_attachment[att] = boost::blank();
 	}
 	void GLFBuffer::getDrawToken(draw::TokenDst& dst) const {
 		using UT = draw::FrameBuff;
@@ -425,7 +425,7 @@ namespace rs {
 	}
 	namespace {
 		struct GetSize_Visitor : boost::static_visitor<Size_OP> {
-			Size_OP operator()(boost::none_t) const {
+			Size_OP operator()(boost::blank) const {
 				return spn::none;
 			}
 			Size_OP operator()(const GLFBufferCore::TexRes& t) const {
