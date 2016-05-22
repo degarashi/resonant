@@ -14,44 +14,44 @@ namespace rs {
 			return *cs_defaultCid;
 		}
 		Text::Text():
-			_alpha(1.f)
+			_color(1),
+			_bRefl(true)
 		{
 			_charId = _GetDefaultCID();
 		}
 		void Text::setCCoreId(CCoreID cid) {
 			_charId = cid;
 		}
-		void Text::setTextSize(Size_OP s) {
-			_textSize = s;
-		}
 		void Text::setText(spn::To32Str str) {
 			_text = str.moveTo();
+			_bRefl = true;
 		}
-		void Text::setAlpha(float a) {
-			_alpha = a;
+		void Text::setText(HText h) {
+			_hlText = h;
+			_bRefl = false;
+		}
+		ColorA& Text::refColor() {
+			return _color;
 		}
 		CCoreID Text::getCCoreId() const {
 			return _charId;
 		}
 		HText Text::getText() const {
-			if(!_hlText)
-				_makeTextCache();
+			if(_bRefl) {
+				_bRefl = false;
+				_hlText = mgr_text.createText(_charId, _text);
+			}
 			return _hlText;
 		}
-		void Text::_makeTextCache() const {
-			_hlText = mgr_text.createText(_charId, _text);
-		}
 		void Text::draw(IEffect& e, const CBPreDraw& cbPre) const {
-			_makeTextCache();
+			getText();
 
 			cbPre(e);
-			e.setUniform(unif::Alpha, _alpha);
+			e.setUniform(unif::Color, _color);
 			_hlText->draw(e);
 		}
 		void Text::exportDrawTag(DrawTag& d) const {
-			if(!_hlText)
-				_makeTextCache();
-			_hlText->exportDrawTag(d);
+			getText()->exportDrawTag(d);
 		}
 	}
 }

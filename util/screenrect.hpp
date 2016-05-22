@@ -31,6 +31,12 @@ namespace rs {
 				static HLIb MakeIndex();
 				void draw(rs::IEffect& e) const;
 		};
+		class WireRect01 : public SharedGeometry<WireRect01> {
+			public:
+				static HLVb MakeVertex();
+				static HLIb MakeIndex();
+				void draw(rs::IEffect& e) const;
+		};
 		//! [-1, 1]の正方形ジオメトリ
 		class Rect11 : public SharedGeometry<Rect11> {
 			public:
@@ -43,15 +49,18 @@ namespace rs {
 		class WindowRect : public spn::Pose2D {
 			private:
 				Rect01		_rect01;
+				WireRect01	_wrect01;
 				spn::Vec3	_color;
 				float		_alpha,
 							_depth;
+				bool		_bWire;
 			public:
 				WindowRect();
 				void setColor(const spn::Vec3& c);
 				void setAlpha(float a);
 				void setDepth(float d);
 				void exportDrawTag(DrawTag& tag) const;
+				void setWireframe(bool bWire);
 				void draw(IEffect& e) const;
 		};
 		//! 画面全体を覆う矩形ポリゴン (ポストエフェクト用)

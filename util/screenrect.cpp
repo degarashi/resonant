@@ -18,12 +18,12 @@ namespace rs {
 				hlVb->get()->initData(c_vertex, countof(c_vertex), sizeof(c_vertex[0]));
 				return hlVb;
 			}
-			void DrawRect(rs::IEffect& e, rs::HVb hVb, rs::HIb hIb) {
+			void DrawRect(rs::IEffect& e, GLenum dtype, rs::HVb hVb, rs::HIb hIb) {
 				e.setVDecl(rs::DrawDecl<rs::vdecl::screen>::GetVDecl());
 				e.setVStream(hVb, 0);
 				e.setIStream(hIb);
 				const int nElem = hIb->get()->getNElem();
-				e.drawIndexed(GL_TRIANGLES, nElem, 0);
+				e.drawIndexed(dtype, nElem, 0);
 			}
 		}
 		// ---------------------- Rect01 ----------------------
@@ -39,7 +39,22 @@ namespace rs {
 			return hlIb;
 		}
 		void Rect01::draw(rs::IEffect& e) const {
-			DrawRect(e, getVertex(), getIndex());
+			DrawRect(e, GL_TRIANGLES, getVertex(), getIndex());
+		}
+		// ---------------------- WireRect01 ----------------------
+		HLVb WireRect01::MakeVertex() {
+			return Rect01::MakeVertex();
+		}
+		HLIb WireRect01::MakeIndex() {
+			const GLubyte c_index[] = {
+				0, 1, 2, 3
+			};
+			HLIb hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+			hlIb->get()->initData(c_index, countof(c_index));
+			return hlIb;
+		}
+		void WireRect01::draw(rs::IEffect& e) const {
+			DrawRect(e, GL_LINE_LOOP, getVertex(), getIndex());
 		}
 		// ---------------------- Rect11 ----------------------
 		HLVb Rect11::MakeVertex() {
@@ -49,13 +64,14 @@ namespace rs {
 			return Rect01::MakeIndex();
 		}
 		void Rect11::draw(rs::IEffect& e) const {
-			DrawRect(e, getVertex(), getIndex());
+			DrawRect(e, GL_TRIANGLES, getVertex(), getIndex());
 		}
 		// ---------------------- WindowRect ----------------------
 		WindowRect::WindowRect():
 			_color(1,1,1),
 			_alpha(1),
-			_depth(1)
+			_depth(1),
+			_bWire(false)
 		{}
 		void WindowRect::setColor(const spn::Vec3& c) {
 			_color = c;
@@ -67,28 +83,34 @@ namespace rs {
 			_depth = d;
 		}
 		void WindowRect::exportDrawTag(DrawTag& tag) const {
-			tag.idIBuffer = _rect01.getIndex();
-			tag.idVBuffer[0] = _rect01.getVertex();
+			tag.idIBuffer = (_bWire) ? _wrect01.getIndex() : _rect01.getIndex();
+			tag.idVBuffer[0] = (_bWire) ? _wrect01.getVertex() : _rect01.getVertex();
 			tag.zOffset = _depth;
 		}
+		void WindowRect::setWireframe(const bool bWireframe) {
+			_bWire = bWireframe;
+		}
 		void WindowRect::draw(IEffect& e) const {
-			auto& s2 = e.ref2D();
-			auto s = mgr_info.getScreenSize();
-			float rx = spn::Rcp22Bit(s.width/2),
-					ry = spn::Rcp22Bit(s.height/2);
-			auto& sc = getScale();
-			auto& ofs = getOffset();
-			auto m = spn::AMat33::Scaling(rx*sc.x, -ry*sc.y, 1.f);
-			m *= spn::AMat33::Translation({-1, 1});
+			const auto s = mgr_info.getScreenSize();
+			const float rx = spn::Rcp22Bit(s.width/2),
+						ry = spn::Rcp22Bit(s.height/2);
+			const auto& sc = getScale();
+			const auto& ofs = getOffset();
+
+			const float rv = _bWire ? -1 : 0;
+			auto m = spn::AMat33::Scaling(rx*(sc.x+rv), -ry*(sc.y+rv), 1.f);
+			m *= spn::AMat33::Translation({-1+rx/2, 1-ry/2});
 			m *= spn::AMat33::Translation({ofs.x*rx, -ofs.y*ry});
 			e.setVDecl(DrawDecl<vdecl::screen>::GetVDecl());
+			auto& s2 = e.ref2D();
 			s2.setWorld(m);
 			e.setUniform(unif2d::Color, _color);
 			e.setUniform(unif2d::Alpha, _alpha);
 			e.setUniform(unif2d::Depth, _depth);
-			e.setVStream(_rect01.getVertex(), 0);
-			e.setIStream(_rect01.getIndex());
-			e.drawIndexed(GL_TRIANGLES, _rect01.getIndex()->get()->getNElem());
+			if(_bWire)
+				_wrect01.draw(e);
+			else
+				_rect01.draw(e);
 		}
 		// ---------------------- ScreenRect ----------------------
 		void ScreenRect::exportDrawTag(DrawTag& tag) const {
@@ -96,10 +118,7 @@ namespace rs {
 			tag.idVBuffer[0] = _rect11.getVertex();
 		}
 		void ScreenRect::draw(IEffect& e) const {
-			e.setVDecl(DrawDecl<vdecl::screen>::GetVDecl());
-			e.setVStream(_rect11.getVertex(), 0);
-			e.setIStream(_rect11.getIndex());
-			e.drawIndexed(GL_TRIANGLES, _rect11.getIndex()->get()->getNElem());
+			_rect11.draw(e);
 		}
 	}
 	// ---------------------- Screen頂点宣言 ----------------------

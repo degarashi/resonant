@@ -3,6 +3,7 @@
 #include "../glx_id.hpp"
 #include "spinner/optional.hpp"
 #include "spinner/pose.hpp"
+#include "color.hpp"
 
 namespace rs {
 	struct DrawTag;
@@ -22,10 +23,9 @@ namespace rs {
 				static CCoreID_OP	cs_defaultCid;
 				std::u32string		_text;
 				CCoreID				_charId;
-				Size_OP				_textSize;
-				float				_alpha;
-				mutable rs::HLText	_hlText;
-				void _makeTextCache() const;
+				ColorA				_color;
+				mutable bool		_bRefl;
+				mutable HLText		_hlText;
 
 				static CCoreID _GetDefaultCID();
 				using CBPreDraw = std::function<void (IEffect&)>;
@@ -34,9 +34,9 @@ namespace rs {
 				void setCCoreId(CCoreID cid);
 				HText getText() const;
 				CCoreID getCCoreId() const;
-				void setTextSize(Size_OP s=spn::none);
 				void setText(spn::To32Str str);
-				void setAlpha(float a);
+				void setText(HText h);
+				ColorA& refColor();
 				void draw(IEffect& e, const CBPreDraw& cbPre=[](auto&){}) const;
 				void exportDrawTag(DrawTag& d) const;
 		};
