@@ -400,6 +400,21 @@ namespace rs {
 		return LuaType::LNone; }
 	DEF_LCV_OSTREAM(LCValue)
 
+	// --- LCV<LValueS>
+	int LCV<LValueS>::operator()(lua_State* ls, const LValueS& t) const {
+		t.prepareValue(ls);
+		return 1;
+	}
+	LValueS LCV<LValueS>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
+		lua_pushvalue(ls, idx);
+		return LValueS(ls);
+	}
+	std::ostream& LCV<LValueS>::operator()(std::ostream& os, const LValueS& t) const {
+		return os << t; }
+	LuaType LCV<LValueS>::operator()() const {
+		return LuaType::LNone; }
+	DEF_LCV_OSTREAM(LValueS)
+
 	// --- LCV<LValueG>
 	int LCV<LValueG>::operator()(lua_State* ls, const LValueG& t) const {
 		t.prepareValue(ls);

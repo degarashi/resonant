@@ -285,6 +285,8 @@ namespace rs {
 	class LValue;
 	class LV_Global;
 	using LValueG = LValue<LV_Global>;
+	class LV_Stack;
+	using LValueS = LValue<LV_Stack>;
 
 #define DEF_LCV0(typ, rtyp, argtyp) template <> struct LCV<typ> { \
 		int operator()(lua_State* ls, argtyp t) const; \
@@ -317,12 +319,14 @@ namespace rs {
 	DEF_LCV(spn::SHandle, spn::SHandle)
 	DEF_LCV(spn::WHandle, spn::WHandle)
 	DEF_LCV(LValueG, const LValueG&)
+	DEF_LCV(LValueS, const LValueS&)
 	DEF_LCV(lua_Number, lua_Number)
 	DERIVED_LCV(lua_OtherNumber, lua_Number)
 	DEF_LCV(lua_Integer, lua_Integer)
 	DERIVED_LCV(lua_IntegerU, lua_Integer)
 	DERIVED_LCV(lua_OtherInteger, lua_Integer)
 	DERIVED_LCV(lua_OtherIntegerU, lua_OtherInteger)
+	DERIVED_LCV(long, lua_Integer)
 
 	DERIVED_LCV(GLFormat, lua_Integer)
 	DERIVED_LCV(GLDepthFmt, GLFormat)
