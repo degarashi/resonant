@@ -179,10 +179,12 @@ namespace rs {
 				// Pressed=1, Neutral=0, Released=-1, Pressing= n>=1
 				int			_state,
 							_value;
-				void _advanceState(int val);
+				//! getKeyValueSimplifiedOnce()にて一度入力があった時にtrue, 無入力の時にfalseとされる
+				mutable bool	_bOnce;
+				bool _advanceState(int val);
 			public:
 				Action();
-				Action(Action&& a) noexcept;
+				Action(Action&& a) = default;
 				void update();
 				bool isKeyPressed() const;
 				bool isKeyReleased() const;
@@ -196,6 +198,13 @@ namespace rs {
 							-1	getValueの値が-InputRangeHalf以下
 							0	どちらでもない時 */
 				int getKeyValueSimplified() const;
+				//! getKeyValueSimplified()をキーの押しっぱなしに対応
+				//! 一度値を0に戻してからでないと反応しない
+				/*!
+					\return getKeyValueSimplified()と同様
+					@sa getKeyValueSimplified()
+				*/
+				int getKeyValueSimplifiedOnce() const;
 				void linkButtonAsAxis(HInput hI, int num_negative, int num_positive);
 		};
 		class ActMgr : public spn::ResMgrN<Action, ActMgr> {

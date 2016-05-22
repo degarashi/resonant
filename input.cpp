@@ -217,17 +217,21 @@ namespace rs {
 					inF == l.inF;
 		}
 		// ----------------- Action -----------------
-		Action::Action(): _state(0), _value(0) {}
-		Action::Action(Action&& a) noexcept: _link(std::move(a._link)), _state(a._state), _value(a._value) {}
+		Action::Action():
+			_state(0),
+			_value(0),
+			_bOnce(false)
+		{}
 		void Action::update() {
 			int sum = 0;
 			// linkの値を加算合成
 			for(auto& l : _link)
 				sum += l.getValue();
 			sum = spn::Saturate(sum, InputRange);
-			_advanceState(sum);
+			if(!_advanceState(sum))
+				_bOnce = false;
 		}
-		void Action::_advanceState(int val) {
+		bool Action::_advanceState(const int val) {
 			if(val >= InputRangeHalf) {
 				if(_state <= 0)
 					_state = 1;
@@ -244,6 +248,7 @@ namespace rs {
 				}
 			}
 			_value = val;
+			return !spn::IsInRange(_value, -InputRangeHalf, InputRangeHalf);
 		}
 		bool Action::isKeyPressed() const {
 			return getState() == 1;
@@ -254,15 +259,15 @@ namespace rs {
 		bool Action::isKeyPressing() const {
 			return getState() > 0;
 		}
-		void Action::addLink(HInput hI, InputFlag::E inF, int num) {
-			Link link{hI, inF, num};
-			auto itr = std::find(_link.begin(), _link.end(), link);
+		void Action::addLink(const HInput hI, const InputFlag::E inF, const int num) {
+			const Link link{hI, inF, num};
+			const auto itr = std::find(_link.begin(), _link.end(), link);
 			if(itr == _link.end())
 				_link.emplace_back(link);
 		}
-		void Action::remLink(HInput hI, InputFlag::E inF, int num) {
-			Link link{hI, inF, num};
-			auto itr = std::find(_link.begin(), _link.end(), link);
+		void Action::remLink(const HInput hI, const InputFlag::E inF, const int num) {
+			const Link link{hI, inF, num};
+			const auto itr = std::find(_link.begin(), _link.end(), link);
 			if(itr != _link.end())
 				_link.erase(itr);
 		}
@@ -273,14 +278,22 @@ namespace rs {
 			return _value;
 		}
 		int Action::getKeyValueSimplified() const {
-			auto v = getValue();
+			const auto v = getValue();
 			if(v >= InputRangeHalf)
 				return 1;
 			if(v <= -InputRangeHalf)
 				return -1;
 			return 0;
 		}
-		void Action::linkButtonAsAxis(HInput hI, int num_negative, int num_positive) {
+		int Action::getKeyValueSimplifiedOnce() const {
+			if(!_bOnce) {
+				const auto ret = getKeyValueSimplified();
+				_bOnce = (ret != 0);
+				return ret;
+			}
+			return 0;
+		}
+		void Action::linkButtonAsAxis(HInput hI, const int num_negative, const int num_positive) {
 			addLink(hI, InputFlag::ButtonFlip, num_negative);
 			addLink(hI, InputFlag::Button, num_positive);
 		}
