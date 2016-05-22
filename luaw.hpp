@@ -987,14 +987,17 @@ namespace rs {
 	template <class T>
 	class LValue : public T {
 		public:
-			using Callback = std::function<void (LuaState&)>;
-			void iterateTable(Callback cb) {
+			template <class Callback>
+			void iterateTable(Callback&& cb) {
 				LuaState lsc(T::getLS());
 				typename T::VPop vp(*this, true);
-				lsc.push(LuaNil());
-				while(lsc.next(vp.getIndex()) != 0) {
-					cb(lsc);
-					lsc.pop(1);
+				// LValueの値がテーブル以外の時は処理しない
+				if(lsc.type(-1) == LuaType::Table) {
+					lsc.push(LuaNil());
+					while(lsc.next(vp.getIndex()) != 0) {
+						cb(lsc);
+						lsc.pop(1);
+					}
 				}
 			}
 			using T::T;
