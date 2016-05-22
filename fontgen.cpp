@@ -49,7 +49,8 @@ namespace rs {
 		auto& dp = getDepPair(chID);
 		auto res = dp.dep.getChara(chID.code);
 		// この時点では1ピクセル8bitなので、32bitRGBAに展開
-		res.first = Convert8Bit_Packed32Bit(&res.first[0], res.second.width(), res.second.width(), res.second.height());
+		if(!res.first.empty())
+			res.first = Convert8Bit_Packed32Bit(&res.first[0], res.second.width(), res.second.width(), res.second.height());
 		cp.box = res.second;
 		cp.space = dp.dep.width(chID.code);
 		if(res.second.width() <= 0) {
@@ -94,49 +95,56 @@ namespace rs {
 		_init(face);
 	}
 	void TextObj::_init(Face& face) {
-		auto& dp = face.getDepPair(_coreID);
-		int height = dp.dep.height();
 		// CharPosリストの作成
 		// 1文字につき4頂点 + インデックス6個
 		struct CPair {
 			const CharPos*	cp;
-			int ofsx, ofsy;
-			float timeval;
+			const int ofsx, ofsy;
+			const float timeval;
 
-			CPair(const CharPos* c, int x, int y, float t): cp(c), ofsx(x), ofsy(y), timeval(t) {}
+			CPair(const CharPos* c, int x, int y, float t):
+				cp(c),
+				ofsx(x),
+				ofsy(y),
+				timeval(t)
+			{}
 		};
-		int ofsx = 0,
-			ofsy = -height;
 		// テクスチャが複数枚に渡る時はフォント頂点(座標)を使いまわし、UV-tだけを差し替え
-		std::map<HTex, std::vector<CPair>>	tpM;
-		float dt = spn::Rcp22Bit(_text.length()),
-			t = 0;
-		for(auto& c : _text) {
-			auto* p = face.getCharPos(CharID(c, _coreID));
-			// 幾つのテクスチャが要るのかカウントしつつ、フォントを配置
-			if(c == U'\n') {
-				ofsy -= height;
-				ofsx = 0;
-			} else {
-				if(p->box.width() > 0)
-					tpM[p->hTex].emplace_back(p, ofsx, ofsy, t);
-				ofsx += p->space;
+		std::unordered_map<HTex, std::vector<CPair>>	tpM;
+		{
+			const auto& dp = face.getDepPair(_coreID);
+			const int height = dp.dep.height();
+			int ofsx = 0,
+				ofsy = -height;
+			const float dt = spn::Rcp22Bit(_text.length());
+			float t = 0;
+			for(auto& c : _text) {
+				auto* p = face.getCharPos(CharID(c, _coreID));
+				// 幾つのテクスチャが要るのかカウントしつつ、フォントを配置
+				if(c == U'\n') {
+					ofsy -= height;
+					ofsx = 0;
+				} else {
+					if(p->box.width() > 0)
+						tpM[p->hTex].emplace_back(p, ofsx, ofsy, t);
+					ofsx += p->space;
+				}
+				t += dt;
 			}
-			t += dt;
 		}
 
 		const uint16_t c_index[] = {0,1,2, 2,3,0};
 		const std::pair<int,int> c_rectI[] = {{0,2}, {1,2}, {1,3}, {0,3}};
 
-		int nplane = tpM.size();
+		const int nplane = tpM.size();
 		_drawSet.resize(nplane);
-		_rectSize *= 0;
-		auto itr = tpM.begin();
+		_rectSize = spn::SizeF{0,0};
+		auto itr = tpM.cbegin();
 		for(int i=0 ; i<nplane ; i++, ++itr) {
 			auto& ds = _drawSet[i];
-			std::vector<CPair>& cpl = itr->second;
-			int nC = cpl.size(),
-				vbase = 0;
+			const std::vector<CPair>& cpl = itr->second;
+			const int nC = cpl.size();
+			int vbase = 0;
 
 			// フォント配置
 			spn::ByteBuff vbuff(nC * 4 * sizeof(vertex::text));

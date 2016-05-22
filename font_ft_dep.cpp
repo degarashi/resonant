@@ -115,9 +115,10 @@ namespace rs {
 			// nlevelが2より大きい時は256として扱う
 			size_t sz = gi.width * gi.height;
 			buff.resize(sz);
-			if(gi.pitch == gi.width)
-				std::memcpy(&buff[0], gi.data, sz);
-			else {
+			if(gi.pitch == gi.width) {
+				if(sz > 0)
+					std::memcpy(&buff[0], gi.data, sz);
+			} else {
 				// pitchを詰める
 				const uint8_t* src = gi.data;
 				uint8_t* dst = &buff[0];
