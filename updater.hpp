@@ -535,8 +535,8 @@ namespace rs {
 
 				// ステートをNewするためのヘルパー関数
 				template <class ST, class... Args>
-				void setStateNew(Args... args) {
-					setState(FPState(new ST(args...), true));
+				void setStateNew(Args&&... args) {
+					setState(FPState(new ST(std::forward<Args>(args)...), true));
 				}
 				// ステートを再利用するヘルパー関数
 				template <class ST>
