@@ -253,25 +253,26 @@ namespace rs {
 	}
 	const char* LuaState::cs_defaultmode = "bt";
 	LuaState::LuaState(LuaState&& ls): _base(std::move(ls._base)), _lua(std::move(ls._lua)) {}
-	void LuaState::load(HRW hRW, const char* chunkName, const char* mode, bool bExec) {
+	int LuaState::load(HRW hRW, const char* chunkName, const char* mode, const bool bExec) {
 		Reader::Read(getLS(), hRW, chunkName, mode);
 		if(bExec) {
 			// Loadされたチャンクを実行
-			call(0,0);
+			return call(0, LUA_MULTRET);
 		}
+		return 0;
 	}
-	void LuaState::loadFromSource(HRW hRW, const char* chunkName, bool bExec) {
-		load(hRW, chunkName, "t", bExec);
+	int LuaState::loadFromSource(HRW hRW, const char* chunkName, const bool bExec) {
+		return load(hRW, chunkName, "t", bExec);
 	}
-	void LuaState::loadFromBinary(HRW hRW, const char* chunkName, bool bExec) {
-		load(hRW, chunkName, "b", bExec);
+	int LuaState::loadFromBinary(HRW hRW, const char* chunkName, const bool bExec) {
+		return load(hRW, chunkName, "b", bExec);
 	}
-	void LuaState::loadModule(const std::string& name) {
+	int LuaState::loadModule(const std::string& name) {
 		std::string s("require(\"");
 		s.append(name);
 		s.append("\")");
 		HLRW hlRW = mgr_rw.fromConstMem(s.data(), s.length());
-		loadFromSource(hlRW, name.c_str(), true);
+		return loadFromSource(hlRW, name.c_str(), true);
 	}
 	void LuaState::pushSelf() {
 		lua_pushthread(getLS());

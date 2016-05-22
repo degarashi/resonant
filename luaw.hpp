@@ -703,13 +703,13 @@ namespace rs {
 			static SPLua FromResource(const std::string& name);
 			const static char* cs_defaultmode;
 			//! Text/Binary形式でLuaソースを読み取り、チャンクをスタックトップに積む
-			void load(HRW hRW, const char* chunkName=nullptr, const char* mode=cs_defaultmode, bool bExec=true);
+			int load(HRW hRW, const char* chunkName=nullptr, const char* mode=cs_defaultmode, bool bExec=true);
 			//! ソースコードを読み取り、チャンクをスタックトップに積む
 			/*! \param[in] bExec チャンクを実行するか */
-			void loadFromSource(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
+			int loadFromSource(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
 			//! コンパイル済みバイナリを読み取り、チャンクをスタックトップに積む
-			void loadFromBinary(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
-			void loadModule(const std::string& name);
+			int loadFromBinary(HRW hRW, const char* chunkName=nullptr, bool bExec=true);
+			int loadModule(const std::string& name);
 			//! 任意の値をスタックに積む
 			void push(const LCValue& v);
 			template <class T>
