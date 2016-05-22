@@ -845,10 +845,10 @@ namespace rs {
 		// LValue[], *LValueの時だけ生成される中間クラス
 		template <class LV, class IDX>
 		class LV_Inter {
-			LValue<LV>&		_src;
+			LV&				_src;
 			const IDX&		_index;
 			public:
-				LV_Inter(LValue<LV>& src, const IDX& index): _src(src), _index(index) {}
+				LV_Inter(LV& src, const IDX& index): _src(src), _index(index) {}
 				LV_Inter(const LV_Inter&) = delete;
 				LV_Inter(LV_Inter&&) = default;
 
@@ -860,15 +860,30 @@ namespace rs {
 					_src.setField(_index, std::forward<VAL>(v));
 					return *this;
 				}
-				lua_State* getLS() {
+				lua_State* getLS() const {
 					return _src.getLS();
 				}
 		};
+		// LV_Inter (const版)
+		template <class LV, class IDX>
+		class LV_Inter<const LV, IDX> : public LV_Inter<LV,IDX> {
+			public:
+				LV_Inter(const LV& src, const IDX& index):
+					LV_Inter<LV,IDX>(const_cast<LV&>(src), index) {}
+				LV_Inter(const LV_Inter&) = delete;
+				LV_Inter(LV_Inter&&) = default;
+
+				template <class VAL>
+				LV_Inter& operator = (VAL&& v) = delete;
+		};
+		//! LValue内部の値をスタックに積み、デストラクタで元に戻す
 		template <class T>
 		struct VPop {
-			const T& self;
+			const T&	self;
 			int			index;
-			VPop(const T& s, bool bTop): self(s) {
+			VPop(const T& s, const bool bTop):
+				self(s)
+			{
 				index = s._prepareValue(bTop);
 			}
 			operator int() const { return index; }
@@ -927,6 +942,7 @@ namespace rs {
 			}
 			// lua_State*をゲットする関数
 			lua_State* getLS() const;
+			void swap(LV_Global& lv) noexcept;
 			friend std::ostream& operator << (std::ostream& os, const LV_Global& t);
 	};
 	class LV_Stack {
@@ -949,7 +965,7 @@ namespace rs {
 			LV_Stack(lua_State* ls);
 			LV_Stack(lua_State* ls, const LCValue& lcv);
 			template <class LV, class IDX>
-			LV_Stack(detail::LV_Inter<LV,IDX>&& lv) {
+			LV_Stack(detail::LV_Inter<LValue<LV>,IDX>&& lv) {
 				lua_State* ls = lv.getLS();
 				lv.prepareValue(ls);
 				_init(ls);
@@ -959,13 +975,13 @@ namespace rs {
 				lv.prepareValue(ls);
 				_init(ls);
 			}
-			LV_Stack(const LV_Stack& lv) = default;
+			LV_Stack(const LV_Stack& lv);
 			~LV_Stack();
 
 			template <class LV>
 			LV_Stack& operator = (const LValue<LV>& lcv) {
 				lcv.prepareValue(_ls);
-				lua_replace(_ls, _pos);
+				_setValue();
 				return *this;
 			}
 			LV_Stack& operator = (const LCValue& lcv);
@@ -1012,8 +1028,9 @@ namespace rs {
 			LValue& operator = (const LValue<LV>& lv) {
 				return reinterpret_cast<LValue&>(T::operator =(lv));
 			}
-			LValue& operator = (LValue&& lv) {
-				return reinterpret_cast<LValue&>(static_cast<T&>(*this) = std::move(lv));
+			LValue& operator = (LValue&& lv) noexcept {
+				static_cast<T&>(*this).swap(static_cast<T&>(lv));
+				return *this;
 			}
 			template <class T2>
 			LValue& operator = (T2&& t) {
@@ -1022,10 +1039,17 @@ namespace rs {
 			}
 			template <class LV>
 			auto operator [](const LValue<LV>& lv) {
-				return detail::LV_Inter<T, LValue<LV>>(*this, lv);
+				return detail::LV_Inter<LValue<LV>, LValue<LV>>(*this, lv);
+			}
+			template <class LV>
+			auto operator [](const LValue<LV>& lv) const {
+				return detail::LV_Inter<const LValue<LV>, LValue<LV>>(*this, lv);
 			}
 			auto operator [](const LCValue& lcv) {
-				return detail::LV_Inter<T, LCValue>(*this, lcv);
+				return detail::LV_Inter<LValue<T>, LCValue>(*this, lcv);
+			}
+			auto operator [](const LCValue& lcv) const {
+				return detail::LV_Inter<const LValue<T>, LCValue>(*this, lcv);
 			}
 			template <class... Ret, class... Args>
 			void operator()(std::tuple<Ret...>& dst, Args&&... args) {
@@ -1108,7 +1132,7 @@ namespace rs {
 			}
 			template <class R>
 			decltype(auto) toValue() const {
-				return GetLCVType<T>()(typename T::VPop(*this, false), T::getLS());
+				return GetLCVType<R>()(typename T::VPop(*this, false), T::getLS());
 			}
 			int length() const {
 				typename T::VPop vp(*this, true);

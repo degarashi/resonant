@@ -601,10 +601,13 @@ namespace rs {
 		_init(sp);
 	}
 	LV_Global::LV_Global(const LV_Global& lv) {
-		VPop vp(lv, true);
+		lv._prepareValue(true);
 		_init(lv._lua);
 	}
-	LV_Global::LV_Global(LV_Global&& lv): _lua(std::move(lv._lua)), _id(lv._id) {}
+	LV_Global::LV_Global(LV_Global&& lv):
+		_lua(std::move(lv._lua)),
+		_id(lv._id)
+	{}
 	LV_Global::~LV_Global() {
 		if(_lua) {
 			// エントリの削除
@@ -653,6 +656,10 @@ namespace rs {
 	lua_State* LV_Global::getLS() const {
 		return _lua->getLS();
 	}
+	void LV_Global::swap(LV_Global& lv) noexcept {
+		std::swap(_lua, lv._lua);
+		std::swap(_id, lv._id);
+	}
 	std::ostream& operator << (std::ostream& os, const LV_Global& v) {
 		typename LV_Global::VPop vp(v, true);
 		return os << *v._lua;
@@ -689,10 +696,13 @@ namespace rs {
 	}
 	void LV_Stack::_setValue() {
 		lua_replace(_ls, _pos);
+		#ifdef DEBUG
+			_type = LuaState::SType(_ls, _pos);
+		#endif
 	}
 	LV_Stack& LV_Stack::operator = (const LCValue& lcv) {
 		lcv.push(_ls);
-		lua_replace(_ls, _pos);
+		_setValue();
 		return *this;
 	}
 	LV_Stack& LV_Stack::operator = (lua_State* ls) {
