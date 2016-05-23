@@ -1,3 +1,25 @@
+function InitTweak()
+	local tk = {
+		x = System.input:makeAction("tweak_x"),
+		y = System.input:makeAction("tweak_y"),
+		z = System.input:makeAction("tweak_z"),
+		w = System.input:makeAction("tweak_w"),
+		cx = System.input:makeAction("tweak_cx"),
+		cy = System.input:makeAction("tweak_cy"),
+		sw = System.input:makeAction("tweak_sw"),
+		cont = System.input:makeAction("tweak_cont")
+	}
+	local hK = Keyboard.OpenKeyboard(0)
+	tk.x:linkButtonAsAxis(hK, Action.Key.J, Action.Key.U)
+	tk.y:linkButtonAsAxis(hK, Action.Key.K, Action.Key.I)
+	tk.z:linkButtonAsAxis(hK, Action.Key.L, Action.Key.O)
+	tk.w:linkButtonAsAxis(hK, Action.Key.Comma, Action.Key.Kp_at)
+	tk.cx:linkButtonAsAxis(hK, Action.Key.J, Action.Key.L)
+	tk.cy:linkButtonAsAxis(hK, Action.Key.K, Action.Key.I)
+	tk.sw:addLink(hK, Action.InputFlag.Button, Action.Key.Tab)
+	tk.cont:addLink(hK, Action.InputFlag.Button, Action.Key.Lshift)
+	Global.tweak = tk
+end
 function InitInput()
 	local g = Global.cpp
 	Global.cpp.actQuit = System.input:makeAction("quit")
@@ -59,10 +81,10 @@ function InitInput()
 	-- [J] シーン切り替え
 	Global.cpp.actScene:addLink(hK, Action.InputFlag.Button, Action.Key.J)
 	-- [I,K,O,L] フィルタ係数
-	g.actFilterUpB:addLink(hK, Action.InputFlag.Button, Action.Key.I)
-	g.actFilterDownB:addLink(hK, Action.InputFlag.Button, Action.Key.K)
-	g.actFilterUpG:addLink(hK, Action.InputFlag.Button, Action.Key.O)
-	g.actFilterDownG:addLink(hK, Action.InputFlag.Button, Action.Key.L)
+	-- g.actFilterUpB:addLink(hK, Action.InputFlag.Button, Action.Key.I)
+	-- g.actFilterDownB:addLink(hK, Action.InputFlag.Button, Action.Key.K)
+	-- g.actFilterUpG:addLink(hK, Action.InputFlag.Button, Action.Key.O)
+	-- g.actFilterDownG:addLink(hK, Action.InputFlag.Button, Action.Key.L)
 end
 function Initialize()
 	System.lsys:loadClass("FPSCameraU")
