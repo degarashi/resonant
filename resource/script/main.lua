@@ -88,7 +88,6 @@ function InitInput()
 end
 function Initialize()
 	System.lsys:loadClass("FPSCameraU")
-	System.lsys:loadClass("TweakU")
 	System.lsys:loadClass("sc_cube")
 	System.lsys:loadClass("sc_sound")
 	System.lsys:loadClass("sc_sprite")

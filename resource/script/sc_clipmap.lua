@@ -153,6 +153,22 @@ st_idle = {
 			blur0:setDiffuse(self.hdrResult)
 			dg:addObj(blur0)
 		end
+
+		-- ValueTweakerの初期化
+		local tweak = G.Tweak.New("[Tweaker Root]", 20)
+		local act = Global.tweak
+		tweak:setIncrementAxis(act.cont, act.x, act.y, act.z, act.w)
+		tweak:setCursorAxis(act.cx, act.cy)
+		tweak:setSwitchButton(act.sw)
+		-- 定数定義ファイルを読み込み
+		local cam = Global.cpp.hlCam
+		local sp = tweak:loadValue(cam, "value/camera.lua", cam.handleName)
+		tweak:insertChild(sp)
+
+		self.tweak = tweak
+		tweak:setDrawPriority(0x70000)
+		upd:addObj(tweak)
+		dg:addObj(tweak)
 	end,
 	OnUpdate = function(self, slc, ...)
 		local pose = Global.cpp.hlCam:refPose()

@@ -234,7 +234,7 @@ const Tweak::INode::SP& Tweak::getRoot() const {
 }
 
 #include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "FSMachine",
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
 	NOTHING,
 	(loadValue)
 	(setDrawPriority)
