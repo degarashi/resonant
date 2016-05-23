@@ -1,0 +1,40 @@
+attribute TweakAttr {
+	vec2		a_pos : POSITION;	// Rect01座標
+}
+varying TweakVary {
+}
+uniform TweakUnif {
+	mat3		sys_mWorld2d;
+	float		u_alpha;
+	float		u_depth;
+	vec3		u_color;
+}
+vertexshader(400) TweakRect_VS() {
+	gl_Position.xy = (vec3(a_pos, 1) * sys_mWorld2d).xy;
+	gl_Position.z = u_depth;
+	gl_Position.w = 1;
+}
+fragmentshader(400) TweakRect_FS() {
+	gl_FragColor = vec4(u_color, u_alpha);
+}
+
+technique Tweak {
+	PolygonMode = Fill;
+	CullFace = false;
+	Blend = true;
+	BlendFunc = SrcAlpha InvSrcAlpha;
+	DepthTest = false;
+	DepthMask = false;
+	attribute = TweakAttr;
+	uniform = TweakUnif;
+	varying = TweakVary;
+
+	pass Rect {
+		VertexShader = TweakRect_VS();
+		FragmentShader = TweakRect_FS();
+	}
+	pass Text {
+		VertexShader = TweakRect_VS();
+		FragmentShader = TweakRect_FS();
+	}
+}

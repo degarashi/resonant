@@ -4,6 +4,7 @@ import tile.glx;
 import tone.glx;
 import clipmap.glx;
 import test.glx;
+import tweak.glx;
 
 uniform Text2DUnif {
 	mat3 mText;

@@ -66,6 +66,7 @@ function InitInput()
 end
 function Initialize()
 	System.lsys:loadClass("FPSCameraU")
+	System.lsys:loadClass("TweakU")
 	System.lsys:loadClass("sc_cube")
 	System.lsys:loadClass("sc_sound")
 	System.lsys:loadClass("sc_sprite")
@@ -74,6 +75,7 @@ function Initialize()
 	System.lsys:loadClass("sc_clipmap")
 	System.lsys:loadClass("RotLight")
 	InitInput()
+	InitTweak()
 	-- ここでSceneハンドルを返すとそれが初期Sceneとなり、
 	-- nilを返すとC++での指定となる
 	return sc_clipmap.New()

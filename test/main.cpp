@@ -28,6 +28,7 @@
 #include "tonemap.hpp"
 #include "clipmap.hpp"
 #include "colview.hpp"
+#include "tweak.hpp"
 
 rs::CCoreID GetCID() {
 	return mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, 5, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Point));
@@ -98,6 +99,8 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<Hash_SP>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<HashVec_SP>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<IClipSource_SP>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<Tweak>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<Tweak::INode::SP>(*lkb->spLua);
 		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeCS_PN", &ClipPNSource::Create);
 		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeCS_Tex", &ClipTexSource::Create);
 		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeHash2D", &Hash2D::Create);
