@@ -169,7 +169,15 @@ namespace rs {
 		return 1;
 	}
 	lua_State* LCV<lua_State*>::operator()(int idx, lua_State* ls, LPointerSP* /*spm*/) const {
-		return lua_tothread(ls, idx);
+		const auto typ = lua_type(ls, idx);
+		if(typ == LUA_TTHREAD)
+			return lua_tothread(ls, idx);
+		if(typ == LUA_TNIL || typ == LUA_TNONE) {
+			// 自身を返す
+			return ls;
+		}
+		LuaState::_CheckType(ls, idx, LuaType::Thread);
+		return nullptr;
 	}
 	std::ostream& LCV<lua_State*>::operator()(std::ostream& os, lua_State* ls) const {
 		return os << "(thread) " << (uintptr_t)ls;
