@@ -1004,7 +1004,7 @@ namespace rs {
 	class LValue : public T {
 		public:
 			template <class Callback>
-			void iterateTable(Callback&& cb) {
+			void iterateTable(Callback&& cb) const {
 				LuaState lsc(T::getLS());
 				typename T::VPop vp(*this, true);
 				// LValueの値がテーブル以外の時は処理しない
