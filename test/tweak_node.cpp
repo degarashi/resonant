@@ -5,6 +5,9 @@ Tweak::INode::INode(rs::CCoreID cid, const Name& name):
 	_name(name),
 	_text(mgr_text.createText(cid, name))
 {}
+const Tweak::Name& Tweak::INode::getName() const {
+	return _name;
+}
 
 // ------------------- Tweak::Node -------------------
 Tweak::Node::Node(rs::CCoreID cid, const Name& name):
@@ -25,6 +28,7 @@ bool Tweak::Node::isExpanded() const {
 bool Tweak::Node::isNode() const {
 	return true;
 }
+void Tweak::Node::setPointer(Value_UP) {}
 int Tweak::Node::draw(const Vec2& offset, const Vec2& unit, Drawer& d) const {
 	const auto sz = _text->getSize();
 	if(!d.checkDraw(this, {offset.x, offset.x+sz.width,
@@ -55,10 +59,10 @@ int Tweak::Node::draw(const Vec2& offset, const Vec2& unit, Drawer& d) const {
 }
 
 // ------------------- Tweak::Entry -------------------
-Tweak::Entry::Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, Value_UP value, const Define_SP& def):
+Tweak::Entry::Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, const Define_SP& def):
 	INode(cid, name),
 	_target(target),
-	_value(std::move(value)),
+	_value(def->defvalue->clone()),
 	_def(def)
 {}
 bool Tweak::Entry::expand(const bool /*b*/) {
@@ -80,6 +84,10 @@ int Tweak::Entry::draw(const Vec2& offset, const Vec2& unit, Drawer& d) const {
 	auto ofs = offset;
 	ofs.x += sz.width + 8;
 	return _value->draw(ofs, unit, d);
+}
+void Tweak::Entry::setPointer(Value_UP v) {
+	_value = std::move(v);
+	_applyValue();
 }
 void Tweak::Entry::set(const LValueS& v, const bool bStep) {
 	_value->set(v, bStep);

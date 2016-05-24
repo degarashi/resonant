@@ -200,5 +200,6 @@ class ClipmapObj : public rs::DrawableObjT<ClipmapObj>, public Clipmap {
 		struct St_Def;
 	public:
 		ClipmapObj(spn::PowInt n, int l, int upsamp_n);
+		const std::string& getName() const override;
 };
 DEF_LUAIMPORT(ClipmapObj)

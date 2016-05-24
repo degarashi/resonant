@@ -13,6 +13,10 @@ ClipmapObj::ClipmapObj(spn::PowInt n, const int l, const int upsamp_n):
 {
 	setStateNew<St_Def>();
 }
+const std::string& ClipmapObj::getName() const {
+	static const std::string name("ClipmapObj");
+	return name;
+}
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_PTR_NOCTOR(Clipmap::DrawCount, DrawCount,
 		(draw)(not_draw),

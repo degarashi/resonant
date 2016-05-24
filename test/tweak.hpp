@@ -31,6 +31,8 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		using HAct = rs::HAct;
 		// using SizeF_Op = spn::Optional<SizeF>;
 		// using F_Op = spn::Optional<float>;
+		class Value;
+		using Value_UP = std::unique_ptr<Value>;
 
 	public:
 		//! 要素ごとの基本色
@@ -65,6 +67,8 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				virtual bool expand(bool b) = 0;
 				virtual bool isExpanded() const = 0;
 				virtual bool isNode() const = 0;
+				virtual void setPointer(Value_UP v) = 0;
+				const Name& getName() const;
 		};
 		class Drawer {
 			private:
@@ -108,8 +112,6 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				void drawTextVCenter(const RectF& rect, rs::HText hText, Color color);
 		};
 	private:
-		class Value;
-		using Value_UP = std::unique_ptr<Value>;
 		//! 調整可能な定数値
 		class Value : public IBase {
 			protected:
@@ -195,7 +197,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		using Define_SP = std::shared_ptr<Define>;
 		using DefineV = std::vector<Define_SP>;
 		// クラス名 -> 変数定義配列
-		using DefineM = std::unordered_map<std::string, DefineV>;
+		using DefineM = std::unordered_map<Name, DefineV>;
 		// Luaでのクラス名 -> 調整可能なパラメータ配列
 		DefineM			_define;
 	private:
@@ -208,6 +210,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				bool expand(bool b) override;
 				bool isExpanded() const override;
 				bool isNode() const override;
+				void setPointer(Value_UP v) override;
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 		};
 		class Entry : public INode {
@@ -217,13 +220,14 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				Define_SP			_def;
 				void _applyValue();
 			public:
-				Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, Value_UP value, const Define_SP& def);
+				Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, const Define_SP& def);
 				bool expand(bool b) override;
 				bool isExpanded() const override;
 				bool isNode() const override;
 				void increment(float inc, int index) override;
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 				void set(const LValueS& v, bool bStep) override;
+				void setPointer(Value_UP v) override;
 				rs::LCValue get() const override;
 		};
 		using Entry_SP = std::shared_ptr<Entry>;
@@ -246,10 +250,13 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		float				_tsize;
 		float				_indent;
 
+		//! Luaから値定義とデフォルト値を読み取る
 		DefineV _loadDefine(const LValueS& d);
-		const DefineV& _checkDefine(const Name& name, lua_State* ls);
+		//! オブジェクト名を元に_loadDefine()を呼ぶ
+		const DefineV& _getDefineV(const Name& objname, lua_State* ls);
+		//! オブジェクト名と変数名を元に値定義を取得
 		const Define_SP& _getDefine(const Name& objname, const Name& entname, lua_State* ls);
-		std::pair<Tweak::INode::SP,int> _remove(const INode::SP& sp, const bool delNode);
+		std::pair<INode::SP,int> _remove(const INode::SP& sp, const bool delNode);
 		struct St_Base;
 		struct St_Cursor;	//!< カーソル移動ステート
 		struct St_Value;	//!< 値改変ステート
@@ -257,14 +264,16 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 	public:
 		Tweak(const std::string& rootname, int tsize);
 
-		INode::SP loadValue(spn::SHandle obj, const std::string& file, const std::string& name, const rs::SPLua& ls);
 		// ---- input setting ----
 		void setCursorAxis(HAct hX, HAct hY);
 		void setIncrementAxis(HAct hC, HAct hX, HAct hY, HAct hZ, HAct hW);
 		void setSwitchButton(HAct hSw);
 		// ---- manupulate ----
 		INode::SP makeGroup(const Name& name);
-		INode::SP makeEntry(const Name& entname, spn::SHandle obj, const LValueS& v);
+		INode::SP makeEntry(spn::SHandle obj, const Name& ent, lua_State* ls);
+		void setEntryDefault(const INode::SP& sp, spn::SHandle obj, lua_State* ls);
+		void setEntryFromTable(const INode::SP& sp, spn::SHandle obj, const LValueS& tbl);
+		void setEntryFromFile(const INode::SP& sp, spn::SHandle obj, const std::string& file, const rs::SPLua& ls);
 		//! カーソルの直後にノードを追加
 		void insertNext(const INode::SP& sp);
 		void insertChild(const INode::SP& sp);

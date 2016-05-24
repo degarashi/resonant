@@ -70,18 +70,18 @@ Tweak::DefineV Tweak::_loadDefine(const LValueS& d) {
 	});
 	return v;
 }
-const Tweak::DefineV& Tweak::_checkDefine(const Name& name, lua_State* ls) {
-	auto itr = _define.find(name);
+const Tweak::DefineV& Tweak::_getDefineV(const Name& objname, lua_State* ls) {
+	auto itr = _define.find(objname);
 	if(itr == _define.end()) {
 		rs::LuaState lsc(ls);
-		lsc.getGlobal(name);
+		lsc.getGlobal(objname);
 		Assert(Trap, lsc.type(-1) == rs::LuaType::Table)
-		itr = _define.emplace(name, _loadDefine(ls)).first;
+		itr = _define.emplace(objname, _loadDefine(ls)).first;
 	}
 	return itr->second;
 }
 const Tweak::Define_SP& Tweak::_getDefine(const Name& objname, const Name& entname, lua_State* ls) {
-	const auto& defv = _checkDefine(objname, ls);
+	const auto& defv = _getDefineV(objname, ls);
 	const auto itr = std::find_if(defv.begin(), defv.end(), [&](auto& e){ return e->name==entname; });
 	Assert(Throw, itr!=defv.end(), "definition %1%::%2% is not found.", objname, entname)
 	return *itr;
@@ -100,42 +100,76 @@ void Tweak::setIncrementAxis(HAct hC, HAct hX, HAct hY, HAct hZ, HAct hW) {
 	_haInc[2] = hZ;
 	_haInc[3] = hW;
 }
-Tweak::INode::SP Tweak::loadValue(spn::SHandle obj, const std::string& file, const std::string& name, const rs::SPLua& ls) {
-	if(auto rw = mgr_path.getRW(rs::luaNS::ScriptResourceEntry, file, nullptr)) {
-		std::cout << *ls << std::endl;
-		const int nRet = ls->loadFromSource(rw);
-		Assert(Trap, nRet==1, "invalid tweakable value file")
-		std::cout << *ls << std::endl;
-		rs::LValueS lv(ls->getLS());
-		auto sp = makeGroup(name);
-		lv.iterateTable([&sp, this, obj](auto& ls){
-			// [Key][Value]
-			ls.pushValue(-2);
-			ls.pushValue(-2);
-			// [Key][Value][Key][Value]
-			sp->addChild(makeEntry(ls.toString(-2), obj, LValueS(ls.getLS())));
-			// [Key][Value][Key]
-			ls.pop(1);
-		});
-		return sp;
-	}
-	return nullptr;
+namespace {
+	const auto FindNode = [](const auto& node, const auto& name) -> Tweak::INode::SP {
+		if(auto cur = node->getChild()) {
+			do {
+				if(cur->getName() == name)
+					return cur;
+				cur = cur->getSibling();
+			} while(cur);
+		}
+		return nullptr;
+	};
 }
 Tweak::INode::SP Tweak::makeGroup(const Name& name) {
 	return std::make_shared<Node>(_cid, name);
 }
-Tweak::INode::SP Tweak::makeEntry(const Name& entname, spn::SHandle obj, const LValueS& v) {
+Tweak::INode::SP Tweak::makeEntry(const spn::SHandle obj, const Name& ent, lua_State* ls) {
 	// オブジェクトハンドルから名前を特定
 	const auto& objname = obj.getResourceName();
 	try {
-		const auto& def = _getDefine(objname, entname, v.getLS());
-		auto value = def->defvalue->clone();
-		value->set(v, false);
-		return std::make_shared<Entry>(_cid, entname, obj.weak(), std::move(value), def);
+		const auto& def = _getDefine(objname, ent, ls);
+		return std::make_shared<Entry>(_cid, ent, obj.weak(), def);
 	} catch(const std::runtime_error& e) {
 		Assert(Warn, false, e.what())
 	}
-	return Entry_SP();
+	return nullptr;
+}
+void Tweak::setEntryDefault(const INode::SP& sp, spn::SHandle obj, lua_State* ls) {
+	// オブジェクトハンドルから名前を特定
+	const auto& objname = obj.getResourceName();
+	try {
+		const auto& dv = _getDefineV(objname, ls);
+		for(auto& d : dv) {
+			INode::SP nd = FindNode(sp, d->name);
+			if(!nd) {
+				nd = makeEntry(obj, d->name, ls);
+				sp->addChild(nd);
+			} else
+				nd->setPointer(d->defvalue->clone());
+		}
+	} catch(const std::runtime_error& e) {
+		Assert(Warn, false, e.what())
+	}
+}
+void Tweak::setEntryFromTable(const INode::SP& sp, const spn::SHandle obj, const LValueS& tbl) {
+	auto* lsp = tbl.getLS();
+	tbl.iterateTable([&sp, obj, lsp, this](auto& ls){
+		// [Key][Value]
+		ls.pushValue(-2);
+		ls.pushValue(-2);
+		// [Key][Value][Key][Value]
+		{
+			LValueS value(ls.getLS());
+			auto entname = ls.toString(-2);
+			INode::SP nd = FindNode(sp, entname);
+			if(!nd) {
+				nd = makeEntry(obj, entname, lsp);
+				sp->addChild(nd);
+			}
+			nd->set(value, false);
+		}
+		// [Key][Value][Key]
+		ls.pop(1);
+	});
+}
+void Tweak::setEntryFromFile(const INode::SP& sp, spn::SHandle obj, const std::string& file, const rs::SPLua& ls) {
+	if(auto rw = mgr_path.getRW(rs::luaNS::ScriptResourceEntry, file, nullptr)) {
+		const int nRet = ls->loadFromSource(rw);
+		Assert(Trap, nRet==1, "invalid tweakable value file")
+		return setEntryFromTable(sp, obj, rs::LValueS(ls->getLS()));
+	}
 }
 void Tweak::insertNext(const INode::SP& sp) {
 	_cursor->addSibling(sp);
@@ -236,7 +270,7 @@ const Tweak::INode::SP& Tweak::getRoot() const {
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
 	NOTHING,
-	(loadValue)
+	(setEntryFromTable)(setEntryFromFile)(setEntryDefault)
 	(setDrawPriority)
 	(setCursorAxis)(setIncrementAxis)(setSwitchButton)
 	(makeGroup)(makeEntry)(setValue)(increment)(remove)(removeObj)

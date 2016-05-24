@@ -155,14 +155,21 @@ st_idle = {
 		end
 
 		-- ValueTweakerの初期化
-		local tweak = G.Tweak.New("[Tweaker Root]", 20)
+		local tweak = G.Tweak.New("[Tweaker Root]", 16)
 		local act = Global.tweak
 		tweak:setIncrementAxis(act.cont, act.x, act.y, act.z, act.w)
 		tweak:setCursorAxis(act.cx, act.cy)
 		tweak:setSwitchButton(act.sw)
 		-- 定数定義ファイルを読み込み
 		local cam = Global.cpp.hlCam
-		local sp = tweak:loadValue(cam, "value/camera.lua", cam.handleName)
+		local sp = tweak:makeGroup(cam.handleName)
+		tweak:setEntryDefault(sp, cam)
+		tweak:setEntryFromFile(sp, cam, "value/camera.lua")
+		tweak:insertChild(sp)
+
+		sp = tweak:makeGroup(self.clip.handleName)
+		tweak:setEntryDefault(sp, self.clip)
+		tweak:setEntryFromFile(sp, self.clip, "value/clipmapobj.lua")
 		tweak:insertChild(sp)
 
 		self.tweak = tweak
