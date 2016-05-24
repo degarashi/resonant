@@ -57,6 +57,9 @@ int Tweak::Node::draw(const Vec2& offset, const Vec2& unit, Drawer& d) const {
 	}
 	return count;
 }
+std::ostream& Tweak::Node::write(std::ostream& s) const {
+	return s;
+}
 
 // ------------------- Tweak::Entry -------------------
 Tweak::Entry::Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, const Define_SP& def):
@@ -103,6 +106,10 @@ void Tweak::Entry::increment(const float inc, const int index) {
 void Tweak::Entry::_applyValue() {
     if(auto h = _target.getManager()->lock(_target))
 		_def->apply.call(h, get());
+}
+std::ostream& Tweak::Entry::write(std::ostream& s) const {
+	s <<  getName() << " = ";
+	return _value->write(s);
 }
 
 #include "../updater_lua.hpp"

@@ -11,6 +11,7 @@ struct FVec4 {
 	FVec4() = default;
 	FVec4(int nv, float iv);
 
+	std::ostream& write(std::ostream& s) const;
 	static FVec4 LoadFromLua(const rs::LValueS& v);
 	rs::LCValue	toLCValue() const;
 };
@@ -19,18 +20,14 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		using Vec2 = spn::Vec2;
 		using Vec3 = spn::Vec3;
 		using Vec4 = spn::Vec4;
-		// using Quat = spn::Quat;
 		using LValueS = rs::LValueS;
 		using LValueG = rs::LValueG;
 		using LCValue = rs::LCValue;
-		// using SizeF = spn::SizeF;
 		using DegF = spn::DegF;
 		using RectF = spn::RectF;
 		using Name = std::string;
-		// using HInput = rs::HInput;
 		using HAct = rs::HAct;
-		// using SizeF_Op = spn::Optional<SizeF>;
-		// using F_Op = spn::Optional<float>;
+		using SHandle = spn::SHandle;
 		class Value;
 		using Value_UP = std::unique_ptr<Value>;
 
@@ -68,6 +65,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				virtual bool isExpanded() const = 0;
 				virtual bool isNode() const = 0;
 				virtual void setPointer(Value_UP v) = 0;
+				virtual std::ostream& write(std::ostream& s) const = 0;
 				const Name& getName() const;
 		};
 		class Drawer {
@@ -125,6 +123,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				Value(rs::CCoreID cid);
 				rs::HText getValueText() const;
 				virtual Value_UP clone() const = 0;
+				virtual std::ostream& write(std::ostream& s) const = 0;
 		};
 		//! Valueクラスのcloneメソッドをテンプレートにて定義
 		//! \sa Value
@@ -149,6 +148,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				void increment(float inc, int index) override;
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 				rs::LCValue get() const override;
+				std::ostream& write(std::ostream& s) const override;
 		};
 		//! 級数的な定数調整
 		class LogValue : public LinearValue {
@@ -172,6 +172,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				void increment(float inc, int index) override;
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 				rs::LCValue get() const override;
+				std::ostream& write(std::ostream& s) const override;
 		};
 		//! 3D方向ベクトル(Yaw, Pitch)
 		class Dir3D : public ValueT<Dir3D> {
@@ -187,6 +188,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				void increment(float inc, int index) override;
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 				rs::LCValue get() const override;
+				std::ostream& write(std::ostream& s) const override;
 		};
 		// 定数パラメータごとに1つ定義
 		struct Define {
@@ -211,6 +213,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				bool isExpanded() const override;
 				bool isNode() const override;
 				void setPointer(Value_UP v) override;
+				std::ostream& write(std::ostream& s) const override;
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 		};
 		class Entry : public INode {
@@ -228,14 +231,20 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 				void set(const LValueS& v, bool bStep) override;
 				void setPointer(Value_UP v) override;
+				std::ostream& write(std::ostream& s) const override;
 				rs::LCValue get() const override;
 		};
 		using Entry_SP = std::shared_ptr<Entry>;
 		static Entry_SP _MakeEntry(const LValueS& param);
 		using EntryV = std::vector<Entry_SP>;
-		//! ターゲットクラス -> エントリポインタ
-		using Obj2Ent = std::unordered_map<rs::HObj, EntryV>;
-		Obj2Ent				_obj2ent;
+		//! Tweak対象オブジェクトに関連付けられた変数
+		struct ObjInfo {
+			std::string	resourceName;	//!< 定数定義が読み込まれた時のファイルパス(リソース名)
+			INode::SP	entry;			//!< 関連付けられたエントリ
+		};
+		//! Tweak対象オブジェクト -> 各種変数
+		using Obj2Info = std::unordered_map<SHandle, ObjInfo>;
+		Obj2Info			_obj2info;
 		INode::SP			_root,
 							_cursor;
 		rs::CCoreID			_cid;
@@ -257,6 +266,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		//! オブジェクト名と変数名を元に値定義を取得
 		const Define_SP& _getDefine(const Name& objname, const Name& entname, lua_State* ls);
 		std::pair<INode::SP,int> _remove(const INode::SP& sp, const bool delNode);
+		static void _Save(const INode::SP& ent, rs::HRW rw);
 		struct St_Base;
 		struct St_Cursor;	//!< カーソル移動ステート
 		struct St_Value;	//!< 値改変ステート
@@ -284,7 +294,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		//! カーソルが指すエントリを削除
 		int remove(bool delNode);
 		//! オブジェクトに関連付けられたエントリを全て削除
-		int removeObj(rs::HObj obj, bool delNode);
+		void removeObj(SHandle obj, bool delNode);
 		// ---- draw ----
 		void setFontSize(int tsize);
 		//! 描画を開始するオフセット
@@ -305,6 +315,8 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		bool prev();
 		//! ポインタ指定によるカーソル移動
 		void setCursor(const INode::SP& s);
+		void saveAll();
+		void save(SHandle obj, const spn::Optional<std::string>& path);
 		const INode::SP& getCursor() const;
 		const INode::SP& getRoot() const;
 };

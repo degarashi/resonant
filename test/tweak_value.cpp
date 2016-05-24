@@ -48,6 +48,21 @@ rs::LCValue	FVec4::toLCValue() const {
 	}
 	return value.x;
 }
+std::ostream& FVec4::write(std::ostream& s) const {
+	bool bF = true;
+	const int nv = nValue;
+	if(nv == 1)
+		return s << value.x;
+
+	s << '{';
+	for(int i=0 ; i<nv ; i++) {
+		if(!bF)
+			s << ',';
+		bF = false;
+		s << value.m[i];
+	}
+	return s << '}';
+}
 
 // ---------------- IBase ----------------
 void Tweak::IBase::set(const LValueS&, bool) {
@@ -138,6 +153,9 @@ int Tweak::LinearValue::draw(const Vec2& offset, const Vec2&, Drawer& d) const {
 rs::LCValue Tweak::LinearValue::get() const {
 	return _value.toLCValue();
 }
+std::ostream& Tweak::LinearValue::write(std::ostream& s) const {
+	return _value.write(s);
+}
 
 // ---------------- LogValue ----------------
 void Tweak::LogValue::increment(const float inc, const int index) {
@@ -192,6 +210,10 @@ rs::LCValue Tweak::Dir2D::get() const {
 int Tweak::Dir2D::draw(const Vec2& offset,  const Vec2&, Drawer& d) const {
 	return DrawVector(d, offset, getValueText(), {Color::Dir2D});
 }
+std::ostream& Tweak::Dir2D::write(std::ostream& s) const {
+	auto val = boost::get<Vec2>(get());
+	return s << '{' << val.x << ", " << val.y << '}';
+}
 
 // ---------------- Dir3D ----------------
 Tweak::Dir3D::Dir3D(rs::CCoreID cid):
@@ -242,4 +264,8 @@ rs::HLText Tweak::Dir3D::_getValueText() const {
 }
 int Tweak::Dir3D::draw(const Vec2& offset,  const Vec2&, Drawer& d) const {
 	return DrawVector(d, offset, getValueText(), {Color::Dir3D});
+}
+std::ostream& Tweak::Dir3D::write(std::ostream& s) const {
+	auto val = boost::get<Vec3>(get());
+	return s << '{' << val.x << ", " << val.y << ", " << val.z << '}';
 }

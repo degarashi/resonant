@@ -144,7 +144,7 @@ void Tweak::setEntryDefault(const INode::SP& sp, spn::SHandle obj, lua_State* ls
 		Assert(Warn, false, e.what())
 	}
 }
-void Tweak::setEntryFromTable(const INode::SP& sp, const spn::SHandle obj, const LValueS& tbl) {
+void Tweak::setEntryFromTable(const INode::SP& sp, const SHandle obj, const LValueS& tbl) {
 	auto* lsp = tbl.getLS();
 	tbl.iterateTable([&sp, obj, lsp, this](auto& ls){
 		// [Key][Value]
@@ -165,11 +165,14 @@ void Tweak::setEntryFromTable(const INode::SP& sp, const spn::SHandle obj, const
 		ls.pop(1);
 	});
 }
-void Tweak::setEntryFromFile(const INode::SP& sp, spn::SHandle obj, const std::string& file, const rs::SPLua& ls) {
+void Tweak::setEntryFromFile(const INode::SP& sp, SHandle obj, const std::string& file, const rs::SPLua& ls) {
 	if(auto rw = mgr_path.getRW(cs_rtname, file, rs::RWops::Read, nullptr)) {
 		const int nRet = ls->loadFromSource(rw);
 		Assert(Trap, nRet==1, "invalid tweakable value file")
-		return setEntryFromTable(sp, obj, rs::LValueS(ls->getLS()));
+		setEntryFromTable(sp, obj, rs::LValueS(ls->getLS()));
+		auto& info = _obj2info[obj];
+		info.resourceName = file;
+		info.entry = sp;
 	}
 }
 void Tweak::insertNext(const INode::SP& sp) {
@@ -203,18 +206,12 @@ int Tweak::remove(const bool delNode) {
 	std::tie(_cursor, count) = _remove(_cursor, delNode);
 	return count;
 }
-int Tweak::removeObj(rs::HObj obj, const bool delNode) {
-	int count = 0;
-	auto itr = _obj2ent.find(obj);
-	if(itr != _obj2ent.end()) {
-		for(auto& e : itr->second) {
-			int tc;
-			std::tie(std::ignore, tc) = _remove(e, delNode);
-			count += tc;
-		}
-		_obj2ent.erase(itr);
+void Tweak::removeObj(const SHandle obj, const bool delNode) {
+	auto itr = _obj2info.find(obj);
+	if(itr != _obj2info.end()) {
+		_remove(itr->second.entry, delNode);
+		_obj2info.erase(itr);
 	}
-	return count;
 }
 void Tweak::setFontSize(const int tsize) {
 	_tsize = tsize;
@@ -267,10 +264,51 @@ const Tweak::INode::SP& Tweak::getCursor() const {
 const Tweak::INode::SP& Tweak::getRoot() const {
 	return _root;
 }
+void Tweak::saveAll() {
+	for(auto& info : _obj2info) {
+		save(info.first, spn::none);
+	}
+}
+void Tweak::save(SHandle obj, const spn::Optional<std::string>& path) {
+	auto itr = _obj2info.find(obj);
+	if(itr == _obj2info.end())
+		return;
+
+	rs::HLRW rw;
+	const auto f = [](auto& path){
+		return mgr_path.getRW(cs_rtname, path, rs::RWops::Write, nullptr);
+	};
+	if(path)
+		rw = f(*path);
+	else
+		rw = f(itr->second.resourceName);
+	if(!rw)
+		return;
+	_Save(itr->second.entry, rw);
+}
+void Tweak::_Save(const INode::SP& ent, rs::HRW rw) {
+	std::stringstream ss;
+	ss << "return {" << std::endl;
+	bool bF = true;
+	ent->iterateDepthFirst<false>([&ss, &bF](auto& nd, const int depth){
+		if(depth == 0)
+			return spn::Iterate::StepIn;
+		if(!bF)
+			ss << ',' << std::endl;
+		ss << '\t';
+		bF = false;
+		nd.write(ss);
+		return spn::Iterate::Next;
+	});
+	ss << std::endl << '}' << std::endl;
+	const auto str = ss.str();
+	rw->write(str.c_str(), 1, str.length());
+}
 
 #include "../updater_lua.hpp"
 DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
 	NOTHING,
+	(saveAll)(save)
 	(setEntryFromTable)(setEntryFromFile)(setEntryDefault)
 	(setDrawPriority)
 	(setCursorAxis)(setIncrementAxis)(setSwitchButton)

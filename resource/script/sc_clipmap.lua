@@ -185,6 +185,10 @@ st_idle = {
 		self.clip:setLightDir(dir)
 		self.sky:setLightDir(dir)
 
+		if Global.tweak.save:isKeyPressed() then
+			G.print("sc_clipmap:save")
+			self.tweak:saveAll()
+		end
 		scbase.CheckSwitch()
 	end,
 	OnExit = function(self, slc, ...)

@@ -7,7 +7,8 @@ function InitTweak()
 		cx = System.input:makeAction("tweak_cx"),
 		cy = System.input:makeAction("tweak_cy"),
 		sw = System.input:makeAction("tweak_sw"),
-		cont = System.input:makeAction("tweak_cont")
+		cont = System.input:makeAction("tweak_cont"),
+		save = System.input:makeAction("tweak_save")
 	}
 	local hK = Keyboard.OpenKeyboard(0)
 	tk.x:linkButtonAsAxis(hK, Action.Key.J, Action.Key.U)
@@ -18,6 +19,7 @@ function InitTweak()
 	tk.cy:linkButtonAsAxis(hK, Action.Key.K, Action.Key.I)
 	tk.sw:addLink(hK, Action.InputFlag.Button, Action.Key.Tab)
 	tk.cont:addLink(hK, Action.InputFlag.Button, Action.Key.Lshift)
+	tk.save:addLink(hK, Action.InputFlag.Button, Action.Key.Return)
 	Global.tweak = tk
 end
 function InitInput()
