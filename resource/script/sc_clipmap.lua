@@ -179,12 +179,9 @@ st_idle = {
 	end,
 	OnUpdate = function(self, slc, ...)
 		local pose = Global.cpp.hlCam:refPose()
-		-- G.print(pose:getDir())
-
 		self.ang = self.ang + 0.01
 		local dir = G.Vec3.New(G.math.sin(self.ang), 0.7, G.math.cos(self.ang)):normalization()
 		dir = -dir
-		-- G.print(dir)
 		self.clip:setLightDir(dir)
 		self.sky:setLightDir(dir)
 
