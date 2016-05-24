@@ -141,7 +141,7 @@ namespace rs {
 		std::string fileName(name);
 		fileName.append(".");
 		fileName.append(luaNS::ScriptExtension);
-		HLRW hlRW = mgr_path.getRW(luaNS::ScriptResourceEntry, fileName, nullptr);
+		HLRW hlRW = mgr_path.getRW(luaNS::ScriptResourceEntry, fileName, RWops::Read, nullptr);
 		Assert(Trap, hlRW, "script file \"%1%\" not found.", fileName)
 		LuaImport::LoadClass(*ls, name, hlRW);
 	}

@@ -116,7 +116,7 @@ namespace rs {
 	}
 	SPLua LuaState::FromResource(const std::string& name) {
 		SPLua sp;
-		if(auto hlRW = mgr_path.getRW(luaNS::ScriptResourceEntry, name+"."+luaNS::ScriptExtension, nullptr)) {
+		if(auto hlRW = mgr_path.getRW(luaNS::ScriptResourceEntry, name+"."+luaNS::ScriptExtension, RWops::Read, nullptr)) {
 			static spn::Optional<std::string> addpath;
 			if(!addpath) {
 				std::string path;

@@ -220,7 +220,7 @@ namespace rs {
 		LuaImport::RegisterClass<Object>(lsc);
 
 		std::string fileName("fsmachine." + luaNS::ScriptExtension);
-		HLRW hlRW = mgr_path.getRW(luaNS::SystemScriptResourceEntry, fileName, nullptr);
+		HLRW hlRW = mgr_path.getRW(luaNS::SystemScriptResourceEntry, fileName, RWops::Read, nullptr);
 		Assert(Trap, hlRW, "system script file \"%1%\" not found.", fileName)
 		lsc.loadFromSource(hlRW, fileName.c_str(), true);
 	}

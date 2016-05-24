@@ -35,7 +35,7 @@ namespace rs {
 
 			const spn::PathBlock& getAppPath() const;
 			const spn::PathBlock& getAppDir() const;
-			HLRW getRW(const std::string& resname, const std::string& filename, std::string* opt) const;
+			HLRW getRW(const std::string& resname, const std::string& filename, int access, std::string* opt) const;
 			using CBEnum = std::function<bool (const spn::Dir&)>;
 			void enumPath(const std::string& resname, const std::string& pattern, CBEnum cb) const;
 	};

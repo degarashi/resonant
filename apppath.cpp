@@ -58,11 +58,11 @@ namespace rs {
 			}
 		}
 	}
-	HLRW AppPath::getRW(const std::string& resname, const std::string& filename, std::string* opt) const {
+	HLRW AppPath::getRW(const std::string& resname, const std::string& filename, const int access, std::string* opt) const {
 		HLRW hlRet;
-		enumPath(resname, filename, [&hlRet, &opt](const spn::Dir& d){
+		enumPath(resname, filename, [&hlRet, &opt, access](const spn::Dir& d){
 			auto path = d.plain_utf8();
-			if(auto lh = mgr_rw.fromFile(path, RWops::Read)) {
+			if(auto lh = mgr_rw.fromFile(path, access)) {
 				if(opt)
 					*opt = std::move(path);
 				hlRet = std::move(lh);
@@ -71,7 +71,6 @@ namespace rs {
 			return true;
 		});
 		return hlRet;
-
 	}
 	void AppPath::enumPath(const std::string& resname, const std::string& pattern, CBEnum cb) const {
 		auto fnCheck = [&cb](const std::string& pat){

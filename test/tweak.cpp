@@ -3,6 +3,7 @@
 
 namespace {
 	const std::string g_fontName("IPAGothic");
+	const std::string cs_rtname("value");
 }
 Tweak::Tweak(const std::string& rootname, const int tsize):
 	_offset(0),
@@ -165,7 +166,7 @@ void Tweak::setEntryFromTable(const INode::SP& sp, const spn::SHandle obj, const
 	});
 }
 void Tweak::setEntryFromFile(const INode::SP& sp, spn::SHandle obj, const std::string& file, const rs::SPLua& ls) {
-	if(auto rw = mgr_path.getRW(rs::luaNS::ScriptResourceEntry, file, nullptr)) {
+	if(auto rw = mgr_path.getRW(cs_rtname, file, rs::RWops::Read, nullptr)) {
 		const int nRet = ls->loadFromSource(rw);
 		Assert(Trap, nRet==1, "invalid tweakable value file")
 		return setEntryFromTable(sp, obj, rs::LValueS(ls->getLS()));
