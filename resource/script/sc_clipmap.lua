@@ -164,12 +164,12 @@ st_idle = {
 		local cam = Global.cpp.hlCam
 		local sp = tweak:makeGroup(cam.handleName)
 		tweak:setEntryDefault(sp, cam)
-		tweak:setEntryFromFile(sp, cam, "value/camera.lua")
+		tweak:setEntryFromFile(sp, cam, "camera.lua")
 		tweak:insertChild(sp)
 
 		sp = tweak:makeGroup(self.clip.handleName)
 		tweak:setEntryDefault(sp, self.clip)
-		tweak:setEntryFromFile(sp, self.clip, "value/clipmapobj.lua")
+		tweak:setEntryFromFile(sp, self.clip, "clipmapobj.lua")
 		tweak:insertChild(sp)
 
 		self.tweak = tweak

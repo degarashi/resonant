@@ -10,3 +10,5 @@ resource/effect
 resource/sys_script
 [script]
 resource/script
+[value]
+resource/script/value
