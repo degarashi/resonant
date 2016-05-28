@@ -337,8 +337,10 @@ void Engine::clearScene() {
 void Engine::setDispersion(float d) {
 	_gauss.setDispersion(d);
 }
-void Engine::setOutputFramebuffer(rs::HFb hFb) {
+rs::HLFb Engine::setOutputFramebuffer(rs::VHFb hFb) {
+	auto ret = _hlFb;
 	_hlFb = hFb;
+	return ret;
 }
 void Engine::moveFrom(rs::IEffect& e) {
 	GLEffect_2D3D::moveFrom(e);

@@ -109,7 +109,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 		void clearScene();
 		void setDispersion(float d);
 		void setOffset(float ofs);
-		void setOutputFramebuffer(rs::HFb hFb);
+		rs::HLFb setOutputFramebuffer(rs::VHFb hFb);
 		void moveFrom(rs::IEffect& e) override;
 
 		LitId makeLight();
