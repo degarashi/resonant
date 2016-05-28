@@ -154,6 +154,7 @@ namespace rs {
 		SPLua _lua;
 
 		public:
+			~ObjMgr();
 			void setLua(const SPLua& ls);
 			const SPLua& getLua() const;
 			// デフォルトのリソース作成関数は無効化
@@ -186,6 +187,7 @@ namespace rs {
 				auto lhp = makeObj<T>(std::forward<Ts>(ar)...);
 				return std::make_pair(Cast<DrawGroupUP>(lhp.first.get()), lhp.second);
 			}
+			bool release(spn::SHandle sh) override;
 			static HGroup CastToGroup(HObj hObj);
 			const std::string& getResourceName(spn::SHandle sh) const override;
 	};
@@ -619,9 +621,11 @@ namespace rs {
 					return _state->getStateId();
 				}
 				void destroy() override {
-					Base::destroy();
-					// 終端ステートに移行
-					_setNullState();
+					if(!Base::isDead()) {
+						Base::destroy();
+						// 終端ステートに移行
+						_setNullState();
+					}
 				}
 				//! 毎フレームの描画 (Scene用)
 				void onDraw(IEffect& e) const override {

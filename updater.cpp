@@ -8,6 +8,16 @@ namespace rs {
 	HGroup ObjMgr::CastToGroup(HObj hObj) {
 		return Cast<GroupUP>(hObj);
 	}
+	ObjMgr::~ObjMgr() {
+		for(auto& obj : *this)
+			obj->destroy();
+	}
+	bool ObjMgr::release(spn::SHandle sh) {
+		return releaseWithCallback(sh, [](ObjectUP& e){
+			auto name = e->getName();
+			e->destroy();
+		});
+	}
 	const std::string& ObjMgr::getResourceName(spn::SHandle sh) const {
 		if(sh) {
 			Object* obj = HObj::FromHandle(sh)->get();
