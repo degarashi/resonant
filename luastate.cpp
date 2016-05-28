@@ -304,17 +304,21 @@ namespace rs {
 	lua_CFunction LuaState::atPanic(lua_CFunction panicf) {
 		return lua_atpanic(getLS(), panicf);
 	}
-	int LuaState::call(int nargs, int nresults) {
-		int top = getTop() - 1;		// 1は関数の分
-		int err = lua_pcall(getLS(), nargs, nresults, 0);
-		_checkError(err);
-		return getTop() - top;
+	int LuaState::call(const int nargs, const int nresults) {
+		TRY_BEGIN
+			const int top = getTop() - 1;		// 1は関数の分
+			const int err = lua_pcall(getLS(), nargs, nresults, 0);
+			_checkError(err);
+			return getTop() - top;
+		TRY_END
 	}
-	int LuaState::callk(int nargs, int nresults, lua_KContext ctx, lua_KFunction k) {
-		int top = getTop() - 1;		// 1は関数の分
-		int err = lua_pcallk(getLS(), nargs, nresults, 0, ctx, k);
-		_checkError(err);
-		return getTop() - top;
+	int LuaState::callk(const int nargs, const int nresults, lua_KContext ctx, lua_KFunction k) {
+		TRY_BEGIN
+			const int top = getTop() - 1;		// 1は関数の分
+			const int err = lua_pcallk(getLS(), nargs, nresults, 0, ctx, k);
+			_checkError(err);
+			return getTop() - top;
+		TRY_END
 	}
 	bool LuaState::checkStack(int extra) {
 		return lua_checkstack(getLS(), extra) != 0;
