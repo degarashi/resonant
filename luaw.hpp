@@ -421,6 +421,7 @@ namespace rs {
 		return os << "duration";
 	}
 
+	// ----------- LCV<HdlLock> -----------
 	template <class T, bool D>
 	struct LCV<spn::HdlLock<T,D>> {
 		using Handle_t = spn::HdlLock<T,D>;
@@ -438,7 +439,14 @@ namespace rs {
 	std::ostream& operator << (std::ostream& os, LCV<spn::HdlLock<T,D>>) {
 		return os << "LHandle";
 	}
-
+	// ----------- LCV<VH> -----------
+	template <class T>
+	struct LCV<spn::VHChk<T>> : LCV<T> {};
+	template <class T>
+	std::ostream& operator << (std::ostream& os, LCV<spn::VHChk<T>>) {
+		return os << T();
+	}
+	// ----------- LCV<SHandleT> -----------
 	template <class... Ts>
 	struct LCV<spn::SHandleT<Ts...>> : LCV<spn::SHandle> {
 		using Handle_t = spn::SHandleT<Ts...>;
@@ -451,6 +459,7 @@ namespace rs {
 	std::ostream& operator << (std::ostream& os, LCV<spn::SHandleT<T, Ts...>>) {
 		return os << "SHandle";
 	}
+	// ----------- LCV<WHandleT> -----------
 	template <class... Ts>
 	struct LCV<spn::WHandleT<Ts...>> : LCV<spn::WHandle> {
 		using Handle_t = spn::WHandleT<Ts...>;
