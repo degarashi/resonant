@@ -153,14 +153,14 @@ namespace rs {
 	const std::string& UpdGroup::getName() const {
 		return cs_updgroupname;
 	}
-	void UpdGroup::addObjPriority(HObj hObj, Priority p) {
+	void UpdGroup::addObjPriority(VHObj hObj, Priority p) {
 		_registerUGVec();
 		AssertP(Trap, std::count_if(_addObj.begin(), _addObj.end(),
 					[hObj](const auto& ao){ return ao.second.get() == hObj; }) == 0, "オブジェクトの重複登録")
 		// すぐ追加するとリスト巡回が不具合起こすので後で一括処理
 		_addObj.emplace_back(p, hObj);
 	}
-	void UpdGroup::addObj(HObj hObj) {
+	void UpdGroup::addObj(VHObj hObj) {
 		addObjPriority(hObj, hObj->get()->getPriority());
 	}
 	void UpdGroup::_registerUGVec() {
@@ -427,14 +427,14 @@ namespace rs {
 	DrawTag& DrawGroup::refDTag() {
 		return _dtag;
 	}
-	void DrawGroup::addObj(HDObj hObj) {
+	void DrawGroup::addObj(VHDObj hObj) {
 		auto* dtag = &hObj->get()->getDTag();
 		_dobj.emplace_back(dtag, hObj);
 		// 毎フレームソートする設定でない時はここでソートする
 		if(!_bDynamic)
 			_doDrawSort();
 	}
-	void DrawGroup::remObj(HDObj hObj) {
+	void DrawGroup::remObj(VHDObj hObj) {
 		auto itr = std::find_if(_dobj.begin(), _dobj.end(), [hObj](const auto& p){
 			return p.second.get() == hObj;
 		});

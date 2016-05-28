@@ -229,8 +229,8 @@ namespace rs {
 			Priority getPriority() const override;
 
 			//! オブジェクト又はグループを追加
-			void addObj(HObj hObj);
-			void addObjPriority(HObj hObj, Priority p);
+			void addObj(VHObj hObj);
+			void addObjPriority(VHObj hObj, Priority p);
 			//! オブジェクト又はグループを削除
 			void remObj(HObj hObj);
 
@@ -442,8 +442,8 @@ namespace rs {
 			DrawGroup(const SortAlgList& al, bool bDynamic=false);
 			DrawGroup();
 
-			void addObj(HDObj hObj);
-			void remObj(HDObj hObj);
+			void addObj(VHDObj hObj);
+			void remObj(VHDObj hObj);
 			void clear();
 			void onUpdate(bool bFirst) override;
 			void setSortAlgorithm(const DSortV& ds, bool bDynamic);
