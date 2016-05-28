@@ -255,8 +255,8 @@ namespace {
 Displacement::Vec3V Displacement::MakeTileVertexNormal(const HeightL& h, const int ox, const int oy,
 												const spn::PowInt size, const int stride)
 {
-	auto fnAtL = [&h, stride](int x, int y){
-		return h[LoopValue<int>(y, stride)*stride + LoopValue<int>(x, stride)];
+	auto fnAtL = [&h, stride, size](int x, int y){
+		return h[LoopValue<int>(y, size)*stride + LoopValue<int>(x, size)];
 	};
 	const int s = size+1;
 	Vec3V nml(s*s);
