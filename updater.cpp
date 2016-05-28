@@ -278,6 +278,9 @@ namespace rs {
 			obj.second->get()->recvMsgLua(msg, arg);
 		return LCValue();
 	}
+	int UpdGroup::getNMember() const {
+		return getList().size();
+	}
 	UpdGroup::UGVec UpdGroup::s_ug;
 	void UpdGroup::_doAddRemove() {
 		auto hThis = HGroup::FromHandle(handleFromThis());
@@ -465,6 +468,9 @@ namespace rs {
 		for(auto& d : _dobj) {
 			d.second->get()->onDraw(e);
 		}
+	}
+	int DrawGroup::getNMember() const {
+		return getMember().size();
 	}
 
 	// -------------------- DrawGroupProxy --------------------

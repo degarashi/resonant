@@ -248,6 +248,7 @@ namespace rs {
 
 			const ObjVP& getList() const;
 			ObjVP& getList();
+			int getNMember() const;
 			//! 子要素を全て削除
 			void clear();
 	};
@@ -450,6 +451,7 @@ namespace rs {
 			void setSortAlgorithmId(const SortAlgList& al, bool bDynamic);
 			const DSortV& getSortAlgorithm() const;
 			const DLObjV& getMember() const;
+			int getNMember() const;
 
 			bool isNode() const override;
 			void onDraw(IEffect& e) const override;
