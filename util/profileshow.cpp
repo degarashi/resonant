@@ -8,7 +8,10 @@ namespace rs {
 	namespace util {
 		// ---------------------- ProfileShow::St_Default ----------------------
 		struct ProfileShow::St_Default : StateT<St_Default> {
-			WindowRect* pRect;
+			HLDObj hlRect;
+			WindowRect& _getWRect() const {
+				return *static_cast<DWrapper<WindowRect>*>(hlRect->get());
+			}
 			void onConnected(ProfileShow& self, HGroup /*hGroup*/) override {
 				auto* dg = self._hDg->get();
 				{
@@ -19,7 +22,7 @@ namespace rs {
 					hlp.second->setDepth(1.f);
 					hlp.second->setPriority(self._dtag.priority-1);
 					dg->addObj(hlp.first);
-					pRect = hlp.second;
+					hlRect = hlp.first;
 				}
 				dg->addObj(HDObj::FromHandle(self.handleFromThis()));
 			}
@@ -54,8 +57,9 @@ namespace rs {
 				// プロファイラの(1フレーム前の)情報を取得
 				self._spProfile = spn::profiler.getRoot();
 				auto sz = self._textHud.getText()->getSize();
-				pRect->setScale({sz.width, -sz.height});
-				pRect->setOffset(self._offset);
+				auto& r = _getWRect();
+				r.setScale({sz.width, -sz.height});
+				r.setOffset(self._offset);
 			}
 		};
 
