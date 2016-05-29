@@ -73,7 +73,6 @@ st_idle = {
 			dg:addObj(t)
 			self.text = t
 		end
-		dg:addObj(tm)
 		-- FBufferを準備
 		local scrSize = System.info:getScreenSize()
 		self.hFb = System.glres:makeFBuffer()
@@ -83,7 +82,7 @@ st_idle = {
 		self.hFb:attachTexture(G.GLFBuffer.Attribute.Color0, hTex)
 		hTex:setFilter(true, true)
 		local engine = Global.engine
-		engine:setOutputFramebuffer(self.hFb)
+		slc.fbBk = engine:setOutputFramebuffer(self.hFb)
 
 		do
 			local bl0 = G.BilateralBlur.New(0x6000)
@@ -180,6 +179,9 @@ st_idle = {
 	end,
 	OnExit = function(self, slc, ...)
 		G.print("sc_cube:OnExit")
+		if slc.fbBk then
+			Global.engine:setOutputFramebuffer(slc.fbBk)
+		end
 	end,
 	GetState = function()
 		return "Cube"
