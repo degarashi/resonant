@@ -8,7 +8,6 @@ InitialState = "st_idle"
 -- \param[in] angle[degree]
 -- \param[in] color[vec3]
 function Ctor(self, origin, dirorigin, radius, freq, angle, color, dg)
-	G.print("1")
 	self.origin = origin
 	self.dirorigin = dirorigin
 	self.radius = radius
@@ -54,6 +53,8 @@ st_idle = {
 		lit:setDirection((self.dirorigin - litpos):normalization())
 	end,
 	OnExit = function(self, slc, ...)
+		Global.engine:remLight(self.litId)
+		self.dg:remObj(self.litSpr)
 	end,
 	Advance = function(self, slc, diff)
 		self.angle = self.angle + diff
