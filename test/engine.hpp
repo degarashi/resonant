@@ -106,6 +106,7 @@ class Engine : public rs::util::GLEffect_2D3D {
 		rs::HLDObj getDLScene(rs::Priority dprio) const;
 		void addSceneObject(rs::HDObj hdObj);
 		void remSceneObject(rs::HDObj hdObj);
+		rs::HLDGroup setSceneGroup(rs::VHDGroup dg);
 		void clearScene();
 		void setDispersion(float d);
 		void setOffset(float ofs);

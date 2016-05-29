@@ -331,6 +331,11 @@ void Engine::addSceneObject(rs::HDObj hdObj) {
 void Engine::remSceneObject(rs::HDObj hdObj) {
 	_hlDg->get()->remObj(hdObj);
 }
+rs::HLDGroup Engine::setSceneGroup(rs::VHDGroup dg) {
+	auto ret = _hlDg;
+	_hlDg = dg;
+	return ret;
+}
 void Engine::clearScene() {
 	_hlDg->get()->clear();
 }
@@ -378,6 +383,7 @@ DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
 	(getCubeScene)
 	(addSceneObject)
 	(remSceneObject)
+	(setSceneGroup)
 	(setOutputFramebuffer)
 	(clearScene)
 	(makeLight)
