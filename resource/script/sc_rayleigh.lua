@@ -149,6 +149,8 @@ st_idle = {
 		end
 	end,
 	OnUpdate = function(self, slc, ...)
+		local pose = Global.cpp.hlCam:refPose()
+		self.tf:setViewPos(pose:getOffset())
 		scbase.CheckSwitch()
 	end,
 	OnExit = function(self, slc, ...)
