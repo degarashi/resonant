@@ -26,7 +26,6 @@ st_idle = {
 	end,
 	OnExit = function(self, slc, ...)
 		G.print("sc_sound:OnExit")
-		scbase.Terminate(slc.objlist)
 		self.hSg:clear()
 	end,
 	GetState = function()

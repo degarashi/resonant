@@ -105,9 +105,6 @@ st_idle = {
 	end,
 	OnExit = function(self, slc, nextSc)
 		G.print("sc_sprite:OnExit ->" .. (nextSc or "nil"))
-		if not nextSc then
-			scbase.Terminate(slc.objlist)
-		end
 	end,
 	GetState = function()
 		return "Sprite(Dynamic)"

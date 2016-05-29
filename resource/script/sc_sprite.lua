@@ -56,9 +56,6 @@ st_idle = {
 	end,
 	OnExit = function(self, slc, nextSc)
 		G.print("sc_sprite:OnExit ->" .. nextSc)
-		if not nextSc then
-			scbase.Terminate(slc.objlist)
-		end
 	end
 }
 st_test = G.DerivedState(st_init, {
