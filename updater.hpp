@@ -224,6 +224,13 @@ namespace rs {
 			//! オブジェクト又はグループを実際に追加、削除
 			/*! onUpdate内で暗黙的に呼ばれる */
 			void _doAddRemove();
+
+			static void _AllChk();
+			void chk() const;
+			template <class T>
+			friend class Scene;
+			friend class SceneMgr;
+			static void ProcAddRemove();
 		public:
 			static void SetAsUpdateRoot();
 			UpdGroup(Priority p=DefaultPriority);

@@ -98,6 +98,7 @@ namespace rs {
 		}
 	}
 	bool SceneMgr::onUpdate() {
+		UpdGroup::ProcAddRemove();
 		if(_scene.empty())
 			return true;
 

@@ -140,6 +140,7 @@ namespace rs {
 	{}
 	thread_local bool UpdGroup::tls_bUpdateRoot = false;
 	void UpdGroup::SetAsUpdateRoot() {
+		ProcAddRemove();
 		tls_bUpdateRoot = true;
 	}
 	Priority UpdGroup::getPriority() const {
@@ -182,6 +183,14 @@ namespace rs {
 		// すぐ削除するとリスト巡回が不具合起こすので後で一括削除
 		// onUpdateの最後で削除する
 		AssertP(Trap, std::find(_remObj.begin(), _remObj.end(), hObj) == _remObj.end(), "同一オブジェクトの複数回削除")
+		AssertP(
+			Trap, std::find_if(
+			_objV.begin(),
+			_objV.end(),
+			[hObj](auto& p){
+				return p.second.get()==hObj;
+			}
+		) != _objV.end(), "存在しないオブジェクトの削除")
 		_remObj.emplace_back(hObj);
 	}
 	const UpdGroup::ObjVP& UpdGroup::getList() const {
@@ -206,6 +215,25 @@ namespace rs {
 		for(auto& obj : _objV)
 			obj.second->get()->onDraw(e);
 	}
+	void UpdGroup::chk() const {
+		for(auto& rt : _remObj) {
+			auto itr = std::find_if(
+				_objV.begin(),
+				_objV.end(),
+				[&rt](const auto& obj){
+					return obj.second.get() == rt;
+				}
+			);
+			Assert(Trap, itr != _objV.end())
+		}
+	}
+	void UpdGroup::_AllChk() {
+		for(auto u : s_ug) {
+			if(auto hdl = u.lock()) {
+				hdl->get()->chk();
+			}
+		}
+	}
 	void UpdGroup::onUpdate(bool /*bFirst*/) {
 		{
 			class FlagSet {
@@ -226,17 +254,22 @@ namespace rs {
 					remObj(obj.second.get());
 				}
 			}
+			_AllChk();
 		}
 		// ルートノードで一括してオブジェクトの追加、削除
-		if(tls_bUpdateRoot) {
-			while(!s_ug.empty()) {
-				// 削除中、他に追加削除されるオブジェクトが出るかも知れないので一旦リストを退避
-				decltype(s_ug) tmp;
-				tmp.swap(s_ug);
-				for(auto ent : tmp) {
-					if(auto hdl = ent.lock()) {
-						hdl->get()->_doAddRemove();
-					}
+		if(tls_bUpdateRoot)
+			ProcAddRemove();
+	}
+	void UpdGroup::ProcAddRemove() {
+		_AllChk();
+		while(!s_ug.empty()) {
+			// 削除中、他に追加削除されるオブジェクトが出るかも知れないので一旦リストを退避
+			decltype(s_ug) tmp;
+			tmp.swap(s_ug);
+			for(auto ent : tmp) {
+				if(auto hdl = ent.lock()) {
+					hdl->get()->chk();
+					hdl->get()->_doAddRemove();
 				}
 			}
 		}
