@@ -847,6 +847,18 @@ namespace rs {
 	};
 	using SPLua = std::shared_ptr<LuaState>;
 	std::ostream& operator << (std::ostream& os, const LuaState& ls);
+	//! デストラクタでLuaスタック位置を元に戻す
+	class RewindTop {
+		private:
+			lua_State	*const	_ls;
+			const int			_base;		//!< 初期化された時点でのスタック位置
+			bool				_bReset;	//!< trueならスタック位置をbaseへ戻す
+		public:
+			RewindTop(lua_State* ls);
+			void setReset(bool r);
+			int getNStack() const;
+			~RewindTop();
+	};
 
 	template <class T>
 	class LValue;
