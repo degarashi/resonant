@@ -267,10 +267,19 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 		const Define_SP& _getDefine(const Name& objname, const Name& entname, lua_State* ls);
 		std::pair<INode::SP,int> _remove(const INode::SP& sp, const bool delNode);
 		static void _Save(const INode::SP& ent, rs::HRW rw);
-		struct St_Base;
-		struct St_Cursor;	//!< カーソル移動ステート
-		struct St_Value;	//!< 値改変ステート
-
+		struct St_Base : StateT<St_Base> {
+			void onDraw(const Tweak& self, rs::IEffect& e) const override;
+		};
+		//! カーソル移動ステート
+		struct St_Cursor : StateT<St_Cursor, St_Base> {
+			St_Cursor();
+			void onUpdate(Tweak& self) override;
+		};
+		//! 値改変ステート
+		struct St_Value : StateT<St_Value, St_Base> {
+			St_Value();
+			void onUpdate(Tweak& self) override;
+		};
 	public:
 		Tweak(const std::string& rootname, int tsize);
 

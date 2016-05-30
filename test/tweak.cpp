@@ -320,103 +320,99 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
 
 #include "../systeminfo.hpp"
 #include "../input.hpp"
-struct Tweak::St_Base : StateT<St_Base> {
-	void onDraw(const Tweak& self, rs::IEffect& e) const override {
-		// ノード描画
-		const auto sz = mgr_info.getScreenSize();
-		Drawer drawer(
-			{
-				0.f, sz.width,
-				0.f, sz.height
-			},
-			self._offset,
-			self._cursor,
-			e
-		);
-		self._root->draw(
-			{0, 0},
-			{self._indent, self._tsize+4},
-			drawer
-		);
-		// カーソル描画
-		const auto& at = drawer.getCursorAt();
-		constexpr float ofsx = 32,
-						ofsy = 2;
-		drawer.drawRectBoth({
-			at.x-ofsx,
-			at.x-ofsx/2,
-			at.y-ofsy,
-			at.y+self._tsize+ofsy
-		}, {Color::Cursor});
+void Tweak::St_Base::onDraw(const Tweak& self, rs::IEffect& e) const {
+	// ノード描画
+	const auto sz = mgr_info.getScreenSize();
+	Drawer drawer(
+		{
+			0.f, sz.width,
+			0.f, sz.height
+		},
+		self._offset,
+		self._cursor,
+		e
+	);
+	self._root->draw(
+		{0, 0},
+		{self._indent, self._tsize+4},
+		drawer
+	);
+	// カーソル描画
+	const auto& at = drawer.getCursorAt();
+	constexpr float ofsx = 32,
+					ofsy = 2;
+	const float ofs = (St_Value::GetStateId()==getStateId()) ?
+						self._tsize/4 : 0;
+	drawer.drawRectBoth({
+		at.x-ofsx,
+		at.x-ofsx/2,
+		at.y-ofsy + ofs,
+		at.y+self._tsize+ofsy - ofs
+	}, {Color::Cursor});
+}
+Tweak::St_Value::St_Value() {
+	std::cout << "St_Value" << std::endl;
+}
+void Tweak::St_Value::onUpdate(Tweak& self) {
+	// インクリメント入力判定
+	const std::function<int (HAct)> f = self._haCont->isKeyPressing() ?
+		[](HAct a){
+			return a->getKeyValueSimplified();
+		}:
+		[](HAct a){
+			return a->getKeyValueSimplifiedOnce();
+		};
+	spn::Vec4 diff(0);
+	for(int i=0 ; i<static_cast<int>(countof(self._haInc)) ; i++) {
+		const auto d = f(self._haInc[i]);
+		if(d != 0)
+			self._cursor->increment(d, i);
 	}
-};
-struct Tweak::St_Value : St_Base {
-	St_Value() {
-		std::cout << "St_Value" << std::endl;
-	}
-	void onUpdate(Tweak& self) override {
-		// インクリメント入力判定
-		const std::function<int (HAct)> f = self._haCont->isKeyPressing() ?
-			[](HAct a){
-				return a->getKeyValueSimplified();
-			}:
-			[](HAct a){
-				return a->getKeyValueSimplifiedOnce();
-			};
-		spn::Vec4 diff(0);
-		for(int i=0 ; i<static_cast<int>(countof(self._haInc)) ; i++) {
-			const auto d = f(self._haInc[i]);
-			if(d != 0)
-				self._cursor->increment(d, i);
-		}
-		St_Base::onUpdate(self);
+	St_Base::onUpdate(self);
 
-		// モード切り替え判定
-		if(self._haSw->isKeyPressed())
-			self.setStateNew<St_Cursor>();
-	}
-};
-struct Tweak::St_Cursor : St_Base {
-	St_Cursor() {
-		std::cout << "St_Cursor" << std::endl;
-	}
-	void onUpdate(Tweak& self) override {
-		// カーソル移動入力判定
-		const auto vy = self._haY->getKeyValueSimplifiedOnce();
-		// エントリ間
-		if(vy > 0) {
-			// 上へ
-			self.prev();
-		} else if(vy < 0) {
-			// 下へ
-			self.next();
-		} else {
-			// Contが押されている間はノードの開閉とする
-			const bool bc = self._haCont->isKeyPressing();
-			const auto vx = self._haX->getKeyValueSimplifiedOnce();
-			// 階層間
-			if(vx > 0) {
-				if(bc) {
-					// ノード展開
-					self.expand();
-				} else {
-					// 下の階層へ
-					self.down();
-				}
-			} else if(vx < 0) {
-				if(bc) {
-					// ノードを閉じる
-					self.fold();
-				} else {
-					// 上の階層へ
-					self.up();
-				}
+	// モード切り替え判定
+	if(self._haSw->isKeyPressed())
+		self.setStateNew<St_Cursor>();
+}
+Tweak::St_Cursor::St_Cursor() {
+	std::cout << "St_Cursor" << std::endl;
+}
+void Tweak::St_Cursor::onUpdate(Tweak& self) {
+	// カーソル移動入力判定
+	const auto vy = self._haY->getKeyValueSimplifiedOnce();
+	// エントリ間
+	if(vy > 0) {
+		// 上へ
+		self.prev();
+	} else if(vy < 0) {
+		// 下へ
+		self.next();
+	} else {
+		// Contが押されている間はノードの開閉とする
+		const bool bc = self._haCont->isKeyPressing();
+		const auto vx = self._haX->getKeyValueSimplifiedOnce();
+		// 階層間
+		if(vx > 0) {
+			if(bc) {
+				// ノード展開
+				self.expand();
+			} else {
+				// 下の階層へ
+				self.down();
+			}
+		} else if(vx < 0) {
+			if(bc) {
+				// ノードを閉じる
+				self.fold();
+			} else {
+				// 上の階層へ
+				self.up();
 			}
 		}
-		St_Base::onUpdate(self);
-
-		// モード切り替え判定
-		if(self._haSw->isKeyPressed())
-			self.setStateNew<St_Value>();
 	}
-};
+	St_Base::onUpdate(self);
+
+	// モード切り替え判定
+	if(self._haSw->isKeyPressed())
+		self.setStateNew<St_Value>();
+}
