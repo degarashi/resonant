@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
 		rs::LuaImport::RegisterClass<IClipSource_SP>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<Tweak>(*lkb->spLua);
 		rs::LuaImport::RegisterClass<Tweak::INode::SP>(*lkb->spLua);
+		rs::LuaImport::RegisterClass<Tweak::INode>(*lkb->spLua);
 		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeCS_PN", &ClipPNSource::Create);
 		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeCS_Tex", &ClipTexSource::Create);
 		rs::LuaImport::RegisterFunction(*lkb->spLua, "MakeHash2D", &Hash2D::Create);

@@ -8,6 +8,14 @@ Tweak::INode::INode(rs::CCoreID cid, const Name& name):
 const Tweak::Name& Tweak::INode::getName() const {
 	return _name;
 }
+void Tweak::INode::sortAlphabetically() {
+	sortChild(
+		[](const auto& a, const auto& b) {
+			return a->getName() < b->getName();
+		},
+		true
+	);
+}
 
 // ------------------- Tweak::Node -------------------
 Tweak::Node::Node(rs::CCoreID cid, const Name& name):
@@ -113,4 +121,11 @@ std::ostream& Tweak::Entry::write(std::ostream& s) const {
 }
 
 #include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode::SP, INodeSP, NOTHING, (use_count))
+DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode, INode,
+	NOTHING,
+	(sortAlphabetically)
+)
+DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode::SP, INodeSP,
+	NOTHING,
+	(use_count)(get)
+)

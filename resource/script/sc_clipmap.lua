@@ -171,6 +171,7 @@ st_idle = {
 		tweak:setEntryDefault(sp, self.clip)
 		tweak:setEntryFromFile(sp, self.clip, "clipmapobj.lua")
 		tweak:insertChild(sp)
+		tweak:getRoot():get():sortAlphabetically()
 
 		self.tweak = tweak
 		tweak:setDrawPriority(0x70000)

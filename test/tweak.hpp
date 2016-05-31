@@ -66,6 +66,7 @@ class Tweak : public rs::DrawableObjT<Tweak> {
 				virtual bool isNode() const = 0;
 				virtual void setPointer(Value_UP v) = 0;
 				virtual std::ostream& write(std::ostream& s) const = 0;
+				void sortAlphabetically();
 				const Name& getName() const;
 		};
 		class Drawer {
