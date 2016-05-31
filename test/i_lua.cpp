@@ -16,7 +16,7 @@
 #include "tonemap.hpp"
 #include "clipmap.hpp"
 #include "colview.hpp"
-#include "tweak.hpp"
+#include "tweak/tweak.hpp"
 #include "../luaw.hpp"
 #include "../util/profileshow.hpp"
 #include "../updater_lua.hpp"
@@ -196,7 +196,7 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, ToneMap, ToneMap, "DrawableObj",
 	(getResult)(getShrink0)(getShrinkA),
 	(rs::Priority)
 )
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
+DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, tweak::Tweak, Tweak, "DrawableObj",
 	NOTHING,
 	(saveAll)(save)
 	(setEntryFromTable)(setEntryFromFile)(setEntryDefault)
@@ -208,11 +208,11 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
 	(expand)(fold)(up)(down)(next)(prev)(setCursor)(getCursor)(getRoot),
 	(const std::string&)(int)
 )
-DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode, INode,
+DEF_LUAIMPLEMENT_PTR_NOCTOR(tweak::INode, INode,
 	NOTHING,
 	(sortAlphabetically)
 )
-DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode::SP, INodeSP,
+DEF_LUAIMPLEMENT_PTR_NOCTOR(tweak::INode::SP, INodeSP,
 	NOTHING,
 	(use_count)(get)
 )
@@ -251,9 +251,9 @@ void RegisterRSTestClass(rs::LuaState& lsc) {
 	rs::LuaImport::RegisterClass<Hash_SP>(lsc);
 	rs::LuaImport::RegisterClass<HashVec_SP>(lsc);
 	rs::LuaImport::RegisterClass<IClipSource_SP>(lsc);
-	rs::LuaImport::RegisterClass<Tweak>(lsc);
-	rs::LuaImport::RegisterClass<Tweak::INode::SP>(lsc);
-	rs::LuaImport::RegisterClass<Tweak::INode>(lsc);
+	rs::LuaImport::RegisterClass<tweak::Tweak>(lsc);
+	rs::LuaImport::RegisterClass<tweak::INode::SP>(lsc);
+	rs::LuaImport::RegisterClass<tweak::INode>(lsc);
 	rs::LuaImport::RegisterFunction(lsc, "MakeCS_PN", &ClipPNSource::Create);
 	rs::LuaImport::RegisterFunction(lsc, "MakeCS_Tex", &ClipTexSource::Create);
 	rs::LuaImport::RegisterFunction(lsc, "MakeHash2D", &Hash2D::Create);

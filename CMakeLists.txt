@@ -144,7 +144,8 @@ if(NOT DEFINED ARCHITECTURE)
 
 	# -------- 動作テスト --------
 	aux_source_directory(test/ SRC_FILE)
-	add_executable(rse ${SRC_FILE})
+	aux_source_directory(test/tweak/ SRC_FILE2)
+	add_executable(rse ${SRC_FILE} ${SRC_FILE2})
 	target_link_libraries(rse ${LINK_LIBS})
 	install(TARGETS rse RUNTIME DESTINATION bin_${TOOL_PREFIX})
 
