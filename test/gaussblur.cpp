@@ -26,8 +26,3 @@ void GaussBlur::onDraw(rs::IEffect& e) const {
 		e.setUniform(U_GaussWeight, static_cast<const float*>(a.value), countof(a.value), false);
 	});
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, GaussBlur, GaussBlur, "TwoPhaseBlur", NOTHING,
-	(setDispersion<float>),
-	(rs::Priority))

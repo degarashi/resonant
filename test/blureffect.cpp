@@ -10,7 +10,3 @@ void BlurEffect::setAlpha(float a) {
 void BlurEffect::setDiffuse(rs::HTex ht) {
 	setParam(rs::unif::texture::Diffuse, ht);
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, BlurEffect, BlurEffect, "Object", NOTHING,
-		(setAlpha)(setDiffuse)(setRect), (rs::Priority))

@@ -304,20 +304,6 @@ void Tweak::_Save(const INode::SP& ent, rs::HRW rw) {
 	const auto str = ss.str();
 	rw->write(str.c_str(), 1, str.length());
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Tweak, Tweak, "DrawableObj",
-	NOTHING,
-	(saveAll)(save)
-	(setEntryFromTable)(setEntryFromFile)(setEntryDefault)
-	(setDrawPriority)
-	(setCursorAxis)(setIncrementAxis)(setSwitchButton)
-	(makeGroup)(makeEntry)(setValue)(increment)(remove)(removeObj)
-	(setFontSize)(setOffset)
-	(insertNext)(insertChild)
-	(expand)(fold)(up)(down)(next)(prev)(setCursor)(getCursor)(getRoot),
-	(const std::string&)(int))
-
 #include "../systeminfo.hpp"
 #include "../input.hpp"
 void Tweak::St_Base::onDraw(const Tweak& self, rs::IEffect& e) const {

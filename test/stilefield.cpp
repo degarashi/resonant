@@ -98,9 +98,3 @@ std::pair<int,spn::Vec2> STileField::_calcLevel(float x, float y) const {
 	const int div = std::min(_nLevel-1, static_cast<int>(std::floor((d-_viewMin*_width) / dd)));
 	return {div, {dd*div+_viewMin*_width, dd*(div+1)+_viewMin*_width}};
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, STileField, STileField, "TileFieldBase", NOTHING,
-		(setRayleighCoeff)(setMieCoeff)(setLightDir)(setLightColor)(setLightPower)(setDivide)
-		(setViewDistanceCoeff),
-		(spn::MTRandom&)(int)(int)(float)(float)(float)(float)(float))

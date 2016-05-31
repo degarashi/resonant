@@ -48,7 +48,3 @@ Reduction::Reduction(rs::Priority p, bool bFour):
 	_hlFb = mgr_gl.makeFBuffer();
 	setDrawPriority(p);
 }
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, Reduction, Reduction, "Object", NOTHING,
-	(setSource)(getResult),
-	(rs::Priority)(bool))

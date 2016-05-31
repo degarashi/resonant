@@ -242,10 +242,3 @@ PrimitiveObj::PrimitiveObj(float size, rs::HTex hTex, rs::HTex hTexNormal, Type:
 {
 	setStateNew<St_Default>();
 }
-#include "../luaimport.hpp"
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, PrimitiveObj, PrimitiveObj, "DrawableObj", NOTHING,
-		(showNormals)
-		(advance)
-		(setOffset),
-		(float)(rs::HTex)(rs::HTex)(Primitive::Type::E)(bool)(bool))

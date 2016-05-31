@@ -53,7 +53,3 @@ void OffsetAdd::onDraw(rs::IEffect& e) const {
 	e.setUniform(U_Offset, _offset);
 	_rect.draw(e);
 }
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, OffsetAdd, OffsetAdd, "DrawableObj", NOTHING,
-	(setAdd1)(setAdd2)(setAdd3)(setAlpha)(setOffset)(setRatio),
-	(rs::Priority))

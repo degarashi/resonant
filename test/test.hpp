@@ -115,6 +115,7 @@ DEF_LUAIMPORT(GlobalValue)
 using GlobalValueOP = spn::Optional<GlobalValue>;
 extern thread_local GlobalValueOP tls_gvalue;
 extern const std::string MSG_GetState;
+void RegisterRSTestClass(rs::LuaState& lsc);
 
 class Engine;
 Engine& CnvToEngine(rs::IEffect& e);

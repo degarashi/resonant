@@ -71,16 +71,6 @@ struct ColBoxObj::St_Default : StateT<St_Default> {
 ColBoxObj::ColBoxObj() {
 	setStateNew<St_Default>();
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, ColBoxObj, ColBoxObj, "DrawableObj", NOTHING,
-	(setAlpha)
-	(setColor)
-	(setOffset)
-	(setRot)
-	(setScale),
-	NOTHING
-)
 const rs::SPVDecl& rs::DrawDecl<vdecl::colview>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{
 		{0,0, GL_FLOAT, GL_FALSE, 3, (GLuint)rs::VSem::POSITION}

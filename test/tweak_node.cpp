@@ -119,13 +119,3 @@ std::ostream& Tweak::Entry::write(std::ostream& s) const {
 	s <<  getName() << " = ";
 	return _value->write(s);
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode, INode,
-	NOTHING,
-	(sortAlphabetically)
-)
-DEF_LUAIMPLEMENT_PTR_NOCTOR(Tweak::INode::SP, INodeSP,
-	NOTHING,
-	(use_count)(get)
-)

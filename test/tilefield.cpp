@@ -66,11 +66,6 @@ void TileField::setViewDistanceCoeff(float dMin, float dMax) {
 	_dMin = dMin * _width * _tileWidth;
 	_dMax = dMax * _width * _tileWidth;
 }
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, TileField, TileField, "TileFieldBase", NOTHING,
-		(setViewDistanceCoeff),
-		(spn::MTRandom&)(int)(int)(float)(float)(float)(float)(float))
-
 // ---------------------- Tile頂点宣言 ----------------------
 const rs::SPVDecl& rs::DrawDecl<vdecl::tile>::GetVDecl() {
 	static rs::SPVDecl vd(new rs::VDecl{

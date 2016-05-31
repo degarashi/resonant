@@ -371,23 +371,3 @@ void Engine::setOffset(float ofs) {
 DLight& Engine::getLight(LitId id) {
 	return _light.get(id);
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_PTR_NOCTOR(Engine, Engine,
-	NOTHING,
-	(setLineLength<float>)
-	(setLightDepthSize<const spn::Size&>)
-	(setDispersion)
-	(getDLScene)
-	(getDrawScene)
-	(getCubeScene)
-	(addSceneObject)
-	(remSceneObject)
-	(setSceneGroup)
-	(setOutputFramebuffer)
-	(clearScene)
-	(makeLight)
-	(remLight)
-	(getLight)
-	(setOffset)
-)

@@ -38,10 +38,3 @@ void TileFieldBase::setTexture(rs::HTex hTex) {
 void TileFieldBase::setTextureRepeat(float r) {
 	_repeat = r;
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL_NOCTOR(rs::ObjMgr, TileFieldBase, TileFieldBase, "DrawableObj", NOTHING,
-		(setTexture)
-		(setTextureRepeat)
-		(setViewPos)
-)

@@ -61,9 +61,3 @@ void TwoPhaseBlur::draw(rs::IEffect& e, rs::IdValue tp0, rs::IdValue tp1, const 
 
 	e.setFramebuffer(fb);
 }
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, TwoPhaseBlur, TwoPhaseBlur, "Object", NOTHING,
-	(setSource<rs::HTex>)
-	(setDest<rs::HTex>)
-	(setTmpFormat<int>),
-	(rs::Priority))

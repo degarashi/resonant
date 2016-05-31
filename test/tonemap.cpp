@@ -95,9 +95,3 @@ struct ToneMap::St_Default : StateT<St_Default> {
 		e.setFramebuffer(fb0);
 	}
 };
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, ToneMap, ToneMap, "DrawableObj", NOTHING,
-		(setSource<rs::HTex>)
-		(getResult)(getShrink0)(getShrinkA),
-		(rs::Priority)
-)

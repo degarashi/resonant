@@ -75,14 +75,3 @@ void DLight::prepareUniforms(rs::IEffect& e) const {
 			e.setUniform(*idv, scl.dir, true);
 	}
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_PTR_NOCTOR(DLight, DLight,
-	NOTHING,
-	(setPosition<const spn::Vec3&>)
-	(setColor<const spn::Vec3&>)
-	(setCoeff<const spn::Vec2&>)
-	(setDirection<const spn::Vec3&>)
-	(setDepthRange<const spn::Vec2&>)
-	(setEyeCamera<rs::HCam>)
-)

@@ -64,10 +64,3 @@ struct PointSprite3D::St_Default : StateT<St_Default> {
 		self.draw(static_cast<Engine&>(e));
 	}
 };
-#include "../luaimport.hpp"
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, PointSprite3D, PointSprite3D, "DrawableObj", NOTHING,
-		(setOffset)
-		(setScale)
-		(setAlpha),
-		(rs::HTex)(const spn::Vec3&))

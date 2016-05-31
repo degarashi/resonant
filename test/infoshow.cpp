@@ -125,15 +125,3 @@ void InfoShow::St_Default::onDisconnected(InfoShow& self, rs::HGroup) {
 	auto lh = rs::HDObj::FromHandle(self.handleFromThis());
 	d->remObj(lh);
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, TextShow, TextShow, "Object",
-	NOTHING,
-	(setOffset)(setText)(getPriority)(setBGDepth)(setBGColor)(setBGAlpha),
-	(rs::Priority)
-)
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, InfoShow, InfoShow, "TextShow",
-	NOTHING,
-	NOTHING,
-	(rs::HDGroup)(rs::Priority)
-)

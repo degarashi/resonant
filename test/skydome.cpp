@@ -43,14 +43,3 @@ void SkyDome::onDraw(rs::IEffect& e) const {
 	en.ref3D().getCamera()->getView();
 	PostEffect::onDraw(e);
 }
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, SkyDome, SkyDome, "DrawableObj", NOTHING,
-	(setScale)
-	(setDivide)
-	(setRayleighCoeff)
-	(setMieCoeff)
-	(setLightPower)
-	(setLightDir)
-	(setLightColor),
-	(rs::Priority)
-)

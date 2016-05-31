@@ -33,9 +33,3 @@ void BilateralBlur::onDraw(rs::IEffect& e) const {
 		e.setUniform(U_GWeight, d);
 	});
 }
-
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, BilateralBlur, BilateralBlur, "TwoPhaseBlur", NOTHING,
-	(setGDispersion<float>)
-	(setBDispersion<float>),
-	(rs::Priority))

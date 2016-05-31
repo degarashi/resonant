@@ -98,16 +98,6 @@ SpriteObj::SpriteObj(rs::HTex hTex, float depth):
 {
 	setStateNew<St_Default>();
 }
-#include "../luaimport.hpp"
-#include "../updater_lua.hpp"
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, SpriteObj, SpriteObj, "DrawableObj", NOTHING,
-		(setOffset)
-		(setScale)
-		(setAngle)
-		(setZOffset)
-		(setZRange)
-		(setAlpha),
-		(rs::HTex)(float))
 
 // ----------------------- BoundingSprite -----------------------
 BoundingSprite::BoundingSprite(rs::HTex hTex, const spn::Vec2& pos, const spn::Vec2& svec):
@@ -155,6 +145,3 @@ struct BoundingSprite::St_Default : StateT<St_Default> {
 		self.draw(static_cast<Engine&>(e));
 	}
 };
-DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, BoundingSprite, BoundingSprite, "DrawableObj", NOTHING,
-		(setScale),
-		(rs::HTex)(const spn::Vec2&)(const spn::Vec2&))
