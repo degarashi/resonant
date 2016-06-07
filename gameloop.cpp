@@ -18,6 +18,7 @@
 #include "spinner/structure/profiler.hpp"
 #include "systeminfo.hpp"
 #include "drawtask.hpp"
+#include "util/sharedgeom.hpp"
 
 namespace rs {
 	// --------------------- FPSCounter ---------------------
@@ -221,6 +222,7 @@ namespace rs {
 			infoP->setInfo({param.wparam.width, param.wparam.height}, 0);
 			UPtr<spn::MTRandomMgr>	randP(new spn::MTRandomMgr());
 			UPtr<GLRes>			glrP(new GLRes());
+			UPtr<util::SharedGeomM>	geom(new util::SharedGeomM);
 			auto				fxP(InitFxBlock());
 			UPtr<draw::Task>	dtaskP(new draw::Task());
 			UPtr<RWMgr>			rwP(new RWMgr(param.organization, param.app_name));

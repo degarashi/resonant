@@ -7,33 +7,38 @@
 const rs::IdValue
 	T_ColFill		= T_Def("Collision", "Fill"),
 	T_ColLine		= T_Def("Collision", "Line");
+namespace {
+	rs::HLVb MakeVertex() {
+		rs::HLVb hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
+		const vertex::colview vtx[] = {
+			{{-1,-1,-1}}, {{1,-1,-1}},
+			{{-1,1,-1}},  {{1,1,-1}},
+			{{-1,-1,1}}, {{1,-1,1}},
+			{{-1,1,1}},  {{1,1,1}}
+		};
+		hlVb->get()->initData(vtx, countof(vtx), sizeof(vtx[0]));
+		return hlVb;
+	}
+	rs::HLIb MakeIndex() {
+		rs::HLIb hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
+		const GLubyte c_index[] = {
+			0,2,3, 3,1,0,
+			4,6,2, 2,0,4,
+			1,3,7, 7,5,1,
+			4,5,7, 7,6,4,
+			3,2,6, 6,7,3,
+			0,1,5, 5,4,0
+		};
+		hlIb->get()->initData(c_index, countof(c_index));
+		return hlIb;
+	}
+}
 
 // --------------- ColBox ---------------
-rs::HLVb ColBox::MakeVertex() {
-	rs::HLVb hlVb = mgr_gl.makeVBuffer(GL_STATIC_DRAW);
-	const vertex::colview vtx[] = {
-		{{-1,-1,-1}}, {{1,-1,-1}},
-		{{-1,1,-1}},  {{1,1,-1}},
-		{{-1,-1,1}}, {{1,-1,1}},
-		{{-1,1,1}},  {{1,1,1}}
-	};
-	hlVb->get()->initData(vtx, countof(vtx), sizeof(vtx[0]));
-	return hlVb;
+rs::util::GeomP ColBox::MakeGeom(...) {
+	return {MakeVertex(), MakeIndex()};
 }
-rs::HLIb ColBox::MakeIndex() {
-	rs::HLIb hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
-	const GLubyte c_index[] = {
-		0,2,3, 3,1,0,
-		4,6,2, 2,0,4,
-		1,3,7, 7,5,1,
-		4,5,7, 7,6,4,
-		3,2,6, 6,7,3,
-		0,1,5, 5,4,0
-	};
-	hlIb->get()->initData(c_index, countof(c_index));
-	return hlIb;
-}
-void ColBox::setAlpha(float a) {
+void ColBox::setAlpha(const float a) {
 	_alpha = a;
 }
 void ColBox::setColor(const spn::Vec3& c) {
@@ -48,15 +53,14 @@ ColBox::ColBox() {
 #include "engine.hpp"
 void ColBox::draw(rs::IEffect& e) const {
 	auto& en = static_cast<Engine&>(e);
-	const auto fn = [&en, this](auto tp){
+	const auto fn = [&g=getGeom(), &en, this](auto tp){
 		en.setTechPassId(tp);
 		en.setVDecl(rs::DrawDecl<vdecl::colview>::GetVDecl());
-		en.setVStream(getVertex(), 0);
-		auto ib = getIndex();
-		en.setIStream(ib);
+		en.setVStream(g.first, 0);
+		en.setIStream(g.second);
 		en.setUniform(rs::unif::Color, _color.asVec4(_alpha));
 		en.ref3D().setWorld(getToWorld().convertA44());
-		en.drawIndexed(GL_TRIANGLES, ib->get()->getNElem());
+		en.drawIndexed(GL_TRIANGLES, g.second->get()->getNElem());
 	};
 	fn(T_ColFill);
 	fn(T_ColLine);

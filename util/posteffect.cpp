@@ -40,8 +40,9 @@ namespace rs {
 			e.setTechPassId(_idTech);
 			_applyParam(e);
 			e.setVDecl(DrawDecl<vdecl::screen>::GetVDecl());
-			e.setVStream(_rect11.getVertex(), 0);
-			auto ib = _rect11.getIndex();
+			auto& g = _rect11.getGeom();
+			e.setVStream(g.first, 0);
+			auto ib = g.second;
 			e.setIStream(ib);
 			e.setUniform<false>(U_RectScale, spn::Vec4{
 					(_drawRect.x0+_drawRect.x1)/2,

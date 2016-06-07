@@ -27,44 +27,38 @@ namespace rs {
 			}
 		}
 		// ---------------------- Rect01 ----------------------
-		HLVb Rect01::MakeVertex() {
-			return MakeVertex_Base(0.f, 1.f);
-		}
-		HLIb Rect01::MakeIndex() {
+		GeomP Rect01::MakeGeom(...) {
 			const GLubyte c_index[] = {
 				0,1,2, 2,3,0
 			};
 			HLIb hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 			hlIb->get()->initData(c_index, countof(c_index));
-			return hlIb;
+			return {MakeVertex_Base(0.f, 1.f), std::move(hlIb)};
 		}
 		void Rect01::draw(rs::IEffect& e) const {
-			DrawRect(e, GL_TRIANGLES, getVertex(), getIndex());
+			const auto& g = getGeom();
+			DrawRect(e, GL_TRIANGLES, g.first, g.second);
 		}
 		// ---------------------- WireRect01 ----------------------
-		HLVb WireRect01::MakeVertex() {
-			return Rect01::MakeVertex();
-		}
-		HLIb WireRect01::MakeIndex() {
+		GeomP WireRect01::MakeGeom(...) {
 			const GLubyte c_index[] = {
 				0, 1, 2, 3
 			};
 			HLIb hlIb = mgr_gl.makeIBuffer(GL_STATIC_DRAW);
 			hlIb->get()->initData(c_index, countof(c_index));
-			return hlIb;
+			return {Rect01::MakeGeom().first, std::move(hlIb)};
 		}
 		void WireRect01::draw(rs::IEffect& e) const {
-			DrawRect(e, GL_LINE_LOOP, getVertex(), getIndex());
+			const auto& g = getGeom();
+			DrawRect(e, GL_LINE_LOOP, g.first, g.second);
 		}
 		// ---------------------- Rect11 ----------------------
-		HLVb Rect11::MakeVertex() {
-			return MakeVertex_Base(-1.f, 1.f);
-		}
-		HLIb Rect11::MakeIndex() {
-			return Rect01::MakeIndex();
+		GeomP Rect11::MakeGeom(...) {
+			return {MakeVertex_Base(-1.f, 1.f), Rect01::MakeGeom().second};
 		}
 		void Rect11::draw(rs::IEffect& e) const {
-			DrawRect(e, GL_TRIANGLES, getVertex(), getIndex());
+			auto& g = getGeom();
+			DrawRect(e, GL_TRIANGLES, g.first, g.second);
 		}
 		// ---------------------- WindowRect ----------------------
 		WindowRect::WindowRect():
@@ -83,8 +77,9 @@ namespace rs {
 			_depth = d;
 		}
 		void WindowRect::exportDrawTag(DrawTag& tag) const {
-			tag.idIBuffer = (_bWire) ? _wrect01.getIndex() : _rect01.getIndex();
-			tag.idVBuffer[0] = (_bWire) ? _wrect01.getVertex() : _rect01.getVertex();
+			auto& g = (_bWire) ? _wrect01.getGeom() : _rect01.getGeom();
+			tag.idIBuffer = g.second;
+			tag.idVBuffer[0] = g.first;
 			tag.zOffset = _depth;
 		}
 		void WindowRect::setWireframe(const bool bWireframe) {
@@ -96,7 +91,7 @@ namespace rs {
 						ry = spn::Rcp22Bit(s.height/2);
 			const auto& sc = getScale();
 			const auto& ofs = getOffset();
-
+	
 			const float rv = _bWire ? -1 : 0;
 			auto m = spn::AMat33::Scaling(rx*(sc.x+rv), -ry*(sc.y+rv), 1.f);
 			m *= spn::AMat33::Translation({-1+rx/2, 1-ry/2});
@@ -114,8 +109,9 @@ namespace rs {
 		}
 		// ---------------------- ScreenRect ----------------------
 		void ScreenRect::exportDrawTag(DrawTag& tag) const {
-			tag.idIBuffer = _rect11.getIndex();
-			tag.idVBuffer[0] = _rect11.getVertex();
+			auto& g = _rect11.getGeom();
+			tag.idIBuffer = g.second;
+			tag.idVBuffer[0] = g.first;
 		}
 		void ScreenRect::draw(IEffect& e) const {
 			_rect11.draw(e);

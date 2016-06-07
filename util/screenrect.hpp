@@ -1,5 +1,6 @@
 #pragma once
-#include "sharedgeom.hpp"
+#include "util/handle.hpp"
+#include "util/sharedgeom.hpp"
 #include "../handle.hpp"
 #include "../vertex.hpp"
 
@@ -25,23 +26,20 @@ namespace rs {
 	class SystemUniform2D;
 	namespace util {
 		//! [0, 1]の正方形ジオメトリ
-		class Rect01 : public SharedGeometry<Rect01> {
+		class Rect01 : public SharedGeom<Rect01> {
 			public:
-				static HLVb MakeVertex();
-				static HLIb MakeIndex();
+				static GeomP MakeGeom(...);
 				void draw(rs::IEffect& e) const;
 		};
-		class WireRect01 : public SharedGeometry<WireRect01> {
+		class WireRect01 : public SharedGeom<WireRect01> {
 			public:
-				static HLVb MakeVertex();
-				static HLIb MakeIndex();
+				static GeomP MakeGeom(...);
 				void draw(rs::IEffect& e) const;
 		};
 		//! [-1, 1]の正方形ジオメトリ
-		class Rect11 : public SharedGeometry<Rect11> {
+		class Rect11 : public SharedGeom<Rect11> {
 			public:
-				static HLVb MakeVertex();
-				static HLIb MakeIndex();
+				static GeomP MakeGeom(...);
 				void draw(rs::IEffect& e) const;
 		};
 		//! 任意サイズの四角ポリゴン (デバッグ用)

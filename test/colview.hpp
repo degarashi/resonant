@@ -8,13 +8,14 @@ extern const rs::IdValue
 	T_ColFill,
 	T_ColLine;
 
-class ColBox : public rs::util::SharedGeometry<ColBox>, public spn::Pose3D {
+class ColBox : public rs::util::SharedGeom<ColBox>,
+				public spn::Pose3D
+{
 	private:
-		spn::Vec3	_color;
-		float		_alpha;
+		spn::Vec3			_color;
+		float				_alpha;
 	public:
-		static rs::HLVb MakeVertex();
-		static rs::HLIb MakeIndex();
+		static rs::util::GeomP MakeGeom(...);
 		ColBox();
 		void setAlpha(float a);
 		void setColor(const spn::Vec3& c);

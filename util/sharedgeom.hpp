@@ -1,37 +1,29 @@
 #pragma once
-#include "sharedhandle.hpp"
-#include "../handle.hpp"
+#include "util/handle.hpp"
 
 namespace rs {
 	namespace util {
-		template <class T, class Key=spn::none_t>
-		class SharedGeometry {
-			private:
-				struct Vb_t : SharedHandle<Vb_t, Key, HVb> {
-					template <class... Ts>
-					HLVb _makeHandle(Ts&&... ts) const {
-						return T::MakeVertex(std::forward<Ts>(ts)...);
-					}
-				};
-				struct Ib_t : SharedHandle<Ib_t, Key, HIb> {
-					template <class... Ts>
-					HLIb _makeHandle(Ts&&... ts) const {
-						return T::MakeIndex(std::forward<Ts>(ts)...);
-					}
-				};
-				mutable HLVb	_hlVb;
-				mutable HLIb	_hlIb;
+		class SharedGeomM : public spn::ResMgrN<GeomP, SharedGeomM, std::allocator, typename GeomIdMgr::Id> {
 			public:
-				HVb getVertex(const Key& key=Key()) const {
-					if(!_hlVb)
-						_hlVb = Vb_t::GetHandle(key);
-					return _hlVb;
-				}
-				HIb getIndex(const Key& key=Key()) const {
-					if(!_hlIb)
-						_hlIb = Ib_t::GetHandle(key);
-					return _hlIb;
+				using Id = GeomIdMgr::Id;
+		};
+		#define mgr_geom (::rs::util::SharedGeomM::_ref())
+
+		template <class T>
+		class SharedGeom {
+			private:
+				HLGeom _hl;
+				const static GeomIdMgr::Id cs_gid;
+			public:
+				SharedGeom():
+					_hl(mgr_geom.acquire(cs_gid, &T::MakeGeom).first)
+				{}
+				const GeomP& getGeom() const {
+					return _hl.cref();
 				}
 		};
+		#define mgr_geomid ::rs::util::GeomIdMgr
+		template <class T>
+		const GeomIdMgr::Id SharedGeom<T>::cs_gid = mgr_geomid::GenId();
 	}
 }
