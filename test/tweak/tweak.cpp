@@ -26,11 +26,17 @@ namespace {
 }
 namespace tweak {
 	Tweak::Tweak(const std::string& rootname, const int tsize):
+		_cid(
+			mgr_text.makeCoreID(
+				g_fontName,
+				rs::CCoreID(0, tsize, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel)
+			)
+		),
+		_stext(_cid),
 		_offset(0),
 		_tsize(tsize),
 		_indent(tsize*2)
 	{
-		_cid = mgr_text.makeCoreID(g_fontName, rs::CCoreID(0, tsize, rs::CCoreID::CharFlag_AA, false, 0, rs::CCoreID::SizeType_Pixel));
 		_root = std::make_shared<Node>(_cid, rootname);
 		_cursor = _root;
 		setStateNew<St_Cursor>();
@@ -302,11 +308,13 @@ namespace tweak {
 		rw->write(str.c_str(), 1, str.length());
 	}
 }
+
 #include "../systeminfo.hpp"
 #include "../input.hpp"
-#include "test/tweak/drawer.hpp"
+#include "drawer.hpp"
 namespace tweak {
 	void Tweak::St_Base::onDraw(const Tweak& self, rs::IEffect& e) const {
+		const auto ts = self._tsize;
 		// ノード描画
 		const auto sz = mgr_info.getScreenSize();
 		Drawer drawer(
@@ -320,7 +328,7 @@ namespace tweak {
 		);
 		self._root->draw(
 			{0, 0},
-			{self._indent, self._tsize+4},
+			{self._indent, ts+4},
 			drawer
 		);
 		// カーソル描画
@@ -328,13 +336,20 @@ namespace tweak {
 		constexpr float ofsx = 32,
 						ofsy = 2;
 		const float ofs = (St_Value::GetStateId()==getStateId()) ?
-							self._tsize/4 : 0;
+							ts/4 : 0;
 		drawer.drawRectBoth({
 			at.x-ofsx,
 			at.x-ofsx/2,
 			at.y-ofsy + ofs,
-			at.y+self._tsize+ofsy - ofs
+			at.y + ts + ofsy - ofs
 		}, {Color::Cursor});
+		// 詳細描画
+		self._cursor->drawInfo(
+			{512, 0},
+			{self._indent, ts+4},
+			self._stext,
+			drawer
+		);
 	}
 	Tweak::St_Value::St_Value() {
 		std::cout << "St_Value" << std::endl;

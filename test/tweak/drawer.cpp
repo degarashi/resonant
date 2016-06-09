@@ -13,7 +13,7 @@ namespace tweak {
 		using RectF = spn::RectF;
 	}
 	Drawer::Drawer(const RectF& range, const Vec2& offset,
-							const INode::SP& cur, rs::IEffect& e):
+					const INode::SP& cur, rs::IEffect& e):
 		_effect(e),
 		_range(range),
 		_cursor(cur.get()),
@@ -35,16 +35,16 @@ namespace tweak {
 		drawRect(rect, true, color);
 		drawRect(rect, false, color);
 	}
-	void Drawer::drawText(const Vec2& offset, rs::HText hText, const Color color) {
+	int Drawer::drawText(const Vec2& offset, rs::HText hText, const Color color) {
 		_effect.setTechPassId(T_Text);
 		_text.setText(hText);
 		_text.setWindowOffset(offset);
 		_text.refColor() = color.get();
-		_text.draw(_effect);
+		return _text.draw(_effect);
 	}
-	void Drawer::drawTextVCenter(const RectF& rect, rs::HText hText, const Color color) {
+	int Drawer::drawTextVCenter(const RectF& rect, rs::HText hText, const Color color) {
 		const auto sz = hText->getSize();
-		drawText(
+		return drawText(
 			{
 				rect.x0,
 				(rect.y0-sz.height)/2

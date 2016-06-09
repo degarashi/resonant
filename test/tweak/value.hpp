@@ -23,7 +23,7 @@ namespace tweak {
 	class Value : public IBase {
 		protected:
 			constexpr static size_t NText = VStep::_Num + SText::_Num;
-			rs::CCoreID			_cid;
+			const rs::CCoreID	_cid;
 			mutable bool		_bRefl[VStep::_Num];
 		private:
 			mutable rs::HLText	_text[NText];
@@ -32,6 +32,7 @@ namespace tweak {
 		public:
 			Value(rs::CCoreID cid);
 			rs::HText getText(VStep::type t) const;
+			virtual rs::HText getText(SText::type t) const = 0;
 			virtual Value_UP clone() const = 0;
 			virtual std::ostream& write(std::ostream& s) const = 0;
 	};
@@ -40,21 +41,19 @@ namespace tweak {
 	template <class T>
 	class ValueT : public Value {
 		protected:
-			static rs::HLText s_text[SText::_Num];
+			mutable rs::HLText _stext[SText::_Num];
 		public:
 			using Value::Value;
 			using Value::getText;
-			rs::HText getText(SText::type t) const {
-				if(!s_text[t])
-					s_text[t] = _getText(t);
-				return s_text[t];
+			rs::HText getText(SText::type t) const override {
+				if(!_stext[t])
+					_stext[t] = _getText(t);
+				return _stext[t];
 			}
-			virtual Value_UP clone() const {
+			virtual Value_UP clone() const override {
 				return std::make_unique<T>(static_cast<const T&>(*this));
 			}
 	};
-	template <class T>
-	rs::HLText ValueT<T>::s_text[SText::_Num];
 	//! 線形の増減値による定数調整
 	class LinearValue : public ValueT<LinearValue> {
 		private:

@@ -2,6 +2,7 @@
 #include "test/tweak/drawer.hpp"
 #include "test/tweak/value.hpp"
 #include "../../font.hpp"
+#include "stext.hpp"
 
 namespace tweak {
 	// ------------------- INode -------------------
@@ -71,13 +72,14 @@ namespace tweak {
 	std::ostream& Node::write(std::ostream& s) const {
 		return s;
 	}
-	void Node::drawInfo(const Vec2& /*offset*/, const Vec2& /*unit*/, Drawer& /*d*/) const {}
+	spn::SizeF Node::drawInfo(const Vec2&, const Vec2&, const STextPack&, Drawer&) const { return {}; }
 
 	// ------------------- Entry -------------------
 	Entry::Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, const Define_SP& def):
 		INode(cid, name),
 		_target(target),
 		_value(def->defvalue->clone()),
+		_initialValue(def->defvalue->clone()),
 		_def(def)
 	{}
 	bool Entry::expand(const bool /*b*/) {
@@ -101,11 +103,50 @@ namespace tweak {
 		ofs.x += sz.width + 8;
 		return _value->draw(ofs, unit, d);
 	}
-	void Entry::drawInfo(const Vec2& offset, const Vec2& unit, Drawer& d) const {
-		// Type
-		// d.drawText();
-		// Step
-		// InitialValue
+	spn::SizeF Entry::drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const {
+		const Color color{Color::Node};
+		auto ofs = offset;
+		const int Spacing = unit.x;
+		int mx = 0;
+		// "Type" Type
+		mx = d.drawTexts(ofs, color,
+						st.htStatic[STextPack::Type], Spacing,
+						_value->getText(SText::Type), 0);
+		ofs.y += unit.y;
+		// "Step" Step
+		mx = std::max<int>(
+				mx,
+				d.drawTexts(ofs, color,
+					st.htStatic[STextPack::Step], Spacing,
+					_value->getText(VStep::Step), 0)
+			);
+		ofs.y += unit.y;
+		// "Initial" InitialValue
+		mx = std::max<int>(
+				mx,
+				d.drawTexts(ofs, color,
+					st.htStatic[STextPack::Initial], Spacing,
+					_initialValue->getText(VStep::Value), 0)
+			);
+		ofs.y += unit.y;
+		// "Current" CurrentValue
+		mx = std::max<int>(
+				mx,
+				d.drawTexts(ofs, color,
+					st.htStatic[STextPack::Current], Spacing,
+					_value->getText(VStep::Value), 0)
+			);
+		ofs.y += unit.y;
+		// Overall-Rect (compounds those texts)
+		d.drawRect(
+			{
+				offset.x, offset.x+mx,
+				offset.y, ofs.y
+			},
+			true,
+			{Color::Node}
+		);
+		return {mx, ofs.y-offset.y};
 	}
 	void Entry::setPointer(Value_UP v) {
 		_value = std::move(v);
@@ -114,6 +155,9 @@ namespace tweak {
 	void Entry::set(const LValueS& v, const bool bStep) {
 		_value->set(v, bStep);
 		_applyValue();
+	}
+	void Entry::setInitial(const LValueS& v) {
+		_initialValue->set(v, false);
 	}
 	rs::LCValue Entry::get() const {
 		return _value->get();

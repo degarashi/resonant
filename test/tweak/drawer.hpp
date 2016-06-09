@@ -13,7 +13,6 @@ namespace tweak {
 			const INode* const		_cursor;		//!< カーソル位置にある要素
 			Vec2					_offset,		//!< 描画オフセット
 									_cursorAt;		//!< カーソル描画オフセット
-
 		public:
 			/*!
 				\param[in] range		仮想空間上での表示範囲
@@ -41,8 +40,18 @@ namespace tweak {
 			void drawRect(const spn::RectF& rect, bool bWireframe, Color color);
 			//! 塗りつぶし矩形とワイヤー矩形の両方描画
 			void drawRectBoth(const spn::RectF& rect, Color color);
-			void drawText(const Vec2& offset, rs::HText hText, Color color);
+			int drawText(const Vec2& offset, rs::HText hText, Color color);
 			//! 縦位置中央に補正したテキスト描画
-			void drawTextVCenter(const spn::RectF& rect, rs::HText hText, Color color);
+			int drawTextVCenter(const spn::RectF& rect, rs::HText hText, Color color);
+			int drawTexts(const Vec2&, Color) { return 0; }
+			template <class T, class S, class... Ts>
+			int drawTexts(const Vec2& offset, Color color, T&& t, S s, Ts&&... ts) {
+				const int w = drawText(offset, std::forward<T>(t), color);
+				return w + s +
+						drawTexts(
+							offset + Vec2(w+s, 0), color,
+							std::forward<Ts>(ts)...
+						);
+			}
 	};
 }

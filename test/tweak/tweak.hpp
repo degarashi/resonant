@@ -3,6 +3,7 @@
 #include "../updater.hpp"
 #include "test/tweak/value.hpp"
 #include "test/tweak/node.hpp"
+#include "stext.hpp"
 
 namespace tweak {
 	using Vec3 = spn::Vec3;
@@ -32,12 +33,12 @@ namespace tweak {
 			INode::SP			_root,
 								_cursor;
 			rs::CCoreID			_cid;
-
 			rs::HLAct			_haX,		//!< カーソル操作: 左右
 								_haY,		//!< カーソル操作: 上下
 								_haSw,		//!< 操作モード切り替え
 								_haCont,
 								_haInc[4];	//!< 値操作: (X,Y,Z,W)
+			STextPack			_stext;
 			// --- draw parameter ---
 			Vec2				_offset;
 			float				_tsize;

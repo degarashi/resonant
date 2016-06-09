@@ -8,6 +8,7 @@ namespace rs {
 	struct CCoreID;
 }
 namespace tweak {
+	struct STextPack;
 	using Name = std::string;
 	//! Tweakノード
 	//! 複数の子ノードを持てる
@@ -21,8 +22,8 @@ namespace tweak {
 			virtual bool isExpanded() const = 0;
 			virtual bool isNode() const = 0;
 			virtual void setPointer(Value_UP v) = 0;
+			virtual spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const = 0;
 			virtual std::ostream& write(std::ostream& s) const = 0;
-			virtual void drawInfo(const Vec2& offset, const Vec2& unit, Drawer& d) const = 0;
 			void sortAlphabetically();
 			const Name& getName() const;
 	};
@@ -37,8 +38,8 @@ namespace tweak {
 			bool isNode() const override;
 			void setPointer(Value_UP v) override;
 			std::ostream& write(std::ostream& s) const override;
-			void drawInfo(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
 	};
 
 	// 定数パラメータごとに1つ定義
@@ -51,7 +52,8 @@ namespace tweak {
 	class Entry : public INode {
 		private:
 			spn::WHandle		_target;
-			Value_UP			_value;
+			Value_UP			_value,
+								_initialValue;
 			Define_SP			_def;
 			void _applyValue();
 		public:
@@ -61,10 +63,11 @@ namespace tweak {
 			bool isNode() const override;
 			void increment(float inc, int index) override;
 			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
 			void set(const LValueS& v, bool bStep) override;
+			void setInitial(const LValueS& v) override;
 			void setPointer(Value_UP v) override;
 			std::ostream& write(std::ostream& s) const override;
-			void drawInfo(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 			rs::LCValue get() const override;
 	};
 	using Entry_SP = std::shared_ptr<Entry>;

@@ -40,6 +40,7 @@ namespace tweak {
 	//! Tweakツリーインタフェース
 	struct IBase {
 		virtual void set(const rs::LValueS& v, bool bStep);
+		virtual void setInitial(const rs::LValueS& v);
 		virtual void increment(float inc, int index);
 		virtual int draw[[noreturn]](const spn::Vec2& offset,  const spn::Vec2& unit, Drawer& d) const;
 		virtual rs::LCValue get() const;

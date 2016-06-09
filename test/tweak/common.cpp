@@ -20,6 +20,9 @@ namespace tweak {
 	void IBase::set(const LValueS&, bool) {
 		Assert(Warn, false, "invalid function call")
 	}
+	void IBase::setInitial(const LValueS&) {
+		Assert(Warn, false, "invalid function call")
+	}
 	void IBase::increment(float,int) {
 		Assert(Warn, false, "invalid function call")
 	}
