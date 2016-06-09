@@ -43,12 +43,13 @@ namespace rs {
 			}
 			return _hlText;
 		}
-		void Text::draw(IEffect& e, const CBPreDraw& cbPre) const {
+		int Text::draw(IEffect& e, const CBPreDraw& cbPre) const {
 			getText();
 
 			cbPre(e);
 			e.setUniform(unif::Color, _color);
 			_hlText->draw(e);
+			return _hlText->getSize().width;
 		}
 		void Text::exportDrawTag(DrawTag& d) const {
 			getText()->exportDrawTag(d);

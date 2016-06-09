@@ -37,7 +37,7 @@ namespace rs {
 				void setText(spn::To32Str str);
 				void setText(HText h);
 				ColorA& refColor();
-				void draw(IEffect& e, const CBPreDraw& cbPre=[](auto&){}) const;
+				int draw(IEffect& e, const CBPreDraw& cbPre=[](auto&){}) const;
 				void exportDrawTag(DrawTag& d) const;
 		};
 		//! テキスト描画クラス (for HUD)
@@ -62,7 +62,7 @@ namespace rs {
 				void setScreenOffset(const spn::Vec2& ofs);
 				void setScale(const spn::Vec2& s);
 				void setDepth(float d);
-				void draw(IEffect& e) const;
+				int draw(IEffect& e) const;
 		};
 		// 1行の縦をY=1としたサイズに内部変換
 		// H,V {Negative, Positive, Middle}
@@ -75,7 +75,7 @@ namespace rs {
 				Text2D(float lh);
 				void setLineHeight(float lh);
 				void setDepth(float d);
-				void draw(IEffect& e, bool bRefresh=false) const;
+				int draw(IEffect& e, bool bRefresh=false) const;
 		};
 		//! テキスト描画クラス (for 3D sprite)
 		class Text3D : public spn::Pose3D, public Text {
@@ -86,7 +86,7 @@ namespace rs {
 				Text3D(float lh, bool bBillboard);
 				void setLineHeight(float lh);
 				void setBillboard(bool b);
-				void draw(IEffect& e, bool bRefresh=false) const;
+				int draw(IEffect& e, bool bRefresh=false) const;
 		};
 	}
 }

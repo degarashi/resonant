@@ -16,7 +16,7 @@ namespace rs {
 		void Text2D::setDepth(float d) {
 			_depth = d;
 		}
-		void Text2D::draw(IEffect& e, bool bRefresh) const {
+		int Text2D::draw(IEffect& e, bool bRefresh) const {
 			auto& su2d = e.ref2D();
 			auto cid = getCCoreId();
 			// Zが0.0未満や1.0以上だと描画されないので、それより少し狭い範囲でクリップする
@@ -24,7 +24,7 @@ namespace rs {
 			float s = float(_lineHeight) / cid.at<CCoreID::Height>();
 			auto m = spn::AMat33::Scaling(s, s, 1);
 			m *= getToWorld().convertA33();
-			Text::draw(e, [d, &e, &su2d, &m, bR=bRefresh](auto&){
+			return Text::draw(e, [d, &e, &su2d, &m, bR=bRefresh](auto&){
 				e.setUniform(unif2d::Depth, d);
 				su2d.setWorld(m);
 				if(bR)

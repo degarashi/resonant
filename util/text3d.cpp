@@ -16,13 +16,13 @@ namespace rs {
 		void Text3D::setBillboard(bool b) {
 			_bBillboard = b;
 		}
-		void Text3D::draw(IEffect& e, bool bRefresh) const {
+		int Text3D::draw(IEffect& e, bool bRefresh) const {
 			auto& su3d = e.ref3D();
 			auto cid = getCCoreId();
 			float s = float(_lineHeight) / cid.at<CCoreID::Height>();
 			auto mScale = spn::AMat44::Scaling(s, s, s, 1);
 			mScale *= getToWorld().convertA44();
-			Text::draw(e, [&,bRefresh,s](auto&){
+			return Text::draw(e, [&,bRefresh,s](auto&){
 				spn::AMat44 m;
 				if(_bBillboard) {
 					// Poseの位置とスケーリングだけ取って

@@ -49,10 +49,10 @@ namespace rs {
 		void TextHUD::setDepth(float d) {
 			_depth = d;
 		}
-		void TextHUD::draw(IEffect& e) const {
+		int TextHUD::draw(IEffect& e) const {
 			// Zが0.0未満や1.0以上だと描画されないので、それより少し狭い範囲でクリップする
 			const float d = spn::Saturate(_depth, 0.f, 1.f-1e-4f);
-			Text::draw(e, [d, this](auto& e){
+			return Text::draw(e, [d, this](auto& e){
 				e.setUniform(unif2d::Depth, d);
 				e.setUniform(U_Text, _makeMatrix(), true);
 			});
