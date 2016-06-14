@@ -40,9 +40,12 @@ namespace tweak {
 								_haInc[4];	//!< 値操作: (X,Y,Z,W)
 			STextPack			_stext;
 			// --- draw parameter ---
-			Vec2				_offset;
-			float				_tsize;
-			float				_indent;
+			struct {
+				Vec2			offset;
+				spn::SizeF		size;
+				float			tsize,
+								indent;
+			} _dparam;
 			//! Luaから値定義とデフォルト値を読み取る
 			DefineV _loadDefine(const LValueS& d);
 			//! オブジェクト名を元に_loadDefine()を呼ぶ

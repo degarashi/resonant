@@ -12,13 +12,8 @@ namespace tweak {
 		const rs::IdValue T_Text = GId::GenTechId("Text", "Default");
 		using RectF = spn::RectF;
 	}
-	Drawer::Drawer(const RectF& range, const Vec2& offset,
-					const INode::SP& cur, rs::IEffect& e):
-		_effect(e),
-		_range(range),
-		_cursor(cur.get()),
-		_offset(offset),
-		_cursorAt(0)
+	Drawer::Drawer(rs::IEffect& e):
+		_effect(e)
 	{
 		_text.setDepth(0.f);
 	}
@@ -52,19 +47,5 @@ namespace tweak {
 			hText,
 			color
 		);
-	}
-	bool Drawer::checkDraw(const INode* s, const RectF& r) {
-		if(s == _cursor)
-			_cursorAt = {r.x0, r.y0};
-		auto makeAB = [](const RectF& r){
-			return boom::geo2d::AABB(
-					{r.x0, r.y0},
-					{r.x1, r.y1}
-			);
-		};
-		return makeAB(r).hit(makeAB(_range));
-	}
-	const spn::Vec2& Drawer::getCursorAt() const {
-		return _cursorAt;
 	}
 }

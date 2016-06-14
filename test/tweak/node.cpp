@@ -21,13 +21,38 @@ namespace tweak {
 			true
 		);
 	}
+	void INode::OnChildRemove(const node_t* self, const node_t::SP&) {
+		static_cast<const INode*>(self)->_setRefreshSize();
+	}
+	void INode::OnChildAdded(const node_t* self, const node_t::SP&) {
+		static_cast<const INode*>(self)->_setRefreshSize();
+	}
 	// ------------------- Node -------------------
 	Node::Node(rs::CCoreID cid, const Name& name):
 		INode(cid, name),
-		_expanded(true)
+		_expanded(true),
+		_bRefl(true)
 	{
 		_mark[0] = mgr_text.createText(cid, "-");
 		_mark[1] = mgr_text.createText(cid, ">");
+	}
+	void Node::_setRefreshSize() const {
+		_bRefl = true;
+	}
+	float Node::_getCachedSize() const {
+		if(_bRefl) {
+			_bRefl = false;
+			float s = _text->getSize().height;
+			if(isExpanded()) {
+				iterateChild(
+					[&s](auto& nd){
+						s += nd->_getCachedSize();
+					}
+				);
+			}
+			_cached_size = s;
+		}
+		return _cached_size;
 	}
 	bool Node::expand(const bool b) {
 		const auto br = _expanded ^ b;
@@ -41,11 +66,8 @@ namespace tweak {
 		return true;
 	}
 	void Node::setPointer(Value_UP) {}
-	int Node::draw(const Vec2& offset, const Vec2& unit, Drawer& d) const {
+	int Node::draw(const Vec2& offset, const Vec2& /*unit*/, Drawer& d) const {
 		const auto sz = _text->getSize();
-		if(!d.checkDraw(this, {offset.x, offset.x+sz.width,
-								offset.y, offset.y-sz.height}))
-			return 0;
 		d.drawRectBoth({
 			offset.x,
 			offset.x+sz.width,
@@ -56,18 +78,7 @@ namespace tweak {
 		d.drawText(offset, _text, {Color::Node});
 		// ノードを開いた印
 		d.drawText(offset + Vec2(sz.width + 8, 0), _mark[_expanded], {Color::Node});
-		int count = 1;
-		if(_expanded) {
-			if(auto sp = getChild()) {
-				auto ofs = offset + unit;
-				do {
-					const int th = sp->draw(ofs, unit, d);
-					ofs.y += th * unit.y;
-					++count;
-				} while((sp = sp->getSibling()));
-			}
-		}
-		return count;
+		return 1;
 	}
 	std::ostream& Node::write(std::ostream& s) const {
 		return s;
@@ -92,16 +103,16 @@ namespace tweak {
 		return false;
 	}
 	int Entry::draw(const Vec2& offset, const Vec2& unit, Drawer& d) const {
-		// 描画範囲チェック
 		const auto sz = _text->getSize();
-		if(!d.checkDraw(this, {offset.x, offset.x+sz.width,
-								offset.y, offset.y-sz.height}))
-			return 0;
 		// (本当はnameの描画もする)
 		d.drawText(offset, _text, {Color::Node});
 		auto ofs = offset;
 		ofs.x += sz.width + 8;
 		return _value->draw(ofs, unit, d);
+	}
+	void Entry::_setRefreshSize() const {}
+	float Entry::_getCachedSize() const {
+		return _text->getSize().height;
 	}
 	spn::SizeF Entry::drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const {
 		const Color color{Color::Node};

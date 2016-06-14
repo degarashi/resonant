@@ -9,28 +9,11 @@ namespace tweak {
 			rs::util::TextHUD		_text;			//!< 矩形描画クラス
 			rs::util::WindowRect	_rect;			//!< テキスト描画クラス
 			rs::IEffect&			_effect;		//!< 描画インタフェース
-			spn::RectF				_range;			//!< 仮想空間上での表示範囲
-			const INode* const		_cursor;		//!< カーソル位置にある要素
-			Vec2					_offset,		//!< 描画オフセット
-									_cursorAt;		//!< カーソル描画オフセット
 		public:
 			/*!
-				\param[in] range		仮想空間上での表示範囲
-				\param[in] offset		実際の描画オフセット(左上からの)
-				\param[in] cur			カーソル位置にある要素
 				\param[in] e			描画インタフェース
 			*/
-			Drawer(const spn::RectF& range, const Vec2& offset,
-					const INode::SP& cur, rs::IEffect& e);
-			//! 描画処理中に出現したカーソル項目の位置
-			const Vec2& getCursorAt() const;
-			//! 描画の範囲内かの判定
-			/*!
-				\param p カーソル位置記憶用
-				\param r 描画判定対象の矩形
-				\return 描画の必要があるならtrue
-			*/
-			bool checkDraw(const INode* p, const spn::RectF& r);
+			Drawer(rs::IEffect& e);
 			//! 任意の色で矩形描画
 			/*!
 				\param rect			描画対象の矩形

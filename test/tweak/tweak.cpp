@@ -33,9 +33,12 @@ namespace tweak {
 			)
 		),
 		_stext(_cid),
-		_offset(0),
-		_tsize(tsize),
-		_indent(tsize*2)
+		_dparam{
+			{0,0},
+			{-1, -1},
+			float(tsize),
+			float(tsize*2)
+		}
 	{
 		_root = std::make_shared<Node>(_cid, rootname);
 		_cursor = _root;
@@ -217,13 +220,13 @@ namespace tweak {
 		}
 	}
 	void Tweak::setFontSize(const int tsize) {
-		_tsize = tsize;
+		_dparam.tsize = tsize;
 	}
 	void Tweak::setOffset(const Vec2& ofs) {
-		_offset = ofs;
+		_dparam.offset = ofs;
 	}
 	void Tweak::setIndent(const float w) {
-		_indent = w;
+		_dparam.indent = w;
 	}
 	bool Tweak::expand() {
 		return _cursor->expand(true);
@@ -314,39 +317,62 @@ namespace tweak {
 #include "drawer.hpp"
 namespace tweak {
 	void Tweak::St_Base::onDraw(const Tweak& self, rs::IEffect& e) const {
-		const auto ts = self._tsize;
+		const auto& dp = self._dparam;
+		auto sz = dp.size;
+		const auto ssz = mgr_info.getScreenSize();
+		if(sz.width < 0)
+			sz.width = ssz.width;
+		if(sz.height < 0)
+			sz.height = ssz.height;
+		const auto ts = dp.tsize;
+
 		// ノード描画
-		const auto sz = mgr_info.getScreenSize();
-		Drawer drawer(
-			{
-				0.f, sz.width,
-				0.f, sz.height
-			},
-			self._offset,
-			self._cursor,
-			e
-		);
-		self._root->draw(
-			{0, 0},
-			{self._indent, ts+4},
-			drawer
-		);
-		// カーソル描画
-		const auto& at = drawer.getCursorAt();
-		constexpr float ofsx = 32,
-						ofsy = 2;
-		const float ofs = (St_Value::GetStateId()==getStateId()) ?
-							ts/4 : 0;
-		drawer.drawRectBoth({
-			at.x-ofsx,
-			at.x-ofsx/2,
-			at.y-ofsy + ofs,
-			at.y + ts + ofsy - ofs
-		}, {Color::Cursor});
+		Drawer drawer(e);
+		// 描画開始ノードを選択
+		auto cur = self._cursor;
+		int count = -1;
+		while(cur) {
+			++count;
+			cur = cur->getParent();
+		}
+		cur = self._cursor;
+
+		const Vec2 unit(dp.indent, ts+4);
+		Vec2 ofs = dp.offset + Vec2(count*unit.x, 0);
+		while(cur) {
+			// カーソル描画
+			if(cur == self._cursor) {
+				constexpr float ofsx = 32,
+								ofsy = 2;
+				const float ofsC = (St_Value::GetStateId()==getStateId()) ?
+									ts/4 : 0;
+				drawer.drawRectBoth({
+					ofs.x - ofsx,
+					ofs.x - ofsx/2,
+					ofs.y - ofsy + ofsC,
+					ofs.y + ts + ofsy - ofsC
+				}, {Color::Cursor});
+			}
+			ofs.y += cur->draw(ofs, unit, drawer) * unit.y;
+			// 描画範囲を超えたら停止
+			if(ofs.y >= dp.offset.y + sz.height)
+				break;
+			INode::SP sp;
+			if(cur->isExpanded() && (sp = cur->getChild())) {
+				ofs.x += unit.x;
+				cur = sp;
+			} else if((sp = cur->getSibling())) {
+				cur = sp;
+			} else if((sp = cur->getParent())) {
+				ofs.x -= unit.x;
+				cur = sp->getSibling();
+			} else
+				break;
+		}
 		// 詳細描画
 		self._cursor->drawInfo(
 			{512, 0},
-			{self._indent, ts+4},
+			unit,
 			self._stext,
 			drawer
 		);
