@@ -228,6 +228,9 @@ namespace tweak {
 	void Tweak::setIndent(const float w) {
 		_dparam.indent = w;
 	}
+	void Tweak::setSize(const spn::SizeF& s) {
+		_dparam.size = s;
+	}
 	bool Tweak::expand() {
 		return _cursor->expand(true);
 	}
@@ -329,14 +332,20 @@ namespace tweak {
 		// ノード描画
 		Drawer drawer(e);
 		// 描画開始ノードを選択
-		auto cur = self._cursor;
-		int count = -1;
-		while(cur) {
-			++count;
-			cur = cur->getParent();
+		decltype(self._cursor) cur;
+		// カーソル位置から表示範囲半分、上に遡る
+		{
+			int tmp = sz.height/2/dp.tsize;
+			cur = self._cursor->rewindRange(tmp);
 		}
-		cur = self._cursor;
-
+		int count = 1;
+		{
+			auto cur2 = cur;
+			while(auto p = cur2->getParent()) {
+				cur2 = p;
+				++count;
+			}
+		}
 		const Vec2 unit(dp.indent, ts+4);
 		Vec2 ofs = dp.offset + Vec2(count*unit.x, 0);
 		while(cur) {

@@ -203,7 +203,7 @@ DEF_LUAIMPLEMENT_HDL(rs::ObjMgr, tweak::Tweak, Tweak, "DrawableObj",
 	(setDrawPriority)
 	(setCursorAxis)(setIncrementAxis)(setSwitchButton)
 	(makeGroup)(makeEntry)(setValue)(increment)(remove)(removeObj)
-	(setFontSize)(setOffset)
+	(setFontSize)(setOffset)(setSize)
 	(insertNext)(insertChild)
 	(expand)(fold)(up)(down)(next)(prev)(setCursor)(getCursor)(getRoot),
 	(const std::string&)(int)

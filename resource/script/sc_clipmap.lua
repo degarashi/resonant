@@ -155,11 +155,13 @@ st_idle = {
 		end
 
 		-- ValueTweakerの初期化
-		local tweak = G.Tweak.New("[Tweaker Root]", 16)
+		local tsize = 16
+		local tweak = G.Tweak.New("[Tweaker Root]", tsize)
 		local act = Global.tweak
 		tweak:setIncrementAxis(act.cont, act.x, act.y, act.z, act.w)
 		tweak:setCursorAxis(act.cx, act.cy)
 		tweak:setSwitchButton(act.sw)
+		tweak:setSize({-1, tsize*8})
 		-- 定数定義ファイルを読み込み
 		local cam = Global.cpp.hlCam
 		local sp = tweak:makeGroup(cam.handleName)

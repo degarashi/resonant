@@ -27,6 +27,20 @@ namespace tweak {
 	void INode::OnChildAdded(const node_t* self, const node_t::SP&) {
 		static_cast<const INode*>(self)->_setRefreshSize();
 	}
+	INode::node_t::SP INode::rewindRange(Size& size, const bool bChk) const {
+		if(bChk) {
+			if(auto ret = _rewindRange(size))
+				return ret;
+		} else
+			size -= _getThisSize();
+		if(size > 0) {
+			if(auto ps = getPrevSibling())
+				return ps->rewindRange(size, true);
+			if(auto p = getParent())
+				return p->rewindRange(size, false);
+		}
+		return const_cast<INode*>(this)->shared_from_this();
+	}
 	// ------------------- Node -------------------
 	Node::Node(rs::CCoreID cid, const Name& name):
 		INode(cid, name),
@@ -39,10 +53,13 @@ namespace tweak {
 	void Node::_setRefreshSize() const {
 		_bRefl = true;
 	}
-	float Node::_getCachedSize() const {
+	INode::Size Node::_getThisSize() const {
+		return 1;
+	}
+	INode::Size Node::_getCachedSize() const {
 		if(_bRefl) {
 			_bRefl = false;
-			float s = _text->getSize().height;
+			Size s = _getThisSize();
 			if(isExpanded()) {
 				iterateChild(
 					[&s](auto& nd){
@@ -56,6 +73,7 @@ namespace tweak {
 	}
 	bool Node::expand(const bool b) {
 		const auto br = _expanded ^ b;
+		_bRefl |= br;
 		_expanded = b;
 		return br;
 	}
@@ -84,6 +102,33 @@ namespace tweak {
 		return s;
 	}
 	spn::SizeF Node::drawInfo(const Vec2&, const Vec2&, const STextPack&, Drawer&) const { return {}; }
+	INode::node_t::SP Node::_rewindRange(Size& size) const {
+		const auto cs = _getCachedSize();
+		if(isExpanded()) {
+			if(size <= cs) {
+				// このノードを精査
+				auto cur = getChild();
+				while(auto next = cur->getSibling())
+					cur = next;
+				for(;;) {
+					if(auto ret = cur->rewindRange(size))
+						return ret;
+					if(auto next = cur->getPrevSibling())
+						cur = next;
+					else
+						break;
+				}
+				AssertP(Trap, size <= _getThisSize())
+				return const_cast<Node*>(this)->shared_from_this();
+			}
+			size -= cs;
+		} else {
+			size -= _getThisSize();
+			if(size <= 0)
+				return const_cast<Node*>(this)->shared_from_this();
+		}
+		return nullptr;
+	}
 
 	// ------------------- Entry -------------------
 	Entry::Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, const Define_SP& def):
@@ -111,8 +156,11 @@ namespace tweak {
 		return _value->draw(ofs, unit, d);
 	}
 	void Entry::_setRefreshSize() const {}
-	float Entry::_getCachedSize() const {
-		return _text->getSize().height;
+	INode::Size Entry::_getThisSize() const {
+		return 1;
+	}
+	INode::Size Entry::_getCachedSize() const {
+		return _getThisSize();
 	}
 	spn::SizeF Entry::drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const {
 		const Color color{Color::Node};
@@ -184,5 +232,11 @@ namespace tweak {
 	std::ostream& Entry::write(std::ostream& s) const {
 		s <<  getName() << " = ";
 		return _value->write(s);
+	}
+	INode::node_t::SP Entry::_rewindRange(Size& size) const {
+		size -= _getCachedSize();
+		if(size <= 0)
+			return const_cast<Entry*>(this)->shared_from_this();
+		return nullptr;
 	}
 }

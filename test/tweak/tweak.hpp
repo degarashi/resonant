@@ -96,6 +96,7 @@ namespace tweak {
 			//! 描画を開始するオフセット
 			void setOffset(const Vec2& ofs);
 			void setIndent(float w);
+			void setSize(const spn::SizeF& s);
 			// ---- cursor move ----
 			//! 項目を展開
 			bool expand();

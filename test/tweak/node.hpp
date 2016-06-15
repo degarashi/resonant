@@ -13,17 +13,21 @@ namespace tweak {
 	//! Tweakノード
 	//! 複数の子ノードを持てる
 	class INode : public spn::TreeNode<INode>, public IBase {
-		private:
+		public:
 			friend class spn::TreeNode<INode>;
 			using node_t = spn::TreeNode<INode>;
+			using Size = int;
+		private:
 			static void OnChildRemove(const node_t* self, const node_t::SP& node);
 			static void OnChildAdded(const node_t* self, const node_t::SP& node);
 		protected:
 			Name			_name;
 			rs::HLText		_text;
 			virtual void _setRefreshSize() const = 0;
+			virtual Size _getThisSize() const = 0;
+			virtual node_t::SP _rewindRange(Size& size) const = 0;
 		public:
-			virtual float _getCachedSize() const = 0;
+			virtual Size _getCachedSize() const = 0;
 			INode(rs::CCoreID cid, const Name& name);
 			virtual bool expand(bool b) = 0;
 			virtual bool isExpanded() const = 0;
@@ -33,17 +37,24 @@ namespace tweak {
 			virtual std::ostream& write(std::ostream& s) const = 0;
 			void sortAlphabetically();
 			const Name& getName() const;
+			/*!
+				\param[in]	size	残り幅
+				\return 該当するノードが見つかればそのポインタ、なければnull
+			*/
+			node_t::SP rewindRange(Size& size, bool bChk=false) const;
 	};
 	class Node : public INode {
 		private:
 			bool			_expanded;
 			rs::HLText		_mark[2];
-			mutable float	_cached_size;
+			mutable Size	_cached_size;
 			mutable bool	_bRefl;
 		protected:
 			void _setRefreshSize() const override;
+			Size _getThisSize() const override;
+			node_t::SP _rewindRange(Size& size) const override;
 		public:
-			float _getCachedSize() const override;
+			Size _getCachedSize() const override;
 			Node(rs::CCoreID cid, const Name& name);
 			bool expand(bool b) override;
 			bool isExpanded() const override;
@@ -70,8 +81,10 @@ namespace tweak {
 			void _applyValue();
 		protected:
 			void _setRefreshSize() const override;
+			Size _getThisSize() const override;
+			node_t::SP _rewindRange(Size& size) const override;
 		public:
-			float _getCachedSize() const override;
+			Size _getCachedSize() const override;
 			Entry(rs::CCoreID cid, const Name& name, spn::WHandle target, const Define_SP& def);
 			bool expand(bool b) override;
 			bool isExpanded() const override;
