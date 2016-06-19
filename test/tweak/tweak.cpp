@@ -165,6 +165,7 @@ namespace tweak {
 					nd = makeEntry(obj, entname, lsp);
 					sp->addChild(nd);
 				}
+				nd->setInitial(value);
 				nd->set(value, false);
 			}
 			// [Key][Value][Key]
