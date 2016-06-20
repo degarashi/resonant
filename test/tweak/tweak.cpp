@@ -44,30 +44,29 @@ namespace tweak {
 		_cursor = _root;
 		setStateNew<St_Cursor>();
 	}
-	Tweak::DefineV Tweak::_loadDefine(const LValueS& d) {
-		LValueS src(d["_variable"]);
+	Tweak::DefineV Tweak::_LoadDefine(const LValueS& d, const rs::CCoreID cid) {
+		LValueS src(d[entry::Variable]);
 		DefineV v;
-		src.iterateTable([cid=_cid, &v](rs::LuaState& ls){
+		src.iterateTable([cid, &v](rs::LuaState& ls){
 			auto name = ls.toString(-2);
 			{
 				LValueS tbl(ls.getLS());
-				const auto manip = LValueS(tbl["manip"]).toValue<std::string>();
-				const int sz = FVec4::LoadFromLua(LValueS(tbl["default"])).nValue;
+				const auto manip = LValueS(tbl[entry::Manip]).toValue<std::string>();
+				const int sz = FVec4::LoadFromLua(LValueS(tbl[entry::Value])).nValue;
 				Value_UP defval;
-				if(manip == "linear") {
+				if(manip == LinearValue::Name) {
 					defval = std::make_unique<LinearValue>(cid, sz);
-				} else if(manip == "log") {
-					defval = std::make_unique<LogValue>(cid, sz);
-				} else if(manip == "dir2d") {
+				} else if(manip == ExpValue::Name) {
+					defval = std::make_unique<ExpValue>(cid, sz);
+				} else if(manip == Dir2D::Name) {
 					defval = std::make_unique<Dir2D>(cid);
 				} else {
-					Assert(Trap, manip=="dir3d")
+					Assert(Trap, manip==Dir3D::Name)
 					defval = std::make_unique<Dir3D>(cid);
 				}
-				defval->set(LValueS(tbl["default"]), false);
-				defval->set(LValueS(tbl["step"]), true);
+				defval->loadDefine(tbl);
 
-				LValueS apl(tbl["apply"]);
+				LValueS apl(tbl[entry::Apply]);
 				if(apl.type() == rs::LuaType::String) {
 					const auto str = (boost::format(
 					   "return function(self, value)\
@@ -95,7 +94,7 @@ namespace tweak {
 			rs::LuaState lsc(ls);
 			lsc.getGlobal(objname);
 			Assert(Trap, lsc.type(-1) == rs::LuaType::Table)
-			itr = _define.emplace(objname, _loadDefine(ls)).first;
+			itr = _define.emplace(objname, _LoadDefine(ls, _cid)).first;
 		}
 		return itr->second;
 	}
@@ -165,8 +164,7 @@ namespace tweak {
 					nd = makeEntry(obj, entname, lsp);
 					sp->addChild(nd);
 				}
-				nd->setInitial(value);
-				nd->set(value, false);
+				nd->loadValue(value);
 			}
 			// [Key][Value][Key]
 			ls.pop(1);
@@ -187,9 +185,6 @@ namespace tweak {
 	}
 	void Tweak::insertChild(const INode::SP& sp) {
 		_cursor->addChild(sp);
-	}
-	void Tweak::setValue(const LValueS& v) {
-		_cursor->set(v, false);
 	}
 	void Tweak::increment(const float inc, const int index) {
 		_cursor->increment(inc, index);
@@ -288,6 +283,7 @@ namespace tweak {
 		const auto f = [](auto& path){
 			return mgr_path.getRW(cs_rtname, path, rs::RWops::Write, nullptr);
 		};
+		// リソースパスが引数に与えられていればそれを、なければロード時のリソースパスでファイルを開く
 		if(path)
 			rw = f(*path);
 		else
@@ -295,6 +291,7 @@ namespace tweak {
 		if(!rw)
 			return;
 		_Save(itr->second.entry, rw);
+		itr->second.entry->setAsInitial();
 	}
 	void Tweak::_Save(const INode::SP& ent, rs::HRW rw) {
 		std::stringstream ss;
@@ -363,7 +360,7 @@ namespace tweak {
 					ofs.y + ts + ofsy - ofsC
 				}, {Color::Cursor});
 			}
-			ofs.y += cur->draw(ofs, unit, drawer) * unit.y;
+			ofs.y += cur->draw(ofs, unit, drawer).height;
 			// 描画範囲を超えたら停止
 			if(ofs.y >= dp.offset.y + sz.height)
 				break;

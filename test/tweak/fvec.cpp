@@ -7,6 +7,7 @@ namespace tweak {
 		value(iv)
 	{}
 	FVec4 FVec4::LoadFromLua(const rs::LValueS& v) {
+		AssertP(Trap, v.type() != rs::LuaType::Nil)
 		FVec4 ret;
 		auto& value = ret.value;
 		int cur = 0;

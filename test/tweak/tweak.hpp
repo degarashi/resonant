@@ -47,7 +47,7 @@ namespace tweak {
 								indent;
 			} _dparam;
 			//! Luaから値定義とデフォルト値を読み取る
-			DefineV _loadDefine(const LValueS& d);
+			static DefineV _LoadDefine(const LValueS& d, rs::CCoreID cid);
 			//! オブジェクト名を元に_loadDefine()を呼ぶ
 			const DefineV& _getDefineV(const Name& objname, lua_State* ls);
 			//! オブジェクト名と変数名を元に値定義を取得
@@ -83,8 +83,6 @@ namespace tweak {
 			//! カーソルの直後にノードを追加
 			void insertNext(const INode::SP& sp);
 			void insertChild(const INode::SP& sp);
-			//! カーソル位置のエントリ値設定
-			void setValue(const LValueS& v);
 			//! カーソルが指すエントリの値操作
 			void increment(float inc, int index);
 			//! カーソルが指すエントリを削除

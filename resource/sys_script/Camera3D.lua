@@ -15,7 +15,7 @@ return {
 			-- 一回の操作で加える量
 			step = 1,
 			-- デフォルト値
-			default = 60
+			value = 60
 		},
 		nearz = {
 			apply = function(self, value)
@@ -23,14 +23,15 @@ return {
 			end,
 			manip = "linear",
 			step = 1,
-			default = 1
+			value = 1
 		},
 		farz = {
 			-- 文字列なら同名のcpp関数をそのまま呼ぶ仕様
 			apply = "setFarZ",
-			manip = "log",
+			manip = "exp",
 			step = 1,
-			default = 100
+			base = 2,
+			value = 100
 		},
 		offset = {
 			apply = function(self, value)
@@ -39,7 +40,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1,
-			default = {1,0,1}
+			value = {1,0,1}
 		}
 	},
 	_renamefunc =

@@ -1,114 +1,150 @@
 #pragma once
 #include "test/tweak/common.hpp"
-#include "fvec.hpp"
-#include "../../font.hpp"
+#include "test/tweak/fvec.hpp"
+#include "test/tweak/stext.hpp"
+#include "font.hpp"
 
 namespace tweak {
 	using Vec3 = spn::Vec3;
 	using DegF = spn::DegF;
-	struct VStep {
-		enum type {
-			Value,
-			Step,
-			_Num
-		} v;
-	};
-	struct SText {
-		enum type {
-			Type,
-			_Num
-		} v;
-	};
 	//! 調整可能な定数値
 	class Value : public IBase {
 		protected:
-			constexpr static size_t NText = VStep::_Num + SText::_Num;
 			const rs::CCoreID	_cid;
-			mutable bool		_bRefl[VStep::_Num];
-		private:
-			mutable rs::HLText	_text[NText];
-			virtual rs::HLText _getText(VStep::type t) const = 0;
-			virtual rs::HLText _getText(SText::type t) const = 0;
 		public:
 			Value(rs::CCoreID cid);
-			rs::HText getText(VStep::type t) const;
-			virtual rs::HText getText(SText::type t) const = 0;
 			virtual Value_UP clone() const = 0;
 			virtual std::ostream& write(std::ostream& s) const = 0;
 	};
 	//! Valueクラスのcloneメソッドをテンプレートにて定義
 	//! \sa Value
-	template <class T>
+	template <class T, int N>
 	class ValueT : public Value {
+		private:
+			mutable rs::HLText	_text[N];
 		protected:
-			mutable rs::HLText _stext[SText::_Num];
+			mutable bool		_bRefl[N];
+			virtual rs::HLText _getText(rs::CCoreID cid, int t) const = 0;
 		public:
-			using Value::Value;
-			using Value::getText;
-			rs::HText getText(SText::type t) const override {
-				if(!_stext[t])
-					_stext[t] = _getText(t);
-				return _stext[t];
+			struct Enum { enum {
+				Value,
+				Step,
+				_Num
+			}; };
+			constexpr static int Dim = N;
+			ValueT(const rs::CCoreID cid):
+				Value(cid)
+			{
+				for(auto& b : _bRefl)
+					b = true;
+			}
+			rs::HText getText(const int t) const {
+				if(_bRefl[t]) {
+					_bRefl[t] = false;
+					_text[t] = _getText(_cid, t);
+				}
+				return _text[t];
 			}
 			virtual Value_UP clone() const override {
 				return std::make_unique<T>(static_cast<const T&>(*this));
 			}
 	};
 	//! 線形の増減値による定数調整
-	class LinearValue : public ValueT<LinearValue> {
+	class LinearValue : public ValueT<LinearValue, 2> {
 		private:
-			rs::HLText _getText(VStep::type t) const override;
-			rs::HLText _getText(SText::type t) const override;
-		protected:
-			using base_t = ValueT<LinearValue>;
-			FVec4		_data[VStep::_Num];
+			using base_t = ValueT<LinearValue, 2>;
+			struct Text { enum {
+				Name,
+				_Num
+			}; };
+			FVec4		_data[Enum::_Num];
+			StaticText	_stextL;
+			rs::HLText _getText(rs::CCoreID cid, int t) const override;
 		public:
+			const static std::string Name;
 			LinearValue(rs::CCoreID cid, int n);
-			void set(const LValueS& v, bool bStep) override;
+			void loadDefine(const LValueS& tbl) override;
+			void loadValue(const LValueS& v) override;
 			void increment(float inc, int index) override;
-			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
 			rs::LCValue get() const override;
 			std::ostream& write(std::ostream& s) const override;
 	};
 	//! 級数的な定数調整
-	class LogValue : public LinearValue {
-		private:
-			rs::HLText _getText(SText::type t) const override;
+	class ExpValue : public ValueT<ExpValue, 3> {
 		public:
-			using LinearValue::LinearValue;
+			struct Enum { enum {
+				Value,
+				Step,
+				Base,
+				_Num
+			}; };
+		private:
+			using base_t = ValueT<ExpValue, 3>;
+			struct Text { enum {
+				Name,
+				Base,
+				_Num
+			}; };
+			FVec4		_data[Enum::_Num];
+			StaticText	_stextE;
+			rs::HLText _getText(rs::CCoreID cid, int t) const override;
+			FVec4 _getRaw() const;
+		public:
+			const static std::string Name;
+			ExpValue(rs::CCoreID cid, int n);
+			void loadDefine(const LValueS& tbl) override;
+			void loadValue(const LValueS& v) override;
 			void increment(float inc, int index) override;
-			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
-			Value_UP clone() const override;
+			spn::SizeF draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
+			rs::LCValue get() const override;
+			std::ostream& write(std::ostream& s) const override;
 	};
 	//! 2D方向ベクトル定数
-	class Dir2D : public ValueT<Dir2D> {
+	class Dir2D : public ValueT<Dir2D, 2> {
 		private:
 			DegF		_angle,
 						_step;
+			struct Text { enum {
+				Name,
+				_Num
+			}; };
+			StaticText	_stextD2;
 			Vec2 _getRaw() const;
-			rs::HLText _getText(VStep::type t) const override;
-			rs::HLText _getText(SText::type t) const override;
+			rs::HLText _getText(rs::CCoreID cid, int t) const override;
 		public:
+			const static std::string Name;
 			Dir2D(rs::CCoreID cid);
-			void set(const LValueS& v, bool bStep) override;
+			void loadDefine(const LValueS& tbl) override;
+			void loadValue(const LValueS& v) override;
 			void increment(float inc, int index) override;
-			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
 			rs::LCValue get() const override;
 			std::ostream& write(std::ostream& s) const override;
 	};
 	//! 3D方向ベクトル(Yaw, Pitch)
-	class Dir3D : public ValueT<Dir3D> {
+	class Dir3D : public ValueT<Dir3D, 2> {
 		private:
 			DegF		_angle[2],
 						_step[2];
+			struct Text { enum {
+				Name,
+				_Num
+			}; };
+			StaticText	_stextD3;
 			Vec3 _getRaw() const;
-			rs::HLText _getText(VStep::type t) const override;
-			rs::HLText _getText(SText::type t) const override;
+			rs::HLText _getText(rs::CCoreID cid, int t) const override;
 		public:
+			const static std::string Name;
 			Dir3D(rs::CCoreID cid);
-			void set(const LValueS& v, bool bStep) override;
+			void loadDefine(const LValueS& tbl) override;
+			void loadValue(const LValueS& v) override;
 			void increment(float inc, int index) override;
-			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
 			rs::LCValue get() const override;
 			std::ostream& write(std::ostream& s) const override;
 	};

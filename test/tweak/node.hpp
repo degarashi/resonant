@@ -33,7 +33,6 @@ namespace tweak {
 			virtual bool isExpanded() const = 0;
 			virtual bool isNode() const = 0;
 			virtual void setPointer(Value_UP v) = 0;
-			virtual spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const = 0;
 			virtual std::ostream& write(std::ostream& s) const = 0;
 			void sortAlphabetically();
 			const Name& getName() const;
@@ -61,8 +60,10 @@ namespace tweak {
 			bool isNode() const override;
 			void setPointer(Value_UP v) override;
 			std::ostream& write(std::ostream& s) const override;
-			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
+			void reset() override;
+			void setAsInitial() override;
 	};
 
 	// 定数パラメータごとに1つ定義
@@ -90,13 +91,15 @@ namespace tweak {
 			bool isExpanded() const override;
 			bool isNode() const override;
 			void increment(float inc, int index) override;
-			int draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
+			spn::SizeF draw(const Vec2& offset, const Vec2& unit, Drawer& d) const override;
 			spn::SizeF drawInfo(const Vec2& offset, const Vec2& unit, const STextPack& st, Drawer& d) const override;
-			void set(const LValueS& v, bool bStep) override;
-			void setInitial(const LValueS& v) override;
+			void loadDefine(const LValueS& tbl) override;
+			void loadValue(const LValueS& v) override;
 			void setPointer(Value_UP v) override;
 			std::ostream& write(std::ostream& s) const override;
 			rs::LCValue get() const override;
+			void reset() override;
+			void setAsInitial() override;
 	};
 	using Entry_SP = std::shared_ptr<Entry>;
 }

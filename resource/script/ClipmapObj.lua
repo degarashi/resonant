@@ -6,7 +6,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1,
-			default = {1,1}
+			value = {1,1}
 		},
 		divide = {
 			apply = function(self, value)
@@ -14,7 +14,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1e2,
-			default = 4e3
+			value = 4e3
 		},
 		rayleighC = {
 			apply = function(self, value)
@@ -22,7 +22,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1e-2,
-			default = {680*1e-3, 550*1e-3, 450*1e-3}
+			value = {680*1e-3, 550*1e-3, 450*1e-3}
 		},
 		mieC = {
 			apply = function(self, value)
@@ -30,7 +30,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1e-1,
-			default = {0.8, 0.5}
+			value = {0.8, 0.5}
 		},
 		litPower = {
 			apply = function(self, value)
@@ -38,7 +38,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1,
-			default = 15.4
+			value = 15.4
 		},
 		litDir = {
 			apply = function(self, value)
@@ -46,7 +46,7 @@ return {
 			end,
 			manip = "dir3d",
 			step = 1,
-			default = {0,-1,0}
+			value = {0,-1,0}
 		},
 		litColor = {
 			apply = function(self, value)
@@ -54,7 +54,7 @@ return {
 			end,
 			manip = "linear",
 			step = 1e-1,
-			default = {1,1,1}
+			value = {1,1,1}
 		}
 	}
 }
