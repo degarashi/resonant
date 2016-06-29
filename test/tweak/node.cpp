@@ -64,6 +64,7 @@ namespace tweak {
 				iterateChild(
 					[&s](auto& nd){
 						s += nd->_getCachedSize();
+						return true;
 					}
 				);
 			}
@@ -133,6 +134,7 @@ namespace tweak {
 		iterateChild(
 			[](auto& nd){
 				nd->reset();
+				return true;
 			}
 		);
 	}
@@ -140,6 +142,7 @@ namespace tweak {
 		iterateChild(
 			[](auto& nd){
 				nd->setAsInitial();
+				return true;
 			}
 		);
 	}

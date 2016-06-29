@@ -11,7 +11,8 @@ namespace rs {
 										_idRect;
 				HDGroup					_hDg;
 				TextHUD					_textHud;
-				spn::Profiler::BlockSP	_spProfile;
+				using BlockSP = spn::prof::Profiler::BlockSP;
+				BlockSP					_spProfile;
 				Priority				_uprio;
 				spn::Vec2				_offset;
 

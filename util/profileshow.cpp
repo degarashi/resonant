@@ -35,16 +35,17 @@ namespace rs {
 					std::stringstream ss;
 					ss.precision(2);
 					ss << std::setfill('0') << std::setw(5);
-					auto& hist = spn::profiler.getIntervalHistory();
-					self._spProfile->iterateDepthFirst<false>([&ss, &hist](const spn::Profiler::Block& nd, int depth){
-						auto us = nd.hist.tAccum - nd.getLowerTime();
+					self._spProfile->iterateDepthFirst<false>([&ss](const spn::prof::Profiler::Block& nd, const int depth){
+						const auto us = nd.hist.tAccum - nd.getLowerTime();
 						for(int i=0 ; i<depth ; i++)
 							ss << "---";
-						int tavg = 0;
-						if(hist.count(nd.layerHistId) > 0) {
-							tavg = hist.at(nd.layerHistId).getAverageTime().count();
-						}
-						std::string s = (boost::format("%1%: %2$2.2fms,%|30t|N=%3%,%|40t|Avg=%4%") % nd.name % ((us.count()/10)/100.f) % nd.hist.nCalled % tavg).str();
+						const std::string s = (
+								boost::format("%1%: %2$2.2fms,%|30t|N=%3%,%|40t|Avg=%4%")
+									% nd.name
+									% ((us.count()/10)/100.f)	// us -> ms表示
+									% nd.hist.nCalled
+									% nd.getAverageTime(true).count()
+							).str();
 						ss << s << std::endl;
 						return spn::Iterate::StepIn;
 					});
@@ -55,7 +56,7 @@ namespace rs {
 			}
 			void onUpdate(ProfileShow& self) override {
 				// プロファイラの(1フレーム前の)情報を取得
-				self._spProfile = spn::profiler.getRoot();
+				self._spProfile = spn::profiler.getPrev().root;
 				auto sz = self._textHud.getText()->getSize();
 				auto& r = _getWRect();
 				r.setScale({sz.width, -sz.height});

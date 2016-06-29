@@ -358,7 +358,7 @@ PrintLog;
 				prevtime = ntp;
 				spn::profiler.endBlock("sleep");
 				// プロファイラのフレーム切り替え
-				spn::profiler.resetTree();
+				spn::profiler.onFrame();
 
 				try {
 					// ゲーム進行
